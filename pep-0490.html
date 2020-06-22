@@ -1,0 +1,421 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 490 – Chain exceptions at C level &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 491 – The Wheel Binary Package Format 1.9" href="pep-0491.html" />
+    <link rel="prev" title="PEP 489 – Multi-phase extension module initialization" href="pep-0489.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 490 – Chain exceptions at C level</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-490-chain-exceptions-at-c-level">
+<h1 class="page-title">PEP 490 – Chain exceptions at C level<a class="headerlink" href="#pep-490-chain-exceptions-at-c-level" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">490</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Chain exceptions at C level</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Victor Stinner &lt;vstinner&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Rejected</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">25-March-2015</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.6</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id2">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id3">Rationale</a></li>
+<li><a class="reference internal" href="#proposal" id="id4">Proposal</a><ul>
+<li><a class="reference internal" href="#modify-pyerr-functions-to-chain-exceptions" id="id5">Modify PyErr_*() functions to chain exceptions</a></li>
+<li><a class="reference internal" href="#modify-functions-to-not-chain-exceptions" id="id6">Modify functions to not chain exceptions</a></li>
+<li><a class="reference internal" href="#modify-functions-to-chain-exceptions" id="id7">Modify functions to chain exceptions</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#backward-compatibility" id="id8">Backward compatibility</a></li>
+<li><a class="reference internal" href="#alternatives" id="id9">Alternatives</a><ul>
+<li><a class="reference internal" href="#no-change" id="id10">No change</a></li>
+<li><a class="reference internal" href="#new-helpers-to-chain-exceptions" id="id11">New helpers to chain exceptions</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#appendix" id="id12">Appendix</a><ul>
+<li><a class="reference internal" href="#peps" id="id13">PEPs</a></li>
+<li><a class="reference internal" href="#python-c-api" id="id14">Python C API</a></li>
+<li><a class="reference internal" href="#python-issues" id="id15">Python Issues</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rejection" id="id16">Rejection</a></li>
+<li><a class="reference internal" href="#copyright" id="id17">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id2">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Chain exceptions at C level, as already done at Python level.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id3">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Python 3 introduced a new killer feature: exceptions are chained by
+default, PEP 3134.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;err1&quot;</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;err2&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Output:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Traceback</span> <span class="p">(</span><span class="n">most</span> <span class="n">recent</span> <span class="n">call</span> <span class="n">last</span><span class="p">):</span>
+  <span class="n">File</span> <span class="s2">&quot;test.py&quot;</span><span class="p">,</span> <span class="n">line</span> <span class="mi">2</span><span class="p">,</span> <span class="ow">in</span> <span class="o">&lt;</span><span class="n">module</span><span class="o">&gt;</span>
+    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;err1&quot;</span><span class="p">)</span>
+<span class="ne">TypeError</span><span class="p">:</span> <span class="n">err1</span>
+
+<span class="n">During</span> <span class="n">handling</span> <span class="n">of</span> <span class="n">the</span> <span class="n">above</span> <span class="n">exception</span><span class="p">,</span> <span class="n">another</span> <span class="n">exception</span> <span class="n">occurred</span><span class="p">:</span>
+
+<span class="n">Traceback</span> <span class="p">(</span><span class="n">most</span> <span class="n">recent</span> <span class="n">call</span> <span class="n">last</span><span class="p">):</span>
+  <span class="n">File</span> <span class="s2">&quot;test.py&quot;</span><span class="p">,</span> <span class="n">line</span> <span class="mi">4</span><span class="p">,</span> <span class="ow">in</span> <span class="o">&lt;</span><span class="n">module</span><span class="o">&gt;</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;err2&quot;</span><span class="p">)</span>
+<span class="ne">ValueError</span><span class="p">:</span> <span class="n">err2</span>
+</pre></div>
+</div>
+<p>Exceptions are chained by default in Python code, but not in
+extensions written in C.</p>
+<p>A new private <code class="docutils literal notranslate"><span class="pre">_PyErr_ChainExceptions()</span></code> function was introduced in
+Python 3.4.3 and 3.5 to chain exceptions. Currently, it must be called
+explicitly to chain exceptions and its usage is not trivial.</p>
+<p>Example of <code class="docutils literal notranslate"><span class="pre">_PyErr_ChainExceptions()</span></code> usage from the <code class="docutils literal notranslate"><span class="pre">zipimport</span></code>
+module to chain the previous <code class="docutils literal notranslate"><span class="pre">OSError</span></code> to a new <code class="docutils literal notranslate"><span class="pre">ZipImportError</span></code>
+exception:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyObject</span> <span class="o">*</span><span class="n">exc</span><span class="p">,</span> <span class="o">*</span><span class="n">val</span><span class="p">,</span> <span class="o">*</span><span class="n">tb</span><span class="p">;</span>
+<span class="n">PyErr_Fetch</span><span class="p">(</span><span class="o">&amp;</span><span class="n">exc</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">val</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">tb</span><span class="p">);</span>
+<span class="n">PyErr_Format</span><span class="p">(</span><span class="n">ZipImportError</span><span class="p">,</span> <span class="s2">&quot;can&#39;t open Zip file: %R&quot;</span><span class="p">,</span> <span class="n">archive</span><span class="p">);</span>
+<span class="n">_PyErr_ChainExceptions</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">tb</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>This PEP proposes to also chain exceptions automatically at C level to
+stay consistent and give more information on failures to help
+debugging. The previous example becomes simply:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyErr_Format</span><span class="p">(</span><span class="n">ZipImportError</span><span class="p">,</span> <span class="s2">&quot;can&#39;t open Zip file: %R&quot;</span><span class="p">,</span> <span class="n">archive</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="proposal">
+<h2><a class="toc-backref" href="#id4">Proposal</a><a class="headerlink" href="#proposal" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="modify-pyerr-functions-to-chain-exceptions">
+<h3><a class="toc-backref" href="#id5">Modify PyErr_*() functions to chain exceptions</a><a class="headerlink" href="#modify-pyerr-functions-to-chain-exceptions" title="Permalink to this headline">¶</a></h3>
+<p>Modify C functions raising exceptions of the Python C API to
+automatically chain exceptions: modify <code class="docutils literal notranslate"><span class="pre">PyErr_SetString()</span></code>,
+<code class="docutils literal notranslate"><span class="pre">PyErr_Format()</span></code>, <code class="docutils literal notranslate"><span class="pre">PyErr_SetNone()</span></code>, etc.</p>
+</div>
+<div class="section" id="modify-functions-to-not-chain-exceptions">
+<h3><a class="toc-backref" href="#id6">Modify functions to not chain exceptions</a><a class="headerlink" href="#modify-functions-to-not-chain-exceptions" title="Permalink to this headline">¶</a></h3>
+<p>Keeping the previous exception is not always interesting when the new
+exception contains information of the previous exception or even more
+information, especially when the two exceptions have the same type.</p>
+<p>Example of an useless exception chain with <code class="docutils literal notranslate"><span class="pre">int(str)</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ne">TypeError</span><span class="p">:</span> <span class="n">a</span> <span class="nb">bytes</span><span class="o">-</span><span class="n">like</span> <span class="nb">object</span> <span class="ow">is</span> <span class="n">required</span><span class="p">,</span> <span class="ow">not</span> <span class="s1">&#39;type&#39;</span>
+
+<span class="n">During</span> <span class="n">handling</span> <span class="n">of</span> <span class="n">the</span> <span class="n">above</span> <span class="n">exception</span><span class="p">,</span> <span class="n">another</span> <span class="n">exception</span> <span class="n">occurred</span><span class="p">:</span>
+
+<span class="n">Traceback</span> <span class="p">(</span><span class="n">most</span> <span class="n">recent</span> <span class="n">call</span> <span class="n">last</span><span class="p">):</span>
+  <span class="n">File</span> <span class="s2">&quot;&lt;stdin&gt;&quot;</span><span class="p">,</span> <span class="n">line</span> <span class="mi">1</span><span class="p">,</span> <span class="ow">in</span> <span class="o">&lt;</span><span class="n">module</span><span class="o">&gt;</span>
+<span class="ne">TypeError</span><span class="p">:</span> <span class="nb">int</span><span class="p">()</span> <span class="n">argument</span> <span class="n">must</span> <span class="n">be</span> <span class="n">a</span> <span class="n">string</span><span class="p">,</span> <span class="n">a</span> <span class="nb">bytes</span><span class="o">-</span><span class="n">like</span> <span class="nb">object</span> <span class="ow">or</span> <span class="n">a</span> <span class="n">number</span><span class="p">,</span> <span class="ow">not</span> <span class="s1">&#39;type&#39;</span>
+</pre></div>
+</div>
+<p>The new <code class="docutils literal notranslate"><span class="pre">TypeError</span></code> exception contains more information than the
+previous exception. The previous exception should be hidden.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">PyErr_Clear()</span></code> function can be called to clear the current
+exception before raising a new exception, to not chain the current
+exception with a new exception.</p>
+</div>
+<div class="section" id="modify-functions-to-chain-exceptions">
+<h3><a class="toc-backref" href="#id7">Modify functions to chain exceptions</a><a class="headerlink" href="#modify-functions-to-chain-exceptions" title="Permalink to this headline">¶</a></h3>
+<p>Some functions save and then restore the current exception. If a new
+exception is raised, the exception is currently displayed into
+sys.stderr or ignored depending on the function.  Some of these
+functions should be modified to chain exceptions instead.</p>
+<p>Examples of function ignoring the new exception(s):</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">ptrace_enter_call()</span></code>: ignore exception</li>
+<li><code class="docutils literal notranslate"><span class="pre">subprocess_fork_exec()</span></code>: ignore exception raised by enable_gc()</li>
+<li><code class="docutils literal notranslate"><span class="pre">t_bootstrap()</span></code> of the <code class="docutils literal notranslate"><span class="pre">_thread</span></code> module: ignore exception raised
+by trying to display the bootstrap function to <code class="docutils literal notranslate"><span class="pre">sys.stderr</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyDict_GetItem()</span></code>, <code class="docutils literal notranslate"><span class="pre">_PyDict_GetItem_KnownHash()</span></code>: ignore
+exception raised by looking for a key in the dictionary</li>
+<li><code class="docutils literal notranslate"><span class="pre">_PyErr_TrySetFromCause()</span></code>: ignore exception</li>
+<li><code class="docutils literal notranslate"><span class="pre">PyFrame_LocalsToFast()</span></code>: ignore exception raised by
+<code class="docutils literal notranslate"><span class="pre">dict_to_map()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">_PyObject_Dump()</span></code>: ignore exception. <code class="docutils literal notranslate"><span class="pre">_PyObject_Dump()</span></code> is used
+to debug, to inspect a running process, it should not modify the
+Python state.</li>
+<li><code class="docutils literal notranslate"><span class="pre">Py_ReprLeave()</span></code>: ignore exception “because there is no way to
+report them”</li>
+<li><code class="docutils literal notranslate"><span class="pre">type_dealloc()</span></code>: ignore exception raised by
+<code class="docutils literal notranslate"><span class="pre">remove_all_subclasses()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyObject_ClearWeakRefs()</span></code>: ignore exception?</li>
+<li><code class="docutils literal notranslate"><span class="pre">call_exc_trace()</span></code>, <code class="docutils literal notranslate"><span class="pre">call_trace_protected()</span></code>: ignore exception</li>
+<li><code class="docutils literal notranslate"><span class="pre">remove_importlib_frames()</span></code>: ignore exception</li>
+<li><code class="docutils literal notranslate"><span class="pre">do_mktuple()</span></code>, helper used by <code class="docutils literal notranslate"><span class="pre">Py_BuildValue()</span></code> for example:
+ignore exception?</li>
+<li><code class="docutils literal notranslate"><span class="pre">flush_io()</span></code>: ignore exception</li>
+<li><code class="docutils literal notranslate"><span class="pre">sys_write()</span></code>, <code class="docutils literal notranslate"><span class="pre">sys_format()</span></code>: ignore exception</li>
+<li><code class="docutils literal notranslate"><span class="pre">_PyTraceback_Add()</span></code>: ignore exception</li>
+<li><code class="docutils literal notranslate"><span class="pre">PyTraceBack_Print()</span></code>: ignore exception</li>
+</ul>
+<p>Examples of function displaying the new exception to <code class="docutils literal notranslate"><span class="pre">sys.stderr</span></code>:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">atexit_callfuncs()</span></code>: display exceptions with
+<code class="docutils literal notranslate"><span class="pre">PyErr_Display()</span></code> and return the latest exception, the function
+calls multiple callbacks and only returns the latest exception</li>
+<li><code class="docutils literal notranslate"><span class="pre">sock_dealloc()</span></code>: log the <code class="docutils literal notranslate"><span class="pre">ResourceWarning</span></code> exception with
+<code class="docutils literal notranslate"><span class="pre">PyErr_WriteUnraisable()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">slot_tp_del()</span></code>: display exception with
+<code class="docutils literal notranslate"><span class="pre">PyErr_WriteUnraisable()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">_PyGen_Finalize()</span></code>: display <code class="docutils literal notranslate"><span class="pre">gen_close()</span></code> exception with
+<code class="docutils literal notranslate"><span class="pre">PyErr_WriteUnraisable()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">slot_tp_finalize()</span></code>: display exception raised by the
+<code class="docutils literal notranslate"><span class="pre">__del__()</span></code> method with <code class="docutils literal notranslate"><span class="pre">PyErr_WriteUnraisable()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyErr_GivenExceptionMatches()</span></code>: display exception raised by
+<code class="docutils literal notranslate"><span class="pre">PyType_IsSubtype()</span></code> with <code class="docutils literal notranslate"><span class="pre">PyErr_WriteUnraisable()</span></code></li>
+</ul>
+</div>
+</div>
+<div class="section" id="backward-compatibility">
+<h2><a class="toc-backref" href="#id8">Backward compatibility</a><a class="headerlink" href="#backward-compatibility" title="Permalink to this headline">¶</a></h2>
+<p>A side effect of chaining exceptions is that exceptions store
+traceback objects which store frame objects which store local
+variables.  Local variables are kept alive by exceptions. A common
+issue is a reference cycle between local variables and exceptions: an
+exception is stored in a local variable and the frame indirectly
+stored in the exception. The cycle only impacts applications storing
+exceptions.</p>
+<p>The reference cycle can now be fixed with the new
+<code class="docutils literal notranslate"><span class="pre">traceback.TracebackException</span></code> object introduced in Python 3.5. It
+stores informations required to format a full textual traceback without
+storing local variables.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">asyncio</span></code> is impacted by the reference cycle issue. This module
+is also maintained outside Python standard library to release a
+version for Python 3.3.  <code class="docutils literal notranslate"><span class="pre">traceback.TracebackException</span></code> will maybe
+be backported in a private <code class="docutils literal notranslate"><span class="pre">asyncio</span></code> module to fix reference cycle
+issues.</p>
+</div>
+<div class="section" id="alternatives">
+<h2><a class="toc-backref" href="#id9">Alternatives</a><a class="headerlink" href="#alternatives" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="no-change">
+<h3><a class="toc-backref" href="#id10">No change</a><a class="headerlink" href="#no-change" title="Permalink to this headline">¶</a></h3>
+<p>A new private <code class="docutils literal notranslate"><span class="pre">_PyErr_ChainExceptions()</span></code> function is enough to chain
+manually exceptions.</p>
+<p>Exceptions will only be chained explicitly where it makes sense.</p>
+</div>
+<div class="section" id="new-helpers-to-chain-exceptions">
+<h3><a class="toc-backref" href="#id11">New helpers to chain exceptions</a><a class="headerlink" href="#new-helpers-to-chain-exceptions" title="Permalink to this headline">¶</a></h3>
+<p>Functions like <code class="docutils literal notranslate"><span class="pre">PyErr_SetString()</span></code> don’t chain automatically
+exceptions. To make the usage of <code class="docutils literal notranslate"><span class="pre">_PyErr_ChainExceptions()</span></code> easier,
+new private functions are added:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">_PyErr_SetStringChain(exc_type,</span> <span class="pre">message)</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">_PyErr_FormatChain(exc_type,</span> <span class="pre">format,</span> <span class="pre">...)</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">_PyErr_SetNoneChain(exc_type)</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">_PyErr_SetObjectChain(exc_type,</span> <span class="pre">exc_value)</span></code></li>
+</ul>
+<p>Helper functions to raise specific exceptions like
+<code class="docutils literal notranslate"><span class="pre">_PyErr_SetKeyError(key)</span></code> or <code class="docutils literal notranslate"><span class="pre">PyErr_SetImportError(message,</span> <span class="pre">name,</span>
+<span class="pre">path)</span></code> don’t chain exceptions.  The generic
+<code class="docutils literal notranslate"><span class="pre">_PyErr_ChainExceptions(exc_type,</span> <span class="pre">exc_value,</span> <span class="pre">exc_tb)</span></code> should be used
+to chain exceptions with these helper functions.</p>
+</div>
+</div>
+<div class="section" id="appendix">
+<h2><a class="toc-backref" href="#id12">Appendix</a><a class="headerlink" href="#appendix" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="peps">
+<h3><a class="toc-backref" href="#id13">PEPs</a><a class="headerlink" href="#peps" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><a class="reference external" href="https://www.python.org/dev/peps/pep-3134/">PEP 3134 – Exception Chaining and Embedded Tracebacks</a> (Python 3.0):
+new <code class="docutils literal notranslate"><span class="pre">__context__</span></code> and <code class="docutils literal notranslate"><span class="pre">__cause__</span></code> attributes for exceptions</li>
+<li><a class="reference external" href="https://www.python.org/dev/peps/pep-0415/">PEP 415 - Implement context suppression with exception attributes</a> (Python 3.3):
+<code class="docutils literal notranslate"><span class="pre">raise</span> <span class="pre">exc</span> <span class="pre">from</span> <span class="pre">None</span></code></li>
+<li><a class="reference external" href="https://www.python.org/dev/peps/pep-0409/">PEP 409 - Suppressing exception context</a>
+(superseded by the PEP 415)</li>
+</ul>
+</div>
+<div class="section" id="python-c-api">
+<h3><a class="toc-backref" href="#id14">Python C API</a><a class="headerlink" href="#python-c-api" title="Permalink to this headline">¶</a></h3>
+<p>The header file <code class="docutils literal notranslate"><span class="pre">Include/pyerror.h</span></code> declares functions related to
+exceptions.</p>
+<p>Functions raising exceptions:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">PyErr_SetNone(exc_type)</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyErr_SetObject(exc_type,</span> <span class="pre">exc_value)</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyErr_SetString(exc_type,</span> <span class="pre">message)</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyErr_Format(exc,</span> <span class="pre">format,</span> <span class="pre">...)</span></code></li>
+</ul>
+<p>Helpers to raise specific exceptions:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">PyErr_BadArgument()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyErr_BadInternalCall()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyErr_NoMemory()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyErr_SetFromErrno(exc)</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyErr_SetFromWindowsErr(err)</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyErr_SetImportError(message,</span> <span class="pre">name,</span> <span class="pre">path)</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">_PyErr_SetKeyError(key)</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">_PyErr_TrySetFromCause(prefix_format,</span> <span class="pre">...)</span></code></li>
+</ul>
+<p>Manage the current exception:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">PyErr_Clear()</span></code>: clear the current exception,
+like <code class="docutils literal notranslate"><span class="pre">except:</span> <span class="pre">pass</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyErr_Fetch(exc_type,</span> <span class="pre">exc_value,</span> <span class="pre">exc_tb)</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyErr_Restore(exc_type,</span> <span class="pre">exc_value,</span> <span class="pre">exc_tb)</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyErr_GetExcInfo(exc_type,</span> <span class="pre">exc_value,</span> <span class="pre">exc_tb)</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyErr_SetExcInfo(exc_type,</span> <span class="pre">exc_value,</span> <span class="pre">exc_tb)</span></code></li>
+</ul>
+<p>Others function to handle exceptions:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">PyErr_ExceptionMatches(exc)</span></code>: check to implement
+<code class="docutils literal notranslate"><span class="pre">except</span> <span class="pre">exc:</span>&#160; <span class="pre">...</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyErr_GivenExceptionMatches(exc1,</span> <span class="pre">exc2)</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyErr_NormalizeException(exc_type,</span> <span class="pre">exc_value,</span> <span class="pre">exc_tb)</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">_PyErr_ChainExceptions(exc_type,</span> <span class="pre">exc_value,</span> <span class="pre">exc_tb)</span></code></li>
+</ul>
+</div>
+<div class="section" id="python-issues">
+<h3><a class="toc-backref" href="#id15">Python Issues</a><a class="headerlink" href="#python-issues" title="Permalink to this headline">¶</a></h3>
+<p>Chain exceptions:</p>
+<ul class="simple">
+<li><a class="reference external" href="http://bugs.python.org/issue23763">Issue #23763: Chain exceptions in C</a></li>
+<li><a class="reference external" href="http://bugs.python.org/issue23696">Issue #23696: zipimport: chain ImportError to OSError</a></li>
+<li><a class="reference external" href="http://bugs.python.org/issue21715">Issue #21715: Chaining exceptions at C level</a>: added
+<code class="docutils literal notranslate"><span class="pre">_PyErr_ChainExceptions()</span></code></li>
+<li><a class="reference external" href="http://bugs.python.org/issue18488">Issue #18488: sqlite: finalize() method of user function may be
+called with an exception set if a call to step() method failed</a></li>
+<li><a class="reference external" href="http://bugs.python.org/issue23781">Issue #23781: Add private _PyErr_ReplaceException() in 2.7</a></li>
+<li><a class="reference external" href="http://bugs.python.org/issue23782">Issue #23782: Leak in _PyTraceback_Add</a></li>
+</ul>
+<p>Changes preventing to loose exceptions:</p>
+<ul class="simple">
+<li><a class="reference external" href="http://bugs.python.org/issue23571">Issue #23571: Raise SystemError if a function returns a result with an
+exception set</a></li>
+<li><a class="reference external" href="http://bugs.python.org/issue18408">Issue #18408: Fixes crashes found by pyfailmalloc</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="rejection">
+<h2><a class="toc-backref" href="#id16">Rejection</a><a class="headerlink" href="#rejection" title="Permalink to this headline">¶</a></h2>
+<p>The PEP was rejected on 2017-09-12 by Victor Stinner. It was decided in
+the python-dev discussion to not chain C exceptions by default, but
+instead chain them explicitly only where it makes sense.</p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id17">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0490.txt">https://github.com/python/peps/blob/master/pep-0490.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0490.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0489.html">PEP 0489</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0491.html">PEP 0491</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 490 – Chain exceptions at C level</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#proposal">Proposal</a><ul>
+<li><a class="reference internal" href="#modify-pyerr-functions-to-chain-exceptions">Modify PyErr_*() functions to chain exceptions</a></li>
+<li><a class="reference internal" href="#modify-functions-to-not-chain-exceptions">Modify functions to not chain exceptions</a></li>
+<li><a class="reference internal" href="#modify-functions-to-chain-exceptions">Modify functions to chain exceptions</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#backward-compatibility">Backward compatibility</a></li>
+<li><a class="reference internal" href="#alternatives">Alternatives</a><ul>
+<li><a class="reference internal" href="#no-change">No change</a></li>
+<li><a class="reference internal" href="#new-helpers-to-chain-exceptions">New helpers to chain exceptions</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#appendix">Appendix</a><ul>
+<li><a class="reference internal" href="#peps">PEPs</a></li>
+<li><a class="reference internal" href="#python-c-api">Python C API</a></li>
+<li><a class="reference internal" href="#python-issues">Python Issues</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rejection">Rejection</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

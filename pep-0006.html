@@ -1,0 +1,312 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 6 – Bug Fix Releases &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 7 – Style Guide for C Code" href="pep-0007.html" />
+    <link rel="prev" title="PEP 5 – Guidelines for Language Evolution" href="pep-0005.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 6 – Bug Fix Releases</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-6-bug-fix-releases">
+<h1 class="page-title">PEP 6 – Bug Fix Releases<a class="headerlink" href="#pep-6-bug-fix-releases" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">6</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Bug Fix Releases</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">aahz&#32;&#97;t&#32;pythoncraft.com (Aahz), anthony&#32;&#97;t&#32;interlink.com.au (Anthony Baxter)</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Active</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Process</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">15-Mar-2001</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd">15-Mar-2001 18-Apr-2001 19-Aug-2004</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id7">Abstract</a></li>
+<li><a class="reference internal" href="#motivation" id="id8">Motivation</a></li>
+<li><a class="reference internal" href="#prohibitions" id="id9">Prohibitions</a></li>
+<li><a class="reference internal" href="#not-quite-prohibitions" id="id10">Not-Quite-Prohibitions</a></li>
+<li><a class="reference internal" href="#applicability-of-prohibitions" id="id11">Applicability of Prohibitions</a></li>
+<li><a class="reference internal" href="#helping-the-bug-fix-releases-happen" id="id12">Helping the Bug Fix Releases Happen</a></li>
+<li><a class="reference internal" href="#version-numbers" id="id13">Version Numbers</a></li>
+<li><a class="reference internal" href="#procedure" id="id14">Procedure</a></li>
+<li><a class="reference internal" href="#patch-czar-history" id="id15">Patch Czar History</a></li>
+<li><a class="reference internal" href="#history" id="id16">History</a></li>
+<li><a class="reference internal" href="#references" id="id17">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id18">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id7">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Python has historically had only a single fork of development, with
+releases having the combined purpose of adding new features and
+delivering bug fixes (these kinds of releases will be referred to as
+“major releases”).  This PEP describes how to fork off maintenance, or
+bug fix, releases of old versions for the primary purpose of fixing
+bugs.</p>
+<p>This PEP is not, repeat NOT, a guarantee of the existence of bug fix
+releases; it only specifies a procedure to be followed if bug fix
+releases are desired by enough of the Python community willing to do
+the work.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id8">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>With the move to SourceForge, Python development has accelerated.
+There is a sentiment among part of the community that there was too
+much acceleration, and many people are uncomfortable with upgrading to
+new versions to get bug fixes when so many features have been added,
+sometimes late in the development cycle.</p>
+<p>One solution for this issue is to maintain the previous major release,
+providing bug fixes until the next major release.  This should make
+Python more attractive for enterprise development, where Python may
+need to be installed on hundreds or thousands of machines.</p>
+</div>
+<div class="section" id="prohibitions">
+<h2><a class="toc-backref" href="#id9">Prohibitions</a><a class="headerlink" href="#prohibitions" title="Permalink to this headline">¶</a></h2>
+<p>Bug fix releases are required to adhere to the following restrictions:</p>
+<ol class="arabic simple">
+<li>There must be zero syntax changes.  All <cite>.pyc</cite> and <cite>.pyo</cite> files must
+work (no regeneration needed) with all bugfix releases forked off
+from a major release.</li>
+<li>There must be zero pickle changes.</li>
+<li>There must be no incompatible C API changes.  All extensions must
+continue to work without recompiling in all bugfix releases in the
+same fork as a major release.</li>
+</ol>
+<p>Breaking any of these prohibitions requires a BDFL proclamation (and a
+prominent warning in the release notes).</p>
+</div>
+<div class="section" id="not-quite-prohibitions">
+<h2><a class="toc-backref" href="#id10">Not-Quite-Prohibitions</a><a class="headerlink" href="#not-quite-prohibitions" title="Permalink to this headline">¶</a></h2>
+<p>Where possible, bug fix releases should also:</p>
+<ol class="arabic simple">
+<li>Have no new features. The purpose of a bug fix release is to fix
+bugs, not add the latest and greatest whizzo feature from the HEAD
+of the CVS root.</li>
+<li>Be a painless upgrade. Users should feel confident that an upgrade
+from 2.x.y to 2.x.(y+1) will not break their running systems. This
+means that, unless it is necessary to fix a bug, the standard
+library should not change behavior, or worse yet, APIs.</li>
+</ol>
+</div>
+<div class="section" id="applicability-of-prohibitions">
+<h2><a class="toc-backref" href="#id11">Applicability of Prohibitions</a><a class="headerlink" href="#applicability-of-prohibitions" title="Permalink to this headline">¶</a></h2>
+<p>The above prohibitions and not-quite-prohibitions apply both for a
+final release to a bugfix release (for instance, 2.4 to 2.4.1) and for
+one bugfix release to the next in a series (for instance 2.4.1 to
+2.4.2).</p>
+<p>Following the prohibitions listed in this PEP should help keep the
+community happy that a bug fix release is a painless and safe upgrade.</p>
+</div>
+<div class="section" id="helping-the-bug-fix-releases-happen">
+<h2><a class="toc-backref" href="#id12">Helping the Bug Fix Releases Happen</a><a class="headerlink" href="#helping-the-bug-fix-releases-happen" title="Permalink to this headline">¶</a></h2>
+<p>Here’s a few pointers on helping the bug fix release process along.</p>
+<ol class="arabic simple">
+<li>Backport bug fixes. If you fix a bug, and it seems appropriate,
+port it to the CVS branch for the current bug fix release. If
+you’re unwilling or unable to backport it yourself, make a note in
+the commit message, with words like ‘Bugfix candidate’ or
+‘Backport candidate’.</li>
+<li>If you’re not sure, ask. Ask the person managing the current bug
+fix releases if they think a particular fix is appropriate.</li>
+<li>If there’s a particular bug you’d particularly like fixed in a bug
+fix release, jump up and down and try to get it done. Do not wait
+until 48 hours before a bug fix release is due, and then start
+asking for bug fixes to be included.</li>
+</ol>
+</div>
+<div class="section" id="version-numbers">
+<h2><a class="toc-backref" href="#id13">Version Numbers</a><a class="headerlink" href="#version-numbers" title="Permalink to this headline">¶</a></h2>
+<p>Starting with Python 2.0, all major releases are required to have a
+version number of the form X.Y; bugfix releases will always be of the
+form X.Y.Z.</p>
+<p>The current major release under development is referred to as release
+N; the just-released major version is referred to as N-1.</p>
+<p>In CVS, the bug fix releases happen on a branch. For release 2.x, the
+branch is named ‘release2x-maint’. For example, the branch for the 2.3
+maintenance releases is release23-maint</p>
+</div>
+<div class="section" id="procedure">
+<h2><a class="toc-backref" href="#id14">Procedure</a><a class="headerlink" href="#procedure" title="Permalink to this headline">¶</a></h2>
+<p>The process for managing bugfix releases is modeled in part on the Tcl
+system <a class="footnote-reference brackets" href="#id4" id="id1">1</a>.</p>
+<p>The Patch Czar is the counterpart to the BDFL for bugfix releases.
+However, the BDFL and designated appointees retain veto power over
+individual patches. A Patch Czar might only be looking after a single
+branch of development - it’s quite possible that a different person
+might be maintaining the 2.3.x and the 2.4.x releases.</p>
+<p>As individual patches get contributed to the current trunk of CVS,
+each patch committer is requested to consider whether the patch is a
+bug fix suitable for inclusion in a bugfix release. If the patch is
+considered suitable, the committer can either commit the release to
+the maintenance branch, or else mark the patch in the commit message.</p>
+<p>In addition, anyone from the Python community is free to suggest
+patches for inclusion. Patches may be submitted specifically for
+bugfix releases; they should follow the guidelines in PEP 3 <a class="footnote-reference brackets" href="#id5" id="id2">2</a>. In
+general, though, it’s probably better that a bug in a specific release
+also be fixed on the HEAD as well as the branch.</p>
+<p>The Patch Czar decides when there are a sufficient number of patches
+to warrant a release. The release gets packaged up, including a
+Windows installer, and made public. If any new bugs are found, they
+must be fixed immediately and a new bugfix release publicized (with an
+incremented version number). For the 2.3.x cycle, the Patch Czar
+(Anthony) has been trying for a release approximately every six
+months, but this should not be considered binding in any way on any
+future releases.</p>
+<p>Bug fix releases are expected to occur at an interval of roughly six
+months. This is only a guideline, however - obviously, if a major bug
+is found, a bugfix release may be appropriate sooner. In general, only
+the N-1 release will be under active maintenance at any time. That is,
+during Python 2.4’s development, Python 2.3 gets bugfix releases. If,
+however, someone qualified wishes to continue the work to maintain an
+older release, they should be encouraged.</p>
+</div>
+<div class="section" id="patch-czar-history">
+<h2><a class="toc-backref" href="#id15">Patch Czar History</a><a class="headerlink" href="#patch-czar-history" title="Permalink to this headline">¶</a></h2>
+<p>Anthony Baxter is the Patch Czar for 2.3.1 through 2.3.4.</p>
+<p>Barry Warsaw is the Patch Czar for 2.2.3.</p>
+<p>Guido van Rossum is the Patch Czar for 2.2.2.</p>
+<p>Michael Hudson is the Patch Czar for 2.2.1.</p>
+<p>Anthony Baxter is the Patch Czar for 2.1.2 and 2.1.3.</p>
+<p>Thomas Wouters is the Patch Czar for 2.1.1.</p>
+<p>Moshe Zadka is the Patch Czar for 2.0.1.</p>
+</div>
+<div class="section" id="history">
+<h2><a class="toc-backref" href="#id16">History</a><a class="headerlink" href="#history" title="Permalink to this headline">¶</a></h2>
+<p>This PEP started life as a proposal on comp.lang.python.  The original
+version suggested a single patch for the N-1 release to be released
+concurrently with the N release.  The original version also argued for
+sticking with a strict bug fix policy.</p>
+<p>Following feedback from the BDFL and others, the draft PEP was written
+containing an expanded bugfix release cycle that permitted any
+previous major release to obtain patches and also relaxed the strict
+bug fix requirement (mainly due to the example of PEP 235 <a class="footnote-reference brackets" href="#id6" id="id3">3</a>, which
+could be argued as either a bug fix or a feature).</p>
+<p>Discussion then mostly moved to python-dev, where BDFL finally issued
+a proclamation basing the Python bugfix release process on Tcl’s,
+which essentially returned to the original proposal in terms of being
+only the N-1 release and only bug fixes, but allowing multiple bugfix
+releases until release N is published.</p>
+<p>Anthony Baxter then took this PEP and revised it, based on lessons
+from the 2.3 release cycle.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id17">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id4"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><a class="reference external" href="http://www.tcl.tk/cgi-bin/tct/tip/28.html">http://www.tcl.tk/cgi-bin/tct/tip/28.html</a></dd>
+<dt class="label" id="id5"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>PEP 3, Guidelines for Handling Bug Reports, Hylton
+(<a class="reference external" href="http://www.python.org/dev/peps/pep-0003/">http://www.python.org/dev/peps/pep-0003/</a>)</dd>
+<dt class="label" id="id6"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd>PEP 235, Import on Case-Insensitive Platforms, Peters
+(<a class="reference external" href="http://www.python.org/dev/peps/pep-0235/">http://www.python.org/dev/peps/pep-0235/</a>)</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id18">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0006.txt">https://github.com/python/peps/blob/master/pep-0006.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0006.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0005.html">PEP 0005</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0007.html">PEP 0007</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 6 – Bug Fix Releases</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#prohibitions">Prohibitions</a></li>
+<li><a class="reference internal" href="#not-quite-prohibitions">Not-Quite-Prohibitions</a></li>
+<li><a class="reference internal" href="#applicability-of-prohibitions">Applicability of Prohibitions</a></li>
+<li><a class="reference internal" href="#helping-the-bug-fix-releases-happen">Helping the Bug Fix Releases Happen</a></li>
+<li><a class="reference internal" href="#version-numbers">Version Numbers</a></li>
+<li><a class="reference internal" href="#procedure">Procedure</a></li>
+<li><a class="reference internal" href="#patch-czar-history">Patch Czar History</a></li>
+<li><a class="reference internal" href="#history">History</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

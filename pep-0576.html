@@ -1,0 +1,292 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 576 – Rationalize Built-in function classes &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 577 – Augmented Assignment Expressions" href="pep-0577.html" />
+    <link rel="prev" title="PEP 575 – Unifying function/method classes" href="pep-0575.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 576 – Rationalize Built-in function classes</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-576-rationalize-built-in-function-classes">
+<h1 class="page-title">PEP 576 – Rationalize Built-in function classes<a class="headerlink" href="#pep-576-rationalize-built-in-function-classes" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">576</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Rationalize Built-in function classes</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Mark Shannon &lt;mark&#32;&#97;t&#32;hotpy.org&gt;</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even">Petr Viktorin</dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd">Withdrawn</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even">Standards Track</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">10-May-2018</dd>
+<dt class="field-even">Python-Version</dt>
+<dd class="field-even">3.8</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd">17-May-2018
+23-June-2018
+08-July-2018
+29-Mar-1028</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id2">Abstract</a></li>
+<li><a class="reference internal" href="#motivation" id="id3">Motivation</a><ul>
+<li><a class="reference internal" href="#introspection" id="id4">Introspection</a></li>
+<li><a class="reference internal" href="#efficient-calls-to-third-party-callables" id="id5">Efficient calls to third-party callables</a><ul>
+<li><a class="reference internal" href="#continued-prohibition-of-callable-classes-as-base-classes" id="id6">Continued prohibition of callable classes as base classes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#new-classes-and-changes-to-existing-classes" id="id7">New classes and changes to existing classes</a><ul>
+<li><a class="reference internal" href="#python-visible-changes" id="id8">Python visible changes</a></li>
+<li><a class="reference internal" href="#c-api-changes" id="id9">C API changes</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#retaining-backwards-compatibility-in-the-c-api-and-abi" id="id10">Retaining backwards compatibility in the C API and ABI</a><ul>
+<li><a class="reference internal" href="#internal-c-changes" id="id11">Internal C changes</a><ul>
+<li><a class="reference internal" href="#py-tpflags-extended-call" id="id12">Py_TPFLAGS_EXTENDED_CALL</a></li>
+<li><a class="reference internal" href="#py-tpflags-function-descriptor" id="id13">Py_TPFLAGS_FUNCTION_DESCRIPTOR</a></li>
+<li><a class="reference internal" href="#changes-to-existing-c-structs" id="id14">Changes to existing C structs</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#third-party-built-in-classes-using-the-new-extended-call-interface" id="id15">Third-party built-in classes using the new extended call interface</a><ul>
+<li><a class="reference internal" href="#performance-implications-of-these-changes" id="id16">Performance implications of these changes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#alternative-suggestions" id="id17">Alternative Suggestions</a></li>
+<li><a class="reference internal" href="#reference-implementation" id="id18">Reference implementation</a></li>
+<li><a class="reference internal" href="#copyright" id="id19">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id2">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Expose the “FastcallKeywords” convention used internally by CPython to third-party code, and make the <code class="docutils literal notranslate"><span class="pre">inspect</span></code> module use duck-typing.
+In combination this will allow third-party C extensions and tools like Cython to create objects that use the same calling conventions as built-in and Python functions, thus gaining performance parity with built-in functions like <code class="docutils literal notranslate"><span class="pre">len</span></code> or <code class="docutils literal notranslate"><span class="pre">print</span></code>.</p>
+<p>A small improvement in the performance of existing code is expected.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id3">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>Currently third-party module authors face a dilemma when implementing
+functions in C. Either they can use one of the pre-existing built-in function
+or method classes or implement their own custom class in C.
+The first choice causes them to lose the ability to access the internals of the callable object.
+The second choice is an additional maintenance burden and, more importantly,
+has a significant negative impact on performance.</p>
+<p>This PEP aims to allow authors of third-party C modules, and tools like to Cython, to utilize the faster calling convention used internally by CPython for built-in functions and methods, and to do so without a loss of capabilities relative to a function implemented in Python.</p>
+<div class="section" id="introspection">
+<h3><a class="toc-backref" href="#id4">Introspection</a><a class="headerlink" href="#introspection" title="Permalink to this headline">¶</a></h3>
+<p>The inspect module will fully support duck-typing when introspecting callables.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">inspect.Signature.from_callable()</span></code> function computes the signature of a callable. If an object has a <code class="docutils literal notranslate"><span class="pre">__signature__</span></code>
+property, then <code class="docutils literal notranslate"><span class="pre">inspect.Signature.from_callable()</span></code> simply returns that. To further support duck-typing, if a callable has a <code class="docutils literal notranslate"><span class="pre">__text_signature__</span></code>
+then the <code class="docutils literal notranslate"><span class="pre">__signature__</span></code> will be created from that.</p>
+<p>This means that 3rd party builtin-functions can implement <code class="docutils literal notranslate"><span class="pre">__text_signature__</span></code> if sufficient,
+and the more expensive <code class="docutils literal notranslate"><span class="pre">__signature__</span></code> if necessary.</p>
+</div>
+<div class="section" id="efficient-calls-to-third-party-callables">
+<h3><a class="toc-backref" href="#id5">Efficient calls to third-party callables</a><a class="headerlink" href="#efficient-calls-to-third-party-callables" title="Permalink to this headline">¶</a></h3>
+<p>Currently the majority of calls are dispatched to <code class="docutils literal notranslate"><span class="pre">function</span></code>s and <code class="docutils literal notranslate"><span class="pre">method_descriptor</span></code>s in custom code, using the “FastcallKeywords” internal calling convention. This PEP proposes that this calling convention is implemented via a C function pointer. Third-party callables which implement this binary interface will have the potential to be called as fast as a built-in function.</p>
+<div class="section" id="continued-prohibition-of-callable-classes-as-base-classes">
+<h4><a class="toc-backref" href="#id6">Continued prohibition of callable classes as base classes</a><a class="headerlink" href="#continued-prohibition-of-callable-classes-as-base-classes" title="Permalink to this headline">¶</a></h4>
+<p>Currently any attempt to use <code class="docutils literal notranslate"><span class="pre">function</span></code>, <code class="docutils literal notranslate"><span class="pre">method</span></code> or <code class="docutils literal notranslate"><span class="pre">method_descriptor</span></code> as a base class for a new class will fail with a <code class="docutils literal notranslate"><span class="pre">TypeError</span></code>. This behaviour is desirable as it prevents errors when a subclass overrides the <code class="docutils literal notranslate"><span class="pre">__call__</span></code> method. If callables could be sub-classed then any call to a <code class="docutils literal notranslate"><span class="pre">function</span></code> or a <code class="docutils literal notranslate"><span class="pre">method_descriptor</span></code> would need an additional check that the <code class="docutils literal notranslate"><span class="pre">__call__</span></code> method had not been overridden. By exposing an additional call mechanism, the potential for errors  becomes greater. As a consequence, any third-party class implementing the addition call interface will not be usable as a base class.</p>
+</div>
+</div>
+</div>
+<div class="section" id="new-classes-and-changes-to-existing-classes">
+<h2><a class="toc-backref" href="#id7">New classes and changes to existing classes</a><a class="headerlink" href="#new-classes-and-changes-to-existing-classes" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="python-visible-changes">
+<h3><a class="toc-backref" href="#id8">Python visible changes</a><a class="headerlink" href="#python-visible-changes" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic simple">
+<li>A new built-in class, <code class="docutils literal notranslate"><span class="pre">builtin_function</span></code>, will be added.</li>
+<li><code class="docutils literal notranslate"><span class="pre">types.BuiltinFunctionType</span></code> will refer to <code class="docutils literal notranslate"><span class="pre">builtin_function</span></code> not <code class="docutils literal notranslate"><span class="pre">builtin_function_or_method</span></code>.</li>
+<li>Instances of the <code class="docutils literal notranslate"><span class="pre">builtin_function</span></code> class will retain the <code class="docutils literal notranslate"><span class="pre">__module__</span></code> property of <code class="docutils literal notranslate"><span class="pre">builtin_function_or_method</span></code> and gain the <code class="docutils literal notranslate"><span class="pre">func_module</span></code> and <code class="docutils literal notranslate"><span class="pre">func_globals</span></code> properties. The <code class="docutils literal notranslate"><span class="pre">func_module</span></code> allows access to the module to which the function belongs. Note that this is different from the <code class="docutils literal notranslate"><span class="pre">__module__</span></code> property which merely returns the name of the module. The <code class="docutils literal notranslate"><span class="pre">func_globals</span></code> property is equivalent to <code class="docutils literal notranslate"><span class="pre">func_module.__dict__</span></code> and is provided to mimic the Python function property of the same name.</li>
+<li>When binding a <code class="docutils literal notranslate"><span class="pre">method_descriptor</span></code> instance to an instance of its owning class, a <code class="docutils literal notranslate"><span class="pre">bound_method</span></code> will be created instead of a <code class="docutils literal notranslate"><span class="pre">builtin_function_or_method</span></code>. This means that the <code class="docutils literal notranslate"><span class="pre">method_descriptors</span></code> now mimic the behaviour of Python functions more closely. In other words, <code class="docutils literal notranslate"><span class="pre">[].append</span></code> becomes a <code class="docutils literal notranslate"><span class="pre">bound_method</span></code> instead of a <code class="docutils literal notranslate"><span class="pre">builtin_function_or_method</span></code>.</li>
+</ol>
+</div>
+<div class="section" id="c-api-changes">
+<h3><a class="toc-backref" href="#id9">C API changes</a><a class="headerlink" href="#c-api-changes" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic simple">
+<li>A new function <code class="docutils literal notranslate"><span class="pre">PyBuiltinFunction_New(PyMethodDef</span> <span class="pre">*ml,</span> <span class="pre">PyObject</span> <span class="pre">*module)</span></code> is added to create built-in functions.</li>
+<li><code class="docutils literal notranslate"><span class="pre">PyCFunction_NewEx()</span></code> and <code class="docutils literal notranslate"><span class="pre">PyCFunction_New()</span></code> are deprecated and will return a <code class="docutils literal notranslate"><span class="pre">PyBuiltinFunction</span></code> if able, otherwise a <code class="docutils literal notranslate"><span class="pre">builtin_function_or_method</span></code>.</li>
+</ol>
+</div>
+</div>
+<div class="section" id="retaining-backwards-compatibility-in-the-c-api-and-abi">
+<h2><a class="toc-backref" href="#id10">Retaining backwards compatibility in the C API and ABI</a><a class="headerlink" href="#retaining-backwards-compatibility-in-the-c-api-and-abi" title="Permalink to this headline">¶</a></h2>
+<p>The proposed changes are fully backwards and forwards compatible at both the API and ABI level.</p>
+<div class="section" id="internal-c-changes">
+<h3><a class="toc-backref" href="#id11">Internal C changes</a><a class="headerlink" href="#internal-c-changes" title="Permalink to this headline">¶</a></h3>
+<p>Two new flags will be allowed for the <code class="docutils literal notranslate"><span class="pre">typeobject.tp_flags</span></code> field.
+These are <code class="docutils literal notranslate"><span class="pre">Py_TPFLAGS_EXTENDED_CALL</span></code> and <code class="docutils literal notranslate"><span class="pre">Py_TPFLAGS_FUNCTION_DESCRIPTOR</span></code></p>
+<div class="section" id="py-tpflags-extended-call">
+<h4><a class="toc-backref" href="#id12">Py_TPFLAGS_EXTENDED_CALL</a><a class="headerlink" href="#py-tpflags-extended-call" title="Permalink to this headline">¶</a></h4>
+<p>For any built-in class that sets <code class="docutils literal notranslate"><span class="pre">Py_TPFLAGS_EXTENDED_CALL</span></code>
+The C struct corresponding to this built-in class must begin with the struct <code class="docutils literal notranslate"><span class="pre">PyExtendedCallable</span></code> which is defined as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">typedef</span> <span class="n">PyObject</span> <span class="o">*</span><span class="p">(</span><span class="o">*</span><span class="n">extended_call_ptr</span><span class="p">)(</span><span class="n">PyObject</span> <span class="o">*</span><span class="n">callable</span><span class="p">,</span> <span class="n">PyObject</span><span class="o">**</span> <span class="n">args</span><span class="p">,</span>
+                   <span class="nb">int</span> <span class="n">positional_argcount</span><span class="p">,</span> <span class="n">PyTupleObject</span><span class="o">*</span> <span class="n">kwnames</span><span class="p">);</span>
+
+<span class="n">typedef</span> <span class="n">struct</span> <span class="p">{</span>
+    <span class="n">PyObject_HEAD</span>
+    <span class="n">extended_call_ptr</span> <span class="n">ext_call</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">PyExtendedCallable</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Any class that sets the <code class="docutils literal notranslate"><span class="pre">Py_TPFLAGS_EXTENDED_CALL</span></code> cannot be used as a base class and a TypeError will be raised if any Python code tries to use it a base class.</p>
+</div>
+<div class="section" id="py-tpflags-function-descriptor">
+<h4><a class="toc-backref" href="#id13">Py_TPFLAGS_FUNCTION_DESCRIPTOR</a><a class="headerlink" href="#py-tpflags-function-descriptor" title="Permalink to this headline">¶</a></h4>
+<p>If this flag is set for a built-in class <code class="docutils literal notranslate"><span class="pre">F</span></code>, then instances of that class are expected to behave the same as a Python function when used as a class attribute.
+Specifically, this mean that the value of <code class="docutils literal notranslate"><span class="pre">c.m</span></code> where <code class="docutils literal notranslate"><span class="pre">C.m</span></code> is an instanceof the built-in class <code class="docutils literal notranslate"><span class="pre">F</span></code> (and <code class="docutils literal notranslate"><span class="pre">c</span></code> is an instance of <code class="docutils literal notranslate"><span class="pre">C</span></code>) must be a bound-method binding <code class="docutils literal notranslate"><span class="pre">C.m</span></code> and <code class="docutils literal notranslate"><span class="pre">c</span></code>.
+Without this flag, it would be impossible for custom callables to behave like Python functions <em>and</em> be efficient as Python or built-in functions.</p>
+</div>
+<div class="section" id="changes-to-existing-c-structs">
+<h4><a class="toc-backref" href="#id14">Changes to existing C structs</a><a class="headerlink" href="#changes-to-existing-c-structs" title="Permalink to this headline">¶</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">function</span></code>, <code class="docutils literal notranslate"><span class="pre">method_descriptor</span></code> and <code class="docutils literal notranslate"><span class="pre">method</span></code> classes will have their corresponding structs changed to
+start with the <code class="docutils literal notranslate"><span class="pre">PyExtendedCallable</span></code> struct.</p>
+</div>
+</div>
+<div class="section" id="third-party-built-in-classes-using-the-new-extended-call-interface">
+<h3><a class="toc-backref" href="#id15">Third-party built-in classes using the new extended call interface</a><a class="headerlink" href="#third-party-built-in-classes-using-the-new-extended-call-interface" title="Permalink to this headline">¶</a></h3>
+<p>To enable call performance on a par with Python functions and built-in functions, third-party callables should set the <code class="docutils literal notranslate"><span class="pre">Py_TPFLAGS_EXTENDED_CALL</span></code> bit of <code class="docutils literal notranslate"><span class="pre">tp_flags</span></code> and ensure that the corresponding C struct starts with the <code class="docutils literal notranslate"><span class="pre">PyExtendedCallable</span></code>.
+Any built-in class that has the <code class="docutils literal notranslate"><span class="pre">Py_TPFLAGS_EXTENDED_CALL</span></code> bit set must also implement the <code class="docutils literal notranslate"><span class="pre">tp_call</span></code> function and make sure its behaviour is consistent with the <code class="docutils literal notranslate"><span class="pre">ext_call</span></code> function.</p>
+<div class="section" id="performance-implications-of-these-changes">
+<h4><a class="toc-backref" href="#id16">Performance implications of these changes</a><a class="headerlink" href="#performance-implications-of-these-changes" title="Permalink to this headline">¶</a></h4>
+<p>Adding a function pointer to each callable, rather than each class of callable, enables the choice of dispatching function (the code to shuffle arguments about and do error checking) to be made when the callable object is created rather than when it is called. This should reduce the number of instructions executed between the call-site in the interpreter and the execution of the callee.</p>
+</div>
+</div>
+</div>
+<div class="section" id="alternative-suggestions">
+<h2><a class="toc-backref" href="#id17">Alternative Suggestions</a><a class="headerlink" href="#alternative-suggestions" title="Permalink to this headline">¶</a></h2>
+<p>PEP 580 &lt;<a class="reference external" href="https://www.python.org/dev/peps/pep-0580/">https://www.python.org/dev/peps/pep-0580/</a>&gt; is an alternative approach to solving the same problem as this PEP.</p>
+</div>
+<div class="section" id="reference-implementation">
+<h2><a class="toc-backref" href="#id18">Reference implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>A draft implementation can be found at <a class="reference external" href="https://github.com/markshannon/cpython/tree/pep-576-minimal">https://github.com/markshannon/cpython/tree/pep-576-minimal</a></p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id19">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0576.rst">https://github.com/python/peps/blob/master/pep-0576.rst</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0576.rst.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0575.html">PEP 0575</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0577.html">PEP 0577</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 576 – Rationalize Built-in function classes</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a><ul>
+<li><a class="reference internal" href="#introspection">Introspection</a></li>
+<li><a class="reference internal" href="#efficient-calls-to-third-party-callables">Efficient calls to third-party callables</a><ul>
+<li><a class="reference internal" href="#continued-prohibition-of-callable-classes-as-base-classes">Continued prohibition of callable classes as base classes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#new-classes-and-changes-to-existing-classes">New classes and changes to existing classes</a><ul>
+<li><a class="reference internal" href="#python-visible-changes">Python visible changes</a></li>
+<li><a class="reference internal" href="#c-api-changes">C API changes</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#retaining-backwards-compatibility-in-the-c-api-and-abi">Retaining backwards compatibility in the C API and ABI</a><ul>
+<li><a class="reference internal" href="#internal-c-changes">Internal C changes</a><ul>
+<li><a class="reference internal" href="#py-tpflags-extended-call">Py_TPFLAGS_EXTENDED_CALL</a></li>
+<li><a class="reference internal" href="#py-tpflags-function-descriptor">Py_TPFLAGS_FUNCTION_DESCRIPTOR</a></li>
+<li><a class="reference internal" href="#changes-to-existing-c-structs">Changes to existing C structs</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#third-party-built-in-classes-using-the-new-extended-call-interface">Third-party built-in classes using the new extended call interface</a><ul>
+<li><a class="reference internal" href="#performance-implications-of-these-changes">Performance implications of these changes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#alternative-suggestions">Alternative Suggestions</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference implementation</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

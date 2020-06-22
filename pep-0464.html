@@ -1,0 +1,182 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 464 – Removal of the PyPI Mirror Authenticity API &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 465 – A dedicated infix operator for matrix multiplication" href="pep-0465.html" />
+    <link rel="prev" title="PEP 463 – Exception-catching expressions" href="pep-0463.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 464 – Removal of the PyPI Mirror Authenticity API</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-464-removal-of-the-pypi-mirror-authenticity-api">
+<h1 class="page-title">PEP 464 – Removal of the PyPI Mirror Authenticity API<a class="headerlink" href="#pep-464-removal-of-the-pypi-mirror-authenticity-api" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">464</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Removal of the PyPI Mirror Authenticity API</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Donald Stufft &lt;donald&#32;&#97;t&#32;stufft.io&gt;</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even">Richard Jones &lt;richard&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-odd">Discussions-To</dt>
+<dd class="field-odd"><a class="reference external" href="mailto:distutils-sig&#37;&#52;&#48;python&#46;org?subject=PEP%20464">distutils-sig&#32;&#97;t&#32;python.org</a></dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Process</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">02-Mar-2014</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd">04-Mar-2014</dd>
+<dt class="field-even">Replaces</dt>
+<dd class="field-even"><a class="reference external" href="./pep-0381.html">381</a></dd>
+<dt class="field-odd">Resolution</dt>
+<dd class="field-odd"><a class="reference external" href="https://mail.python.org/pipermail/distutils-sig/2014-March/024027.html">https://mail.python.org/pipermail/distutils-sig/2014-March/024027.html</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id2">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id3">Rationale</a></li>
+<li><a class="reference internal" href="#plan-for-deprecation-removal" id="id4">Plan for Deprecation &amp; Removal</a></li>
+<li><a class="reference internal" href="#copyright" id="id5">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id2">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes the deprecation and removal of the PyPI Mirror Authenticity
+API, this includes the /serverkey URL and all of the URLs under /serversig.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id3">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>The PyPI mirroring infrastructure (defined in PEP 381) provides a means to
+mirror the content of PyPI used by the automatic installers, and as a component
+of that, it provides a method for verifying the authenticity of the mirrored
+content.</p>
+<p>This PEP proposes the removal of this API due to:</p>
+<ul class="simple">
+<li>There are no known implementations that utilize this API, this includes
+<a class="reference external" href="http://www.pip-installer.org/en/latest/">pip</a> and
+<a class="reference external" href="http://pythonhosted.org//setuptools/">setuptools</a>.</li>
+<li>Because this API uses DSA it is vulnerable to leaking the private key if
+there is <em>any</em> bias in the random nonce.</li>
+<li>This API solves one small corner of the trust problem, however the problem
+itself is much larger and it would be better to have a fully fledged system,
+such as <a class="reference external" href="https://python.org/dev/peps/pep-0458/">The Update Framework</a>,
+instead.</li>
+</ul>
+<p>Due to the issues it has and the lack of use it is the opinion of this PEP
+that it does not provide any practical benefit to justify the additional
+complexity.</p>
+</div>
+<div class="section" id="plan-for-deprecation-removal">
+<h2><a class="toc-backref" href="#id4">Plan for Deprecation &amp; Removal</a><a class="headerlink" href="#plan-for-deprecation-removal" title="Permalink to this headline">¶</a></h2>
+<p>Immediately upon the acceptance of this PEP the Mirror Authenticity API will
+be considered deprecated and mirroring agents and installation tools should
+stop accessing it.</p>
+<p>Instead of actually removing it from the current code base (PyPI 1.0) the
+current work to replace PyPI 1.0 with a new code base (PyPI 2.0) will simply
+not implement this API. This would cause the API to be “removed” when the
+switch from 1.0 to 2.0 occurs.</p>
+<p>If PyPI 2.0 has not been deployed in place of PyPI 1.0 by Sept 01 2014 then
+this PEP will be implemented in the PyPI 1.0 code base instead (by removing
+the associated code).</p>
+<p>No changes will be required in the installers, however PEP 381 compliant
+mirroring clients, such as
+<a class="reference external" href="https://pypi.python.org/pypi/bandersnatch/">bandersnatch</a> and
+<a class="reference external" href="https://pypi.python.org/pypi/pep381client/">pep381client</a> will need to be
+updated to no longer attempt to mirror the /serversig URLs.</p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id5">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0464.txt">https://github.com/python/peps/blob/master/pep-0464.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0464.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0463.html">PEP 0463</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0465.html">PEP 0465</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 464 – Removal of the PyPI Mirror Authenticity API</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#plan-for-deprecation-removal">Plan for Deprecation &amp; Removal</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

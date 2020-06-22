@@ -1,0 +1,328 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 515 – Underscores in Numeric Literals &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 516 – Build system abstraction for pip/conda etc" href="pep-0516.html" />
+    <link rel="prev" title="PEP 514 – Python registration in the Windows registry" href="pep-0514.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 515 – Underscores in Numeric Literals</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-515-underscores-in-numeric-literals">
+<h1 class="page-title">PEP 515 – Underscores in Numeric Literals<a class="headerlink" href="#pep-515-underscores-in-numeric-literals" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">515</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Underscores in Numeric Literals</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Georg Brandl, Serhiy Storchaka</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">10-Feb-2016</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.6</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">10-Feb-2016, 11-Feb-2016</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract-and-rationale" id="id26">Abstract and Rationale</a></li>
+<li><a class="reference internal" href="#specification" id="id27">Specification</a><ul>
+<li><a class="reference internal" href="#literal-grammar" id="id28">Literal Grammar</a></li>
+<li><a class="reference internal" href="#constructors" id="id29">Constructors</a></li>
+<li><a class="reference internal" href="#further-changes" id="id30">Further changes</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#prior-art" id="id31">Prior Art</a></li>
+<li><a class="reference internal" href="#alternative-syntax" id="id32">Alternative Syntax</a><ul>
+<li><a class="reference internal" href="#underscore-placement-rules" id="id33">Underscore Placement Rules</a></li>
+<li><a class="reference internal" href="#different-separators" id="id34">Different Separators</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation" id="id35">Implementation</a></li>
+<li><a class="reference internal" href="#references" id="id36">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id37">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract-and-rationale">
+<h2><a class="toc-backref" href="#id26">Abstract and Rationale</a><a class="headerlink" href="#abstract-and-rationale" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes to extend Python’s syntax and number-from-string
+constructors so that underscores can be used as visual separators for
+digit grouping purposes in integral, floating-point and complex number
+literals.</p>
+<p>This is a common feature of other modern languages, and can aid
+readability of long literals, or literals whose value should clearly
+separate into parts, such as bytes or words in hexadecimal notation.</p>
+<p>Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># grouping decimal numbers by thousands</span>
+<span class="n">amount</span> <span class="o">=</span> <span class="mf">10_000_000.0</span>
+
+<span class="c1"># grouping hexadecimal addresses by words</span>
+<span class="n">addr</span> <span class="o">=</span> <span class="mh">0xCAFE_F00D</span>
+
+<span class="c1"># grouping bits into nibbles in a binary literal</span>
+<span class="n">flags</span> <span class="o">=</span> <span class="mb">0b_0011_1111_0100_1110</span>
+
+<span class="c1"># same, for string conversions</span>
+<span class="n">flags</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="s1">&#39;0b_1111_0000&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id27">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>The current proposal is to allow one underscore between digits, and
+after base specifiers in numeric literals.  The underscores have no
+semantic meaning, and literals are parsed as if the underscores were
+absent.</p>
+<div class="section" id="literal-grammar">
+<h3><a class="toc-backref" href="#id28">Literal Grammar</a><a class="headerlink" href="#literal-grammar" title="Permalink to this headline">¶</a></h3>
+<p>The production list for integer literals would therefore look like
+this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">integer</span><span class="p">:</span> <span class="n">decinteger</span> <span class="o">|</span> <span class="n">bininteger</span> <span class="o">|</span> <span class="n">octinteger</span> <span class="o">|</span> <span class="n">hexinteger</span>
+<span class="n">decinteger</span><span class="p">:</span> <span class="n">nonzerodigit</span> <span class="p">([</span><span class="s2">&quot;_&quot;</span><span class="p">]</span> <span class="n">digit</span><span class="p">)</span><span class="o">*</span> <span class="o">|</span> <span class="s2">&quot;0&quot;</span> <span class="p">([</span><span class="s2">&quot;_&quot;</span><span class="p">]</span> <span class="s2">&quot;0&quot;</span><span class="p">)</span><span class="o">*</span>
+<span class="n">bininteger</span><span class="p">:</span> <span class="s2">&quot;0&quot;</span> <span class="p">(</span><span class="s2">&quot;b&quot;</span> <span class="o">|</span> <span class="s2">&quot;B&quot;</span><span class="p">)</span> <span class="p">([</span><span class="s2">&quot;_&quot;</span><span class="p">]</span> <span class="n">bindigit</span><span class="p">)</span><span class="o">+</span>
+<span class="n">octinteger</span><span class="p">:</span> <span class="s2">&quot;0&quot;</span> <span class="p">(</span><span class="s2">&quot;o&quot;</span> <span class="o">|</span> <span class="s2">&quot;O&quot;</span><span class="p">)</span> <span class="p">([</span><span class="s2">&quot;_&quot;</span><span class="p">]</span> <span class="n">octdigit</span><span class="p">)</span><span class="o">+</span>
+<span class="n">hexinteger</span><span class="p">:</span> <span class="s2">&quot;0&quot;</span> <span class="p">(</span><span class="s2">&quot;x&quot;</span> <span class="o">|</span> <span class="s2">&quot;X&quot;</span><span class="p">)</span> <span class="p">([</span><span class="s2">&quot;_&quot;</span><span class="p">]</span> <span class="n">hexdigit</span><span class="p">)</span><span class="o">+</span>
+<span class="n">nonzerodigit</span><span class="p">:</span> <span class="s2">&quot;1&quot;</span><span class="o">...</span><span class="s2">&quot;9&quot;</span>
+<span class="n">digit</span><span class="p">:</span> <span class="s2">&quot;0&quot;</span><span class="o">...</span><span class="s2">&quot;9&quot;</span>
+<span class="n">bindigit</span><span class="p">:</span> <span class="s2">&quot;0&quot;</span> <span class="o">|</span> <span class="s2">&quot;1&quot;</span>
+<span class="n">octdigit</span><span class="p">:</span> <span class="s2">&quot;0&quot;</span><span class="o">...</span><span class="s2">&quot;7&quot;</span>
+<span class="n">hexdigit</span><span class="p">:</span> <span class="n">digit</span> <span class="o">|</span> <span class="s2">&quot;a&quot;</span><span class="o">...</span><span class="s2">&quot;f&quot;</span> <span class="o">|</span> <span class="s2">&quot;A&quot;</span><span class="o">...</span><span class="s2">&quot;F&quot;</span>
+</pre></div>
+</div>
+<p>For floating-point and complex literals:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">floatnumber</span><span class="p">:</span> <span class="n">pointfloat</span> <span class="o">|</span> <span class="n">exponentfloat</span>
+<span class="n">pointfloat</span><span class="p">:</span> <span class="p">[</span><span class="n">digitpart</span><span class="p">]</span> <span class="n">fraction</span> <span class="o">|</span> <span class="n">digitpart</span> <span class="s2">&quot;.&quot;</span>
+<span class="n">exponentfloat</span><span class="p">:</span> <span class="p">(</span><span class="n">digitpart</span> <span class="o">|</span> <span class="n">pointfloat</span><span class="p">)</span> <span class="n">exponent</span>
+<span class="n">digitpart</span><span class="p">:</span> <span class="n">digit</span> <span class="p">([</span><span class="s2">&quot;_&quot;</span><span class="p">]</span> <span class="n">digit</span><span class="p">)</span><span class="o">*</span>
+<span class="n">fraction</span><span class="p">:</span> <span class="s2">&quot;.&quot;</span> <span class="n">digitpart</span>
+<span class="n">exponent</span><span class="p">:</span> <span class="p">(</span><span class="s2">&quot;e&quot;</span> <span class="o">|</span> <span class="s2">&quot;E&quot;</span><span class="p">)</span> <span class="p">[</span><span class="s2">&quot;+&quot;</span> <span class="o">|</span> <span class="s2">&quot;-&quot;</span><span class="p">]</span> <span class="n">digitpart</span>
+<span class="n">imagnumber</span><span class="p">:</span> <span class="p">(</span><span class="n">floatnumber</span> <span class="o">|</span> <span class="n">digitpart</span><span class="p">)</span> <span class="p">(</span><span class="s2">&quot;j&quot;</span> <span class="o">|</span> <span class="s2">&quot;J&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="constructors">
+<h3><a class="toc-backref" href="#id29">Constructors</a><a class="headerlink" href="#constructors" title="Permalink to this headline">¶</a></h3>
+<p>Following the same rules for placement, underscores will be allowed in
+the following constructors:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">int()</span></code> (with any base)</li>
+<li><code class="docutils literal notranslate"><span class="pre">float()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">complex()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">Decimal()</span></code></li>
+</ul>
+</div>
+<div class="section" id="further-changes">
+<h3><a class="toc-backref" href="#id30">Further changes</a><a class="headerlink" href="#further-changes" title="Permalink to this headline">¶</a></h3>
+<p>The new-style number-to-string formatting language will be extended to
+allow <code class="docutils literal notranslate"><span class="pre">_</span></code> as a thousands separator, where currently only <code class="docutils literal notranslate"><span class="pre">,</span></code> is
+supported.  This can be used to easily generate code with more
+readable literals.  <a class="footnote-reference brackets" href="#id24" id="id1">11</a></p>
+<p>The syntax would be the same as for the comma, e.g. <code class="docutils literal notranslate"><span class="pre">{:10_}</span></code> for a
+width of 10 with <code class="docutils literal notranslate"><span class="pre">_</span></code> separator.</p>
+<p>For the <code class="docutils literal notranslate"><span class="pre">b</span></code>, <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">o</span></code> format specifiers, <code class="docutils literal notranslate"><span class="pre">_</span></code> will be
+allowed and group by 4 digits.</p>
+</div>
+</div>
+<div class="section" id="prior-art">
+<h2><a class="toc-backref" href="#id31">Prior Art</a><a class="headerlink" href="#prior-art" title="Permalink to this headline">¶</a></h2>
+<p>Those languages that do allow underscore grouping implement a large
+variety of rules for allowed placement of underscores.  In cases where
+the language spec contradicts the actual behavior, the actual behavior
+is listed.  (“single” or “multiple” refer to allowing runs of
+consecutive underscores.)</p>
+<ul class="simple">
+<li>Ada: single, only between digits <a class="footnote-reference brackets" href="#id21" id="id2">8</a></li>
+<li>C# (open proposal for 7.0): multiple, only between digits <a class="footnote-reference brackets" href="#id19" id="id3">6</a></li>
+<li>C++14: single, between digits (different separator chosen) <a class="footnote-reference brackets" href="#id14" id="id4">1</a></li>
+<li>D: multiple, anywhere, including trailing <a class="footnote-reference brackets" href="#id15" id="id5">2</a></li>
+<li>Java: multiple, only between digits <a class="footnote-reference brackets" href="#id20" id="id6">7</a></li>
+<li>Julia: single, only between digits (but not in float exponent parts)
+<a class="footnote-reference brackets" href="#id22" id="id7">9</a></li>
+<li>Perl 5: multiple, basically anywhere, although docs say it’s
+restricted to one underscore between digits <a class="footnote-reference brackets" href="#id16" id="id8">3</a></li>
+<li>Ruby: single, only between digits (although docs say “anywhere”)
+<a class="footnote-reference brackets" href="#id23" id="id9">10</a></li>
+<li>Rust: multiple, anywhere, except for between exponent “e” and digits
+<a class="footnote-reference brackets" href="#id17" id="id10">4</a></li>
+<li>Swift: multiple, between digits and trailing (although textual
+description says only “between digits”) <a class="footnote-reference brackets" href="#id18" id="id11">5</a></li>
+</ul>
+</div>
+<div class="section" id="alternative-syntax">
+<h2><a class="toc-backref" href="#id32">Alternative Syntax</a><a class="headerlink" href="#alternative-syntax" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="underscore-placement-rules">
+<h3><a class="toc-backref" href="#id33">Underscore Placement Rules</a><a class="headerlink" href="#underscore-placement-rules" title="Permalink to this headline">¶</a></h3>
+<p>Instead of the relatively strict rule specified above, the use of
+underscores could be less limited.  As seen in other languages, common
+rules include:</p>
+<ul class="simple">
+<li>Only one consecutive underscore allowed, and only between digits.</li>
+<li>Multiple consecutive underscores allowed, but only between digits.</li>
+<li>Multiple consecutive underscores allowed, in most positions except
+for the start of the literal, or special positions like after a
+decimal point.</li>
+</ul>
+<p>The syntax in this PEP has ultimately been selected because it covers
+the common use cases, and does not allow for syntax that would have to
+be discouraged in style guides anyway.</p>
+<p>A less common rule would be to allow underscores only every N digits
+(where N could be 3 for decimal literals, or 4 for hexadecimal ones).
+This is unnecessarily restrictive, especially considering the
+separator placement is different in different cultures.</p>
+</div>
+<div class="section" id="different-separators">
+<h3><a class="toc-backref" href="#id34">Different Separators</a><a class="headerlink" href="#different-separators" title="Permalink to this headline">¶</a></h3>
+<p>A proposed alternate syntax was to use whitespace for grouping.
+Although strings are a precedent for combining adjoining literals, the
+behavior can lead to unexpected effects which are not possible with
+underscores.  Also, no other language is known to use this rule,
+except for languages that generally disregard any whitespace.</p>
+<p>C++14 introduces apostrophes for grouping (because underscores
+introduce ambiguity with user-defined literals), which is not
+considered because of the use in Python’s string literals. <a class="footnote-reference brackets" href="#id14" id="id12">1</a></p>
+</div>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id35">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>A preliminary patch that implements the specification given above has
+been posted to the issue tracker. <a class="footnote-reference brackets" href="#id25" id="id13">12</a></p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id36">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id14"><span class="brackets">1</span><span class='fn-backref'><em> (<a href="#id4">1</a>, <a href="#id12">2</a>) </em></span></dt>
+<dd><a class="reference external" href="http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2013/n3499.html">http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2013/n3499.html</a></dd>
+<dt class="label" id="id15"><span class="brackets"><a class="fn-backref" href="#id5">2</a></span></dt>
+<dd><a class="reference external" href="http://dlang.org/spec/lex.html#integerliteral">http://dlang.org/spec/lex.html#integerliteral</a></dd>
+<dt class="label" id="id16"><span class="brackets"><a class="fn-backref" href="#id8">3</a></span></dt>
+<dd><a class="reference external" href="http://perldoc.perl.org/perldata.html#Scalar-value-constructors">http://perldoc.perl.org/perldata.html#Scalar-value-constructors</a></dd>
+<dt class="label" id="id17"><span class="brackets"><a class="fn-backref" href="#id10">4</a></span></dt>
+<dd><a class="reference external" href="http://doc.rust-lang.org/reference.html#number-literals">http://doc.rust-lang.org/reference.html#number-literals</a></dd>
+<dt class="label" id="id18"><span class="brackets"><a class="fn-backref" href="#id11">5</a></span></dt>
+<dd><a class="reference external" href="https://developer.apple.com/library/ios/documentation/Swift/Conceptual/Swift_Programming_Language/LexicalStructure.html">https://developer.apple.com/library/ios/documentation/Swift/Conceptual/Swift_Programming_Language/LexicalStructure.html</a></dd>
+<dt class="label" id="id19"><span class="brackets"><a class="fn-backref" href="#id3">6</a></span></dt>
+<dd><a class="reference external" href="https://github.com/dotnet/roslyn/issues/216">https://github.com/dotnet/roslyn/issues/216</a></dd>
+<dt class="label" id="id20"><span class="brackets"><a class="fn-backref" href="#id6">7</a></span></dt>
+<dd><a class="reference external" href="https://docs.oracle.com/javase/7/docs/technotes/guides/language/underscores-literals.html">https://docs.oracle.com/javase/7/docs/technotes/guides/language/underscores-literals.html</a></dd>
+<dt class="label" id="id21"><span class="brackets"><a class="fn-backref" href="#id2">8</a></span></dt>
+<dd><a class="reference external" href="http://archive.adaic.com/standards/83lrm/html/lrm-02-04.html#2.4">http://archive.adaic.com/standards/83lrm/html/lrm-02-04.html#2.4</a></dd>
+<dt class="label" id="id22"><span class="brackets"><a class="fn-backref" href="#id7">9</a></span></dt>
+<dd><a class="reference external" href="http://docs.julialang.org/en/release-0.4/manual/integers-and-floating-point-numbers/">http://docs.julialang.org/en/release-0.4/manual/integers-and-floating-point-numbers/</a></dd>
+<dt class="label" id="id23"><span class="brackets"><a class="fn-backref" href="#id9">10</a></span></dt>
+<dd><a class="reference external" href="http://ruby-doc.org/core-2.3.0/doc/syntax/literals_rdoc.html#label-Numbers">http://ruby-doc.org/core-2.3.0/doc/syntax/literals_rdoc.html#label-Numbers</a></dd>
+<dt class="label" id="id24"><span class="brackets"><a class="fn-backref" href="#id1">11</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2016-February/143283.html">https://mail.python.org/pipermail/python-dev/2016-February/143283.html</a></dd>
+<dt class="label" id="id25"><span class="brackets"><a class="fn-backref" href="#id13">12</a></span></dt>
+<dd><a class="reference external" href="http://bugs.python.org/issue26331">http://bugs.python.org/issue26331</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id37">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0515.txt">https://github.com/python/peps/blob/master/pep-0515.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0515.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0514.html">PEP 0514</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0516.html">PEP 0516</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 515 – Underscores in Numeric Literals</a><ul>
+<li><a class="reference internal" href="#abstract-and-rationale">Abstract and Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#literal-grammar">Literal Grammar</a></li>
+<li><a class="reference internal" href="#constructors">Constructors</a></li>
+<li><a class="reference internal" href="#further-changes">Further changes</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#prior-art">Prior Art</a></li>
+<li><a class="reference internal" href="#alternative-syntax">Alternative Syntax</a><ul>
+<li><a class="reference internal" href="#underscore-placement-rules">Underscore Placement Rules</a></li>
+<li><a class="reference internal" href="#different-separators">Different Separators</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

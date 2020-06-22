@@ -1,0 +1,312 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 528 – Change Windows console encoding to UTF-8 &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 529 – Change Windows filesystem encoding to UTF-8" href="pep-0529.html" />
+    <link rel="prev" title="PEP 527 – Removing Un(der)used file types/extensions on PyPI" href="pep-0527.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 528 – Change Windows console encoding to UTF-8</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-528-change-windows-console-encoding-to-utf-8">
+<h1 class="page-title">PEP 528 – Change Windows console encoding to UTF-8<a class="headerlink" href="#pep-528-change-windows-console-encoding-to-utf-8" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">528</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Change Windows console encoding to UTF-8</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Steve Dower &lt;steve.dower&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">27-Aug-2016</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.6</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">01-Sep-2016, 04-Sep-2016</dd>
+<dt class="field-odd">Resolution</dt>
+<dd class="field-odd"><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2016-September/146278.html">https://mail.python.org/pipermail/python-dev/2016-September/146278.html</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id5">Abstract</a></li>
+<li><a class="reference internal" href="#specific-changes" id="id6">Specific Changes</a><ul>
+<li><a class="reference internal" href="#add-io-windowsconsoleio" id="id7">Add _io.WindowsConsoleIO</a></li>
+<li><a class="reference internal" href="#add-pyos-windowsconsolereadline" id="id8">Add _PyOS_WindowsConsoleReadline</a></li>
+<li><a class="reference internal" href="#add-legacy-mode" id="id9">Add legacy mode</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#alternative-approaches" id="id10">Alternative Approaches</a></li>
+<li><a class="reference internal" href="#code-that-may-break" id="id11">Code that may break</a><ul>
+<li><a class="reference internal" href="#assuming-stdin-stdout-encoding" id="id12">Assuming stdin/stdout encoding</a></li>
+<li><a class="reference internal" href="#incorrectly-using-the-raw-object" id="id13">Incorrectly using the raw object</a></li>
+<li><a class="reference internal" href="#using-the-raw-object-with-small-buffers" id="id14">Using the raw object with small buffers</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#copyright" id="id15">Copyright</a></li>
+<li><a class="reference internal" href="#references" id="id16">References</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id5">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Historically, Python uses the ANSI APIs for interacting with the Windows
+operating system, often via C Runtime functions. However, these have been long
+discouraged in favor of the UTF-16 APIs. Within the operating system, all text
+is represented as UTF-16, and the ANSI APIs perform encoding and decoding using
+the active code page.</p>
+<p>This PEP proposes changing the default standard stream implementation on Windows
+to use the Unicode APIs. This will allow users to print and input the full range
+of Unicode characters at the default Windows console. This also requires a
+subtle change to how the tokenizer parses text from readline hooks.</p>
+</div>
+<div class="section" id="specific-changes">
+<h2><a class="toc-backref" href="#id6">Specific Changes</a><a class="headerlink" href="#specific-changes" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="add-io-windowsconsoleio">
+<h3><a class="toc-backref" href="#id7">Add _io.WindowsConsoleIO</a><a class="headerlink" href="#add-io-windowsconsoleio" title="Permalink to this headline">¶</a></h3>
+<p>Currently an instance of <code class="docutils literal notranslate"><span class="pre">_io.FileIO</span></code> is used to wrap the file descriptors
+representing standard input, output and error. We add a new class (implemented
+in C) <code class="docutils literal notranslate"><span class="pre">_io.WindowsConsoleIO</span></code> that acts as a raw IO object using the Windows
+console functions, specifically, <code class="docutils literal notranslate"><span class="pre">ReadConsoleW</span></code> and <code class="docutils literal notranslate"><span class="pre">WriteConsoleW</span></code>.</p>
+<p>This class will be used when the legacy-mode flag is not in effect, when opening
+a standard stream by file descriptor and the stream is a console buffer rather
+than a redirected file. Otherwise, <code class="docutils literal notranslate"><span class="pre">_io.FileIO</span></code> will be used as it is today.</p>
+<p>This is a raw (bytes) IO class that requires text to be passed encoded with
+utf-8, which will be decoded to utf-16-le and passed to the Windows APIs.
+Similarly, bytes read from the class will be provided by the operating system as
+utf-16-le and converted into utf-8 when returned to Python.</p>
+<p>The use of an ASCII compatible encoding is required to maintain compatibility
+with code that bypasses the <code class="docutils literal notranslate"><span class="pre">TextIOWrapper</span></code> and directly writes ASCII bytes to
+the standard streams (for example, <a class="reference external" href="https://github.com/twisted/twisted/blob/trunk/src/twisted/test/process_stdinreader.py">Twisted’s process_stdinreader.py</a> <a class="footnote-reference brackets" href="#id1" id="id2">1</a>). Code that assumes
+a particular encoding for the standard streams other than ASCII will likely
+break.</p>
+</div>
+<div class="section" id="add-pyos-windowsconsolereadline">
+<h3><a class="toc-backref" href="#id8">Add _PyOS_WindowsConsoleReadline</a><a class="headerlink" href="#add-pyos-windowsconsolereadline" title="Permalink to this headline">¶</a></h3>
+<p>To allow Unicode entry at the interactive prompt, a new readline hook is
+required. The existing <code class="docutils literal notranslate"><span class="pre">PyOS_StdioReadline</span></code> function will delegate to the new
+<code class="docutils literal notranslate"><span class="pre">_PyOS_WindowsConsoleReadline</span></code> function when reading from a file descriptor
+that is a console buffer and the legacy-mode flag is not in effect (the logic
+should be identical to above).</p>
+<p>Since the readline interface is required to return an 8-bit encoded string with
+no embedded nulls, the <code class="docutils literal notranslate"><span class="pre">_PyOS_WindowsConsoleReadline</span></code> function transcodes from
+utf-16-le as read from the operating system into utf-8.</p>
+<p>The function <code class="docutils literal notranslate"><span class="pre">PyRun_InteractiveOneObject</span></code> which currently obtains the encoding
+from <code class="docutils literal notranslate"><span class="pre">sys.stdin</span></code> will select utf-8 unless the legacy-mode flag is in effect.
+This may require readline hooks to change their encodings to utf-8, or to
+require legacy-mode for correct behaviour.</p>
+</div>
+<div class="section" id="add-legacy-mode">
+<h3><a class="toc-backref" href="#id9">Add legacy mode</a><a class="headerlink" href="#add-legacy-mode" title="Permalink to this headline">¶</a></h3>
+<p>Launching Python with the environment variable <code class="docutils literal notranslate"><span class="pre">PYTHONLEGACYWINDOWSSTDIO</span></code> set
+will enable the legacy-mode flag, which completely restores the previous
+behaviour.</p>
+</div>
+</div>
+<div class="section" id="alternative-approaches">
+<h2><a class="toc-backref" href="#id10">Alternative Approaches</a><a class="headerlink" href="#alternative-approaches" title="Permalink to this headline">¶</a></h2>
+<p>The <a class="reference external" href="https://pypi.org/project/win_unicode_console/">win_unicode_console package</a> <a class="footnote-reference brackets" href="#id3" id="id4">2</a> is a pure-Python alternative to changing the
+default behaviour of the console. It implements essentially the same
+modifications as described here using pure Python code.</p>
+</div>
+<div class="section" id="code-that-may-break">
+<h2><a class="toc-backref" href="#id11">Code that may break</a><a class="headerlink" href="#code-that-may-break" title="Permalink to this headline">¶</a></h2>
+<p>The following code patterns may break or see different behaviour as a result of
+this change. All of these code samples require explicitly choosing to use a raw
+file object in place of a more convenient wrapper that would prevent any visible
+change.</p>
+<div class="section" id="assuming-stdin-stdout-encoding">
+<h3><a class="toc-backref" href="#id12">Assuming stdin/stdout encoding</a><a class="headerlink" href="#assuming-stdin-stdout-encoding" title="Permalink to this headline">¶</a></h3>
+<p>Code that assumes that the encoding required by <code class="docutils literal notranslate"><span class="pre">sys.stdin.buffer</span></code> or
+<code class="docutils literal notranslate"><span class="pre">sys.stdout.buffer</span></code> is <code class="docutils literal notranslate"><span class="pre">'mbcs'</span></code> or a more specific encoding may currently be
+working by chance, but could encounter issues under this change. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;mbcs&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">r</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">16</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;cp437&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To correct this code, the encoding specified on the <code class="docutils literal notranslate"><span class="pre">TextIOWrapper</span></code> should be
+used, either implicitly or explicitly:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Fix 1: Use wrapper correctly</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">r</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">16</span><span class="p">)</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Fix 2: Use encoding explicitly</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">encoding</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">r</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">16</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">encoding</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="incorrectly-using-the-raw-object">
+<h3><a class="toc-backref" href="#id13">Incorrectly using the raw object</a><a class="headerlink" href="#incorrectly-using-the-raw-object" title="Permalink to this headline">¶</a></h3>
+<p>Code that uses the raw IO object and does not correctly handle partial reads and
+writes may be affected. This is particularly important for reads, where the
+number of characters read will never exceed one-fourth of the number of bytes
+allowed, as there is no feasible way to prevent input from encoding as much
+longer utf-8 strings:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">raw_stdin</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">raw</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">raw_stdin</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span>
+<span class="go">abcdefghijklm</span>
+<span class="go">b&#39;abc&#39;</span>
+<span class="go"># data contains at most 3 characters, and never more than 12 bytes</span>
+<span class="go"># error, as &quot;defghijklm\r\n&quot; is passed to the interactive prompt</span>
+</pre></div>
+</div>
+<p>To correct this code, the buffered reader/writer should be used, or the caller
+should continue reading until its buffer is full:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Fix 1: Use the buffered reader/writer</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">stdin</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">buffer</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">stdin</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span>
+<span class="go">abcedfghijklm</span>
+<span class="go">b&#39;abcdefghijklm\r\n&#39;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Fix 2: Loop until enough bytes have been read</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">raw_stdin</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">raw</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="sa">b</span><span class="s1">&#39;&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">b</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">15</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">b</span> <span class="o">+=</span> <span class="n">raw_stdin</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span>
+<span class="go">abcedfghijklm</span>
+<span class="go">b&#39;abcdefghijklm\r\n&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="using-the-raw-object-with-small-buffers">
+<h3><a class="toc-backref" href="#id14">Using the raw object with small buffers</a><a class="headerlink" href="#using-the-raw-object-with-small-buffers" title="Permalink to this headline">¶</a></h3>
+<p>Code that uses the raw IO object and attempts to read less than four characters
+will now receive an error. Because it’s possible that any single character may
+require up to four bytes when represented in utf-8, requests must fail:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">raw_stdin</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">raw</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">raw_stdin</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">ValueError</span>: <span class="n">must read at least 4 bytes</span>
+</pre></div>
+</div>
+<p>The only workaround is to pass a larger buffer:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Fix: Request at least four bytes</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">raw_stdin</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">raw</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">raw_stdin</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+<span class="go">a</span>
+<span class="go">b&#39;a&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="o">&gt;&gt;&gt;</span>
+</pre></div>
+</div>
+<p>(The extra <code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;</span></code> is due to the newline remaining in the input buffer and is
+expected in this situation.)</p>
+</div>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id15">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id16">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id1"><span class="brackets"><a class="fn-backref" href="#id2">1</a></span></dt>
+<dd><a class="reference external" href="https://github.com/twisted/twisted/blob/trunk/src/twisted/test/process_stdinreader.py">https://github.com/twisted/twisted/blob/trunk/src/twisted/test/process_stdinreader.py</a></dd>
+<dt class="label" id="id3"><span class="brackets"><a class="fn-backref" href="#id4">2</a></span></dt>
+<dd><a class="reference external" href="https://pypi.org/project/win_unicode_console/">https://pypi.org/project/win_unicode_console/</a></dd>
+</dl>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0528.txt">https://github.com/python/peps/blob/master/pep-0528.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0528.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0527.html">PEP 0527</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0529.html">PEP 0529</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 528 – Change Windows console encoding to UTF-8</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#specific-changes">Specific Changes</a><ul>
+<li><a class="reference internal" href="#add-io-windowsconsoleio">Add _io.WindowsConsoleIO</a></li>
+<li><a class="reference internal" href="#add-pyos-windowsconsolereadline">Add _PyOS_WindowsConsoleReadline</a></li>
+<li><a class="reference internal" href="#add-legacy-mode">Add legacy mode</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#alternative-approaches">Alternative Approaches</a></li>
+<li><a class="reference internal" href="#code-that-may-break">Code that may break</a><ul>
+<li><a class="reference internal" href="#assuming-stdin-stdout-encoding">Assuming stdin/stdout encoding</a></li>
+<li><a class="reference internal" href="#incorrectly-using-the-raw-object">Incorrectly using the raw object</a></li>
+<li><a class="reference internal" href="#using-the-raw-object-with-small-buffers">Using the raw object with small buffers</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

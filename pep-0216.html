@@ -1,0 +1,260 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 216 – Docstring Format &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 217 – Display Hook for Interactive Use" href="pep-0217.html" />
+    <link rel="prev" title="PEP 215 – String Interpolation" href="pep-0215.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 216 – Docstring Format</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-216-docstring-format">
+<h1 class="page-title">PEP 216 – Docstring Format<a class="headerlink" href="#pep-216-docstring-format" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">216</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Docstring Format</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">moshez&#32;&#97;t&#32;zadka.site.co.il (Moshe Zadka)</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Rejected</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Informational</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">31-Jul-2000</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd"><p></p></dd>
+<dt class="field-even">Superseded-By</dt>
+<dd class="field-even"><a class="reference external" href="./pep-0287.html">287</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#notice" id="id2">Notice</a></li>
+<li><a class="reference internal" href="#abstract" id="id3">Abstract</a></li>
+<li><a class="reference internal" href="#perl-documentation" id="id4">Perl Documentation</a></li>
+<li><a class="reference internal" href="#java-documentation" id="id5">Java Documentation</a></li>
+<li><a class="reference internal" href="#python-docstring-goals" id="id6">Python Docstring Goals</a></li>
+<li><a class="reference internal" href="#high-level-solutions" id="id7">High Level Solutions</a></li>
+<li><a class="reference internal" href="#docstring-format-goals" id="id8">Docstring Format Goals</a></li>
+<li><a class="reference internal" href="#docstring-contents" id="id9">Docstring Contents</a></li>
+<li><a class="reference internal" href="#docstring-basic-structure" id="id10">Docstring Basic Structure</a></li>
+<li><a class="reference internal" href="#unresolved-issues" id="id11">Unresolved Issues</a></li>
+<li><a class="reference internal" href="#rejected-suggestions" id="id12">Rejected Suggestions</a></li>
+</ul>
+</div>
+<div class="section" id="notice">
+<h2><a class="toc-backref" href="#id2">Notice</a><a class="headerlink" href="#notice" title="Permalink to this headline">¶</a></h2>
+<p>This PEP is rejected by the author.  It has been superseded by PEP
+287.</p>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id3">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Named Python objects, such as modules, classes and functions, have a
+string attribute called <code class="docutils literal notranslate"><span class="pre">__doc__</span></code>. If the first expression inside
+the definition is a literal string, that string is assigned
+to the <code class="docutils literal notranslate"><span class="pre">__doc__</span></code> attribute.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">__doc__</span></code> attribute is called a documentation string, or docstring.
+It is often used to summarize the interface of the module, class or
+function. However, since there is no common format for documentation
+string, tools for extracting docstrings and transforming those into
+documentation in a standard format (e.g., DocBook) have not sprang
+up in abundance, and those that do exist are for the most part
+unmaintained and unused.</p>
+</div>
+<div class="section" id="perl-documentation">
+<h2><a class="toc-backref" href="#id4">Perl Documentation</a><a class="headerlink" href="#perl-documentation" title="Permalink to this headline">¶</a></h2>
+<p>In Perl, most modules are documented in a format called POD – Plain
+Old Documentation. This is an easy-to-type, very low level format
+which integrates well with the Perl parser. Many tools exist to turn
+POD documentation into other formats: info, HTML and man pages, among
+others. However, in Perl, the information is not available at run-time.</p>
+</div>
+<div class="section" id="java-documentation">
+<h2><a class="toc-backref" href="#id5">Java Documentation</a><a class="headerlink" href="#java-documentation" title="Permalink to this headline">¶</a></h2>
+<p>In Java, special comments before classes and functions function to
+document the code. A program to extract these, and turn them into
+HTML documentation is called javadoc, and is part of the standard
+Java distribution. However, the only output format that is supported
+is HTML, and JavaDoc has a very intimate relationship with HTML.</p>
+</div>
+<div class="section" id="python-docstring-goals">
+<h2><a class="toc-backref" href="#id6">Python Docstring Goals</a><a class="headerlink" href="#python-docstring-goals" title="Permalink to this headline">¶</a></h2>
+<p>Python documentation string are easy to spot during parsing, and are
+also available to the runtime interpreter. This double purpose is
+a bit problematic, sometimes: for example, some are reluctant to have
+too long docstrings, because they do not want to take much space in
+the runtime. In addition, because of the current lack of tools, people
+read objects’ docstrings by “print”ing them, so a tendency to make them
+brief and free of markups has sprung up. This tendency hinders writing
+better documentation-extraction tools, since it causes docstrings to
+contain little information, which is hard to parse.</p>
+</div>
+<div class="section" id="high-level-solutions">
+<h2><a class="toc-backref" href="#id7">High Level Solutions</a><a class="headerlink" href="#high-level-solutions" title="Permalink to this headline">¶</a></h2>
+<p>To counter the objection that the strings take up place in the running
+program, it is suggested that documentation extraction tools will
+concatenate a maximum prefix of string literals which appear in the
+beginning of a definition. The first of these will also be available
+in the interactive interpreter, so it should contain a few summary
+lines.</p>
+</div>
+<div class="section" id="docstring-format-goals">
+<h2><a class="toc-backref" href="#id8">Docstring Format Goals</a><a class="headerlink" href="#docstring-format-goals" title="Permalink to this headline">¶</a></h2>
+<p>These are the goals for the docstring format, as discussed ad nauseam
+in the doc-sig.</p>
+<ol class="arabic simple">
+<li>It must be easy to type with any standard text editor.</li>
+<li>It must be readable to the casual observer.</li>
+<li>It must not contain information which can be deduced from parsing
+the module.</li>
+<li>It must contain sufficient information so it can be converted
+to any reasonable markup format.</li>
+<li>It must be possible to write a module’s entire documentation in
+docstrings, without feeling hampered by the markup language.</li>
+</ol>
+</div>
+<div class="section" id="docstring-contents">
+<h2><a class="toc-backref" href="#id9">Docstring Contents</a><a class="headerlink" href="#docstring-contents" title="Permalink to this headline">¶</a></h2>
+<p>For requirement 5. above, it is needed to specify what must be
+in docstrings.</p>
+<p>At least the following must be available:</p>
+<ol class="loweralpha">
+<li><p>A tag that means “this is a Python <em>something</em>, guess what”</p>
+<p>Example: In the sentence “The POP3 class”, we need to markup “POP3”
+so. The parser will be able to guess it is a class from the contents
+of the <code class="docutils literal notranslate"><span class="pre">poplib</span></code> module, but we need to make it guess.</p>
+</li>
+<li><p>Tags that mean “this is a Python class/module/class var/instance var…”</p>
+<p>Example: The usual Python idiom for singleton class <code class="docutils literal notranslate"><span class="pre">A</span></code> is to have <code class="docutils literal notranslate"><span class="pre">_A</span></code>
+as the class, and <code class="docutils literal notranslate"><span class="pre">A</span></code> a function which returns <code class="docutils literal notranslate"><span class="pre">_A</span></code> objects. It’s usual
+to document the class, nonetheless, as being <code class="docutils literal notranslate"><span class="pre">A</span></code>. This requires the
+strength to say “The class <code class="docutils literal notranslate"><span class="pre">A</span></code>” and have <code class="docutils literal notranslate"><span class="pre">A</span></code> hyperlinked and marked-up
+as a class.</p>
+</li>
+<li>An easy way to include Python source code/Python interactive sessions</li>
+<li>Emphasis/bold</li>
+<li>List/tables</li>
+</ol>
+</div>
+<div class="section" id="docstring-basic-structure">
+<h2><a class="toc-backref" href="#id10">Docstring Basic Structure</a><a class="headerlink" href="#docstring-basic-structure" title="Permalink to this headline">¶</a></h2>
+<p>The documentation strings will be in StructuredTextNG
+(<a class="reference external" href="http://www.zope.org/Members/jim/StructuredTextWiki/StructuredTextNG">http://www.zope.org/Members/jim/StructuredTextWiki/StructuredTextNG</a>)
+Since StructuredText is not yet strong enough to handle (a) and (b)
+above, we will need to extend it. I suggest using
+<code class="docutils literal notranslate"><span class="pre">[&lt;optional</span> <span class="pre">description&gt;:python</span> <span class="pre">identifier]</span></code>.
+E.g.: <code class="docutils literal notranslate"><span class="pre">[class:POP3]</span></code>, <code class="docutils literal notranslate"><span class="pre">[:POP3.list]</span></code>, etc. If the description is missing,
+a guess will be made from the text.</p>
+</div>
+<div class="section" id="unresolved-issues">
+<h2><a class="toc-backref" href="#id11">Unresolved Issues</a><a class="headerlink" href="#unresolved-issues" title="Permalink to this headline">¶</a></h2>
+<p>Is there a way to escape characters in ST? If so, how?
+(example: * at the beginning of a line without being bullet symbol)</p>
+<p>Is my suggestion above for Python symbols compatible with ST-NG?
+How hard would it be to extend ST-NG to support it?</p>
+<p>How do we describe input and output types of functions?</p>
+<p>What additional constraint do we enforce on each docstring?
+(module/class/function)?</p>
+<p>What are the guesser rules?</p>
+</div>
+<div class="section" id="rejected-suggestions">
+<h2><a class="toc-backref" href="#id12">Rejected Suggestions</a><a class="headerlink" href="#rejected-suggestions" title="Permalink to this headline">¶</a></h2>
+<p>XML – it’s very hard to type, and too cluttered to read it comfortably.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0216.txt">https://github.com/python/peps/blob/master/pep-0216.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0216.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0215.html">PEP 0215</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0217.html">PEP 0217</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 216 – Docstring Format</a><ul>
+<li><a class="reference internal" href="#notice">Notice</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#perl-documentation">Perl Documentation</a></li>
+<li><a class="reference internal" href="#java-documentation">Java Documentation</a></li>
+<li><a class="reference internal" href="#python-docstring-goals">Python Docstring Goals</a></li>
+<li><a class="reference internal" href="#high-level-solutions">High Level Solutions</a></li>
+<li><a class="reference internal" href="#docstring-format-goals">Docstring Format Goals</a></li>
+<li><a class="reference internal" href="#docstring-contents">Docstring Contents</a></li>
+<li><a class="reference internal" href="#docstring-basic-structure">Docstring Basic Structure</a></li>
+<li><a class="reference internal" href="#unresolved-issues">Unresolved Issues</a></li>
+<li><a class="reference internal" href="#rejected-suggestions">Rejected Suggestions</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

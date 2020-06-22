@@ -1,0 +1,693 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 359 – The “make” Statement &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 360 – Externally Maintained Packages" href="pep-0360.html" />
+    <link rel="prev" title="PEP 358 – The “bytes” Object" href="pep-0358.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 359 – The “make” Statement</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-359-the-make-statement">
+<h1 class="page-title">PEP 359 – The “make” Statement<a class="headerlink" href="#pep-359-the-make-statement" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">359</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">The “make” Statement</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Steven Bethard &lt;steven.bethard&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Withdrawn</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">05-Apr-2006</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.6</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">05-Apr-2006, 06-Apr-2006, 13-Apr-2006</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id21">Abstract</a></li>
+<li><a class="reference internal" href="#withdrawal-notice" id="id22">Withdrawal Notice</a></li>
+<li><a class="reference internal" href="#motivation" id="id23">Motivation</a><ul>
+<li><a class="reference internal" href="#example-simple-namespaces" id="id24">Example: simple namespaces</a></li>
+<li><a class="reference internal" href="#example-gui-objects" id="id25">Example: GUI objects</a></li>
+<li><a class="reference internal" href="#example-custom-descriptors" id="id26">Example: custom descriptors</a></li>
+<li><a class="reference internal" href="#example-property-namespaces" id="id27">Example: property namespaces</a></li>
+<li><a class="reference internal" href="#example-interfaces" id="id28">Example: interfaces</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#specification" id="id29">Specification</a></li>
+<li><a class="reference internal" href="#open-issues" id="id30">Open Issues</a><ul>
+<li><a class="reference internal" href="#keyword" id="id31">Keyword</a></li>
+<li><a class="reference internal" href="#the-make-statement-as-an-alternate-constructor" id="id32">The make-statement as an alternate constructor</a></li>
+<li><a class="reference internal" href="#customizing-the-dict-in-which-the-block-is-executed" id="id33">Customizing the dict in which the block is executed</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#optional-extensions" id="id34">Optional Extensions</a><ul>
+<li><a class="reference internal" href="#remove-the-make-keyword" id="id35">Remove the make keyword</a></li>
+<li><a class="reference internal" href="#removing-metaclass-in-python-3000" id="id36">Removing __metaclass__ in Python 3000</a></li>
+<li><a class="reference internal" href="#removing-class-statements-in-python-3000" id="id37">Removing class statements in Python 3000</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references" id="id38">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id39">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id21">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes a generalization of the class-declaration syntax,
+the <code class="docutils literal notranslate"><span class="pre">make</span></code> statement.  The proposed syntax and semantics parallel
+the syntax for class definition, and so:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">make</span> <span class="o">&lt;</span><span class="n">callable</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="nb">tuple</span><span class="o">&gt;</span><span class="p">:</span>
+    <span class="o">&lt;</span><span class="n">block</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>is translated into the assignment:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">callable</span><span class="o">&gt;</span><span class="p">(</span><span class="s2">&quot;&lt;name&gt;&quot;</span><span class="p">,</span> <span class="o">&lt;</span><span class="nb">tuple</span><span class="o">&gt;</span><span class="p">,</span> <span class="o">&lt;</span><span class="n">namespace</span><span class="o">&gt;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">&lt;namespace&gt;</span></code> is the dict created by executing <code class="docutils literal notranslate"><span class="pre">&lt;block&gt;</span></code>.
+This is mostly syntactic sugar for:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>class &lt;name&gt; &lt;tuple&gt;:
+    __metaclass__ = &lt;callable&gt;
+    &lt;block&gt;
+</pre></div>
+</div>
+<p>and is intended to help more clearly express the intent of the
+statement when something other than a class is being created.  Of
+course, other syntax for such a statement is possible, but it is hoped
+that by keeping a strong parallel to the class statement, an
+understanding of how classes and metaclasses work will translate into
+an understanding of how the make-statement works as well.</p>
+<p>The PEP is based on a suggestion <a class="footnote-reference brackets" href="#id11" id="id1">1</a> from Michele Simionato on the
+python-dev list.</p>
+</div>
+<div class="section" id="withdrawal-notice">
+<h2><a class="toc-backref" href="#id22">Withdrawal Notice</a><a class="headerlink" href="#withdrawal-notice" title="Permalink to this headline">¶</a></h2>
+<p>This PEP was withdrawn at Guido’s request <a class="footnote-reference brackets" href="#id12" id="id2">2</a>. Guido didn’t like it,
+and in particular didn’t like how the property use-case puts the
+instance methods of a property at a different level than other
+instance methods and requires fixed names for the property functions.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id23">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>Class statements provide two nice facilities to Python:</p>
+<ol class="arabic simple">
+<li>They execute a block of statements and provide the resulting
+bindings as a dict to the metaclass.</li>
+<li>They encourage DRY (don’t repeat yourself) by allowing the class
+being created to know the name it is being assigned.</li>
+</ol>
+<p>Thus in a simple class statement like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">C</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;bar&#39;</span>
+</pre></div>
+</div>
+<p>the metaclass (<code class="docutils literal notranslate"><span class="pre">type</span></code>) gets called with something like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">C</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nb">object</span><span class="p">,),</span> <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;foo&#39;</span><span class="p">:</span><span class="o">&lt;</span><span class="n">function</span> <span class="n">foo</span> <span class="n">at</span> <span class="o">...&gt;</span><span class="p">})</span>
+</pre></div>
+</div>
+<p>The class statement is just syntactic sugar for the above assignment
+statement, but clearly a very useful sort of syntactic sugar.  It
+avoids not only the repetition of <code class="docutils literal notranslate"><span class="pre">C</span></code>, but also simplifies the
+creation of the dict by allowing it to be expressed as a series of
+statements.</p>
+<p>Historically, type instances (a.k.a. class objects) have been the
+only objects blessed with this sort of syntactic support.  The make
+statement aims to extend this support to other sorts of objects where
+such syntax would also be useful.</p>
+<div class="section" id="example-simple-namespaces">
+<h3><a class="toc-backref" href="#id24">Example: simple namespaces</a><a class="headerlink" href="#example-simple-namespaces" title="Permalink to this headline">¶</a></h3>
+<p>Let’s say I have some attributes in a module that I access like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mod</span><span class="o">.</span><span class="n">thematic_roletype</span>
+<span class="n">mod</span><span class="o">.</span><span class="n">opinion_roletype</span>
+
+<span class="n">mod</span><span class="o">.</span><span class="n">text_format</span>
+<span class="n">mod</span><span class="o">.</span><span class="n">html_format</span>
+</pre></div>
+</div>
+<p>and since “Namespaces are one honking great idea”, I’d like to be able
+to access these attributes instead as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mod</span><span class="o">.</span><span class="n">roletypes</span><span class="o">.</span><span class="n">thematic</span>
+<span class="n">mod</span><span class="o">.</span><span class="n">roletypes</span><span class="o">.</span><span class="n">opinion</span>
+
+<span class="n">mod</span><span class="o">.</span><span class="n">format</span><span class="o">.</span><span class="n">text</span>
+<span class="n">mod</span><span class="o">.</span><span class="n">format</span><span class="o">.</span><span class="n">html</span>
+</pre></div>
+</div>
+<p>I currently have two main options:</p>
+<ol class="arabic simple">
+<li>Turn the module into a package, turn <code class="docutils literal notranslate"><span class="pre">roletypes</span></code> and <code class="docutils literal notranslate"><span class="pre">format</span></code>
+into submodules, and move the attributes to the submodules.</li>
+<li>Create <code class="docutils literal notranslate"><span class="pre">roletypes</span></code> and <code class="docutils literal notranslate"><span class="pre">format</span></code> classes, and move the
+attributes to the classes.</li>
+</ol>
+<p>The former is a fair chunk of refactoring work, and produces two tiny
+modules without much content.  The latter keeps the attributes local
+to the module, but creates classes when there is no intention of ever
+creating instances of those classes.</p>
+<p>In situations like this, it would be nice to simply be able to declare
+a “namespace” to hold the few attributes.  With the new make
+statement, I could introduce my new namespaces with something like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">make</span> <span class="n">namespace</span> <span class="n">roletypes</span><span class="p">:</span>
+    <span class="n">thematic</span> <span class="o">=</span> <span class="o">...</span>
+    <span class="n">opinion</span> <span class="o">=</span> <span class="o">...</span>
+
+<span class="n">make</span> <span class="n">namespace</span> <span class="nb">format</span><span class="p">:</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="o">...</span>
+    <span class="n">html</span> <span class="o">=</span> <span class="o">...</span>
+</pre></div>
+</div>
+<p>and keep my attributes local to the module without making classes that
+are never intended to be instantiated.  One definition of namespace
+that would make this work is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">namespace</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Given this definition, at the end of the make-statements above,
+<code class="docutils literal notranslate"><span class="pre">roletypes</span></code> and <code class="docutils literal notranslate"><span class="pre">format</span></code> would be namespace instances.</p>
+</div>
+<div class="section" id="example-gui-objects">
+<h3><a class="toc-backref" href="#id25">Example: GUI objects</a><a class="headerlink" href="#example-gui-objects" title="Permalink to this headline">¶</a></h3>
+<p>In GUI toolkits, objects like frames and panels are often associated
+with attributes and functions.  With the make-statement, code that
+looks something like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">root</span> <span class="o">=</span> <span class="n">Tkinter</span><span class="o">.</span><span class="n">Tk</span><span class="p">()</span>
+<span class="n">frame</span> <span class="o">=</span> <span class="n">Tkinter</span><span class="o">.</span><span class="n">Frame</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+<span class="n">frame</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">say_hi</span><span class="p">():</span>
+    <span class="nb">print</span> <span class="s2">&quot;hi there, everyone!&quot;</span>
+<span class="n">hi_there</span> <span class="o">=</span> <span class="n">Tkinter</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;Hello&quot;</span><span class="p">,</span> <span class="n">command</span><span class="o">=</span><span class="n">say_hi</span><span class="p">)</span>
+<span class="n">hi_there</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">side</span><span class="o">=</span><span class="n">Tkinter</span><span class="o">.</span><span class="n">LEFT</span><span class="p">)</span>
+<span class="n">root</span><span class="o">.</span><span class="n">mainloop</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>could be rewritten to group the Button’s function with its
+declaration:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">root</span> <span class="o">=</span> <span class="n">Tkinter</span><span class="o">.</span><span class="n">Tk</span><span class="p">()</span>
+<span class="n">frame</span> <span class="o">=</span> <span class="n">Tkinter</span><span class="o">.</span><span class="n">Frame</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+<span class="n">frame</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
+<span class="n">make</span> <span class="n">Tkinter</span><span class="o">.</span><span class="n">Button</span> <span class="n">hi_there</span><span class="p">(</span><span class="n">frame</span><span class="p">):</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;Hello&quot;</span>
+    <span class="k">def</span> <span class="nf">command</span><span class="p">():</span>
+        <span class="nb">print</span> <span class="s2">&quot;hi there, everyone!&quot;</span>
+<span class="n">hi_there</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">side</span><span class="o">=</span><span class="n">Tkinter</span><span class="o">.</span><span class="n">LEFT</span><span class="p">)</span>
+<span class="n">root</span><span class="o">.</span><span class="n">mainloop</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="example-custom-descriptors">
+<h3><a class="toc-backref" href="#id26">Example: custom descriptors</a><a class="headerlink" href="#example-custom-descriptors" title="Permalink to this headline">¶</a></h3>
+<p>Since descriptors are used to customize access to an attribute, it’s
+often useful to know the name of that attribute.  Current Python
+doesn’t give an easy way to find this name and so a lot of custom
+descriptors, like Ian Bicking’s setonce descriptor <a class="footnote-reference brackets" href="#id13" id="id3">3</a>, have to hack
+around this somehow.  With the make-statement, you could create a
+<code class="docutils literal notranslate"><span class="pre">setonce</span></code> attribute like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">A</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="o">...</span>
+    <span class="n">make</span> <span class="n">setonce</span> <span class="n">x</span><span class="p">:</span>
+        <span class="s2">&quot;A&#39;s x attribute&quot;</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p>where the <code class="docutils literal notranslate"><span class="pre">setonce</span></code> descriptor would be defined like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">setonce</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="s1">&#39;_setonce_attr_</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;__doc__&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__get__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__set__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;Attribute already set&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__delete__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+        <span class="nb">delattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Note that unlike the original implementation, the private attribute
+name is stable since it uses the name of the descriptor, and therefore
+instances of class A are pickleable.</p>
+</div>
+<div class="section" id="example-property-namespaces">
+<h3><a class="toc-backref" href="#id27">Example: property namespaces</a><a class="headerlink" href="#example-property-namespaces" title="Permalink to this headline">¶</a></h3>
+<p>Python’s property type takes three function arguments and a docstring
+argument which, though relevant only to the property, must be declared
+before it and then passed as arguments to the property call, e.g.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">C</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="o">...</span>
+    <span class="k">def</span> <span class="nf">get_x</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="o">...</span>
+    <span class="k">def</span> <span class="nf">set_x</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="o">...</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">get_x</span><span class="p">,</span> <span class="n">set_x</span><span class="p">,</span> <span class="s2">&quot;the x of the frobulation&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This issue has been brought up before, and Guido <a class="footnote-reference brackets" href="#id14" id="id4">4</a> and others <a class="footnote-reference brackets" href="#id15" id="id5">5</a>
+have briefly mused over alternate property syntaxes to make declaring
+properties easier.  With the make-statement, the following syntax
+could be supported:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">C</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="o">...</span>
+    <span class="n">make</span> <span class="n">block_property</span> <span class="n">x</span><span class="p">:</span>
+        <span class="sd">&#39;&#39;&#39;The x of the frobulation&#39;&#39;&#39;</span>
+        <span class="k">def</span> <span class="nf">fget</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="o">...</span>
+        <span class="k">def</span> <span class="nf">fset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="o">...</span>
+</pre></div>
+</div>
+<p>with the following definition of <code class="docutils literal notranslate"><span class="pre">block_property</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">block_property</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">block_dict</span><span class="p">):</span>
+    <span class="n">fget</span> <span class="o">=</span> <span class="n">block_dict</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;fget&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">fset</span> <span class="o">=</span> <span class="n">block_dict</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;fset&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">fdel</span> <span class="o">=</span> <span class="n">block_dict</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;fdel&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">doc</span> <span class="o">=</span> <span class="n">block_dict</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;__doc__&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="ow">not</span> <span class="n">block_dict</span>
+    <span class="k">return</span> <span class="nb">property</span><span class="p">(</span><span class="n">fget</span><span class="p">,</span> <span class="n">fset</span><span class="p">,</span> <span class="n">fdel</span><span class="p">,</span> <span class="n">doc</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="example-interfaces">
+<h3><a class="toc-backref" href="#id28">Example: interfaces</a><a class="headerlink" href="#example-interfaces" title="Permalink to this headline">¶</a></h3>
+<p>Guido <a class="footnote-reference brackets" href="#id16" id="id6">6</a> and others have occasionally suggested introducing
+interfaces into python.  Most suggestions have offered syntax along
+the lines of:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">interface</span> <span class="n">IFoo</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Foo blah blah&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">fumble</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">count</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;docstring&quot;&quot;&quot;</span>
+</pre></div>
+</div>
+<p>but since there is currently no way in Python to declare an interface
+in this manner, most implementations of Python interfaces use class
+objects instead, e.g. Zope’s:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">IFoo</span><span class="p">(</span><span class="n">Interface</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Foo blah blah&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">fumble</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">count</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;docstring&quot;&quot;&quot;</span>
+</pre></div>
+</div>
+<p>With the new make-statement, these interfaces could instead be
+declared as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">make</span> <span class="n">Interface</span> <span class="n">IFoo</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Foo blah blah&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">fumble</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">count</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;docstring&quot;&quot;&quot;</span>
+</pre></div>
+</div>
+<p>which makes the intent (that this is an interface, not a class) much
+clearer.</p>
+</div>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id29">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>Python will translate a make-statement:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">make</span> <span class="o">&lt;</span><span class="n">callable</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="nb">tuple</span><span class="o">&gt;</span><span class="p">:</span>
+    <span class="o">&lt;</span><span class="n">block</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>into the assignment:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">callable</span><span class="o">&gt;</span><span class="p">(</span><span class="s2">&quot;&lt;name&gt;&quot;</span><span class="p">,</span> <span class="o">&lt;</span><span class="nb">tuple</span><span class="o">&gt;</span><span class="p">,</span> <span class="o">&lt;</span><span class="n">namespace</span><span class="o">&gt;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">&lt;namespace&gt;</span></code> is the dict created by executing <code class="docutils literal notranslate"><span class="pre">&lt;block&gt;</span></code>.
+The <code class="docutils literal notranslate"><span class="pre">&lt;tuple&gt;</span></code> expression is optional; if not present, an empty tuple
+will be assumed.</p>
+<p>A patch is available implementing these semantics <a class="footnote-reference brackets" href="#id17" id="id7">7</a>.</p>
+<p>The make-statement introduces a new keyword, <code class="docutils literal notranslate"><span class="pre">make</span></code>.  Thus in Python
+2.6, the make-statement will have to be enabled using <code class="docutils literal notranslate"><span class="pre">from</span>
+<span class="pre">__future__</span> <span class="pre">import</span> <span class="pre">make_statement</span></code>.</p>
+</div>
+<div class="section" id="open-issues">
+<h2><a class="toc-backref" href="#id30">Open Issues</a><a class="headerlink" href="#open-issues" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="keyword">
+<h3><a class="toc-backref" href="#id31">Keyword</a><a class="headerlink" href="#keyword" title="Permalink to this headline">¶</a></h3>
+<p>Does the <code class="docutils literal notranslate"><span class="pre">make</span></code> keyword break too much code?  Originally, the make
+statement used the keyword <code class="docutils literal notranslate"><span class="pre">create</span></code> (a suggestion due to Nick
+Coghlan).  However, investigations into the standard library <a class="footnote-reference brackets" href="#id18" id="id8">8</a> and
+Zope+Plone code <a class="footnote-reference brackets" href="#id19" id="id9">9</a> revealed that <code class="docutils literal notranslate"><span class="pre">create</span></code> would break a lot more
+code, so <code class="docutils literal notranslate"><span class="pre">make</span></code> was adopted as the keyword instead.  However, there
+are still a few instances where <code class="docutils literal notranslate"><span class="pre">make</span></code> would break code.  Is there a
+better keyword for the statement?</p>
+<p>Some possible keywords and their counts in the standard library (plus
+some installed packages):</p>
+<ul class="simple">
+<li>make - 2 (both in tests)</li>
+<li>create - 19 (including existing function in imaplib)</li>
+<li>build - 83 (including existing class in distutils.command.build)</li>
+<li>construct - 0</li>
+<li>produce - 0</li>
+</ul>
+</div>
+<div class="section" id="the-make-statement-as-an-alternate-constructor">
+<h3><a class="toc-backref" href="#id32">The make-statement as an alternate constructor</a><a class="headerlink" href="#the-make-statement-as-an-alternate-constructor" title="Permalink to this headline">¶</a></h3>
+<p>Currently, there are not many functions which have the signature
+<code class="docutils literal notranslate"><span class="pre">(name,</span> <span class="pre">args,</span> <span class="pre">kwargs)</span></code>.  That means that something like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">make</span> <span class="nb">dict</span> <span class="n">params</span><span class="p">:</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="mi">2</span>
+</pre></div>
+</div>
+<p>is currently impossible because the dict constructor has a different
+signature.  Does this sort of thing need to be supported?  One
+suggestion, by Carl Banks, would be to add a <code class="docutils literal notranslate"><span class="pre">__make__</span></code> magic method
+that if found would be called instead of <code class="docutils literal notranslate"><span class="pre">__call__</span></code>.  For types,
+the <code class="docutils literal notranslate"><span class="pre">__make__</span></code> method would be identical to <code class="docutils literal notranslate"><span class="pre">__call__</span></code> and thus
+unnecessary, but dicts could support the make-statement by defining a
+<code class="docutils literal notranslate"><span class="pre">__make__</span></code> method on the dict type that looks something like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">__make__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Of course, rather than adding another magic method, the dict type
+could just grow a classmethod something like <code class="docutils literal notranslate"><span class="pre">dict.fromblock</span></code> that
+could be used like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">make</span> <span class="nb">dict</span><span class="o">.</span><span class="n">fromblock</span> <span class="n">params</span><span class="p">:</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="mi">2</span>
+</pre></div>
+</div>
+<p>So the question is, will many types want to use the make-statement as
+an alternate constructor?  And if so, does that alternate constructor
+need to have the same name as the original constructor?</p>
+</div>
+<div class="section" id="customizing-the-dict-in-which-the-block-is-executed">
+<h3><a class="toc-backref" href="#id33">Customizing the dict in which the block is executed</a><a class="headerlink" href="#customizing-the-dict-in-which-the-block-is-executed" title="Permalink to this headline">¶</a></h3>
+<p>Should users of the make-statement be able to determine in which dict
+object the code is executed?  This would allow the make-statement to
+be used in situations where a normal dict object would not suffice,
+e.g. if order and repeated names must be allowed.  Allowing this sort
+of customization could allow XML to be written without repeating
+element names, and with nesting of make-statements corresponding to
+nesting of XML elements:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">make</span> <span class="n">Element</span> <span class="n">html</span><span class="p">:</span>
+    <span class="n">make</span> <span class="n">Element</span> <span class="n">body</span><span class="p">:</span>
+        <span class="n">text</span><span class="p">(</span><span class="s1">&#39;before first h1&#39;</span><span class="p">)</span>
+        <span class="n">make</span> <span class="n">Element</span> <span class="n">h1</span><span class="p">:</span>
+            <span class="n">attrib</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s1">&#39;first&#39;</span><span class="p">)</span>
+            <span class="n">text</span><span class="p">(</span><span class="s1">&#39;first h1&#39;</span><span class="p">)</span>
+            <span class="n">tail</span><span class="p">(</span><span class="s1">&#39;after first h1&#39;</span><span class="p">)</span>
+        <span class="n">make</span> <span class="n">Element</span> <span class="n">h1</span><span class="p">:</span>
+            <span class="n">attrib</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s1">&#39;second&#39;</span><span class="p">)</span>
+            <span class="n">text</span><span class="p">(</span><span class="s1">&#39;second h1&#39;</span><span class="p">)</span>
+            <span class="n">tail</span><span class="p">(</span><span class="s1">&#39;after second h1&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If the make-statement tried to get the dict in which to execute its
+block by calling the callable’s <code class="docutils literal notranslate"><span class="pre">__make_dict__</span></code> method, the
+following code would allow the make-statement to be used as above:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Element</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="k">class</span> <span class="nc">__make_dict__</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+
+        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_super</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">Element</span><span class="o">.</span><span class="n">__make_dict__</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_super</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">elements</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tail</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">attrib</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_super</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;attrib&#39;</span><span class="p">,</span> <span class="s1">&#39;text&#39;</span><span class="p">,</span> <span class="s1">&#39;tail&#39;</span><span class="p">]:</span>
+                    <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;set_</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">name</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="nb">globals</span><span class="p">()[</span><span class="n">name</span><span class="p">]</span>
+
+        <span class="k">def</span> <span class="fm">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_super</span><span class="o">.</span><span class="fm">__setitem__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">elements</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">set_attrib</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">attrib</span> <span class="o">=</span> <span class="n">kwargs</span>
+
+        <span class="k">def</span> <span class="nf">set_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">text</span>
+
+        <span class="k">def</span> <span class="nf">set_tail</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tail</span> <span class="o">=</span> <span class="n">text</span>
+
+    <span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">edict</span><span class="p">):</span>
+        <span class="n">get_element</span> <span class="o">=</span> <span class="n">etree</span><span class="o">.</span><span class="n">ElementTree</span><span class="o">.</span><span class="n">Element</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">get_element</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">attrib</span><span class="o">=</span><span class="n">edict</span><span class="o">.</span><span class="n">attrib</span><span class="p">)</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">edict</span><span class="o">.</span><span class="n">text</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">tail</span> <span class="o">=</span> <span class="n">edict</span><span class="o">.</span><span class="n">tail</span>
+        <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">edict</span><span class="o">.</span><span class="n">elements</span><span class="p">:</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">element</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span>
+</pre></div>
+</div>
+<p>Note, however, that the code to support this is somewhat fragile –
+it has to magically populate the namespace with <code class="docutils literal notranslate"><span class="pre">attrib</span></code>, <code class="docutils literal notranslate"><span class="pre">text</span></code>
+and <code class="docutils literal notranslate"><span class="pre">tail</span></code>, and it assumes that every name binding inside the make
+statement body is creating an Element.  As it stands, this code would
+break with the introduction of a simple for-loop to any one of the
+make-statement bodies, because the for-loop would bind a name to a
+non-Element object.  This could be worked around by adding some sort
+of isinstance check or attribute examination, but this still results
+in a somewhat fragile solution.</p>
+<p>It has also been pointed out that the with-statement can provide
+equivalent nesting with a much more explicit syntax:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">Element</span><span class="p">(</span><span class="s1">&#39;html&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">html</span><span class="p">:</span>
+    <span class="k">with</span> <span class="n">Element</span><span class="p">(</span><span class="s1">&#39;body&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">body</span><span class="p">:</span>
+        <span class="n">body</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="s1">&#39;before first h1&#39;</span>
+        <span class="k">with</span> <span class="n">Element</span><span class="p">(</span><span class="s1">&#39;h1&#39;</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s1">&#39;first&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">h1</span><span class="p">:</span>
+            <span class="n">h1</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="s1">&#39;first h1&#39;</span>
+            <span class="n">h1</span><span class="o">.</span><span class="n">tail</span> <span class="o">=</span> <span class="s1">&#39;after first h1&#39;</span>
+        <span class="k">with</span> <span class="n">Element</span><span class="p">(</span><span class="s1">&#39;h1&#39;</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s1">&#39;second&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">h1</span><span class="p">:</span>
+            <span class="n">h1</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="s1">&#39;second h1&#39;</span>
+            <span class="n">h1</span><span class="o">.</span><span class="n">tail</span> <span class="o">=</span> <span class="s1">&#39;after second h1&#39;</span>
+</pre></div>
+</div>
+<p>And if the repetition of the element names here is too much of a DRY
+violation, it is also possible to eliminate all as-clauses except for
+the first by adding a few methods to Element. <a class="footnote-reference brackets" href="#id20" id="id10">10</a></p>
+<p>So are there real use-cases for executing the block in a dict of a
+different type?  And if so, should the make-statement be extended to
+support them?</p>
+</div>
+</div>
+<div class="section" id="optional-extensions">
+<h2><a class="toc-backref" href="#id34">Optional Extensions</a><a class="headerlink" href="#optional-extensions" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="remove-the-make-keyword">
+<h3><a class="toc-backref" href="#id35">Remove the make keyword</a><a class="headerlink" href="#remove-the-make-keyword" title="Permalink to this headline">¶</a></h3>
+<p>It might be possible to remove the make keyword so that such
+statements would begin with the callable being called, e.g.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">namespace</span> <span class="n">ns</span><span class="p">:</span>
+    <span class="n">badger</span> <span class="o">=</span> <span class="mi">42</span>
+    <span class="k">def</span> <span class="nf">spam</span><span class="p">():</span>
+        <span class="o">...</span>
+
+<span class="n">interface</span> <span class="n">C</span><span class="p">(</span><span class="o">...</span><span class="p">):</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p>However, almost all other Python statements begin with a keyword, and
+removing the keyword would make it harder to look up this construct in
+the documentation.  Additionally, this would add some complexity in
+the grammar and so far I (Steven Bethard) have not been able to
+implement the feature without the keyword.</p>
+</div>
+<div class="section" id="removing-metaclass-in-python-3000">
+<h3><a class="toc-backref" href="#id36">Removing __metaclass__ in Python 3000</a><a class="headerlink" href="#removing-metaclass-in-python-3000" title="Permalink to this headline">¶</a></h3>
+<p>As a side-effect of its generality, the make-statement mostly
+eliminates the need for the <code class="docutils literal notranslate"><span class="pre">__metaclass__</span></code> attribute in class
+objects.  Thus in Python 3000, instead of:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>class &lt;name&gt; &lt;bases-tuple&gt;:
+    __metaclass__ = &lt;metaclass&gt;
+    &lt;block&gt;
+</pre></div>
+</div>
+<p>metaclasses could be supported by using the metaclass as the callable
+in a make-statement:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">make</span> <span class="o">&lt;</span><span class="n">metaclass</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">bases</span><span class="o">-</span><span class="nb">tuple</span><span class="o">&gt;</span><span class="p">:</span>
+    <span class="o">&lt;</span><span class="n">block</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Removing the <code class="docutils literal notranslate"><span class="pre">__metaclass__</span></code> hook would simplify the BUILD_CLASS
+opcode a bit.</p>
+</div>
+<div class="section" id="removing-class-statements-in-python-3000">
+<h3><a class="toc-backref" href="#id37">Removing class statements in Python 3000</a><a class="headerlink" href="#removing-class-statements-in-python-3000" title="Permalink to this headline">¶</a></h3>
+<p>In the most extreme application of make-statements, the class
+statement itself could be deprecated in favor of <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">type</span></code>
+statements.</p>
+</div>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id38">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id11"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>Michele Simionato’s original suggestion
+(<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2005-October/057435.html">https://mail.python.org/pipermail/python-dev/2005-October/057435.html</a>)</dd>
+<dt class="label" id="id12"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>Guido requests withdrawal
+(<a class="reference external" href="https://mail.python.org/pipermail/python-3000/2006-April/000936.html">https://mail.python.org/pipermail/python-3000/2006-April/000936.html</a>)</dd>
+<dt class="label" id="id13"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd>Ian Bicking’s setonce descriptor
+(<a class="reference external" href="http://blog.ianbicking.org/easy-readonly-attributes.html">http://blog.ianbicking.org/easy-readonly-attributes.html</a>)</dd>
+<dt class="label" id="id14"><span class="brackets"><a class="fn-backref" href="#id4">4</a></span></dt>
+<dd>Guido ponders property syntax
+(<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2005-October/057404.html">https://mail.python.org/pipermail/python-dev/2005-October/057404.html</a>)</dd>
+<dt class="label" id="id15"><span class="brackets"><a class="fn-backref" href="#id5">5</a></span></dt>
+<dd>Namespace-based property recipe
+(<a class="reference external" href="http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/442418">http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/442418</a>)</dd>
+<dt class="label" id="id16"><span class="brackets"><a class="fn-backref" href="#id6">6</a></span></dt>
+<dd>Python interfaces
+(<a class="reference external" href="http://www.artima.com/weblogs/viewpost.jsp?thread=86641">http://www.artima.com/weblogs/viewpost.jsp?thread=86641</a>)</dd>
+<dt class="label" id="id17"><span class="brackets"><a class="fn-backref" href="#id7">7</a></span></dt>
+<dd>Make Statement patch
+(<a class="reference external" href="http://ucsu.colorado.edu/~bethard/py/make_statement.patch">http://ucsu.colorado.edu/~bethard/py/make_statement.patch</a>)</dd>
+<dt class="label" id="id18"><span class="brackets"><a class="fn-backref" href="#id8">8</a></span></dt>
+<dd>Instances of create in the stdlib
+(<a class="reference external" href="https://mail.python.org/pipermail/python-list/2006-April/335159.html">https://mail.python.org/pipermail/python-list/2006-April/335159.html</a>)</dd>
+<dt class="label" id="id19"><span class="brackets"><a class="fn-backref" href="#id9">9</a></span></dt>
+<dd>Instances of create in Zope+Plone
+(<a class="reference external" href="https://mail.python.org/pipermail/python-list/2006-April/335284.html">https://mail.python.org/pipermail/python-list/2006-April/335284.html</a>)</dd>
+<dt class="label" id="id20"><span class="brackets"><a class="fn-backref" href="#id10">10</a></span></dt>
+<dd>Eliminate as-clauses in with-statement XML
+(<a class="reference external" href="https://mail.python.org/pipermail/python-list/2006-April/336774.html">https://mail.python.org/pipermail/python-list/2006-April/336774.html</a>)</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id39">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0359.txt">https://github.com/python/peps/blob/master/pep-0359.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0359.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0358.html">PEP 0358</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0360.html">PEP 0360</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 359 – The “make” Statement</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#withdrawal-notice">Withdrawal Notice</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a><ul>
+<li><a class="reference internal" href="#example-simple-namespaces">Example: simple namespaces</a></li>
+<li><a class="reference internal" href="#example-gui-objects">Example: GUI objects</a></li>
+<li><a class="reference internal" href="#example-custom-descriptors">Example: custom descriptors</a></li>
+<li><a class="reference internal" href="#example-property-namespaces">Example: property namespaces</a></li>
+<li><a class="reference internal" href="#example-interfaces">Example: interfaces</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#open-issues">Open Issues</a><ul>
+<li><a class="reference internal" href="#keyword">Keyword</a></li>
+<li><a class="reference internal" href="#the-make-statement-as-an-alternate-constructor">The make-statement as an alternate constructor</a></li>
+<li><a class="reference internal" href="#customizing-the-dict-in-which-the-block-is-executed">Customizing the dict in which the block is executed</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#optional-extensions">Optional Extensions</a><ul>
+<li><a class="reference internal" href="#remove-the-make-keyword">Remove the make keyword</a></li>
+<li><a class="reference internal" href="#removing-metaclass-in-python-3000">Removing __metaclass__ in Python 3000</a></li>
+<li><a class="reference internal" href="#removing-class-statements-in-python-3000">Removing class statements in Python 3000</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

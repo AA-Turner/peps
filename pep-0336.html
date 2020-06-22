@@ -1,0 +1,243 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 336 – Make None Callable &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 337 – Logging Usage in the Standard Library" href="pep-0337.html" />
+    <link rel="prev" title="PEP 335 – Overloadable Boolean Operators" href="pep-0335.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 336 – Make None Callable</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-336-make-none-callable">
+<h1 class="page-title">PEP 336 – Make None Callable<a class="headerlink" href="#pep-336-make-none-callable" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">336</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Make None Callable</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Andrew McClelland &lt;eternalsquire&#32;&#97;t&#32;comcast.net&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Rejected</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">28-Oct-2004</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id4">Abstract</a></li>
+<li><a class="reference internal" href="#bdfl-pronouncement" id="id5">BDFL Pronouncement</a></li>
+<li><a class="reference internal" href="#motivation" id="id6">Motivation</a></li>
+<li><a class="reference internal" href="#rationale" id="id7">Rationale</a></li>
+<li><a class="reference internal" href="#how-to-use" id="id8">How To Use</a></li>
+<li><a class="reference internal" href="#references" id="id9">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id10">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id4">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">None</span></code> should be a callable object that when called with any
+arguments has no side effect and returns <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+</div>
+<div class="section" id="bdfl-pronouncement">
+<h2><a class="toc-backref" href="#id5">BDFL Pronouncement</a><a class="headerlink" href="#bdfl-pronouncement" title="Permalink to this headline">¶</a></h2>
+<p>This PEP is rejected.  It is considered a feature that <code class="docutils literal notranslate"><span class="pre">None</span></code> raises
+an error when called.  The proposal falls short in tests for
+obviousness, clarity, explicitness, and necessity.  The provided Switch
+example is nice but easily handled by a simple lambda definition.
+See python-dev discussion on 17 June 2005 <a class="footnote-reference brackets" href="#id3" id="id1">2</a>.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id6">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>To allow a programming style for selectable actions that is more
+in accordance with the minimalistic functional programming goals
+of the Python language.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id7">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Allow the use of <code class="docutils literal notranslate"><span class="pre">None</span></code> in method tables as a universal no effect
+rather than either (1) checking a method table entry against <code class="docutils literal notranslate"><span class="pre">None</span></code>
+before calling, or (2) writing a local no effect method with
+arguments similar to other functions in the table.</p>
+<p>The semantics would be effectively:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">None</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="k">pass</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="how-to-use">
+<h2><a class="toc-backref" href="#id8">How To Use</a><a class="headerlink" href="#how-to-use" title="Permalink to this headline">¶</a></h2>
+<p>Before, checking function table entry against <code class="docutils literal notranslate"><span class="pre">None</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Select</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="nf">a</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">):</span>
+        <span class="nb">print</span> <span class="s1">&#39;a&#39;</span>
+
+    <span class="k">def</span> <span class="nf">b</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">):</span>
+        <span class="nb">print</span> <span class="s1">&#39;b&#39;</span>
+
+    <span class="k">def</span> <span class="nf">c</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">):</span>
+        <span class="nb">print</span> <span class="s1">&#39;c&#39;</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">):</span>
+     <span class="n">function</span> <span class="o">=</span> <span class="p">{</span> <span class="mi">1</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">a</span><span class="p">,</span>
+           <span class="mi">2</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">,</span>
+           <span class="mi">3</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">c</span>
+        <span class="p">}</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+     <span class="k">if</span> <span class="n">function</span><span class="p">:</span>  <span class="k">return</span> <span class="n">function</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Before, using a local no effect method:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Select</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="nf">a</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">):</span>
+        <span class="nb">print</span> <span class="s1">&#39;a&#39;</span>
+
+    <span class="k">def</span> <span class="nf">b</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">):</span>
+        <span class="nb">print</span> <span class="s1">&#39;b&#39;</span>
+
+    <span class="k">def</span> <span class="nf">c</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">):</span>
+        <span class="nb">print</span> <span class="s1">&#39;c&#39;</span>
+
+    <span class="k">def</span> <span class="nf">nop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">):</span>
+     <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span> <span class="mi">1</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">a</span><span class="p">,</span>
+        <span class="mi">2</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">,</span>
+        <span class="mi">3</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">c</span>
+        <span class="p">}</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nop</span><span class="p">)(</span><span class="nb">input</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>After:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Select</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="nf">a</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">):</span>
+        <span class="nb">print</span> <span class="s1">&#39;a&#39;</span>
+
+    <span class="k">def</span> <span class="nf">b</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">):</span>
+        <span class="nb">print</span> <span class="s1">&#39;b&#39;</span>
+
+    <span class="k">def</span> <span class="nf">c</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">):</span>
+        <span class="nb">print</span> <span class="s1">&#39;c&#39;</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">):</span>
+     <span class="k">return</span> <span class="p">{</span> <span class="mi">1</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">a</span><span class="p">,</span>
+        <span class="mi">2</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">,</span>
+        <span class="mi">3</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">c</span>
+        <span class="p">}</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="kc">None</span><span class="p">)(</span><span class="nb">input</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id9">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets">1</span></dt>
+<dd>Python Reference Manual, Section 3.2,
+<a class="reference external" href="http://docs.python.org/reference/">http://docs.python.org/reference/</a></dd>
+<dt class="label" id="id3"><span class="brackets"><a class="fn-backref" href="#id1">2</a></span></dt>
+<dd>Raymond Hettinger, Propose to reject PEP 336 – Make None Callable
+<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2005-June/054280.html">https://mail.python.org/pipermail/python-dev/2005-June/054280.html</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id10">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0336.txt">https://github.com/python/peps/blob/master/pep-0336.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0336.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0335.html">PEP 0335</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0337.html">PEP 0337</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 336 – Make None Callable</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#bdfl-pronouncement">BDFL Pronouncement</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#how-to-use">How To Use</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

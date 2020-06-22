@@ -1,0 +1,359 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 310 – Reliable Acquisition/Release Pairs &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 311 – Simplified Global Interpreter Lock Acquisition for Extensions" href="pep-0311.html" />
+    <link rel="prev" title="PEP 309 – Partial Function Application" href="pep-0309.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 310 – Reliable Acquisition/Release Pairs</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-310-reliable-acquisition-release-pairs">
+<h1 class="page-title">PEP 310 – Reliable Acquisition/Release Pairs<a class="headerlink" href="#pep-310-reliable-acquisition-release-pairs" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">310</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Reliable Acquisition/Release Pairs</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Michael Hudson &lt;mwh&#32;&#97;t&#32;python.net&gt;,
+Paul Moore &lt;p.f.moore&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Rejected</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">18-Dec-2002</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.4</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id7">Abstract</a></li>
+<li><a class="reference internal" href="#pronouncement" id="id8">Pronouncement</a></li>
+<li><a class="reference internal" href="#rationale" id="id9">Rationale</a></li>
+<li><a class="reference internal" href="#basic-syntax-and-semantics" id="id10">Basic Syntax and Semantics</a></li>
+<li><a class="reference internal" href="#possible-extensions" id="id11">Possible Extensions</a><ul>
+<li><a class="reference internal" href="#multiple-expressions" id="id12">Multiple expressions</a></li>
+<li><a class="reference internal" href="#exception-handling" id="id13">Exception handling</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation-notes" id="id14">Implementation Notes</a></li>
+<li><a class="reference internal" href="#open-issues" id="id15">Open Issues</a></li>
+<li><a class="reference internal" href="#alternative-ideas" id="id16">Alternative Ideas</a></li>
+<li><a class="reference internal" href="#backwards-compatibility" id="id17">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#cost-of-adoption" id="id18">Cost of Adoption</a></li>
+<li><a class="reference internal" href="#cost-of-non-adoption" id="id19">Cost of Non-Adoption</a></li>
+<li><a class="reference internal" href="#references" id="id20">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id21">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id7">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>It would be nice to have a less typing-intense way of writing:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">the_lock</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="o">....</span>
+<span class="k">finally</span><span class="p">:</span>
+    <span class="n">the_lock</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>This PEP proposes a piece of syntax (a ‘with’ block) and a
+“small-i” interface that generalizes the above.</p>
+</div>
+<div class="section" id="pronouncement">
+<h2><a class="toc-backref" href="#id8">Pronouncement</a><a class="headerlink" href="#pronouncement" title="Permalink to this headline">¶</a></h2>
+<p>This PEP is rejected in favor of PEP 343.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id9">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>One of the advantages of Python’s exception handling philosophy is
+that it makes it harder to do the “wrong” thing (e.g. failing to
+check the return value of some system call).  Currently, this does
+not apply to resource cleanup.  The current syntax for acquisition
+and release of a resource (for example, a lock) is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">the_lock</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="o">....</span>
+<span class="k">finally</span><span class="p">:</span>
+    <span class="n">the_lock</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>This syntax separates the acquisition and release by a (possibly
+large) block of code, which makes it difficult to confirm “at a
+glance” that the code manages the resource correctly.  Another
+common error is to code the “acquire” call within the try block,
+which incorrectly releases the lock if the acquire fails.</p>
+</div>
+<div class="section" id="basic-syntax-and-semantics">
+<h2><a class="toc-backref" href="#id10">Basic Syntax and Semantics</a><a class="headerlink" href="#basic-syntax-and-semantics" title="Permalink to this headline">¶</a></h2>
+<p>The syntax of a ‘with’ statement is as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;with&#39;</span> <span class="p">[</span> <span class="n">var</span> <span class="s1">&#39;=&#39;</span> <span class="p">]</span> <span class="n">expr</span> <span class="s1">&#39;:&#39;</span>
+    <span class="n">suite</span>
+</pre></div>
+</div>
+<p>This statement is defined as being equivalent to the following
+sequence of statements:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">var</span> <span class="o">=</span> <span class="n">expr</span>
+
+<span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="s2">&quot;__enter__&quot;</span><span class="p">):</span>
+    <span class="n">var</span><span class="o">.</span><span class="fm">__enter__</span><span class="p">()</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">suite</span>
+
+<span class="k">finally</span><span class="p">:</span>
+    <span class="n">var</span><span class="o">.</span><span class="fm">__exit__</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>(The presence of an <code class="docutils literal notranslate"><span class="pre">__exit__</span></code> method is <em>not</em> checked like that of
+<code class="docutils literal notranslate"><span class="pre">__enter__</span></code> to ensure that using inappropriate objects in with:
+statements gives an error).</p>
+<p>If the variable is omitted, an unnamed object is allocated on the
+stack.  In that case, the suite has no access to the unnamed object.</p>
+</div>
+<div class="section" id="possible-extensions">
+<h2><a class="toc-backref" href="#id11">Possible Extensions</a><a class="headerlink" href="#possible-extensions" title="Permalink to this headline">¶</a></h2>
+<p>A number of potential extensions to the basic syntax have been
+discussed on the Python Developers list.  None of these extensions
+are included in the solution proposed by this PEP.  In many cases,
+the arguments are nearly equally strong in both directions.  In
+such cases, the PEP has always chosen simplicity, simply because
+where extra power is needed, the existing try block is available.</p>
+<div class="section" id="multiple-expressions">
+<h3><a class="toc-backref" href="#id12">Multiple expressions</a><a class="headerlink" href="#multiple-expressions" title="Permalink to this headline">¶</a></h3>
+<p>One proposal was for allowing multiple expressions within one
+‘with’ statement.  The <code class="docutils literal notranslate"><span class="pre">__enter__</span></code> methods would be called left to
+right, and the <code class="docutils literal notranslate"><span class="pre">__exit__</span></code> methods right to left.  The advantage of
+doing so is that where more than one resource is being managed,
+nested ‘with’ statements will result in code drifting towards the
+right margin.  The solution to this problem is the same as for any
+other deep nesting - factor out some of the code into a separate
+function.  Furthermore, the question of what happens if one of the
+<code class="docutils literal notranslate"><span class="pre">__exit__</span></code> methods raises an exception (should the other <code class="docutils literal notranslate"><span class="pre">__exit__</span></code>
+methods be called?) needs to be addressed.</p>
+</div>
+<div class="section" id="exception-handling">
+<h3><a class="toc-backref" href="#id13">Exception handling</a><a class="headerlink" href="#exception-handling" title="Permalink to this headline">¶</a></h3>
+<p>An extension to the protocol to include an optional <code class="docutils literal notranslate"><span class="pre">__except__</span></code>
+handler, which is called when an exception is raised, and which
+can handle or re-raise the exception, has been suggested.  It is
+not at all clear that the semantics of this extension can be made
+precise and understandable.  For example, should the equivalent
+code be <code class="docutils literal notranslate"><span class="pre">try</span> <span class="pre">...</span> <span class="pre">except</span> <span class="pre">...</span> <span class="pre">else</span></code> if an exception handler is
+defined, and <code class="docutils literal notranslate"><span class="pre">try</span> <span class="pre">...</span> <span class="pre">finally</span></code> if not?  How can this be determined
+at compile time, in general?  The alternative is to define the
+code as expanding to a <code class="docutils literal notranslate"><span class="pre">try</span> <span class="pre">...</span> <span class="pre">except</span></code> inside a <code class="docutils literal notranslate"><span class="pre">try</span> <span class="pre">...</span> <span class="pre">finally</span></code>.
+But this may not do the right thing in real life.</p>
+<p>The only use case identified for exception handling is with
+transactional processing (commit on a clean finish, and rollback
+on an exception).  This is probably just as easy to handle with a
+conventional <code class="docutils literal notranslate"><span class="pre">try</span> <span class="pre">...</span> <span class="pre">except</span> <span class="pre">...</span> <span class="pre">else</span></code> block, and so the PEP does
+not include any support for exception handlers.</p>
+</div>
+</div>
+<div class="section" id="implementation-notes">
+<h2><a class="toc-backref" href="#id14">Implementation Notes</a><a class="headerlink" href="#implementation-notes" title="Permalink to this headline">¶</a></h2>
+<p>There is a potential race condition in the code specified as
+equivalent to the with statement.  For example, if a
+<code class="docutils literal notranslate"><span class="pre">KeyboardInterrupt</span></code> exception is raised between the completion of
+the <code class="docutils literal notranslate"><span class="pre">__enter__</span></code> method call and the start of the try block, the
+<code class="docutils literal notranslate"><span class="pre">__exit__</span></code> method will not be called.  This can lead to resource
+leaks, or to deadlocks.  [XXX Guido has stated that he cares about
+this sort of race condition, and intends to write some C magic to
+handle them.  The implementation of the ‘with’ statement should
+copy this.]</p>
+</div>
+<div class="section" id="open-issues">
+<h2><a class="toc-backref" href="#id15">Open Issues</a><a class="headerlink" href="#open-issues" title="Permalink to this headline">¶</a></h2>
+<p>Should existing classes (for example, file-like objects and locks)
+gain appropriate <code class="docutils literal notranslate"><span class="pre">__enter__</span></code> and <code class="docutils literal notranslate"><span class="pre">__exit__</span></code> methods?  The obvious
+reason in favour is convenience (no adapter needed).  The argument
+against is that if built-in files have this but (say) <code class="docutils literal notranslate"><span class="pre">StringIO</span></code>
+does not, then code that uses “with” on a file object can’t be
+reused with a <code class="docutils literal notranslate"><span class="pre">StringIO</span></code> object.  So <code class="docutils literal notranslate"><span class="pre">__exit__</span> <span class="pre">=</span> <span class="pre">close</span></code> becomes a part
+of the “file-like object” protocol, which user-defined classes may
+need to support.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">__enter__</span></code> hook may be unnecessary - for many use cases, an
+adapter class is needed and in that case, the work done by the
+<code class="docutils literal notranslate"><span class="pre">__enter__</span></code> hook can just as easily be done in the <code class="docutils literal notranslate"><span class="pre">__init__</span></code> hook.</p>
+<p>If a way of controlling object lifetimes explicitly was available,
+the function of the <code class="docutils literal notranslate"><span class="pre">__exit__</span></code> hook could be taken over by the
+existing <code class="docutils literal notranslate"><span class="pre">__del__</span></code> hook.  An email exchange <a class="footnote-reference brackets" href="#id4" id="id1">1</a> with a proponent of
+this approach left one of the authors even more convinced that
+it isn’t the right idea…</p>
+<p>It has been suggested <a class="footnote-reference brackets" href="#id5" id="id2">2</a> that the “__exit__” method be called
+“close”, or that a “close” method should be considered if no
+<code class="docutils literal notranslate"><span class="pre">__exit__</span></code> method is found, to increase the “out-of-the-box utility”
+of the “with …” construct.</p>
+<p>There are some similarities in concept between ‘with …’ blocks
+and generators, which have led to proposals that for loops could
+implement the with block functionality <a class="footnote-reference brackets" href="#id6" id="id3">3</a>.  While neat on some
+levels, we think that for loops should stick to being loops.</p>
+</div>
+<div class="section" id="alternative-ideas">
+<h2><a class="toc-backref" href="#id16">Alternative Ideas</a><a class="headerlink" href="#alternative-ideas" title="Permalink to this headline">¶</a></h2>
+<p>IEXEC: Holger Krekel – generalised approach with XML-like syntax
+(no URL found…).</p>
+<p>Holger has much more far-reaching ideas about “execution monitors”
+that are informed about details of control flow in the monitored
+block.  While interesting, these ideas could change the language
+in deep and subtle ways and as such belong to a different PEP.</p>
+<p>Any Smalltalk/Ruby anonymous block style extension obviously
+subsumes this one.</p>
+<p>PEP 319 is in the same area, but did not win support when aired on
+python-dev.</p>
+</div>
+<div class="section" id="backwards-compatibility">
+<h2><a class="toc-backref" href="#id17">Backwards Compatibility</a><a class="headerlink" href="#backwards-compatibility" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes a new keyword, so the <code class="docutils literal notranslate"><span class="pre">__future__</span></code> game will need
+to be played.</p>
+</div>
+<div class="section" id="cost-of-adoption">
+<h2><a class="toc-backref" href="#id18">Cost of Adoption</a><a class="headerlink" href="#cost-of-adoption" title="Permalink to this headline">¶</a></h2>
+<p>Those who claim the language is getting larger and more
+complicated have something else to complain about.  It’s something
+else to teach.</p>
+<p>For the proposal to be useful, many file-like and lock-like
+classes in the standard library and other code will have to have</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="fm">__exit__</span> <span class="o">=</span> <span class="n">close</span>
+</pre></div>
+</div>
+<p>or similar added.</p>
+</div>
+<div class="section" id="cost-of-non-adoption">
+<h2><a class="toc-backref" href="#id19">Cost of Non-Adoption</a><a class="headerlink" href="#cost-of-non-adoption" title="Permalink to this headline">¶</a></h2>
+<p>Writing correct code continues to be more effort than writing
+incorrect code.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id20">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<p>There are various python-list and python-dev discussions that
+could be mentioned here.</p>
+<dl class="footnote brackets">
+<dt class="label" id="id4"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>Off-list conversation between Michael Hudson and Bill Soudan
+(made public with permission)
+<a class="reference external" href="http://starship.python.net/crew/mwh/pep310/">http://starship.python.net/crew/mwh/pep310/</a></dd>
+<dt class="label" id="id5"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>Samuele Pedroni on python-dev
+<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2003-August/037795.html">https://mail.python.org/pipermail/python-dev/2003-August/037795.html</a></dd>
+<dt class="label" id="id6"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd>Thread on python-dev with subject</dd>
+</dl>
+<dl class="citation">
+<dt class="label" id="python-dev"><span class="brackets">Python-Dev</span></dt>
+<dd><p>pre-PEP: Resource-Release Support for Generators</p>
+<p>starting at</p>
+<p><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2003-August/037803.html">https://mail.python.org/pipermail/python-dev/2003-August/037803.html</a></p>
+</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id21">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0310.txt">https://github.com/python/peps/blob/master/pep-0310.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0310.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0309.html">PEP 0309</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0311.html">PEP 0311</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 310 – Reliable Acquisition/Release Pairs</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#pronouncement">Pronouncement</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#basic-syntax-and-semantics">Basic Syntax and Semantics</a></li>
+<li><a class="reference internal" href="#possible-extensions">Possible Extensions</a><ul>
+<li><a class="reference internal" href="#multiple-expressions">Multiple expressions</a></li>
+<li><a class="reference internal" href="#exception-handling">Exception handling</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation-notes">Implementation Notes</a></li>
+<li><a class="reference internal" href="#open-issues">Open Issues</a></li>
+<li><a class="reference internal" href="#alternative-ideas">Alternative Ideas</a></li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#cost-of-adoption">Cost of Adoption</a></li>
+<li><a class="reference internal" href="#cost-of-non-adoption">Cost of Non-Adoption</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

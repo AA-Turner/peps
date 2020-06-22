@@ -1,0 +1,303 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 211 – Adding A New Outer Product Operator &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 212 – Loop Counter Iteration" href="pep-0212.html" />
+    <link rel="prev" title="PEP 210 – Decoupling the Interpreter Loop" href="pep-0210.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 211 – Adding A New Outer Product Operator</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-211-adding-a-new-outer-product-operator">
+<h1 class="page-title">PEP 211 – Adding A New Outer Product Operator<a class="headerlink" href="#pep-211-adding-a-new-outer-product-operator" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">211</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Adding A New Outer Product Operator</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">gvwilson&#32;&#97;t&#32;ddj.com (Greg Wilson)</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Rejected</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">15-Jul-2000</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.1</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+<dt class="field-odd">Resolution</dt>
+<dd class="field-odd"><a class="reference external" href="https://www.python.org/dev/peps/pep-0465/#rejected-alternatives-to-adding-a-new-operator">https://www.python.org/dev/peps/pep-0465/#rejected-alternatives-to-adding-a-new-operator</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#introduction" id="id13">Introduction</a></li>
+<li><a class="reference internal" href="#background" id="id14">Background</a></li>
+<li><a class="reference internal" href="#iterators" id="id15">Iterators</a></li>
+<li><a class="reference internal" href="#discussion" id="id16">Discussion</a></li>
+<li><a class="reference internal" href="#alternatives" id="id17">Alternatives</a></li>
+<li><a class="reference internal" href="#acknowledgments" id="id18">Acknowledgments</a></li>
+<li><a class="reference internal" href="#references" id="id19">References</a></li>
+</ul>
+</div>
+<div class="section" id="introduction">
+<h2><a class="toc-backref" href="#id13">Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>This PEP describes a proposal to define <code class="docutils literal notranslate"><span class="pre">&#64;</span></code> (pronounced “across”)
+as a new outer product operator in Python 2.2.  When applied to
+sequences (or other iterable objects), this operator will combine
+their iterators, so that:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">S</span> <span class="o">@</span> <span class="n">T</span><span class="p">:</span>
+    <span class="k">pass</span>
+</pre></div>
+</div>
+<p>will be equivalent to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">S</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">T</span><span class="p">:</span>
+        <span class="k">pass</span>
+</pre></div>
+</div>
+<p>Classes will be able to overload this operator using the special
+methods <code class="docutils literal notranslate"><span class="pre">__across__</span></code>, <code class="docutils literal notranslate"><span class="pre">__racross__</span></code>, and <code class="docutils literal notranslate"><span class="pre">__iacross__</span></code>.  In
+particular, the new Numeric module (PEP 209) will overload this
+operator for multi-dimensional arrays to implement matrix
+multiplication.</p>
+</div>
+<div class="section" id="background">
+<h2><a class="toc-backref" href="#id14">Background</a><a class="headerlink" href="#background" title="Permalink to this headline">¶</a></h2>
+<p>Number-crunching is now just a small part of computing, but many
+programmers — including many Python users — still need to
+express complex mathematical operations in code.  Most numerical
+languages, such as APL, Fortran-90, MATLAB, IDL, and Mathematica,
+therefore provide two forms of the common arithmetic operators.
+One form works element-by-element, e.g. multiplies corresponding
+elements of its matrix arguments.  The other implements the
+“mathematical” definition of that operation, e.g. performs
+row-column matrix multiplication.</p>
+<p>Zhu and Lielens have proposed doubling up Python’s operators in
+this way <a class="footnote-reference brackets" href="#id8" id="id1">1</a>.  Their proposal would create six new binary infix
+operators, and six new in-place operators.</p>
+<p>The original version of this proposal was much more conservative.
+The author consulted the developers of GNU Octave <a class="footnote-reference brackets" href="#id9" id="id2">2</a>, an open
+source clone of MATLAB.  Its developers agreed that providing an
+infix operator for matrix multiplication was important: numerical
+programmers really do care whether they have to write <code class="docutils literal notranslate"><span class="pre">mmul(A,B)</span></code>
+instead of <code class="docutils literal notranslate"><span class="pre">A</span> <span class="pre">op</span> <span class="pre">B</span></code>.</p>
+<p>On the other hand, when asked how important it was to have infix
+operators for matrix solution and other operations, Prof. James
+Rawlings replied <a class="footnote-reference brackets" href="#id10" id="id3">3</a>:</p>
+<blockquote>
+<div>I DON’T think it’s a must have, and I do a lot of matrix
+inversion. I cannot remember if its <code class="docutils literal notranslate"><span class="pre">A\b</span></code> or <code class="docutils literal notranslate"><span class="pre">b\A</span></code> so I always
+write <code class="docutils literal notranslate"><span class="pre">inv(A)*b</span></code> instead. I recommend dropping <code class="docutils literal notranslate"><span class="pre">\</span></code>.</div></blockquote>
+<p>Based on this discussion, and feedback from students at the US
+national laboratories and elsewhere, we recommended adding only
+one new operator, for matrix multiplication, to Python.</p>
+</div>
+<div class="section" id="iterators">
+<h2><a class="toc-backref" href="#id15">Iterators</a><a class="headerlink" href="#iterators" title="Permalink to this headline">¶</a></h2>
+<p>The planned addition of iterators to Python 2.2 opens up a broader
+scope for this proposal.  As part of the discussion of PEP 201,
+Lockstep Iteration <a class="footnote-reference brackets" href="#id11" id="id4">4</a>, the author of this proposal conducted an
+informal usability experiment <a class="footnote-reference brackets" href="#id12" id="id5">5</a>.  The results showed that users
+are psychologically receptive to “cross-product” loop syntax.  For
+example, most users expected:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">S</span> <span class="o">=</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">]</span>
+<span class="n">T</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
+<span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">S</span><span class="p">;</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">T</span><span class="p">:</span>
+    <span class="nb">print</span> <span class="n">x</span><span class="o">+</span><span class="n">y</span><span class="p">,</span>
+</pre></div>
+</div>
+<p>to print <code class="docutils literal notranslate"><span class="pre">11</span> <span class="pre">12</span> <span class="pre">13</span> <span class="pre">21</span> <span class="pre">22</span> <span class="pre">23</span> <span class="pre">31</span> <span class="pre">32</span> <span class="pre">33</span></code>.  We believe that users will
+have the same reaction to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span> <span class="ow">in</span> <span class="n">S</span> <span class="o">@</span> <span class="n">T</span><span class="p">:</span>
+    <span class="nb">print</span> <span class="n">x</span><span class="o">+</span><span class="n">y</span>
+</pre></div>
+</div>
+<p>i.e. that they will naturally interpret this as a tidy way to
+write loop nests.</p>
+<p>This is where iterators come in.  Actually constructing the
+cross-product of two (or more) sequences before executing the loop
+would be very expensive.  On the other hand, <code class="docutils literal notranslate"><span class="pre">&#64;</span></code> could be defined
+to get its arguments’ iterators, and then create an outer iterator
+which returns tuples of the values returned by the inner
+iterators.</p>
+</div>
+<div class="section" id="discussion">
+<h2><a class="toc-backref" href="#id16">Discussion</a><a class="headerlink" href="#discussion" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic">
+<li>Adding a named function “across” would have less impact on
+Python than a new infix operator.  However, this would not make
+Python more appealing to numerical programmers, who really do
+care whether they can write matrix multiplication using an
+operator, or whether they have to write it as a function call.</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&#64;</span></code> would have be chainable in the same way as comparison
+operators, i.e.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="o">@</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span> <span class="o">@</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>would have to return <code class="docutils literal notranslate"><span class="pre">(1,</span> <span class="pre">3,</span> <span class="pre">5)</span> <span class="pre">...</span> <span class="pre">(2,</span> <span class="pre">4,</span> <span class="pre">6)</span></code>, and <em>not</em>
+<code class="docutils literal notranslate"><span class="pre">((1,</span> <span class="pre">3),</span> <span class="pre">5)</span> <span class="pre">...</span> <span class="pre">((2,</span> <span class="pre">4),</span> <span class="pre">6)`</span></code>.  This should not require special
+support from the parser, as the outer iterator created by the
+first <code class="docutils literal notranslate"><span class="pre">&#64;</span></code> could easily be taught how to combine itself with
+ordinary iterators.</p>
+</li>
+<li>There would have to be some way to distinguish restartable
+iterators from ones that couldn’t be restarted.  For example,
+if <code class="docutils literal notranslate"><span class="pre">S</span></code> is an input stream (e.g. a file), and <code class="docutils literal notranslate"><span class="pre">L</span></code> is a list, then <code class="docutils literal notranslate"><span class="pre">S</span>
+<span class="pre">&#64;</span> <span class="pre">L</span></code> is straightforward, but <code class="docutils literal notranslate"><span class="pre">L</span> <span class="pre">&#64;</span> <span class="pre">S</span></code> is not, since iteration
+through the stream cannot be repeated.  This could be treated
+as an error, or by having the outer iterator detect
+non-restartable inner iterators and cache their values.</li>
+<li><p>Whiteboard testing of this proposal in front of three novice
+Python users (all of them experienced programmers) indicates
+that users will expect:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;ab&quot;</span> <span class="o">@</span> <span class="s2">&quot;cd&quot;</span>
+</pre></div>
+</div>
+<p>to return four strings, not four tuples of pairs of
+characters.  Opinion was divided on what:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">)</span> <span class="o">@</span> <span class="s2">&quot;cd&quot;</span>
+</pre></div>
+</div>
+<p>ought to return…</p>
+</li>
+</ol>
+</div>
+<div class="section" id="alternatives">
+<h2><a class="toc-backref" href="#id17">Alternatives</a><a class="headerlink" href="#alternatives" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic">
+<li><p>Do nothing — keep Python simple.</p>
+<p>This is always the default choice.</p>
+</li>
+<li><p>Add a named function instead of an operator.</p>
+<p>Python is not primarily a numerical language; it may not be worth
+complexifying it for this special case.  However, support for real
+matrix multiplication <em>is</em> frequently requested, and the proposed
+semantics for <code class="docutils literal notranslate"><span class="pre">&#64;</span></code> for built-in sequence types would simplify
+expression of a very common idiom (nested loops).</p>
+</li>
+<li><p>Introduce prefixed forms of all existing operators, such as
+<code class="docutils literal notranslate"><span class="pre">~*</span></code> and <code class="docutils literal notranslate"><span class="pre">~+</span></code>, as proposed in PEP 225 <a class="footnote-reference brackets" href="#id8" id="id6">1</a>.</p>
+<p>Our objections to this are that there isn’t enough demand to
+justify the additional complexity (see Rawlings’ comments <a class="footnote-reference brackets" href="#id10" id="id7">3</a>),
+and that the proposed syntax fails the “low toner” readability
+test.</p>
+</li>
+</ol>
+</div>
+<div class="section" id="acknowledgments">
+<h2><a class="toc-backref" href="#id18">Acknowledgments</a><a class="headerlink" href="#acknowledgments" title="Permalink to this headline">¶</a></h2>
+<p>I am grateful to Huaiyu Zhu for initiating this discussion, and to
+James Rawlings and students in various Python courses for their
+discussions of what numerical programmers really care about.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id19">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id8"><span class="brackets">1</span><span class='fn-backref'><em> (<a href="#id1">1</a>, <a href="#id6">2</a>) </em></span></dt>
+<dd>PEP 225, Elementwise/Objectwise Operators, Zhu, Lielens
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0225/">http://www.python.org/dev/peps/pep-0225/</a></dd>
+<dt class="label" id="id9"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd><a class="reference external" href="http://bevo.che.wisc.edu/octave/">http://bevo.che.wisc.edu/octave/</a></dd>
+<dt class="label" id="id10"><span class="brackets">3</span><span class='fn-backref'><em> (<a href="#id3">1</a>, <a href="#id7">2</a>) </em></span></dt>
+<dd><a class="reference external" href="http://www.egroups.com/message/python-numeric/4">http://www.egroups.com/message/python-numeric/4</a></dd>
+<dt class="label" id="id11"><span class="brackets"><a class="fn-backref" href="#id4">4</a></span></dt>
+<dd>PEP 201, Lockstep Iteration, Warsaw
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0201/">http://www.python.org/dev/peps/pep-0201/</a></dd>
+<dt class="label" id="id12"><span class="brackets"><a class="fn-backref" href="#id5">5</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2000-July/006427.html">https://mail.python.org/pipermail/python-dev/2000-July/006427.html</a></dd>
+</dl>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0211.txt">https://github.com/python/peps/blob/master/pep-0211.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0211.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0210.html">PEP 0210</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0212.html">PEP 0212</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 211 – Adding A New Outer Product Operator</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#background">Background</a></li>
+<li><a class="reference internal" href="#iterators">Iterators</a></li>
+<li><a class="reference internal" href="#discussion">Discussion</a></li>
+<li><a class="reference internal" href="#alternatives">Alternatives</a></li>
+<li><a class="reference internal" href="#acknowledgments">Acknowledgments</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

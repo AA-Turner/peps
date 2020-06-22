@@ -1,0 +1,507 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 443 – Single-dispatch generic functions &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 444 – Python Web3 Interface" href="pep-0444.html" />
+    <link rel="prev" title="PEP 442 – Safe object finalization" href="pep-0442.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 443 – Single-dispatch generic functions</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-443-single-dispatch-generic-functions">
+<h1 class="page-title">PEP 443 – Single-dispatch generic functions<a class="headerlink" href="#pep-443-single-dispatch-generic-functions" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">443</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Single-dispatch generic functions</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Łukasz Langa &lt;lukasz&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Discussions-To</dt>
+<dd class="field-even">Python-Dev &lt;<a class="reference external" href="mailto:python-dev&#37;&#52;&#48;python&#46;org?subject=PEP%20443">python-dev&#32;&#97;t&#32;python.org</a>&gt;</dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd">Final</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even">Standards Track</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">22-May-2013</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">22-May-2013, 25-May-2013, 31-May-2013</dd>
+<dt class="field-odd">Replaces</dt>
+<dd class="field-odd"><a class="reference external" href="./pep-0245.html">245</a> <a class="reference external" href="./pep-0246.html">246</a> <a class="reference external" href="./pep-3124.html">3124</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id13">Abstract</a></li>
+<li><a class="reference internal" href="#rationale-and-goals" id="id14">Rationale and Goals</a></li>
+<li><a class="reference internal" href="#user-api" id="id15">User API</a></li>
+<li><a class="reference internal" href="#implementation-notes" id="id16">Implementation Notes</a><ul>
+<li><a class="reference internal" href="#abstract-base-classes" id="id17">Abstract Base Classes</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#usage-patterns" id="id18">Usage Patterns</a></li>
+<li><a class="reference internal" href="#alternative-approaches" id="id19">Alternative approaches</a></li>
+<li><a class="reference internal" href="#acknowledgements" id="id20">Acknowledgements</a></li>
+<li><a class="reference internal" href="#references" id="id21">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id22">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id13">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes a new mechanism in the <code class="docutils literal notranslate"><span class="pre">functools</span></code> standard library
+module that provides a simple form of generic programming known as
+single-dispatch generic functions.</p>
+<p>A <strong>generic function</strong> is composed of multiple functions implementing
+the same operation for different types. Which implementation should be
+used during a call is determined by the dispatch algorithm. When the
+implementation is chosen based on the type of a single argument, this is
+known as <strong>single dispatch</strong>.</p>
+</div>
+<div class="section" id="rationale-and-goals">
+<h2><a class="toc-backref" href="#id14">Rationale and Goals</a><a class="headerlink" href="#rationale-and-goals" title="Permalink to this headline">¶</a></h2>
+<p>Python has always provided a variety of built-in and standard-library
+generic functions, such as <code class="docutils literal notranslate"><span class="pre">len()</span></code>, <code class="docutils literal notranslate"><span class="pre">iter()</span></code>, <code class="docutils literal notranslate"><span class="pre">pprint.pprint()</span></code>,
+<code class="docutils literal notranslate"><span class="pre">copy.copy()</span></code>, and most of the functions in the <code class="docutils literal notranslate"><span class="pre">operator</span></code> module.
+However, it currently:</p>
+<ol class="arabic simple">
+<li>does not have a simple or straightforward way for developers to
+create new generic functions,</li>
+<li>does not have a standard way for methods to be added to existing
+generic functions (i.e., some are added using registration
+functions, others require defining <code class="docutils literal notranslate"><span class="pre">__special__</span></code> methods, possibly
+by monkeypatching).</li>
+</ol>
+<p>In addition, it is currently a common anti-pattern for Python code to
+inspect the types of received arguments, in order to decide what to do
+with the objects.</p>
+<p>For example, code may wish to accept either an object
+of some type, or a sequence of objects of that type.
+Currently, the “obvious way” to do this is by type inspection, but this
+is brittle and closed to extension.</p>
+<p>Abstract Base Classes make it easier
+to discover present behaviour, but don’t help adding new behaviour.
+A developer using an already-written library may be unable to change how
+their objects are treated by such code, especially if the objects they
+are using were created by a third party.</p>
+<p>Therefore, this PEP proposes a uniform API to address dynamic
+overloading using decorators.</p>
+</div>
+<div class="section" id="user-api">
+<h2><a class="toc-backref" href="#id15">User API</a><a class="headerlink" href="#user-api" title="Permalink to this headline">¶</a></h2>
+<p>To define a generic function, decorate it with the <code class="docutils literal notranslate"><span class="pre">&#64;singledispatch</span></code>
+decorator. Note that the dispatch happens on the type of the first
+argument. Create your function accordingly:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">singledispatch</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nd">@singledispatch</span>
+<span class="gp">... </span><span class="k">def</span> <span class="nf">fun</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+<span class="gp">... </span>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Let me just say,&quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To add overloaded implementations to the function, use the
+<code class="docutils literal notranslate"><span class="pre">register()</span></code> attribute of the generic function. This is a decorator,
+taking a type parameter and decorating a function implementing the
+operation for that type:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nd">@fun</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+<span class="gp">... </span><span class="k">def</span> <span class="nf">_</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+<span class="gp">... </span>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Strength in numbers, eh?&quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nd">@fun</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+<span class="gp">... </span><span class="k">def</span> <span class="nf">_</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+<span class="gp">... </span>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Enumerate this:&quot;</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">elem</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">arg</span><span class="p">):</span>
+<span class="gp">... </span>        <span class="nb">print</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">elem</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To enable registering lambdas and pre-existing functions, the
+<code class="docutils literal notranslate"><span class="pre">register()</span></code> attribute can be used in a functional form:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">nothing</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Nothing.&quot;</span><span class="p">)</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fun</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span> <span class="n">nothing</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">register()</span></code> attribute returns the undecorated function. This
+enables decorator stacking, pickling, as well as creating unit tests for
+each variant independently:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nd">@fun</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+<span class="gp">... </span><span class="nd">@fun</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">Decimal</span><span class="p">)</span>
+<span class="gp">... </span><span class="k">def</span> <span class="nf">fun_num</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+<span class="gp">... </span>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Half of your number:&quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="n">arg</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fun_num</span> <span class="ow">is</span> <span class="n">fun</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+<p>When called, the generic function dispatches on the type of the first
+argument:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">fun</span><span class="p">(</span><span class="s2">&quot;Hello, world.&quot;</span><span class="p">)</span>
+<span class="go">Hello, world.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fun</span><span class="p">(</span><span class="s2">&quot;test.&quot;</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="go">Let me just say, test.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fun</span><span class="p">(</span><span class="mi">42</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="go">Strength in numbers, eh? 42</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fun</span><span class="p">([</span><span class="s1">&#39;spam&#39;</span><span class="p">,</span> <span class="s1">&#39;spam&#39;</span><span class="p">,</span> <span class="s1">&#39;eggs&#39;</span><span class="p">,</span> <span class="s1">&#39;spam&#39;</span><span class="p">],</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="go">Enumerate this:</span>
+<span class="go">0 spam</span>
+<span class="go">1 spam</span>
+<span class="go">2 eggs</span>
+<span class="go">3 spam</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fun</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+<span class="go">Nothing.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fun</span><span class="p">(</span><span class="mf">1.23</span><span class="p">)</span>
+<span class="go">0.615</span>
+</pre></div>
+</div>
+<p>Where there is no registered implementation for a specific type, its
+method resolution order is used to find a more generic implementation.
+The original function decorated with <code class="docutils literal notranslate"><span class="pre">&#64;singledispatch</span></code> is registered
+for the base <code class="docutils literal notranslate"><span class="pre">object</span></code> type, which means it is used if no better
+implementation is found.</p>
+<p>To check which implementation will the generic function choose for
+a given type, use the <code class="docutils literal notranslate"><span class="pre">dispatch()</span></code> attribute:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">fun</span><span class="o">.</span><span class="n">dispatch</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+<span class="go">&lt;function fun_num at 0x104319058&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fun</span><span class="o">.</span><span class="n">dispatch</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>    <span class="c1"># note: default implementation</span>
+<span class="go">&lt;function fun at 0x103fe0000&gt;</span>
+</pre></div>
+</div>
+<p>To access all registered implementations, use the read-only <code class="docutils literal notranslate"><span class="pre">registry</span></code>
+attribute:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">fun</span><span class="o">.</span><span class="n">registry</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+<span class="go">dict_keys([&lt;class &#39;NoneType&#39;&gt;, &lt;class &#39;int&#39;&gt;, &lt;class &#39;object&#39;&gt;,</span>
+<span class="go">          &lt;class &#39;decimal.Decimal&#39;&gt;, &lt;class &#39;list&#39;&gt;,</span>
+<span class="go">          &lt;class &#39;float&#39;&gt;])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fun</span><span class="o">.</span><span class="n">registry</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+<span class="go">&lt;function fun_num at 0x1035a2840&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fun</span><span class="o">.</span><span class="n">registry</span><span class="p">[</span><span class="nb">object</span><span class="p">]</span>
+<span class="go">&lt;function fun at 0x103fe0000&gt;</span>
+</pre></div>
+</div>
+<p>The proposed API is intentionally limited and opinionated, as to ensure
+it is easy to explain and use, as well as to maintain consistency with
+existing members in the <code class="docutils literal notranslate"><span class="pre">functools</span></code> module.</p>
+</div>
+<div class="section" id="implementation-notes">
+<h2><a class="toc-backref" href="#id16">Implementation Notes</a><a class="headerlink" href="#implementation-notes" title="Permalink to this headline">¶</a></h2>
+<p>The functionality described in this PEP is already implemented in the
+<code class="docutils literal notranslate"><span class="pre">pkgutil</span></code> standard library module as <code class="docutils literal notranslate"><span class="pre">simplegeneric</span></code>. Because this
+implementation is mature, the goal is to move it largely as-is. The
+reference implementation is available on hg.python.org <a class="footnote-reference brackets" href="#ref-impl" id="id1">1</a>.</p>
+<p>The dispatch type is specified as a decorator argument. An alternative
+form using function annotations was considered but its inclusion
+has been rejected. As of May 2013, this usage pattern is out of scope
+for the standard library <a class="footnote-reference brackets" href="#pep-0008" id="id2">2</a>, and the best practices for
+annotation usage are still debated.</p>
+<p>Based on the current <code class="docutils literal notranslate"><span class="pre">pkgutil.simplegeneric</span></code> implementation, and
+following the convention on registering virtual subclasses on Abstract
+Base Classes, the dispatch registry will not be thread-safe.</p>
+<div class="section" id="abstract-base-classes">
+<h3><a class="toc-backref" href="#id17">Abstract Base Classes</a><a class="headerlink" href="#abstract-base-classes" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">pkgutil.simplegeneric</span></code> implementation relied on several forms of
+method resolution order (MRO). <code class="docutils literal notranslate"><span class="pre">&#64;singledispatch</span></code> removes special
+handling of old-style classes and Zope’s ExtensionClasses. More
+importantly, it introduces support for Abstract Base Classes (ABC).</p>
+<p>When a generic function implementation is registered for an ABC, the
+dispatch algorithm switches to an extended form of C3 linearization,
+which includes the relevant ABCs in the MRO of the provided argument.
+The algorithm inserts ABCs where their functionality is introduced, i.e.
+<code class="docutils literal notranslate"><span class="pre">issubclass(cls,</span> <span class="pre">abc)</span></code> returns <code class="docutils literal notranslate"><span class="pre">True</span></code> for the class itself but
+returns <code class="docutils literal notranslate"><span class="pre">False</span></code> for all its direct base classes. Implicit ABCs for
+a given class (either registered or inferred from the presence of
+a special method like <code class="docutils literal notranslate"><span class="pre">__len__()</span></code>) are inserted directly after the
+last ABC explicitly listed in the MRO of said class.</p>
+<p>In its most basic form, this linearization returns the MRO for the given
+type:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">_compose_mro</span><span class="p">(</span><span class="nb">dict</span><span class="p">,</span> <span class="p">[])</span>
+<span class="go">[&lt;class &#39;dict&#39;&gt;, &lt;class &#39;object&#39;&gt;]</span>
+</pre></div>
+</div>
+<p>When the second argument contains ABCs that the specified type is
+a subclass of, they are inserted in a predictable order:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">_compose_mro</span><span class="p">(</span><span class="nb">dict</span><span class="p">,</span> <span class="p">[</span><span class="n">Sized</span><span class="p">,</span> <span class="n">MutableMapping</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span>
+<span class="gp">... </span>                    <span class="n">Sequence</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">])</span>
+<span class="go">[&lt;class &#39;dict&#39;&gt;, &lt;class &#39;collections.abc.MutableMapping&#39;&gt;,</span>
+<span class="go"> &lt;class &#39;collections.abc.Mapping&#39;&gt;, &lt;class &#39;collections.abc.Sized&#39;&gt;,</span>
+<span class="go"> &lt;class &#39;collections.abc.Iterable&#39;&gt;, &lt;class &#39;collections.abc.Container&#39;&gt;,</span>
+<span class="go"> &lt;class &#39;object&#39;&gt;]</span>
+</pre></div>
+</div>
+<p>While this mode of operation is significantly slower, all dispatch
+decisions are cached. The cache is invalidated on registering new
+implementations on the generic function or when user code calls
+<code class="docutils literal notranslate"><span class="pre">register()</span></code> on an ABC to implicitly subclass it. In the latter case,
+it is possible to create a situation with ambiguous dispatch, for
+instance:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Container</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">P</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="k">pass</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Iterable</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">P</span><span class="p">)</span>
+<span class="go">&lt;class &#39;__main__.P&#39;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Container</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">P</span><span class="p">)</span>
+<span class="go">&lt;class &#39;__main__.P&#39;&gt;</span>
+</pre></div>
+</div>
+<p>Faced with ambiguity, <code class="docutils literal notranslate"><span class="pre">&#64;singledispatch</span></code> refuses the temptation to
+guess:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nd">@singledispatch</span>
+<span class="gp">... </span><span class="k">def</span> <span class="nf">g</span><span class="p">(</span><span class="n">arg</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="k">return</span> <span class="s2">&quot;base&quot;</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">g</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">Iterable</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">arg</span><span class="p">:</span> <span class="s2">&quot;iterable&quot;</span><span class="p">)</span>
+<span class="go">&lt;function &lt;lambda&gt; at 0x108b49110&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">g</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">Container</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">arg</span><span class="p">:</span> <span class="s2">&quot;container&quot;</span><span class="p">)</span>
+<span class="go">&lt;function &lt;lambda&gt; at 0x108b491c8&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">g</span><span class="p">(</span><span class="n">P</span><span class="p">())</span>
+<span class="gt">Traceback (most recent call last):</span>
+<span class="c">...</span>
+<span class="gr">RuntimeError</span>: <span class="n">Ambiguous dispatch: &lt;class &#39;collections.abc.Container&#39;&gt;</span>
+<span class="go">or &lt;class &#39;collections.abc.Iterable&#39;&gt;</span>
+</pre></div>
+</div>
+<p>Note that this exception would not be raised if one or more ABCs had
+been provided explicitly as base classes during class definition. In
+this case dispatch happens in the MRO order:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">Ten</span><span class="p">(</span><span class="n">Iterable</span><span class="p">,</span> <span class="n">Container</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="gp">... </span>        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+<span class="gp">... </span>            <span class="k">yield</span> <span class="n">i</span>
+<span class="gp">... </span>    <span class="k">def</span> <span class="fm">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+<span class="gp">... </span>        <span class="k">return</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">g</span><span class="p">(</span><span class="n">Ten</span><span class="p">())</span>
+<span class="go">&#39;iterable&#39;</span>
+</pre></div>
+</div>
+<p>A similar conflict arises when subclassing an ABC is inferred from the
+presence of a special method like <code class="docutils literal notranslate"><span class="pre">__len__()</span></code> or <code class="docutils literal notranslate"><span class="pre">__contains__()</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">Q</span><span class="p">:</span>
+<span class="gp">... </span>  <span class="k">def</span> <span class="fm">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="k">return</span> <span class="kc">False</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">issubclass</span><span class="p">(</span><span class="n">Q</span><span class="p">,</span> <span class="n">Container</span><span class="p">)</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Iterable</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">Q</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">g</span><span class="p">(</span><span class="n">Q</span><span class="p">())</span>
+<span class="gt">Traceback (most recent call last):</span>
+<span class="c">...</span>
+<span class="gr">RuntimeError</span>: <span class="n">Ambiguous dispatch: &lt;class &#39;collections.abc.Container&#39;&gt;</span>
+<span class="go">or &lt;class &#39;collections.abc.Iterable&#39;&gt;</span>
+</pre></div>
+</div>
+<p>An early version of the PEP contained a custom approach that was simpler
+but created a number of edge cases with surprising results <a class="footnote-reference brackets" href="#why-c3" id="id3">3</a>.</p>
+</div>
+</div>
+<div class="section" id="usage-patterns">
+<h2><a class="toc-backref" href="#id18">Usage Patterns</a><a class="headerlink" href="#usage-patterns" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes extending behaviour only of functions specifically
+marked as generic. Just as a base class method may be overridden by
+a subclass, so too a function may be overloaded to provide custom
+functionality for a given type.</p>
+<p>Universal overloading does not equal <em>arbitrary</em> overloading, in the
+sense that we need not expect people to randomly redefine the behavior
+of existing functions in unpredictable ways. To the contrary, generic
+function usage in actual programs tends to follow very predictable
+patterns and registered implementations are highly-discoverable in the
+common case.</p>
+<p>If a module is defining a new generic operation, it will usually also
+define any required implementations for existing types in the same
+place.  Likewise, if a module is defining a new type, then it will
+usually define implementations there for any generic functions that it
+knows or cares about.  As a result, the vast majority of registered
+implementations can be found adjacent to either the function being
+overloaded, or to a newly-defined type for which the implementation is
+adding support.</p>
+<p>It is only in rather infrequent cases that one will have implementations
+registered in a module that contains neither the function nor the
+type(s) for which the implementation is added. In the absence of
+incompetence or deliberate intention to be obscure, the few
+implementations that are not registered adjacent to the relevant type(s)
+or function(s), will generally not need to be understood or known about
+outside the scope where those implementations are defined. (Except in
+the “support modules” case, where best practice suggests naming them
+accordingly.)</p>
+<p>As mentioned earlier, single-dispatch generics are already prolific
+throughout the standard library. A clean, standard way of doing them
+provides a way forward to refactor those custom implementations to use
+a common one, opening them up for user extensibility at the same time.</p>
+</div>
+<div class="section" id="alternative-approaches">
+<h2><a class="toc-backref" href="#id19">Alternative approaches</a><a class="headerlink" href="#alternative-approaches" title="Permalink to this headline">¶</a></h2>
+<p>In PEP 3124 <a class="footnote-reference brackets" href="#pep-3124" id="id4">4</a> Phillip J. Eby proposes a full-grown solution
+with overloading based on arbitrary rule sets (with the default
+implementation dispatching on argument types), as well as interfaces,
+adaptation and method combining. PEAK-Rules <a class="footnote-reference brackets" href="#peak-rules" id="id5">5</a> is
+a reference implementation of the concepts described in PJE’s PEP.</p>
+<p>Such a broad approach is inherently complex, which makes reaching
+a consensus hard. In contrast, this PEP focuses on a single piece of
+functionality that is simple to reason about. It’s important to note
+this does not preclude the use of other approaches now or in the future.</p>
+<p>In a 2005 article on Artima <a class="footnote-reference brackets" href="#artima2005" id="id6">6</a> Guido van Rossum presents
+a generic function implementation that dispatches on types of all
+arguments on a function. The same approach was chosen in Andrey Popp’s
+<code class="docutils literal notranslate"><span class="pre">generic</span></code> package available on PyPI <a class="footnote-reference brackets" href="#pypi-generic" id="id7">7</a>, as well as David
+Mertz’s <code class="docutils literal notranslate"><span class="pre">gnosis.magic.multimethods</span></code> <a class="footnote-reference brackets" href="#gnosis-multimethods" id="id8">8</a>.</p>
+<p>While this seems desirable at first, I agree with Fredrik Lundh’s
+comment that “if you design APIs with pages of logic just to sort out
+what code a function should execute, you should probably hand over the
+API design to someone else”. In other words, the single argument
+approach proposed in this PEP is not only easier to implement but also
+clearly communicates that dispatching on a more complex state is an
+anti-pattern. It also has the virtue of corresponding directly with the
+familiar method dispatch mechanism in object oriented programming. The
+only difference is whether the custom implementation is associated more
+closely with the data (object-oriented methods) or the algorithm
+(single-dispatch overloading).</p>
+<p>PyPy’s RPython offers <code class="docutils literal notranslate"><span class="pre">extendabletype</span></code> <a class="footnote-reference brackets" href="#pairtype" id="id9">9</a>, a metaclass which
+enables classes to be externally extended. In combination with
+<code class="docutils literal notranslate"><span class="pre">pairtype()</span></code> and <code class="docutils literal notranslate"><span class="pre">pair()</span></code> factories, this offers a form of
+single-dispatch generics.</p>
+</div>
+<div class="section" id="acknowledgements">
+<h2><a class="toc-backref" href="#id20">Acknowledgements</a><a class="headerlink" href="#acknowledgements" title="Permalink to this headline">¶</a></h2>
+<p>Apart from Phillip J. Eby’s work on PEP 3124 <a class="footnote-reference brackets" href="#pep-3124" id="id10">4</a> and
+PEAK-Rules, influences include Paul Moore’s original issue
+<a class="footnote-reference brackets" href="#issue-5135" id="id11">10</a> that proposed exposing <code class="docutils literal notranslate"><span class="pre">pkgutil.simplegeneric</span></code> as part
+of the <code class="docutils literal notranslate"><span class="pre">functools</span></code> API, Guido van Rossum’s article on multimethods
+<a class="footnote-reference brackets" href="#artima2005" id="id12">6</a>, and discussions with Raymond Hettinger on a general
+pprint rewrite. Huge thanks to Nick Coghlan for encouraging me to create
+this PEP and providing initial feedback.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id21">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="ref-impl"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><a class="reference external" href="http://hg.python.org/features/pep-443/file/tip/Lib/functools.py#l359">http://hg.python.org/features/pep-443/file/tip/Lib/functools.py#l359</a></dd>
+<dt class="label" id="pep-0008"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>PEP 8 states in the “Programming Recommendations”
+section that “the Python standard library will not use function
+annotations as that would result in a premature commitment to
+a particular annotation style”.
+(<a class="reference external" href="http://www.python.org/dev/peps/pep-0008">http://www.python.org/dev/peps/pep-0008</a>)</dd>
+<dt class="label" id="why-c3"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd><a class="reference external" href="http://bugs.python.org/issue18244">http://bugs.python.org/issue18244</a></dd>
+<dt class="label" id="pep-3124"><span class="brackets">4</span><span class='fn-backref'><em> (<a href="#id4">1</a>, <a href="#id10">2</a>) </em></span></dt>
+<dd><a class="reference external" href="http://www.python.org/dev/peps/pep-3124/">http://www.python.org/dev/peps/pep-3124/</a></dd>
+<dt class="label" id="peak-rules"><span class="brackets"><a class="fn-backref" href="#id5">5</a></span></dt>
+<dd><a class="reference external" href="http://peak.telecommunity.com/DevCenter/PEAK_2dRules">http://peak.telecommunity.com/DevCenter/PEAK_2dRules</a></dd>
+<dt class="label" id="artima2005"><span class="brackets">6</span><span class='fn-backref'><em> (<a href="#id6">1</a>, <a href="#id12">2</a>) </em></span></dt>
+<dd><a class="reference external" href="http://www.artima.com/weblogs/viewpost.jsp?thread=101605">http://www.artima.com/weblogs/viewpost.jsp?thread=101605</a></dd>
+<dt class="label" id="pypi-generic"><span class="brackets"><a class="fn-backref" href="#id7">7</a></span></dt>
+<dd><a class="reference external" href="http://pypi.python.org/pypi/generic">http://pypi.python.org/pypi/generic</a></dd>
+<dt class="label" id="gnosis-multimethods"><span class="brackets"><a class="fn-backref" href="#id8">8</a></span></dt>
+<dd><a class="reference external" href="http://gnosis.cx/publish/programming/charming_python_b12.html">http://gnosis.cx/publish/programming/charming_python_b12.html</a></dd>
+<dt class="label" id="pairtype"><span class="brackets"><a class="fn-backref" href="#id9">9</a></span></dt>
+<dd><a class="reference external" href="https://bitbucket.org/pypy/pypy/raw/default/rpython/tool/pairtype.py">https://bitbucket.org/pypy/pypy/raw/default/rpython/tool/pairtype.py</a></dd>
+<dt class="label" id="issue-5135"><span class="brackets"><a class="fn-backref" href="#id11">10</a></span></dt>
+<dd><a class="reference external" href="http://bugs.python.org/issue5135">http://bugs.python.org/issue5135</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id22">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0443.txt">https://github.com/python/peps/blob/master/pep-0443.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0443.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0442.html">PEP 0442</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0444.html">PEP 0444</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 443 – Single-dispatch generic functions</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale-and-goals">Rationale and Goals</a></li>
+<li><a class="reference internal" href="#user-api">User API</a></li>
+<li><a class="reference internal" href="#implementation-notes">Implementation Notes</a><ul>
+<li><a class="reference internal" href="#abstract-base-classes">Abstract Base Classes</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#usage-patterns">Usage Patterns</a></li>
+<li><a class="reference internal" href="#alternative-approaches">Alternative approaches</a></li>
+<li><a class="reference internal" href="#acknowledgements">Acknowledgements</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

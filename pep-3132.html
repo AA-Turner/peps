@@ -1,0 +1,304 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 3132 – Extended Iterable Unpacking &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 3133 – Introducing Roles" href="pep-3133.html" />
+    <link rel="prev" title="PEP 3131 – Supporting Non-ASCII Identifiers" href="pep-3131.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 3132 – Extended Iterable Unpacking</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-3132-extended-iterable-unpacking">
+<h1 class="page-title">PEP 3132 – Extended Iterable Unpacking<a class="headerlink" href="#pep-3132-extended-iterable-unpacking" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">3132</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Extended Iterable Unpacking</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Georg Brandl &lt;georg&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">30-Apr-2007</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.0</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id4">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id5">Rationale</a></li>
+<li><a class="reference internal" href="#specification" id="id6">Specification</a></li>
+<li><a class="reference internal" href="#implementation" id="id7">Implementation</a><ul>
+<li><a class="reference internal" href="#grammar-change" id="id8">Grammar change</a></li>
+<li><a class="reference internal" href="#changes-to-the-compiler" id="id9">Changes to the Compiler</a></li>
+<li><a class="reference internal" href="#changes-to-the-bytecode-interpreter" id="id10">Changes to the Bytecode Interpreter</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#acceptance" id="id11">Acceptance</a></li>
+<li><a class="reference internal" href="#references" id="id12">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id13">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id4">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes a change to iterable unpacking syntax, allowing to
+specify a “catch-all” name which will be assigned a list of all items
+not assigned to a “regular” name.</p>
+<p>An example says more than a thousand words:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="p">,</span> <span class="o">*</span><span class="n">b</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span>
+<span class="go">0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">c</span>
+<span class="go">4</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span>
+<span class="go">[1, 2, 3]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id5">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Many algorithms require splitting a sequence in a “first, rest” pair.
+With the new syntax,</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">first</span><span class="p">,</span> <span class="n">rest</span> <span class="o">=</span> <span class="n">seq</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">seq</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+</pre></div>
+</div>
+<p>is replaced by the cleaner and probably more efficient:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">first</span><span class="p">,</span> <span class="o">*</span><span class="n">rest</span> <span class="o">=</span> <span class="n">seq</span>
+</pre></div>
+</div>
+<p>For more complex unpacking patterns, the new syntax looks even
+cleaner, and the clumsy index handling is not necessary anymore.</p>
+<p>Also, if the right-hand value is not a list, but an iterable, it
+has to be converted to a list before being able to do slicing; to
+avoid creating this temporary list, one has to resort to</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">it</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span>
+<span class="n">first</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+<span class="n">rest</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">it</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id6">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>A tuple (or list) on the left side of a simple assignment (unpacking
+is not defined for augmented assignment) may contain at most one
+expression prepended with a single asterisk (which is henceforth
+called a “starred” expression, while the other expressions in the
+list are called “mandatory”).  This designates a subexpression that
+will be assigned a list of all items from the iterable being unpacked
+that are not assigned to any of the mandatory expressions, or an
+empty list if there are no such items.</p>
+<p>For example, if <code class="docutils literal notranslate"><span class="pre">seq</span></code> is a slicable sequence, all the following
+assignments are equivalent if <code class="docutils literal notranslate"><span class="pre">seq</span></code> has at least two elements:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="n">seq</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">list</span><span class="p">(</span><span class="n">seq</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span> <span class="n">seq</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">a</span><span class="p">,</span> <span class="o">*</span><span class="n">b</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="n">seq</span>
+<span class="p">[</span><span class="n">a</span><span class="p">,</span> <span class="o">*</span><span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">seq</span>
+</pre></div>
+</div>
+<p>It is an error (as it is currently) if the iterable doesn’t contain
+enough items to assign to all the mandatory expressions.</p>
+<p>It is also an error to use the starred expression as a lone
+assignment target, as in</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="n">a</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This, however, is valid syntax:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Note that this proposal also applies to tuples in implicit assignment
+context, such as in a <code class="docutils literal notranslate"><span class="pre">for</span></code> statement:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="o">*</span><span class="n">b</span> <span class="ow">in</span> <span class="p">[(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">)]:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>would print out</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
+<span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Starred expressions are only allowed as assignment targets, using them
+anywhere else (except for star-args in function calls, of course) is an
+error.</p>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id7">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="grammar-change">
+<h3><a class="toc-backref" href="#id8">Grammar change</a><a class="headerlink" href="#grammar-change" title="Permalink to this headline">¶</a></h3>
+<p>This feature requires a new grammar rule:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">star_expr</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;*&#39;</span><span class="p">]</span> <span class="n">expr</span>
+</pre></div>
+</div>
+<p>In these two rules, <code class="docutils literal notranslate"><span class="pre">expr</span></code> is changed to <code class="docutils literal notranslate"><span class="pre">star_expr</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comparison</span><span class="p">:</span> <span class="n">star_expr</span> <span class="p">(</span><span class="n">comp_op</span> <span class="n">star_expr</span><span class="p">)</span><span class="o">*</span>
+<span class="n">exprlist</span><span class="p">:</span> <span class="n">star_expr</span> <span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="n">star_expr</span><span class="p">)</span><span class="o">*</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="changes-to-the-compiler">
+<h3><a class="toc-backref" href="#id9">Changes to the Compiler</a><a class="headerlink" href="#changes-to-the-compiler" title="Permalink to this headline">¶</a></h3>
+<p>A new ASDL expression type <code class="docutils literal notranslate"><span class="pre">Starred</span></code> is added which represents a
+starred expression.  Note that the starred expression element
+introduced here is universal and could later be used for other
+purposes in non-assignment context, such as the <code class="docutils literal notranslate"><span class="pre">yield</span> <span class="pre">*iterable</span></code>
+proposal.</p>
+<p>The compiler is changed to recognize all cases where a starred
+expression is invalid and flag them with syntax errors.</p>
+<p>A new bytecode instruction, <code class="docutils literal notranslate"><span class="pre">UNPACK_EX</span></code>, is added, whose argument
+has the number of mandatory targets before the starred target in the
+lower 8 bits and the number of mandatory targets after the starred
+target in the upper 8 bits.  For unpacking sequences without starred
+expressions, the old <code class="docutils literal notranslate"><span class="pre">UNPACK_ITERABLE</span></code> opcode is kept.</p>
+</div>
+<div class="section" id="changes-to-the-bytecode-interpreter">
+<h3><a class="toc-backref" href="#id10">Changes to the Bytecode Interpreter</a><a class="headerlink" href="#changes-to-the-bytecode-interpreter" title="Permalink to this headline">¶</a></h3>
+<p>The function <code class="docutils literal notranslate"><span class="pre">unpack_iterable()</span></code> in ceval.c is changed to handle
+the extended unpacking, via an <code class="docutils literal notranslate"><span class="pre">argcntafter</span></code> parameter. In the
+<code class="docutils literal notranslate"><span class="pre">UNPACK_EX</span></code> case, the function will do the following:</p>
+<ul class="simple">
+<li>collect all items for mandatory targets before the starred one</li>
+<li>collect all remaining items from the iterable in a list</li>
+<li>pop items for mandatory targets after the starred one from the list</li>
+<li>push the single items and the resized list on the stack</li>
+</ul>
+<p>Shortcuts for unpacking iterables of known types, such as lists or
+tuples, can be added.</p>
+<p>The current implementation can be found at the SourceForge Patch
+tracker <a class="reference internal" href="#sfpatch" id="id1"><span>[SFPATCH]</span></a>. It now includes a minimal test case.</p>
+</div>
+</div>
+<div class="section" id="acceptance">
+<h2><a class="toc-backref" href="#id11">Acceptance</a><a class="headerlink" href="#acceptance" title="Permalink to this headline">¶</a></h2>
+<p>After a short discussion on the python-3000 list <a class="footnote-reference brackets" href="#id3" id="id2">1</a>, the PEP was
+accepted by Guido in its current form.  Possible changes discussed
+were:</p>
+<ul class="simple">
+<li>Only allow a starred expression as the last item in the exprlist.
+This would simplify the unpacking code a bit and allow for the
+starred expression to be assigned an iterator.  This behavior was
+rejected because it would be too surprising.</li>
+<li>Try to give the starred target the same type as the source
+iterable, for example, <code class="docutils literal notranslate"><span class="pre">b</span></code> in <code class="docutils literal notranslate"><span class="pre">a,</span> <span class="pre">*b</span> <span class="pre">=</span> <span class="pre">'hello'</span></code> would be
+assigned the string <code class="docutils literal notranslate"><span class="pre">'ello'</span></code>.  This may seem nice, but is
+impossible to get right consistently with all iterables.</li>
+<li>Make the starred target a tuple instead of a list.  This would be
+consistent with a function’s <code class="docutils literal notranslate"><span class="pre">*args</span></code>, but make further processing
+of the result harder.</li>
+</ul>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id12">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="citation">
+<dt class="label" id="sfpatch"><span class="brackets"><a class="fn-backref" href="#id1">SFPATCH</a></span></dt>
+<dd><a class="reference external" href="https://bugs.python.org/issue1711529">https://bugs.python.org/issue1711529</a></dd>
+</dl>
+<dl class="footnote brackets">
+<dt class="label" id="id3"><span class="brackets"><a class="fn-backref" href="#id2">1</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-3000/2007-May/007198.html">https://mail.python.org/pipermail/python-3000/2007-May/007198.html</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id13">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-3132.txt">https://github.com/python/peps/blob/master/pep-3132.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-3132.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-3131.html">PEP 3131</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-3133.html">PEP 3133</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 3132 – Extended Iterable Unpacking</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a><ul>
+<li><a class="reference internal" href="#grammar-change">Grammar change</a></li>
+<li><a class="reference internal" href="#changes-to-the-compiler">Changes to the Compiler</a></li>
+<li><a class="reference internal" href="#changes-to-the-bytecode-interpreter">Changes to the Bytecode Interpreter</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#acceptance">Acceptance</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

@@ -1,0 +1,427 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 593 – Flexible function and variable annotations &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 594 – Removing dead batteries from the standard library" href="pep-0594.html" />
+    <link rel="prev" title="PEP 592 – Adding “Yank” Support to the Simple API" href="pep-0592.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 593 – Flexible function and variable annotations</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-593-flexible-function-and-variable-annotations">
+<h1 class="page-title">PEP 593 – Flexible function and variable annotations<a class="headerlink" href="#pep-593-flexible-function-and-variable-annotations" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">593</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Flexible function and variable annotations</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Till Varoquaux &lt;till&#32;&#97;t&#32;fb.com&gt;, Konstantin Kashin &lt;kkashin&#32;&#97;t&#32;fb.com&gt;</dd>
+<dt class="field-even">Sponsor</dt>
+<dd class="field-even">Ivan Levkivskyi &lt;levkivskyi&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-odd">Discussions-To</dt>
+<dd class="field-odd"><a class="reference external" href="mailto:typing-sig&#37;&#52;&#48;python&#46;org?subject=PEP%20593">typing-sig&#32;&#97;t&#32;python.org</a></dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Accepted</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">26-April-2019</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.9</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">20-May-2019</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id11">Abstract</a></li>
+<li><a class="reference internal" href="#motivation" id="id12">Motivation</a></li>
+<li><a class="reference internal" href="#rationale" id="id13">Rationale</a></li>
+<li><a class="reference internal" href="#motivating-examples" id="id14">Motivating examples</a><ul>
+<li><a class="reference internal" href="#combining-runtime-and-static-uses-of-annotations" id="id15">Combining runtime and static uses of annotations</a></li>
+<li><a class="reference internal" href="#lowering-barriers-to-developing-new-typing-constructs" id="id16">Lowering barriers to developing new typing constructs</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#specification" id="id17">Specification</a><ul>
+<li><a class="reference internal" href="#syntax" id="id18">Syntax</a></li>
+<li><a class="reference internal" href="#consuming-annotations" id="id19">Consuming annotations</a></li>
+<li><a class="reference internal" href="#interaction-with-get-type-hints" id="id20">Interaction with <code class="docutils literal notranslate"><span class="pre">get_type_hints()</span></code></a></li>
+<li><a class="reference internal" href="#aliases-concerns-over-verbosity" id="id21">Aliases &amp; Concerns over verbosity</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rejected-ideas" id="id22">Rejected ideas</a></li>
+<li><a class="reference internal" href="#references" id="id23">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id24">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id11">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP introduces a mechanism to extend the type annotations from PEP
+484 with arbitrary metadata.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id12">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>PEP 484 provides a standard semantic for the annotations introduced in
+PEP 3107. PEP 484 is prescriptive but it is the de-facto standard
+for most of the consumers of annotations; in many statically checked
+code bases, where type annotations are widely used, they have
+effectively crowded out any other form of annotation. Some of the use
+cases for annotations described in PEP 3107 (database mapping,
+foreign languages bridge) are not currently realistic given the
+prevalence of type annotations. Furthermore the standardisation of type
+annotations rules out advanced features only supported by specific type
+checkers.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id13">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>This PEP adds an <code class="docutils literal notranslate"><span class="pre">Annotated</span></code> type to the typing module to decorate
+existing types with context-specific metadata. Specifically, a type
+<code class="docutils literal notranslate"><span class="pre">T</span></code> can be annotated with metadata <code class="docutils literal notranslate"><span class="pre">x</span></code> via the typehint
+<code class="docutils literal notranslate"><span class="pre">Annotated[T,</span> <span class="pre">x]</span></code>. This metadata can be used for either static
+analysis or at runtime. If a library (or tool) encounters a typehint
+<code class="docutils literal notranslate"><span class="pre">Annotated[T,</span> <span class="pre">x]</span></code> and has no special logic for metadata <code class="docutils literal notranslate"><span class="pre">x</span></code>, it
+should ignore it and simply treat the type as <code class="docutils literal notranslate"><span class="pre">T</span></code>. Unlike the
+<code class="docutils literal notranslate"><span class="pre">no_type_check</span></code> functionality that currently exists in the <code class="docutils literal notranslate"><span class="pre">typing</span></code>
+module which completely disables typechecking annotations on a function
+or a class, the <code class="docutils literal notranslate"><span class="pre">Annotated</span></code> type allows for both static typechecking
+of <code class="docutils literal notranslate"><span class="pre">T</span></code> (e.g., via mypy <a class="reference internal" href="#mypy" id="id1"><span>[mypy]</span></a> or Pyre <a class="reference internal" href="#pyre" id="id2"><span>[pyre]</span></a>, which can safely ignore <code class="docutils literal notranslate"><span class="pre">x</span></code>)
+together with runtime access to <code class="docutils literal notranslate"><span class="pre">x</span></code> within a specific application. The
+introduction of this type would address a diverse set of use cases of interest
+to the broader Python community.</p>
+<p>This was originally brought up as issue 600 <a class="reference internal" href="#issue-600" id="id3"><span>[issue-600]</span></a> in the typing github
+and then discussed in Python ideas <a class="reference internal" href="#python-ideas" id="id4"><span>[python-ideas]</span></a>.</p>
+</div>
+<div class="section" id="motivating-examples">
+<h2><a class="toc-backref" href="#id14">Motivating examples</a><a class="headerlink" href="#motivating-examples" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="combining-runtime-and-static-uses-of-annotations">
+<h3><a class="toc-backref" href="#id15">Combining runtime and static uses of annotations</a><a class="headerlink" href="#combining-runtime-and-static-uses-of-annotations" title="Permalink to this headline">¶</a></h3>
+<p>There’s an emerging trend of libraries leveraging the typing annotations at
+runtime (e.g.: dataclasses); having the ability to extend the typing annotations
+with external data would be a great boon for those libraries.</p>
+<p>Here’s an example of how a hypothetical module could leverage annotations to
+read c structs:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">UnsignedShort</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">struct2</span><span class="o">.</span><span class="n">ctype</span><span class="p">(</span><span class="s1">&#39;H&#39;</span><span class="p">)]</span>
+<span class="n">SignedChar</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">struct2</span><span class="o">.</span><span class="n">ctype</span><span class="p">(</span><span class="s1">&#39;b&#39;</span><span class="p">)]</span>
+
+<span class="k">class</span> <span class="nc">Student</span><span class="p">(</span><span class="n">struct2</span><span class="o">.</span><span class="n">Packed</span><span class="p">):</span>
+    <span class="c1"># mypy typechecks &#39;name&#39; field as &#39;str&#39;</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">struct2</span><span class="o">.</span><span class="n">ctype</span><span class="p">(</span><span class="s2">&quot;&lt;10s&quot;</span><span class="p">)]</span>
+    <span class="n">serialnum</span><span class="p">:</span> <span class="n">UnsignedShort</span>
+    <span class="n">school</span><span class="p">:</span> <span class="n">SignedChar</span>
+
+<span class="c1"># &#39;unpack&#39; only uses the metadata within the type annotations</span>
+<span class="n">Student</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+<span class="c1"># Student(name=b&#39;raymond   &#39;, serialnum=4658, school=264)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="lowering-barriers-to-developing-new-typing-constructs">
+<h3><a class="toc-backref" href="#id16">Lowering barriers to developing new typing constructs</a><a class="headerlink" href="#lowering-barriers-to-developing-new-typing-constructs" title="Permalink to this headline">¶</a></h3>
+<p>Typically when adding a new type, a developer need to upstream that type to the
+typing module and change mypy, PyCharm <a class="reference internal" href="#pycharm" id="id5"><span>[pycharm]</span></a>, Pyre, pytype <a class="reference internal" href="#pytype" id="id6"><span>[pytype]</span></a>,
+etc…
+This is particularly important when working on open-source code that
+makes use of these types, seeing as the code would not be immediately
+transportable to other developers’ tools without additional logic. As a result,
+there is a high cost to developing and trying out new types in a codebase.
+Ideally, authors should be able to introduce new types in a manner that allows
+for graceful degradation (e.g.: when clients do not have a custom mypy plugin
+<a class="reference internal" href="#mypy-plugin" id="id7"><span>[mypy-plugin]</span></a>), which would lower the barrier to development and ensure some
+degree of backward compatibility.</p>
+<p>For example, suppose that an author wanted to add support for tagged unions
+<a class="reference internal" href="#tagged-union" id="id8"><span>[tagged-union]</span></a> to Python. One way to accomplish would be to annotate
+<code class="docutils literal notranslate"><span class="pre">TypedDict</span></code> <a class="reference internal" href="#typed-dict" id="id9"><span>[typed-dict]</span></a> in Python such that only one field is allowed to be
+set:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Currency</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span>
+    <span class="n">TypedDict</span><span class="p">(</span><span class="s1">&#39;Currency&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;dollars&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="s1">&#39;pounds&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">},</span> <span class="n">total</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+    <span class="n">TaggedUnion</span><span class="p">,</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+<p>This is a somewhat cumbersome syntax but it allows us to iterate on this
+proof-of-concept and have people with type checkers (or other tools) that don’t
+yet support this feature work in a codebase with tagged unions. The author could
+easily test this proposal and iron out the kinks before trying to upstream tagged
+union to <code class="docutils literal notranslate"><span class="pre">typing</span></code>, mypy, etc. Moreover, tools that do not have support for
+parsing the <code class="docutils literal notranslate"><span class="pre">TaggedUnion</span></code> annotation would still be able able to treat
+<code class="docutils literal notranslate"><span class="pre">Currency</span></code> as a <code class="docutils literal notranslate"><span class="pre">TypedDict</span></code>, which is still a close approximation (slightly
+less strict).</p>
+</div>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id17">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="syntax">
+<h3><a class="toc-backref" href="#id18">Syntax</a><a class="headerlink" href="#syntax" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">Annotated</span></code> is parameterized with a type and an arbitrary list of
+Python values that represent the annotations. Here are the specific
+details of the syntax:</p>
+<ul>
+<li><p>The first argument to <code class="docutils literal notranslate"><span class="pre">Annotated</span></code> must be a valid type</p>
+</li>
+<li><p>Multiple type annotations are supported (<code class="docutils literal notranslate"><span class="pre">Annotated</span></code> supports variadic
+arguments):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Annotated</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">ValueRange</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="n">ctype</span><span class="p">(</span><span class="s2">&quot;char&quot;</span><span class="p">)]</span>
+</pre></div>
+</div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Annotated</span></code> must be called with at least two arguments (
+<code class="docutils literal notranslate"><span class="pre">Annotated[int]</span></code> is not valid)</p>
+</li>
+<li><p>The order of the annotations is preserved and matters for equality
+checks:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Annotated</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">ValueRange</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="n">ctype</span><span class="p">(</span><span class="s2">&quot;char&quot;</span><span class="p">)]</span> <span class="o">!=</span> <span class="n">Annotated</span><span class="p">[</span>
+    <span class="nb">int</span><span class="p">,</span> <span class="n">ctype</span><span class="p">(</span><span class="s2">&quot;char&quot;</span><span class="p">),</span> <span class="n">ValueRange</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</li>
+<li><p>Nested <code class="docutils literal notranslate"><span class="pre">Annotated</span></code> types are flattened, with metadata ordered
+starting with the innermost annotation:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Annotated</span><span class="p">[</span><span class="n">Annotated</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">ValueRange</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">10</span><span class="p">)],</span> <span class="n">ctype</span><span class="p">(</span><span class="s2">&quot;char&quot;</span><span class="p">)]</span> <span class="o">==</span> <span class="n">Annotated</span><span class="p">[</span>
+    <span class="nb">int</span><span class="p">,</span> <span class="n">ValueRange</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="n">ctype</span><span class="p">(</span><span class="s2">&quot;char&quot;</span><span class="p">)</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</li>
+<li><p>Duplicated annotations are not removed:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Annotated</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">ValueRange</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">10</span><span class="p">)]</span> <span class="o">!=</span> <span class="n">Annotated</span><span class="p">[</span>
+    <span class="nb">int</span><span class="p">,</span> <span class="n">ValueRange</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="n">ValueRange</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Annotated</span></code> can be used with nested and generic aliases:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Typevar</span> <span class="n">T</span> <span class="o">=</span> <span class="o">...</span>
+<span class="n">Vec</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">T</span><span class="p">]],</span> <span class="n">MaxLen</span><span class="p">(</span><span class="mi">10</span><span class="p">)]</span>
+<span class="n">V</span> <span class="o">=</span> <span class="n">Vec</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
+
+<span class="n">V</span> <span class="o">==</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]],</span> <span class="n">MaxLen</span><span class="p">(</span><span class="mi">10</span><span class="p">)]</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</div>
+<div class="section" id="consuming-annotations">
+<h3><a class="toc-backref" href="#id19">Consuming annotations</a><a class="headerlink" href="#consuming-annotations" title="Permalink to this headline">¶</a></h3>
+<p>Ultimately, the responsibility of how to interpret the annotations (if
+at all) is the responsibility of the tool or library encountering the
+<code class="docutils literal notranslate"><span class="pre">Annotated</span></code> type. A tool or library encountering an <code class="docutils literal notranslate"><span class="pre">Annotated</span></code> type
+can scan through the annotations to determine if they are of interest
+(e.g., using <code class="docutils literal notranslate"><span class="pre">isinstance()</span></code>).</p>
+<p><strong>Unknown annotations:</strong> When a tool or a library does not support
+annotations or encounters an unknown annotation it should just ignore it
+and treat annotated type as the underlying type. For example, when encountering
+an annotation that is not an instance of <code class="docutils literal notranslate"><span class="pre">struct2.ctype</span></code> to the annotations
+for name (e.g., <code class="docutils literal notranslate"><span class="pre">Annotated[str,</span> <span class="pre">'foo',</span> <span class="pre">struct2.ctype(&quot;&lt;10s&quot;)]</span></code>), the unpack
+method should ignore it.</p>
+<p><strong>Namespacing annotations:</strong> Namespaces are not needed for annotations since
+the class used by the annotations acts as a namespace.</p>
+<p><strong>Multiple annotations:</strong> It’s up to the tool consuming the annotations
+to decide whether the client is allowed to have several annotations on
+one type and how to merge those annotations.</p>
+<p>Since the <code class="docutils literal notranslate"><span class="pre">Annotated</span></code> type allows you to put several annotations of
+the same (or different) type(s) on any node, the tools or libraries
+consuming those annotations are in charge of dealing with potential
+duplicates. For example, if you are doing value range analysis you might
+allow this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">T1</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">ValueRange</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">)]</span>
+<span class="n">T2</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">T1</span><span class="p">,</span> <span class="n">ValueRange</span><span class="p">(</span><span class="o">-</span><span class="mi">20</span><span class="p">,</span> <span class="mi">3</span><span class="p">)]</span>
+</pre></div>
+</div>
+<p>Flattening nested annotations, this translates to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">T2</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">ValueRange</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">ValueRange</span><span class="p">(</span><span class="o">-</span><span class="mi">20</span><span class="p">,</span> <span class="mi">3</span><span class="p">)]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="interaction-with-get-type-hints">
+<h3><a class="toc-backref" href="#id20">Interaction with <code class="docutils literal notranslate"><span class="pre">get_type_hints()</span></code></a><a class="headerlink" href="#interaction-with-get-type-hints" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">typing.get_type_hints()</span></code> will take a new argument <code class="docutils literal notranslate"><span class="pre">include_extras</span></code> that
+defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code> to preserve backward compatibility. When
+<code class="docutils literal notranslate"><span class="pre">include_extras</span></code> is <code class="docutils literal notranslate"><span class="pre">False</span></code>, the extra annotations will be stripped
+out of the returned value. Otherwise, the annotations will be returned
+unchanged:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@struct2</span><span class="o">.</span><span class="n">packed</span>
+<span class="k">class</span> <span class="nc">Student</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">struct</span><span class="o">.</span><span class="n">ctype</span><span class="p">(</span><span class="s2">&quot;&lt;10s&quot;</span><span class="p">)]</span>
+
+<span class="n">get_type_hints</span><span class="p">(</span><span class="n">Student</span><span class="p">)</span> <span class="o">==</span> <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">}</span>
+<span class="n">get_type_hints</span><span class="p">(</span><span class="n">Student</span><span class="p">,</span> <span class="n">include_extras</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">==</span> <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">}</span>
+<span class="n">get_type_hints</span><span class="p">(</span><span class="n">Student</span><span class="p">,</span> <span class="n">include_extras</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">==</span> <span class="p">{</span>
+    <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">struct</span><span class="o">.</span><span class="n">ctype</span><span class="p">(</span><span class="s2">&quot;&lt;10s&quot;</span><span class="p">)]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="aliases-concerns-over-verbosity">
+<h3><a class="toc-backref" href="#id21">Aliases &amp; Concerns over verbosity</a><a class="headerlink" href="#aliases-concerns-over-verbosity" title="Permalink to this headline">¶</a></h3>
+<p>Writing <code class="docutils literal notranslate"><span class="pre">typing.Annotated</span></code> everywhere can be quite verbose;
+fortunately, the ability to alias annotations means that in practice we
+don’t expect clients to have to write lots of boilerplate code:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s1">&#39;T&#39;</span><span class="p">)</span>
+<span class="n">Const</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">my_annotations</span><span class="o">.</span><span class="n">CONST</span><span class="p">]</span>
+
+<span class="n">Class</span> <span class="n">C</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">const_method</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">Const</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="o">...</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="rejected-ideas">
+<h2><a class="toc-backref" href="#id22">Rejected ideas</a><a class="headerlink" href="#rejected-ideas" title="Permalink to this headline">¶</a></h2>
+<p>Some of the proposed ideas were rejected from this PEP because they would
+cause <code class="docutils literal notranslate"><span class="pre">Annotated</span></code> to not integrate cleanly with the other typing annotations:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">Annotated</span></code> cannot infer the decorated type. You could imagine that
+<code class="docutils literal notranslate"><span class="pre">Annotated[...,</span> <span class="pre">Immutable]</span></code> could be used to mark a value as immutable
+while still infering its type. Typing does not support support using the
+inferred type anywhere else <a class="reference internal" href="#issue-276" id="id10"><span>[issue-276]</span></a>; it’s best to not add this as a
+special case.</li>
+<li>Using <code class="docutils literal notranslate"><span class="pre">(Type,</span> <span class="pre">Ann1,</span> <span class="pre">Ann2,</span> <span class="pre">...)</span></code> instead of
+<code class="docutils literal notranslate"><span class="pre">Annotated[Type,</span> <span class="pre">Ann1,</span> <span class="pre">Ann2,</span> <span class="pre">...]</span></code>. This would cause confusion when
+annotations appear in nested positions (<code class="docutils literal notranslate"><span class="pre">Callable[[A,</span> <span class="pre">B],</span> <span class="pre">C]</span></code> is too similar
+to <code class="docutils literal notranslate"><span class="pre">Callable[[(A,</span> <span class="pre">B)],</span> <span class="pre">C]</span></code>) and would make it impossible for constructors to
+be passthrough (<code class="docutils literal notranslate"><span class="pre">T(5)</span> <span class="pre">==</span> <span class="pre">C(5)</span></code> when <code class="docutils literal notranslate"><span class="pre">C</span> <span class="pre">=</span> <span class="pre">Annotation[T,</span> <span class="pre">Ann]</span></code>).</li>
+</ul>
+<p>This feature was left out to keep the design simple:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">Annotated</span></code> cannot be called with a single argument. Annotated could support
+returning the underlying value when called with a single argument (e.g.:
+<code class="docutils literal notranslate"><span class="pre">Annotated[int]</span> <span class="pre">==</span> <span class="pre">int</span></code>). This complicates the specifications and adds
+little benefit.</li>
+</ul>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id23">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="citation">
+<dt class="label" id="issue-600"><span class="brackets"><a class="fn-backref" href="#id3">issue-600</a></span></dt>
+<dd><a class="reference external" href="https://github.com/python/typing/issues/600">https://github.com/python/typing/issues/600</a></dd>
+<dt class="label" id="python-ideas"><span class="brackets"><a class="fn-backref" href="#id4">python-ideas</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2019-January/054908.html">https://mail.python.org/pipermail/python-ideas/2019-January/054908.html</a></dd>
+<dt class="label" id="struct-doc"><span class="brackets">struct-doc</span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/library/struct.html#examples">https://docs.python.org/3/library/struct.html#examples</a></dd>
+<dt class="label" id="mypy"><span class="brackets"><a class="fn-backref" href="#id1">mypy</a></span></dt>
+<dd><a class="reference external" href="http://www.mypy-lang.org/">http://www.mypy-lang.org/</a></dd>
+<dt class="label" id="pyre"><span class="brackets"><a class="fn-backref" href="#id2">pyre</a></span></dt>
+<dd><a class="reference external" href="https://pyre-check.org/">https://pyre-check.org/</a></dd>
+<dt class="label" id="pycharm"><span class="brackets"><a class="fn-backref" href="#id5">pycharm</a></span></dt>
+<dd><a class="reference external" href="https://www.jetbrains.com/pycharm/">https://www.jetbrains.com/pycharm/</a></dd>
+<dt class="label" id="pytype"><span class="brackets"><a class="fn-backref" href="#id6">pytype</a></span></dt>
+<dd><a class="reference external" href="https://github.com/google/pytype">https://github.com/google/pytype</a></dd>
+<dt class="label" id="mypy-plugin"><span class="brackets"><a class="fn-backref" href="#id7">mypy-plugin</a></span></dt>
+<dd><a class="reference external" href="https://github.com/python/mypy_extensions">https://github.com/python/mypy_extensions</a></dd>
+<dt class="label" id="tagged-union"><span class="brackets"><a class="fn-backref" href="#id8">tagged-union</a></span></dt>
+<dd><a class="reference external" href="https://en.wikipedia.org/wiki/Tagged_union">https://en.wikipedia.org/wiki/Tagged_union</a></dd>
+<dt class="label" id="typed-dict"><span class="brackets"><a class="fn-backref" href="#id9">typed-dict</a></span></dt>
+<dd><a class="reference external" href="https://mypy.readthedocs.io/en/latest/more_types.html#typeddict">https://mypy.readthedocs.io/en/latest/more_types.html#typeddict</a></dd>
+<dt class="label" id="issue-276"><span class="brackets"><a class="fn-backref" href="#id10">issue-276</a></span></dt>
+<dd><a class="reference external" href="https://github.com/python/typing/issues/276">https://github.com/python/typing/issues/276</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id24">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0593.rst">https://github.com/python/peps/blob/master/pep-0593.rst</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0593.rst.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0592.html">PEP 0592</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0594.html">PEP 0594</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 593 – Flexible function and variable annotations</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#motivating-examples">Motivating examples</a><ul>
+<li><a class="reference internal" href="#combining-runtime-and-static-uses-of-annotations">Combining runtime and static uses of annotations</a></li>
+<li><a class="reference internal" href="#lowering-barriers-to-developing-new-typing-constructs">Lowering barriers to developing new typing constructs</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#syntax">Syntax</a></li>
+<li><a class="reference internal" href="#consuming-annotations">Consuming annotations</a></li>
+<li><a class="reference internal" href="#interaction-with-get-type-hints">Interaction with <code class="docutils literal notranslate"><span class="pre">get_type_hints()</span></code></a></li>
+<li><a class="reference internal" href="#aliases-concerns-over-verbosity">Aliases &amp; Concerns over verbosity</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rejected-ideas">Rejected ideas</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

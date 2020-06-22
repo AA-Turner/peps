@@ -1,0 +1,369 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 473 – Adding structured data to built-in exceptions &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 474 – Creating forge.python.org" href="pep-0474.html" />
+    <link rel="prev" title="PEP 472 – Support for indexing with keyword arguments" href="pep-0472.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 473 – Adding structured data to built-in exceptions</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-473-adding-structured-data-to-built-in-exceptions">
+<h1 class="page-title">PEP 473 – Adding structured data to built-in exceptions<a class="headerlink" href="#pep-473-adding-structured-data-to-built-in-exceptions" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">473</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Adding structured data to built-in exceptions</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Sebastian Kreft &lt;skreft&#32;&#97;t&#32;deezer.com&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Rejected</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">29-Mar-2014</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd"><p></p></dd>
+<dt class="field-even">Resolution</dt>
+<dd class="field-even"><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2019-March/156692.html">https://mail.python.org/pipermail/python-dev/2019-March/156692.html</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id40">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id41">Rationale</a></li>
+<li><a class="reference internal" href="#examples" id="id42">Examples</a><ul>
+<li><a class="reference internal" href="#indexerror" id="id43">IndexError</a></li>
+<li><a class="reference internal" href="#keyerror" id="id44">KeyError</a></li>
+<li><a class="reference internal" href="#attributeerror" id="id45">AttributeError</a></li>
+<li><a class="reference internal" href="#nameerror" id="id46">NameError</a></li>
+<li><a class="reference internal" href="#other-cases" id="id47">Other Cases</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#proposal" id="id48">Proposal</a></li>
+<li><a class="reference internal" href="#potential-uses" id="id49">Potential Uses</a></li>
+<li><a class="reference internal" href="#performance" id="id50">Performance</a></li>
+<li><a class="reference internal" href="#references" id="id51">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id52">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id40">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Exceptions like <code class="docutils literal notranslate"><span class="pre">AttributeError</span></code>, <code class="docutils literal notranslate"><span class="pre">IndexError</span></code>, <code class="docutils literal notranslate"><span class="pre">KeyError</span></code>,
+<code class="docutils literal notranslate"><span class="pre">LookupError</span></code>, <code class="docutils literal notranslate"><span class="pre">NameError</span></code>, <code class="docutils literal notranslate"><span class="pre">TypeError</span></code>, and <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> do not
+provide all information required by programmers to debug and better understand
+what caused them.
+Furthermore, in some cases the messages even have slightly different formats,
+which makes it really difficult for tools to automatically provide additional
+information to diagnose the problem.
+To tackle the former and to lay ground for the latter, it is proposed to expand
+these exceptions so to hold both the offending and affected entities.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id41">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>The main issue this PEP aims to solve is the fact that currently error messages
+are not that expressive and lack some key information to resolve the exceptions.
+Additionally, the information present on the error message is not always in the
+same format, which makes it very difficult for third-party libraries to
+provide automated diagnosis of the error.</p>
+<p>These automated tools could, for example, detect typos or display or log extra
+debug information. These could be particularly useful when running tests or in a
+long running application.</p>
+<p>Although it is in theory possible to have such libraries, they need to resort to
+hacks in order to achieve the goal. One such example is
+python-improved-exceptions <a class="footnote-reference brackets" href="#id27" id="id1">1</a>, which modifies the byte-code to keep references
+to the possibly interesting objects and also parses the error messages to
+extract information like types or names. Unfortunately, such approach is
+extremely fragile and not portable.</p>
+<p>A similar proposal <a class="footnote-reference brackets" href="#id28" id="id2">2</a> has been implemented for <code class="docutils literal notranslate"><span class="pre">ImportError</span></code> and in the same
+fashion this idea has received support <a class="footnote-reference brackets" href="#id29" id="id3">3</a>. Additionally, almost 10 years ago
+Guido asked in <a class="footnote-reference brackets" href="#id37" id="id4">11</a> to have a clean API to access the affected objects in
+Exceptions like <code class="docutils literal notranslate"><span class="pre">KeyError</span></code>, <code class="docutils literal notranslate"><span class="pre">AttributeError</span></code>, <code class="docutils literal notranslate"><span class="pre">NameError</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">IndexError</span></code>. Similar issues and proposals ideas have been written in the
+last year. Some other issues have been created, but despite receiving support
+they finally get abandoned. References to the created issues are listed below:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">AttributeError</span></code>: <a class="footnote-reference brackets" href="#id37" id="id5">11</a>, <a class="footnote-reference brackets" href="#id36" id="id6">10</a>, <a class="footnote-reference brackets" href="#id31" id="id7">5</a>, <a class="footnote-reference brackets" href="#id30" id="id8">4</a>, <a class="footnote-reference brackets" href="#id29" id="id9">3</a></li>
+<li><code class="docutils literal notranslate"><span class="pre">IndexError</span></code>: <a class="footnote-reference brackets" href="#id37" id="id10">11</a>, <a class="footnote-reference brackets" href="#id32" id="id11">6</a>, <a class="footnote-reference brackets" href="#id29" id="id12">3</a></li>
+<li><code class="docutils literal notranslate"><span class="pre">KeyError</span></code>: <a class="footnote-reference brackets" href="#id37" id="id13">11</a>, <a class="footnote-reference brackets" href="#id33" id="id14">7</a>, <a class="footnote-reference brackets" href="#id29" id="id15">3</a></li>
+<li><code class="docutils literal notranslate"><span class="pre">LookupError</span></code>: <a class="footnote-reference brackets" href="#id37" id="id16">11</a></li>
+<li><code class="docutils literal notranslate"><span class="pre">NameError</span></code>: <a class="footnote-reference brackets" href="#id37" id="id17">11</a>, <a class="footnote-reference brackets" href="#id36" id="id18">10</a>, <a class="footnote-reference brackets" href="#id29" id="id19">3</a></li>
+<li><code class="docutils literal notranslate"><span class="pre">TypeError</span></code>: <a class="footnote-reference brackets" href="#id34" id="id20">8</a></li>
+<li><code class="docutils literal notranslate"><span class="pre">ValueError</span></code>: <a class="footnote-reference brackets" href="#id35" id="id21">9</a></li>
+</ul>
+<p>To move forward with the development and to centralize the information and
+discussion, this PEP aims to be a meta-issue summarizing all the above
+discussions and ideas.</p>
+</div>
+<div class="section" id="examples">
+<h2><a class="toc-backref" href="#id42">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="indexerror">
+<h3><a class="toc-backref" href="#id43">IndexError</a><a class="headerlink" href="#indexerror" title="Permalink to this headline">¶</a></h3>
+<p>The error message does not reference the list’s length nor the index used.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">a</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">]</span>
+<span class="n">a</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>
+<span class="ne">IndexError</span><span class="p">:</span> <span class="nb">list</span> <span class="n">index</span> <span class="n">out</span> <span class="n">of</span> <span class="nb">range</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="keyerror">
+<h3><a class="toc-backref" href="#id44">KeyError</a><a class="headerlink" href="#keyerror" title="Permalink to this headline">¶</a></h3>
+<p>By convention the key is the first element of the error’s argument, but there’s
+no other information regarding the affected dictionary (keys types, size, etc.)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">b</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;foo&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
+<span class="n">b</span><span class="p">[</span><span class="s1">&#39;fo&#39;</span><span class="p">]</span>
+<span class="ne">KeyError</span><span class="p">:</span> <span class="s1">&#39;fo&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="attributeerror">
+<h3><a class="toc-backref" href="#id45">AttributeError</a><a class="headerlink" href="#attributeerror" title="Permalink to this headline">¶</a></h3>
+<p>The object’s type and the offending attribute are part of the error message.
+However, there are some different formats and the information is not always
+available. Furthermore, although the object type is useful in some cases, given
+the dynamic nature of Python, it would be much more useful to have a reference
+to the object itself. Additionally the reference to the type is not fully
+qualified and in some cases the type is just too generic to provide useful
+information, for example in case of accessing a module’s attribute.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">c</span> <span class="o">=</span> <span class="nb">object</span><span class="p">()</span>
+<span class="n">c</span><span class="o">.</span><span class="n">foo</span>
+<span class="ne">AttributeError</span><span class="p">:</span> <span class="s1">&#39;object&#39;</span> <span class="nb">object</span> <span class="n">has</span> <span class="n">no</span> <span class="n">attribute</span> <span class="s1">&#39;foo&#39;</span>
+
+<span class="kn">import</span> <span class="nn">string</span>
+<span class="n">string</span><span class="o">.</span><span class="n">foo</span>
+<span class="ne">AttributeError</span><span class="p">:</span> <span class="s1">&#39;module&#39;</span> <span class="nb">object</span> <span class="n">has</span> <span class="n">no</span> <span class="n">attribute</span> <span class="s1">&#39;foo&#39;</span>
+
+<span class="n">a</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">Formatter</span><span class="p">()</span>
+<span class="n">a</span><span class="o">.</span><span class="n">foo</span>
+<span class="ne">AttributeError</span><span class="p">:</span> <span class="s1">&#39;Formatter&#39;</span> <span class="nb">object</span> <span class="n">has</span> <span class="n">no</span> <span class="n">attribute</span> <span class="s1">&#39;foo&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="nameerror">
+<h3><a class="toc-backref" href="#id46">NameError</a><a class="headerlink" href="#nameerror" title="Permalink to this headline">¶</a></h3>
+<p>The error message provides typically the name.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">foo</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">fo</span>
+<span class="ne">NameError</span><span class="p">:</span> <span class="k">global</span> <span class="n">name</span> <span class="s1">&#39;fo&#39;</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">defined</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="other-cases">
+<h3><a class="toc-backref" href="#id47">Other Cases</a><a class="headerlink" href="#other-cases" title="Permalink to this headline">¶</a></h3>
+<p>Issues are even harder to debug when the target object is the result of
+another expression, for example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">a</span><span class="p">[</span><span class="n">b</span><span class="p">[</span><span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]]]</span>
+</pre></div>
+</div>
+<p>This issue is also related to the fact that opcodes only have line number
+information and not the offset. This proposal would help in this case but not as
+much as having offsets.</p>
+</div>
+</div>
+<div class="section" id="proposal">
+<h2><a class="toc-backref" href="#id48">Proposal</a><a class="headerlink" href="#proposal" title="Permalink to this headline">¶</a></h2>
+<p>Extend the exceptions <code class="docutils literal notranslate"><span class="pre">AttributeError</span></code>, <code class="docutils literal notranslate"><span class="pre">IndexError</span></code>, <code class="docutils literal notranslate"><span class="pre">KeyError</span></code>,
+<code class="docutils literal notranslate"><span class="pre">LookupError</span></code>, <code class="docutils literal notranslate"><span class="pre">NameError</span></code>, <code class="docutils literal notranslate"><span class="pre">TypeError</span></code>, and <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> with the
+following:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">AttributeError</span></code>: target <sup>w</sup>, attribute</li>
+<li><code class="docutils literal notranslate"><span class="pre">IndexError</span></code>: target <sup>w</sup>, key <sup>w</sup>, index (just an alias to
+key)</li>
+<li><code class="docutils literal notranslate"><span class="pre">KeyError</span></code>: target <sup>w</sup>, key <sup>w</sup></li>
+<li><code class="docutils literal notranslate"><span class="pre">LookupError</span></code>: target <sup>w</sup>, key <sup>w</sup></li>
+<li><code class="docutils literal notranslate"><span class="pre">NameError</span></code>: name, scope?</li>
+<li><code class="docutils literal notranslate"><span class="pre">TypeError</span></code>: unexpected_type</li>
+<li><code class="docutils literal notranslate"><span class="pre">ValueError</span></code>: unexpected_value <sup>w</sup></li>
+</ul>
+<p>Attributes with the superscript <sup>w</sup> may need to be weak references <a class="footnote-reference brackets" href="#id38" id="id22">12</a> to
+prevent any memory cycles. However, this may add an unnecessary extra
+complexity as noted by R. David Murray <a class="footnote-reference brackets" href="#id39" id="id23">13</a>. This is specially true given that
+builtin types do not support being weak referenced.</p>
+<p>TODO(skreft): expand this with examples of corner cases.</p>
+<p>To remain backwards compatible these new attributes will be optional and keyword
+only.</p>
+<p>It is proposed to add this information, rather than just improve the error, as
+the former would allow new debugging frameworks and tools and also in the future
+to switch to a lazy generated message. Generated messages are discussed in <a class="footnote-reference brackets" href="#id28" id="id24">2</a>,
+although they are not implemented at the moment. They would not only save some
+resources, but also uniform the messages.</p>
+<p>The stdlib will be then gradually changed so to start using these new
+attributes.</p>
+</div>
+<div class="section" id="potential-uses">
+<h2><a class="toc-backref" href="#id49">Potential Uses</a><a class="headerlink" href="#potential-uses" title="Permalink to this headline">¶</a></h2>
+<p>An automated tool could for example search for similar keys within the object,
+allowing to display the following::</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>a = {&#39;foo&#39;: 1}
+a[&#39;fo&#39;]
+KeyError: &#39;fo&#39;. Did you mean &#39;foo&#39;?
+
+foo = 1
+fo
+NameError: global name &#39;fo&#39; is not defined. Did you mean &#39;foo&#39;?
+</pre></div>
+</div>
+<p>See <a class="footnote-reference brackets" href="#id29" id="id25">3</a> for the output a TestRunner could display.</p>
+</div>
+<div class="section" id="performance">
+<h2><a class="toc-backref" href="#id50">Performance</a><a class="headerlink" href="#performance" title="Permalink to this headline">¶</a></h2>
+<p>Filling these new attributes would only require two extra parameters with data
+already available so the impact should be marginal. However, it may need
+special care for <code class="docutils literal notranslate"><span class="pre">KeyError</span></code> as the following pattern is already widespread.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+  <span class="n">a</span><span class="p">[</span><span class="n">foo</span><span class="p">]</span> <span class="o">=</span> <span class="n">a</span><span class="p">[</span><span class="n">foo</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+<span class="k">except</span><span class="p">:</span>
+  <span class="n">a</span><span class="p">[</span><span class="n">foo</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+</pre></div>
+</div>
+<p>Note as well that storing these objects into the error itself would allow the
+lazy generation of the error message, as discussed in <a class="footnote-reference brackets" href="#id28" id="id26">2</a>.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id51">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id27"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>Python Exceptions Improved
+(<a class="reference external" href="https://www.github.com/sk-/python-exceptions-improved">https://www.github.com/sk-/python-exceptions-improved</a>)</dd>
+<dt class="label" id="id28"><span class="brackets">2</span><span class='fn-backref'><em> (<a href="#id2">1</a>, <a href="#id24">2</a>, <a href="#id26">3</a>) </em></span></dt>
+<dd>ImportError needs attributes for module and file name
+(<a class="reference external" href="http://bugs.python.org/issue1559549">http://bugs.python.org/issue1559549</a>)</dd>
+<dt class="label" id="id29"><span class="brackets">3</span><span class='fn-backref'><em> (<a href="#id3">1</a>, <a href="#id9">2</a>, <a href="#id12">3</a>, <a href="#id15">4</a>, <a href="#id19">5</a>, <a href="#id25">6</a>) </em></span></dt>
+<dd>Enhance exceptions by attaching some more information to them
+(<a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2014-February/025601.html">https://mail.python.org/pipermail/python-ideas/2014-February/025601.html</a>)</dd>
+<dt class="label" id="id30"><span class="brackets"><a class="fn-backref" href="#id8">4</a></span></dt>
+<dd>Specificity in AttributeError
+(<a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2013-April/020308.html">https://mail.python.org/pipermail/python-ideas/2013-April/020308.html</a>)</dd>
+<dt class="label" id="id31"><span class="brackets"><a class="fn-backref" href="#id7">5</a></span></dt>
+<dd>Add an ‘attr’ attribute to AttributeError
+(<a class="reference external" href="http://bugs.python.org/issue18156">http://bugs.python.org/issue18156</a>)</dd>
+<dt class="label" id="id32"><span class="brackets"><a class="fn-backref" href="#id11">6</a></span></dt>
+<dd>Add index attribute to IndexError
+(<a class="reference external" href="http://bugs.python.org/issue18162">http://bugs.python.org/issue18162</a>)</dd>
+<dt class="label" id="id33"><span class="brackets"><a class="fn-backref" href="#id14">7</a></span></dt>
+<dd>Add a ‘key’ attribute to KeyError
+(<a class="reference external" href="http://bugs.python.org/issue18163">http://bugs.python.org/issue18163</a>)</dd>
+<dt class="label" id="id34"><span class="brackets"><a class="fn-backref" href="#id20">8</a></span></dt>
+<dd>Add ‘unexpected_type’ to TypeError
+(<a class="reference external" href="http://bugs.python.org/issue18165">http://bugs.python.org/issue18165</a>)</dd>
+<dt class="label" id="id35"><span class="brackets"><a class="fn-backref" href="#id21">9</a></span></dt>
+<dd>‘value’ attribute for ValueError
+(<a class="reference external" href="http://bugs.python.org/issue18166">http://bugs.python.org/issue18166</a>)</dd>
+<dt class="label" id="id36"><span class="brackets">10</span><span class='fn-backref'><em> (<a href="#id6">1</a>, <a href="#id18">2</a>) </em></span></dt>
+<dd>making builtin exceptions more informative
+(<a class="reference external" href="http://bugs.python.org/issue1182143">http://bugs.python.org/issue1182143</a>)</dd>
+<dt class="label" id="id37"><span class="brackets">11</span><span class='fn-backref'><em> (<a href="#id4">1</a>, <a href="#id5">2</a>, <a href="#id10">3</a>, <a href="#id13">4</a>, <a href="#id16">5</a>, <a href="#id17">6</a>) </em></span></dt>
+<dd>LookupError etc. need API to get the key
+(<a class="reference external" href="http://bugs.python.org/issue614557">http://bugs.python.org/issue614557</a>)</dd>
+<dt class="label" id="id38"><span class="brackets"><a class="fn-backref" href="#id22">12</a></span></dt>
+<dd>weakref - Weak References
+(<a class="reference external" href="https://docs.python.org/3/library/weakref.html">https://docs.python.org/3/library/weakref.html</a>)</dd>
+<dt class="label" id="id39"><span class="brackets"><a class="fn-backref" href="#id23">13</a></span></dt>
+<dd>Message by R.   David Murray: Weak refs on exceptions?
+(<a class="reference external" href="http://bugs.python.org/issue18163#msg190791">http://bugs.python.org/issue18163#msg190791</a>)</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id52">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0473.txt">https://github.com/python/peps/blob/master/pep-0473.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0473.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0472.html">PEP 0472</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0474.html">PEP 0474</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 473 – Adding structured data to built-in exceptions</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#examples">Examples</a><ul>
+<li><a class="reference internal" href="#indexerror">IndexError</a></li>
+<li><a class="reference internal" href="#keyerror">KeyError</a></li>
+<li><a class="reference internal" href="#attributeerror">AttributeError</a></li>
+<li><a class="reference internal" href="#nameerror">NameError</a></li>
+<li><a class="reference internal" href="#other-cases">Other Cases</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#proposal">Proposal</a></li>
+<li><a class="reference internal" href="#potential-uses">Potential Uses</a></li>
+<li><a class="reference internal" href="#performance">Performance</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

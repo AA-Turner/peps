@@ -1,0 +1,327 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 597 – Soft deprecation of omitting encoding &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 598 – Introducing incremental feature releases" href="pep-0598.html" />
+    <link rel="prev" title="PEP 596 – Python 3.9 Release Schedule" href="pep-0596.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 597 – Soft deprecation of omitting encoding</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-597-soft-deprecation-of-omitting-encoding">
+<h1 class="page-title">PEP 597 – Soft deprecation of omitting encoding<a class="headerlink" href="#pep-597-soft-deprecation-of-omitting-encoding" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">597</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Soft deprecation of omitting encoding</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Inada Naoki  &lt;songofacandy&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">Discussions-To</dt>
+<dd class="field-even"><a class="reference external" href="https://discuss.python.org/t/3880">https://discuss.python.org/t/3880</a></dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd">Draft</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even">Standards Track</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">05-Jun-2019</dd>
+<dt class="field-even">Python-Version</dt>
+<dd class="field-even">3.9</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id6">Abstract</a></li>
+<li><a class="reference internal" href="#motivation" id="id7">Motivation</a><ul>
+<li><a class="reference internal" href="#omitting-encoding-is-common-mistake" id="id8">Omitting encoding is common mistake</a></li>
+<li><a class="reference internal" href="#prepare-to-change-the-default-encoding-to-utf-8" id="id9">Prepare to change the default encoding to UTF-8</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#specification" id="id10">Specification</a><ul>
+<li><a class="reference internal" href="#raising-a-pendingdeprecationwarning" id="id11">Raising a PendingDeprecationWarning</a></li>
+<li><a class="reference internal" href="#encoding-locale-option" id="id12"><code class="docutils literal notranslate"><span class="pre">encoding=&quot;locale&quot;</span></code> option</a></li>
+<li><a class="reference internal" href="#io-text-encoding" id="id13"><code class="docutils literal notranslate"><span class="pre">io.text_encoding</span></code></a></li>
+<li><a class="reference internal" href="#subprocess-module-doesn-t-warn" id="id14">subprocess module doesn’t warn</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rationale" id="id15">Rationale</a><ul>
+<li><a class="reference internal" href="#locale-is-not-a-codec-alias" id="id16">“locale” is not a codec alias</a></li>
+<li><a class="reference internal" href="#use-a-pendingdeprecationwarning" id="id17">Use a PendingDeprecationWarning</a></li>
+<li><a class="reference internal" href="#raise-warning-only-in-dev-mode" id="id18">Raise warning only in dev mode</a></li>
+<li><a class="reference internal" href="#id1" id="id19">subprocess module doesn’t warn</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#reference-implementation" id="id20">Reference Implementation</a></li>
+<li><a class="reference internal" href="#references" id="id21">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id22">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id6">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">TextIOWrapper</span></code> raises a <code class="docutils literal notranslate"><span class="pre">PendingDeprecationWarning</span></code> when the
+<code class="docutils literal notranslate"><span class="pre">encoding</span></code> option is not specified, and dev mode is enabled.</li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">encoding=&quot;locale&quot;</span></code> option to <code class="docutils literal notranslate"><span class="pre">TextIOWrapper</span></code>.  It behaves
+like <code class="docutils literal notranslate"><span class="pre">encoding=None</span></code> but don’t raise a warning.</li>
+</ul>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id7">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="omitting-encoding-is-common-mistake">
+<h3><a class="toc-backref" href="#id8">Omitting encoding is common mistake</a><a class="headerlink" href="#omitting-encoding-is-common-mistake" title="Permalink to this headline">¶</a></h3>
+<p>Developers using macOS or Linux may forget that the default encoding
+is not always UTF-8.</p>
+<p>For example, <code class="docutils literal notranslate"><span class="pre">long_description</span> <span class="pre">=</span> <span class="pre">open(&quot;README.md&quot;).read()</span></code> in
+<code class="docutils literal notranslate"><span class="pre">setup.py</span></code> is a common mistake. Many Windows users can not install
+the package if there is at least one non-ASCII character (e.g. emoji)
+in the <code class="docutils literal notranslate"><span class="pre">README.md</span></code> file.</p>
+<p>For example, 489 packages of the 4000 most downloaded packages from
+PyPI used non-ASCII characters in README. And 82 packages of them
+can not be installed from source package when locale encoding is
+ASCII. [<a class="reference internal" href="#id2">1</a>] They used default encoding to read README or TOML file.</p>
+<p>Another example is <code class="docutils literal notranslate"><span class="pre">logging.basicConfig(filename=&quot;log.txt&quot;)</span></code>.
+Some users expect UTF-8 is used by default, but locale encoding is
+used actually. [<a class="reference internal" href="#id3">2</a>]</p>
+<p>Even Python experts assume that default encoding is UTF-8.
+It creates bugs that happen only on Windows. See [<a class="reference internal" href="#id4">3</a>] and [<a class="reference internal" href="#id5">4</a>].</p>
+<p>Raising a warning when the <code class="docutils literal notranslate"><span class="pre">encoding</span></code> option is omitted will
+help to find such mistakes.</p>
+</div>
+<div class="section" id="prepare-to-change-the-default-encoding-to-utf-8">
+<h3><a class="toc-backref" href="#id9">Prepare to change the default encoding to UTF-8</a><a class="headerlink" href="#prepare-to-change-the-default-encoding-to-utf-8" title="Permalink to this headline">¶</a></h3>
+<p>We chose to use locale encoding for the default text encoding
+in Python 3.0.  But UTF-8 has been adopted very widely since then.</p>
+<p>We might change the default text encoding to UTF-8 in the future.
+But this change will affect many applications and libraries.
+Many <code class="docutils literal notranslate"><span class="pre">DeprecationWarning</span></code> will be raised if we start raising
+the warning by default.  It will be too noisy.</p>
+<p>While this PEP doesn’t cover the change, this PEP will help to reduce
+the number of <code class="docutils literal notranslate"><span class="pre">DeprecationWarning</span></code> in the future.</p>
+</div>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id10">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="raising-a-pendingdeprecationwarning">
+<h3><a class="toc-backref" href="#id11">Raising a PendingDeprecationWarning</a><a class="headerlink" href="#raising-a-pendingdeprecationwarning" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">TextIOWrapper</span></code> raises the <code class="docutils literal notranslate"><span class="pre">PendingDeprecationWarning</span></code> when the
+<code class="docutils literal notranslate"><span class="pre">encoding</span></code> option is omitted, and dev mode is enabled.</p>
+</div>
+<div class="section" id="encoding-locale-option">
+<h3><a class="toc-backref" href="#id12"><code class="docutils literal notranslate"><span class="pre">encoding=&quot;locale&quot;</span></code> option</a><a class="headerlink" href="#encoding-locale-option" title="Permalink to this headline">¶</a></h3>
+<p>When <code class="docutils literal notranslate"><span class="pre">encoding=&quot;locale&quot;</span></code> is specified to the <code class="docutils literal notranslate"><span class="pre">TextIOWrapper</span></code>, it
+behaves same to <code class="docutils literal notranslate"><span class="pre">encoding=None</span></code>.  In detail, the encoding is
+chosen by:</p>
+<ol class="arabic simple">
+<li><code class="docutils literal notranslate"><span class="pre">os.device_encoding(buffer.fileno())</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">locale.getpreferredencoding(False)</span></code></li>
+</ol>
+<p>This option can be used to suppress the <code class="docutils literal notranslate"><span class="pre">PendingDeprecationWarning</span></code>.</p>
+</div>
+<div class="section" id="io-text-encoding">
+<h3><a class="toc-backref" href="#id13"><code class="docutils literal notranslate"><span class="pre">io.text_encoding</span></code></a><a class="headerlink" href="#io-text-encoding" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">TextIOWrapper</span></code> is used indirectly in most cases.  For example, <code class="docutils literal notranslate"><span class="pre">open</span></code>, and <code class="docutils literal notranslate"><span class="pre">pathlib.Path.read_text()</span></code> use it.  Warning to these
+functions doesn’t make sense.  Callers of these functions should be warned instead.</p>
+<p><code class="docutils literal notranslate"><span class="pre">io.text_encoding(encoding,</span> <span class="pre">stacklevel=1)</span></code> is a helper function for it.
+Pure Python implementation will be like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">text_encoding</span><span class="p">(</span><span class="n">encoding</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Helper function to choose the text encoding.</span>
+
+<span class="sd">    When encoding is not None, just return it.</span>
+<span class="sd">    Otherwise, return the default text encoding (&quot;locale&quot; for now),</span>
+<span class="sd">    and raise a PendingDeprecationWarning in dev mode.</span>
+
+<span class="sd">    This function can be used in APIs having encoding=None option.</span>
+<span class="sd">    But please consider encoding=&quot;utf-8&quot; for new APIs.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">encoding</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">flags</span><span class="o">.</span><span class="n">dev_mode</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">warnings</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                    <span class="s2">&quot;&#39;encoding&#39; option is not specified. The default encoding &quot;</span>
+                    <span class="s2">&quot;will be changed to &#39;utf-8&#39; in the future&quot;</span><span class="p">,</span>
+                    <span class="ne">PendingDeprecationWarning</span><span class="p">,</span> <span class="n">stacklevel</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">encoding</span> <span class="o">=</span> <span class="s2">&quot;locale&quot;</span>
+    <span class="k">return</span> <span class="n">encoding</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">pathlib.Path.read_text()</span></code> can use this function like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">read_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Open the file in text mode, read it, and close the file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">encoding</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">text_encoding</span><span class="p">(</span><span class="n">encoding</span><span class="p">)</span>
+    <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="n">errors</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="subprocess-module-doesn-t-warn">
+<h3><a class="toc-backref" href="#id14">subprocess module doesn’t warn</a><a class="headerlink" href="#subprocess-module-doesn-t-warn" title="Permalink to this headline">¶</a></h3>
+<p>While the subprocess module uses TextIOWrapper, it doesn’t raise
+<code class="docutils literal notranslate"><span class="pre">PendingDeprecationWarning</span></code>.  It uses the “locale” encoding
+by default.</p>
+</div>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id15">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="locale-is-not-a-codec-alias">
+<h3><a class="toc-backref" href="#id16">“locale” is not a codec alias</a><a class="headerlink" href="#locale-is-not-a-codec-alias" title="Permalink to this headline">¶</a></h3>
+<p>We don’t add the “locale” to the codec alias because locale can be
+changed in runtime.</p>
+<p>Additionally, <code class="docutils literal notranslate"><span class="pre">TextIOWrapper</span></code> checks <code class="docutils literal notranslate"><span class="pre">os.device_encoding()</span></code>
+when <code class="docutils literal notranslate"><span class="pre">encoding=None</span></code>.  This behavior can not be implemented in
+the codec.</p>
+</div>
+<div class="section" id="use-a-pendingdeprecationwarning">
+<h3><a class="toc-backref" href="#id17">Use a PendingDeprecationWarning</a><a class="headerlink" href="#use-a-pendingdeprecationwarning" title="Permalink to this headline">¶</a></h3>
+<p>This PEP doesn’t make decision about changing default text encoding.
+So we use <code class="docutils literal notranslate"><span class="pre">PendingDeprecationWarning</span></code> instead of <code class="docutils literal notranslate"><span class="pre">DeprecationWarning</span></code> for now.</p>
+</div>
+<div class="section" id="raise-warning-only-in-dev-mode">
+<h3><a class="toc-backref" href="#id18">Raise warning only in dev mode</a><a class="headerlink" href="#raise-warning-only-in-dev-mode" title="Permalink to this headline">¶</a></h3>
+<p>This PEP will produce a huge amount of <code class="docutils literal notranslate"><span class="pre">PendingDeprecationWarning</span></code>.
+It will be too noisy for most Python developers.</p>
+<p>We need to fix warnings in standard library, pip, and major dev tools
+like <code class="docutils literal notranslate"><span class="pre">pytest</span></code> before raise this warning by default.</p>
+</div>
+<div class="section" id="id1">
+<h3><a class="toc-backref" href="#id19">subprocess module doesn’t warn</a><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<p>The default encoding for PIPE is relating to the encoding of the stdio.
+It should be discussed later.</p>
+</div>
+</div>
+<div class="section" id="reference-implementation">
+<h2><a class="toc-backref" href="#id20">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="https://github.com/python/cpython/pull/19481">https://github.com/python/cpython/pull/19481</a></p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id21">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets">1</span></dt>
+<dd>“Packages can’t be installed when encoding is not UTF-8”
+(<a class="reference external" href="https://github.com/methane/pep597-pypi-ascii">https://github.com/methane/pep597-pypi-ascii</a>)</dd>
+<dt class="label" id="id3"><span class="brackets">2</span></dt>
+<dd>“Logging - Inconsistent behaviour when handling unicode”
+(<a class="reference external" href="https://bugs.python.org/issue37111">https://bugs.python.org/issue37111</a>)</dd>
+<dt class="label" id="id4"><span class="brackets">3</span></dt>
+<dd>Packaging tutorial in packaging.python.org didn’t specify
+encoding to read a <code class="docutils literal notranslate"><span class="pre">README.md</span></code>
+(<a class="reference external" href="https://github.com/pypa/packaging.python.org/pull/682">https://github.com/pypa/packaging.python.org/pull/682</a>)</dd>
+<dt class="label" id="id5"><span class="brackets">4</span></dt>
+<dd><code class="docutils literal notranslate"><span class="pre">json.tool</span></code> had used locale encoding to read JSON files.
+(<a class="reference external" href="https://bugs.python.org/issue33684">https://bugs.python.org/issue33684</a>)</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id22">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0597.rst">https://github.com/python/peps/blob/master/pep-0597.rst</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0597.rst.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0596.html">PEP 0596</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0598.html">PEP 0598</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 597 – Soft deprecation of omitting encoding</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a><ul>
+<li><a class="reference internal" href="#omitting-encoding-is-common-mistake">Omitting encoding is common mistake</a></li>
+<li><a class="reference internal" href="#prepare-to-change-the-default-encoding-to-utf-8">Prepare to change the default encoding to UTF-8</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#raising-a-pendingdeprecationwarning">Raising a PendingDeprecationWarning</a></li>
+<li><a class="reference internal" href="#encoding-locale-option"><code class="docutils literal notranslate"><span class="pre">encoding=&quot;locale&quot;</span></code> option</a></li>
+<li><a class="reference internal" href="#io-text-encoding"><code class="docutils literal notranslate"><span class="pre">io.text_encoding</span></code></a></li>
+<li><a class="reference internal" href="#subprocess-module-doesn-t-warn">subprocess module doesn’t warn</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rationale">Rationale</a><ul>
+<li><a class="reference internal" href="#locale-is-not-a-codec-alias">“locale” is not a codec alias</a></li>
+<li><a class="reference internal" href="#use-a-pendingdeprecationwarning">Use a PendingDeprecationWarning</a></li>
+<li><a class="reference internal" href="#raise-warning-only-in-dev-mode">Raise warning only in dev mode</a></li>
+<li><a class="reference internal" href="#id1">subprocess module doesn’t warn</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

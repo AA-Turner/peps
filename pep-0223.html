@@ -1,0 +1,326 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 223 – Change the Meaning of ``\x`` Escapes &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 224 – Attribute Docstrings" href="pep-0224.html" />
+    <link rel="prev" title="PEP 222 – Web Library Enhancements" href="pep-0222.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 223 – Change the Meaning of ``\x`` Escapes</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-223-change-the-meaning-of-x-escapes">
+<h1 class="page-title">PEP 223 – Change the Meaning of ``\x`` Escapes<a class="headerlink" href="#pep-223-change-the-meaning-of-x-escapes" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">223</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Change the Meaning of <code class="docutils literal notranslate"><span class="pre">\x</span></code> Escapes</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">tim.peters&#32;&#97;t&#32;gmail.com (Tim Peters)</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">20-Aug-2000</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.0</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">23-Aug-2000</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id3">Abstract</a></li>
+<li><a class="reference internal" href="#syntax" id="id4">Syntax</a></li>
+<li><a class="reference internal" href="#semantics" id="id5">Semantics</a></li>
+<li><a class="reference internal" href="#example" id="id6">Example</a></li>
+<li><a class="reference internal" href="#history-and-rationale" id="id7">History and Rationale</a></li>
+<li><a class="reference internal" href="#development-and-discussion" id="id8">Development and Discussion</a></li>
+<li><a class="reference internal" href="#backward-compatibility" id="id9">Backward Compatibility</a></li>
+<li><a class="reference internal" href="#effects-on-other-tools" id="id10">Effects on Other Tools</a></li>
+<li><a class="reference internal" href="#reference-implementation" id="id11">Reference Implementation</a></li>
+<li><a class="reference internal" href="#bdfl-pronouncements" id="id12">BDFL Pronouncements</a></li>
+<li><a class="reference internal" href="#references" id="id13">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id14">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id3">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Change <code class="docutils literal notranslate"><span class="pre">\x</span></code> escapes, in both 8-bit and Unicode strings, to consume
+exactly the two hex digits following.  The proposal views this as
+correcting an original design flaw, leading to clearer expression
+in all flavors of string, a cleaner Unicode story, better
+compatibility with Perl regular expressions, and with minimal risk
+to existing code.</p>
+</div>
+<div class="section" id="syntax">
+<h2><a class="toc-backref" href="#id4">Syntax</a><a class="headerlink" href="#syntax" title="Permalink to this headline">¶</a></h2>
+<p>The syntax of <code class="docutils literal notranslate"><span class="pre">\x</span></code> escapes, in all flavors of non-raw strings, becomes</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>\<span class="n">xhh</span>
+</pre></div>
+</div>
+<p>where h is a hex digit (0-9, a-f, A-F).  The exact syntax in 1.5.2 is
+not clearly specified in the Reference Manual; it says</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>\<span class="n">xhh</span><span class="o">...</span>
+</pre></div>
+</div>
+<p>implying “two or more” hex digits, but one-digit forms are also
+accepted by the 1.5.2 compiler, and a plain <code class="docutils literal notranslate"><span class="pre">\x</span></code> is “expanded” to
+itself (i.e., a backslash followed by the letter x).  It’s unclear
+whether the Reference Manual intended either of the 1-digit or
+0-digit behaviors.</p>
+</div>
+<div class="section" id="semantics">
+<h2><a class="toc-backref" href="#id5">Semantics</a><a class="headerlink" href="#semantics" title="Permalink to this headline">¶</a></h2>
+<p>In an 8-bit non-raw string,</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>\<span class="n">xij</span>
+</pre></div>
+</div>
+<p>expands to the character</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">chr</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">ij</span><span class="p">,</span> <span class="mi">16</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Note that this is the same as in 1.6 and before.</p>
+<p>In a Unicode string,</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>\<span class="n">xij</span>
+</pre></div>
+</div>
+<p>acts the same as</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>\<span class="n">u00ij</span>
+</pre></div>
+</div>
+<p>i.e. it expands to the obvious Latin-1 character from the initial
+segment of the Unicode space.</p>
+<p>An <code class="docutils literal notranslate"><span class="pre">\x</span></code> not followed by at least two hex digits is a compile-time error,
+specifically <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> in 8-bit strings, and <code class="docutils literal notranslate"><span class="pre">UnicodeError</span></code> (a subclass
+of <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>) in Unicode strings.  Note that if an <code class="docutils literal notranslate"><span class="pre">\x</span></code> is followed by
+more than two hex digits, only the first two are “consumed”.  In 1.6
+and before all but the <em>last</em> two were silently ignored.</p>
+</div>
+<div class="section" id="example">
+<h2><a class="toc-backref" href="#id6">Example</a><a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
+<p>In 1.5.2:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="s2">&quot;</span><span class="se">\x12</span><span class="s2">3465&quot;</span>  <span class="c1"># same as &quot;\x65&quot;</span>
+<span class="go">&#39;e&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="s2">&quot;</span><span class="se">\x65</span><span class="s2">&quot;</span>
+<span class="go">&#39;e&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="s2">&quot;\x1&quot;</span>
+<span class="go">&#39;\001&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="s2">&quot;\x\x&quot;</span>
+<span class="go">&#39;\\x\\x&#39;</span>
+<span class="go">&gt;&gt;&gt;</span>
+</pre></div>
+</div>
+<p>In 2.0:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="s2">&quot;</span><span class="se">\x12</span><span class="s2">3465&quot;</span> <span class="c1"># \x12 -&gt; \022, &quot;3456&quot; left alone</span>
+<span class="go">&#39;\0223456&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="s2">&quot;</span><span class="se">\x65</span><span class="s2">&quot;</span>
+<span class="go">&#39;e&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="s2">&quot;\x1&quot;</span>
+<span class="go">[ValueError is raised]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="s2">&quot;\x\x&quot;</span>
+<span class="go">[ValueError is raised]</span>
+<span class="go">&gt;&gt;&gt;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="history-and-rationale">
+<h2><a class="toc-backref" href="#id7">History and Rationale</a><a class="headerlink" href="#history-and-rationale" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">\x</span></code> escapes were introduced in C as a way to specify variable-width
+character encodings.  Exactly which encodings those were, and how many
+hex digits they required, was left up to each implementation.  The
+language simply stated that <code class="docutils literal notranslate"><span class="pre">\x</span></code> “consumed” <em>all</em> hex digits following,
+and left the meaning up to each implementation.  So, in effect, <code class="docutils literal notranslate"><span class="pre">\x</span></code> in C
+is a standard hook to supply platform-defined behavior.</p>
+<p>Because Python explicitly aims at platform independence, the <code class="docutils literal notranslate"><span class="pre">\x</span></code> escape
+in Python (up to and including 1.6) has been treated the same way
+across all platforms:  all <em>except</em> the last two hex digits were
+silently ignored.  So the only actual use for <code class="docutils literal notranslate"><span class="pre">\x</span></code> escapes in Python was
+to specify a single byte using hex notation.</p>
+<p>Larry Wall appears to have realized that this was the only real use for
+<code class="docutils literal notranslate"><span class="pre">\x</span></code> escapes in a platform-independent language, as the proposed rule for
+Python 2.0 is in fact what Perl has done from the start (although you
+need to run in Perl -w mode to get warned about <code class="docutils literal notranslate"><span class="pre">\x</span></code> escapes with fewer
+than 2 hex digits following – it’s clearly more Pythonic to insist on
+2 all the time).</p>
+<p>When Unicode strings were introduced to Python, <code class="docutils literal notranslate"><span class="pre">\x</span></code> was generalized so
+as to ignore all but the last <em>four</em> hex digits in Unicode strings.
+This caused a technical difficulty for the new regular expression engine:
+SRE tries very hard to allow mixing 8-bit and Unicode patterns and
+strings in intuitive ways, and it no longer had any way to guess what,
+for example, <code class="docutils literal notranslate"><span class="pre">r&quot;\x123456&quot;</span></code> should mean as a pattern:  is it asking to match
+the 8-bit character <code class="docutils literal notranslate"><span class="pre">\x56</span></code> or the Unicode character <code class="docutils literal notranslate"><span class="pre">\u3456</span></code>?</p>
+<p>There are hacky ways to guess, but it doesn’t end there.  The ISO C99
+standard also introduces 8-digit <code class="docutils literal notranslate"><span class="pre">\U12345678</span></code> escapes to cover the entire
+ISO 10646 character space, and it’s also desired that Python 2 support
+that from the start.  But then what are <code class="docutils literal notranslate"><span class="pre">\x</span></code> escapes supposed to mean?
+Do they ignore all but the last <em>eight</em> hex digits then?  And if less
+than 8 following in a Unicode string, all but the last 4?  And if less
+than 4, all but the last 2?</p>
+<p>This was getting messier by the minute, and the proposal cuts the
+Gordian knot by making <code class="docutils literal notranslate"><span class="pre">\x</span></code> simpler instead of more complicated.  Note
+that the 4-digit generalization to <code class="docutils literal notranslate"><span class="pre">\xijkl</span></code> in Unicode strings was also
+redundant, because it meant exactly the same thing as <code class="docutils literal notranslate"><span class="pre">\uijkl</span></code> in Unicode
+strings.  It’s more Pythonic to have just one obvious way to specify a
+Unicode character via hex notation.</p>
+</div>
+<div class="section" id="development-and-discussion">
+<h2><a class="toc-backref" href="#id8">Development and Discussion</a><a class="headerlink" href="#development-and-discussion" title="Permalink to this headline">¶</a></h2>
+<p>The proposal was worked out among Guido van Rossum, Fredrik Lundh and
+Tim Peters in email.  It was subsequently explained and discussed on
+Python-Dev under subject “Go x yourself” <a class="footnote-reference brackets" href="#id2" id="id1">1</a>, starting 2000-08-03.
+Response was overwhelmingly positive; no objections were raised.</p>
+</div>
+<div class="section" id="backward-compatibility">
+<h2><a class="toc-backref" href="#id9">Backward Compatibility</a><a class="headerlink" href="#backward-compatibility" title="Permalink to this headline">¶</a></h2>
+<p>Changing the meaning of <code class="docutils literal notranslate"><span class="pre">\x</span></code> escapes does carry risk of breaking existing
+code, although no instances of incompatibility have yet been discovered.
+The risk is believed to be minimal.</p>
+<p>Tim Peters verified that, except for pieces of the standard test suite
+deliberately provoking end cases, there are no instances of <code class="docutils literal notranslate"><span class="pre">\xabcdef...</span></code>
+with fewer or more than 2 hex digits following, in either the Python
+CVS development tree, or in assorted Python packages sitting on his
+machine.</p>
+<p>It’s unlikely there are any with fewer than 2, because the Reference
+Manual implied they weren’t legal (although this is debatable!).  If
+there are any with more than 2, Guido is ready to argue they were buggy
+anyway &lt;0.9 wink&gt;.</p>
+<p>Guido reported that the O’Reilly Python books <em>already</em> document that
+Python works the proposed way, likely due to their Perl editing
+heritage (as above, Perl worked (very close to) the proposed way from
+its start).</p>
+<p>Finn Bock reported that what JPython does with <code class="docutils literal notranslate"><span class="pre">\x</span></code> escapes is
+unpredictable today.  This proposal gives a clear meaning that can be
+consistently and easily implemented across all Python implementations.</p>
+</div>
+<div class="section" id="effects-on-other-tools">
+<h2><a class="toc-backref" href="#id10">Effects on Other Tools</a><a class="headerlink" href="#effects-on-other-tools" title="Permalink to this headline">¶</a></h2>
+<p>Believed to be none.  The candidates for breakage would mostly be
+parsing tools, but the author knows of none that worry about the
+internal structure of Python strings beyond the approximation “when
+there’s a backslash, swallow the next character”.  Tim Peters checked
+<code class="docutils literal notranslate"><span class="pre">python-mode.el</span></code>, the std <code class="docutils literal notranslate"><span class="pre">tokenize.py</span></code> and <code class="docutils literal notranslate"><span class="pre">pyclbr.py</span></code>, and the IDLE syntax
+coloring subsystem, and believes there’s no need to change any of
+them.  Tools like <code class="docutils literal notranslate"><span class="pre">tabnanny.py</span></code> and <code class="docutils literal notranslate"><span class="pre">checkappend.py</span></code> inherit their immunity
+from <code class="docutils literal notranslate"><span class="pre">tokenize.py</span></code>.</p>
+</div>
+<div class="section" id="reference-implementation">
+<h2><a class="toc-backref" href="#id11">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>The code changes are so simple that a separate patch will not be produced.
+Fredrik Lundh is writing the code, is an expert in the area, and will
+simply check the changes in before 2.0b1 is released.</p>
+</div>
+<div class="section" id="bdfl-pronouncements">
+<h2><a class="toc-backref" href="#id12">BDFL Pronouncements</a><a class="headerlink" href="#bdfl-pronouncements" title="Permalink to this headline">¶</a></h2>
+<p>Yes, <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>, not <code class="docutils literal notranslate"><span class="pre">SyntaxError</span></code>.  “Problems with literal interpretations
+traditionally raise ‘runtime’ exceptions rather than syntax errors.”</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id13">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>Tim Peters, Go x yourself
+<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2000-August/007825.html">https://mail.python.org/pipermail/python-dev/2000-August/007825.html</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id14">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0223.txt">https://github.com/python/peps/blob/master/pep-0223.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0223.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0222.html">PEP 0222</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0224.html">PEP 0224</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 223 – Change the Meaning of ``\x`` Escapes</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#syntax">Syntax</a></li>
+<li><a class="reference internal" href="#semantics">Semantics</a></li>
+<li><a class="reference internal" href="#example">Example</a></li>
+<li><a class="reference internal" href="#history-and-rationale">History and Rationale</a></li>
+<li><a class="reference internal" href="#development-and-discussion">Development and Discussion</a></li>
+<li><a class="reference internal" href="#backward-compatibility">Backward Compatibility</a></li>
+<li><a class="reference internal" href="#effects-on-other-tools">Effects on Other Tools</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#bdfl-pronouncements">BDFL Pronouncements</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

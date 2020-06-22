@@ -1,0 +1,265 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 449 – Removal of the PyPI Mirror Auto Discovery and Naming Scheme &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 450 – Adding A Statistics Module To The Standard Library" href="pep-0450.html" />
+    <link rel="prev" title="PEP 448 – Additional Unpacking Generalizations" href="pep-0448.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 449 – Removal of the PyPI Mirror Auto Discovery and Naming Scheme</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-449-removal-of-the-pypi-mirror-auto-discovery-and-naming-scheme">
+<h1 class="page-title">PEP 449 – Removal of the PyPI Mirror Auto Discovery and Naming Scheme<a class="headerlink" href="#pep-449-removal-of-the-pypi-mirror-auto-discovery-and-naming-scheme" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">449</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Removal of the PyPI Mirror Auto Discovery and Naming Scheme</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Donald Stufft &lt;donald&#32;&#97;t&#32;stufft.io&gt;</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even">Richard Jones &lt;richard&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-odd">Discussions-To</dt>
+<dd class="field-odd"><a class="reference external" href="mailto:distutils-sig&#37;&#52;&#48;python&#46;org?subject=PEP%20449">distutils-sig&#32;&#97;t&#32;python.org</a></dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Process</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">04-Aug-2013</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd">04-Aug-2013</dd>
+<dt class="field-even">Replaces</dt>
+<dd class="field-even"><a class="reference external" href="./pep-0381.html">381</a></dd>
+<dt class="field-odd">Resolution</dt>
+<dd class="field-odd"><a class="reference external" href="https://mail.python.org/pipermail/distutils-sig/2013-August/022518.html">https://mail.python.org/pipermail/distutils-sig/2013-August/022518.html</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id9">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id10">Rationale</a></li>
+<li><a class="reference internal" href="#plan-for-deprecation-removal" id="id11">Plan for Deprecation &amp; Removal</a><ul>
+<li><a class="reference internal" href="#why-feb-15th-2014" id="id12">Why Feb 15th, 2014</a></li>
+<li><a class="reference internal" href="#why-the-dns-entries-must-be-removed" id="id13">Why the DNS entries must be removed</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#public-or-private-mirrors" id="id14">Public or Private Mirrors</a></li>
+<li><a class="reference internal" href="#id1" id="id15">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id16">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id9">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP provides a path to deprecate and ultimately remove the auto discovery
+of PyPI mirrors as well as the hard coded naming scheme which requires
+delegating a domain name under pypi.python.org to a third party.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id10">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>The PyPI mirroring infrastructure (defined in <a class="reference external" href="http://www.python.org/dev/peps/pep-0381/">PEP381</a> <a class="footnote-reference brackets" href="#id2" id="id3">1</a>) provides a means to
+mirror the content of PyPI used by the automatic installers. It also provides
+a method for auto discovery of mirrors and a consistent naming scheme.</p>
+<p>There are a number of problems with the auto discovery protocol and the
+naming scheme:</p>
+<ul class="simple">
+<li>They give control over a *.python.org domain name to a third party,
+allowing that third party to set or read cookies on the pypi.python.org and
+python.org domain name.</li>
+<li>The use of a sub domain of pypi.python.org means that the mirror operators
+will never be able to get a SSL certificate of their own, and giving them
+one for a python.org domain name is unlikely to happen.</li>
+<li>The auto discovery uses an unauthenticated protocol (DNS).</li>
+<li>The lack of a TLS certificate on these domains means that clients can not
+be sure that they have not been a victim of DNS poisoning or a MITM attack.</li>
+<li>The auto discovery protocol was designed to enable a client to automatically
+select a mirror for use. This is no longer a requirement because the CDN
+that PyPI is now using a globally distributed network of servers which will
+automatically select one close to the client without any effort on the
+clients part.</li>
+<li>The auto discovery protocol and use of the consistent naming scheme has only
+ever been implemented by one installer (pip), and its implementation, besides
+being insecure, has serious issues with performance and is slated for removal
+with its next release (1.5).</li>
+<li>While there are provisions in <a class="reference external" href="http://www.python.org/dev/peps/pep-0381/">PEP381</a> <a class="footnote-reference brackets" href="#id2" id="id4">1</a> that would solve <em>some</em> of these
+issues for a dedicated client it would not solve the issues that affect a
+users browser. Additionally these provisions have not been implemented by
+any installer to date.</li>
+</ul>
+<p>Due to the number of issues, some of them very serious, and the CDN which
+provides most of the benefit of the auto discovery and consistent naming scheme
+this PEP proposes to first deprecate and then remove the [a..z].pypi.python.org
+names for mirrors and the last.pypi.python.org name for the auto discovery
+protocol. The ability to mirror and the method of mirror will not be affected
+and will continue to exist as written in <a class="reference external" href="http://www.python.org/dev/peps/pep-0381/">PEP381</a> <a class="footnote-reference brackets" href="#id2" id="id5">1</a>. Operators of existing
+mirrors are encouraged to acquire their own domains and certificates to use for
+their mirrors if they wish to continue hosting them.</p>
+</div>
+<div class="section" id="plan-for-deprecation-removal">
+<h2><a class="toc-backref" href="#id11">Plan for Deprecation &amp; Removal</a><a class="headerlink" href="#plan-for-deprecation-removal" title="Permalink to this headline">¶</a></h2>
+<p>Immediately upon acceptance of this PEP documentation on PyPI will be updated
+to reflect the deprecated nature of the official public mirrors and will
+direct users to external resources like <a class="reference external" href="http://www.pypi-mirrors.org/">http://www.pypi-mirrors.org/</a> to
+discover unofficial public mirrors if they wish to use one.</p>
+<p>Mirror operators, if they wish to continue operating their mirror, should
+acquire a domain name to represent their mirror and, if they are able, a TLS
+certificate. Once they have acquired a domain they should redirect their
+assigned N.pypi.python.org domain name to their new domain. On Feb 15th, 2014
+the DNS entries for [a..z].pypi.python.org and last.pypi.python.org will be
+removed. At any time prior to Feb 15th, 2014 a mirror operator may request
+that their domain name be reclaimed by PyPI and pointed back at the master.</p>
+<div class="section" id="why-feb-15th-2014">
+<h3><a class="toc-backref" href="#id12">Why Feb 15th, 2014</a><a class="headerlink" href="#why-feb-15th-2014" title="Permalink to this headline">¶</a></h3>
+<p>The most critical decision of this PEP is the final cut off date. If the date
+is too soon then it needlessly punishes people by forcing them to drop
+everything to update their deployment scripts. If the date is too far away then
+the extended period of time does not help with the migration effort and merely
+puts off the migration until a later date.</p>
+<p>The date of Feb 15th, 2014 has been chosen because it is roughly 6 months from
+the date of the PEP. This should ensure a lengthy period of time to enable
+people to update their deployment procedures to point to the new domains names
+without merely padding the cut off date.</p>
+</div>
+<div class="section" id="why-the-dns-entries-must-be-removed">
+<h3><a class="toc-backref" href="#id13">Why the DNS entries must be removed</a><a class="headerlink" href="#why-the-dns-entries-must-be-removed" title="Permalink to this headline">¶</a></h3>
+<p>While it would be possible to simply reclaim the domain names used in mirror
+and direct them back at PyPI in order to prevent users from needing to update
+configurations to point away from those domains this has a number of issues.</p>
+<ul class="simple">
+<li>Anyone who currently has these names hard coded in their configuration has
+them hard coded as HTTP. This means that by allowing these names to continue
+resolving we make it simple for a MITM operator to attack users by rewriting
+the redirect to HTTPS prior to giving it to the client.</li>
+<li>The overhead of maintaining several domains pointing at PyPI has proved
+troublesome for the small number of N.pypi.python.org domains that have
+already been reclaimed. They oftentimes get mis-configured when things
+change on the service which often leaves them broken for months at a time
+until somebody notices. By leaving them in we leave users of these domains
+open to random breakages which are less likely to get caught or noticed.</li>
+<li>People using these domains have explicitly chosen to use them for one reason
+or another. One such reason may be because they do not wish to deploy from
+a host located in a particular country. If these domains continue to resolve
+but do not point at their existing locations we have silently removed this
+choice from the existing users of those domains.</li>
+</ul>
+<p>That being said, removing the entries <em>will</em> require users who have modified
+their configuration to either point back at the master (PyPI) or select a new
+mirror name to point at. This is regarded as a regrettable requirement to
+protect PyPI itself and the users of the mirrors from the attacks outlined
+above or, at the very least, require them to make an informed decision about
+the insecurity.</p>
+</div>
+</div>
+<div class="section" id="public-or-private-mirrors">
+<h2><a class="toc-backref" href="#id14">Public or Private Mirrors</a><a class="headerlink" href="#public-or-private-mirrors" title="Permalink to this headline">¶</a></h2>
+<p>The mirroring protocol will continue to exist as defined in <a class="reference external" href="http://www.python.org/dev/peps/pep-0381/">PEP381</a> <a class="footnote-reference brackets" href="#id2" id="id6">1</a> and
+people are encouraged to host public and private mirrors if they so desire.
+The recommended mirroring client is <a class="reference external" href="https://pypi.python.org/pypi/bandersnatch">Bandersnatch</a> <a class="footnote-reference brackets" href="#id7" id="id8">2</a>.</p>
+</div>
+<div class="section" id="id1">
+<h2><a class="toc-backref" href="#id15">References</a><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets">1</span><span class='fn-backref'><em> (<a href="#id3">1</a>, <a href="#id4">2</a>, <a href="#id5">3</a>, <a href="#id6">4</a>) </em></span></dt>
+<dd><a class="reference external" href="http://www.python.org/dev/peps/pep-0381/">http://www.python.org/dev/peps/pep-0381/</a></dd>
+<dt class="label" id="id7"><span class="brackets"><a class="fn-backref" href="#id8">2</a></span></dt>
+<dd><a class="reference external" href="https://pypi.python.org/pypi/bandersnatch">https://pypi.python.org/pypi/bandersnatch</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id16">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0449.txt">https://github.com/python/peps/blob/master/pep-0449.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0449.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0448.html">PEP 0448</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0450.html">PEP 0450</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 449 – Removal of the PyPI Mirror Auto Discovery and Naming Scheme</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#plan-for-deprecation-removal">Plan for Deprecation &amp; Removal</a><ul>
+<li><a class="reference internal" href="#why-feb-15th-2014">Why Feb 15th, 2014</a></li>
+<li><a class="reference internal" href="#why-the-dns-entries-must-be-removed">Why the DNS entries must be removed</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#public-or-private-mirrors">Public or Private Mirrors</a></li>
+<li><a class="reference internal" href="#id1">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

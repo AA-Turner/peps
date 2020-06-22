@@ -1,0 +1,410 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 347 – Migrating the Python CVS to Subversion &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 348 – Exception Reorganization for Python 3.0" href="pep-0348.html" />
+    <link rel="prev" title="PEP 346 – User Defined (“``with``”) Statements" href="pep-0346.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 347 – Migrating the Python CVS to Subversion</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-347-migrating-the-python-cvs-to-subversion">
+<h1 class="page-title">PEP 347 – Migrating the Python CVS to Subversion<a class="headerlink" href="#pep-347-migrating-the-python-cvs-to-subversion" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">347</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Migrating the Python CVS to Subversion</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Martin von Löwis &lt;martin&#32;&#97;t&#32;v.loewis.de&gt;</dd>
+<dt class="field-even">Discussions-To</dt>
+<dd class="field-even">&lt;<a class="reference external" href="mailto:python-dev&#37;&#52;&#48;python&#46;org?subject=PEP%20347">python-dev&#32;&#97;t&#32;python.org</a>&gt;</dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd">Final</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even">Process</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">14-Jul-2004</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">14-Jul-2004</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id2">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id3">Rationale</a><ul>
+<li><a class="reference internal" href="#moving-to-subversion" id="id4">Moving to Subversion</a></li>
+<li><a class="reference internal" href="#moving-to-python-org" id="id5">Moving to python.org</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#migration-procedure" id="id6">Migration Procedure</a><ul>
+<li><a class="reference internal" href="#collect-ssh-keys" id="id7">Collect SSH keys</a></li>
+<li><a class="reference internal" href="#administrator-access" id="id8">Administrator Access</a></li>
+<li><a class="reference internal" href="#downloading-the-cvs-repository" id="id9">Downloading the CVS Repository</a></li>
+<li><a class="reference internal" href="#converting-the-cvs-repository" id="id10">Converting the CVS Repository</a></li>
+<li><a class="reference internal" href="#publish-the-repository" id="id11">Publish the Repository</a></li>
+<li><a class="reference internal" href="#disable-cvs" id="id12">Disable CVS</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#discussion" id="id13">Discussion</a></li>
+<li><a class="reference internal" href="#copyright" id="id14">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id2">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>The Python source code is currently managed in a CVS repository on
+sourceforge.net.  This PEP proposes to move it to a Subversion
+repository on svn.python.org.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id3">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>This change has two aspects: moving from CVS to Subversion, and moving
+from SourceForge to python.org.  For each, a rationale will be given.</p>
+<div class="section" id="moving-to-subversion">
+<h3><a class="toc-backref" href="#id4">Moving to Subversion</a><a class="headerlink" href="#moving-to-subversion" title="Permalink to this headline">¶</a></h3>
+<p>CVS has a number of limitations that have been eliminated by
+Subversion.  For the development of Python, the most notable
+improvements are:</p>
+<ul class="simple">
+<li>the ability to rename files and directories, and to remove
+directories, while keeping the history of these files.</li>
+<li>support for change sets (sets of correlated changes to multiple
+files) through global revision numbers.  Change sets are
+transactional.</li>
+<li>atomic, fast tagging: a cvs tag might take many minutes; a
+Subversion tag (svn cp) will complete quickly, and atomically.
+Likewise, branches are very efficient.</li>
+<li>support for offline diffs, which is useful when creating patches.</li>
+</ul>
+</div>
+<div class="section" id="moving-to-python-org">
+<h3><a class="toc-backref" href="#id5">Moving to python.org</a><a class="headerlink" href="#moving-to-python-org" title="Permalink to this headline">¶</a></h3>
+<p>SourceForge has kindly provided an important infrastructure for the
+past years.  Unfortunately, the attention that SF received has also
+caused repeated overload situations in the past, to which the SF
+operators could not always respond in a timely manner.  In particular,
+for CVS, they had to reduce the load on the primary CVS server by
+introducing a second, read-only CVS server for anonymous access.  This
+server is regularly synchronized, but lags behind the read-write CVS
+repository between synchronizations.  As a result, users without
+commit access can see recent changes to the repository only after a
+delay.</p>
+<p>On python.org, it would be possible to make the repository accessible
+for anonymous access.</p>
+</div>
+</div>
+<div class="section" id="migration-procedure">
+<h2><a class="toc-backref" href="#id6">Migration Procedure</a><a class="headerlink" href="#migration-procedure" title="Permalink to this headline">¶</a></h2>
+<p>To move the Python CVS repository, the following steps need to be
+executed.  The steps are elaborated upon in the following sections.</p>
+<ol class="arabic simple">
+<li>Collect SSH keys for all current committers, along with usernames
+to appear in commit messages.</li>
+<li>At the beginning of the migration, announce that the repository on
+SourceForge closed.</li>
+<li>24 hours after the last commit, download the CVS repository.</li>
+<li>Convert the CVS repository into a Subversion repository.</li>
+<li>Publish the repository with write access for committers, and
+read-only anonymous access.</li>
+<li>Disable CVS access on SF.</li>
+</ol>
+<div class="section" id="collect-ssh-keys">
+<h3><a class="toc-backref" href="#id7">Collect SSH keys</a><a class="headerlink" href="#collect-ssh-keys" title="Permalink to this headline">¶</a></h3>
+<p>After some discussion, svn+ssh was selected as the best method
+for write access to the repository. Developers can continue to
+use their SSH keys, but they must be installed on python.org.</p>
+<p>In order to avoid having to create a new Unix user for each
+developer, a single account should be used, with command=
+attributes in the authorized_keys files.</p>
+<p>The lines in the authorized_keys file should read like this
+(wrapped for better readability):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">command</span><span class="o">=</span><span class="s2">&quot;/usr/bin/svnserve --root=/svnroot -t</span>
+<span class="o">--</span><span class="n">tunnel</span><span class="o">-</span><span class="n">user</span><span class="o">=</span><span class="s1">&#39;&lt;username&gt;&#39;</span><span class="s2">&quot;,no-port-forwarding,</span>
+<span class="n">no</span><span class="o">-</span><span class="n">X11</span><span class="o">-</span><span class="n">forwarding</span><span class="p">,</span><span class="n">no</span><span class="o">-</span><span class="n">agent</span><span class="o">-</span><span class="n">forwarding</span><span class="p">,</span><span class="n">no</span><span class="o">-</span><span class="n">pty</span>
+<span class="n">ssh</span><span class="o">-</span><span class="n">dss</span> <span class="o">&lt;</span><span class="n">key</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">comment</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>As the usernames, the real names should be used instead of
+the SF account names, so that people can be better identified
+in log messages.</p>
+</div>
+<div class="section" id="administrator-access">
+<h3><a class="toc-backref" href="#id8">Administrator Access</a><a class="headerlink" href="#administrator-access" title="Permalink to this headline">¶</a></h3>
+<p>Administrator access to the pythondev account should be granted
+to all current admins of the Python SF project. To distinguish
+between shell login and svnserve login, admins need to maintain
+two keys. Using OpenSSH, the following procedure can be
+used to create a second key:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="o">.</span><span class="n">ssh</span>
+<span class="n">ssh</span><span class="o">-</span><span class="n">keygen</span> <span class="o">-</span><span class="n">t</span> <span class="n">DSA</span> <span class="o">-</span><span class="n">f</span> <span class="n">pythondev</span> <span class="o">-</span><span class="n">C</span> <span class="o">&lt;</span><span class="n">user</span><span class="o">&gt;</span><span class="nd">@pythondev</span>
+<span class="n">vi</span> <span class="n">config</span>
+</pre></div>
+</div>
+<p>In the config file, the following lines need to be added:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Host</span> <span class="n">pythondev</span>
+  <span class="n">Hostname</span> <span class="n">dinsdale</span><span class="o">.</span><span class="n">python</span><span class="o">.</span><span class="n">org</span>
+  <span class="n">User</span> <span class="n">pythondev</span>
+  <span class="n">IdentityFile</span> <span class="o">~/.</span><span class="n">ssh</span><span class="o">/</span><span class="n">pythondev</span>
+</pre></div>
+</div>
+<p>Then, shell login becomes possible through “ssh pythondev”.</p>
+</div>
+<div class="section" id="downloading-the-cvs-repository">
+<h3><a class="toc-backref" href="#id9">Downloading the CVS Repository</a><a class="headerlink" href="#downloading-the-cvs-repository" title="Permalink to this headline">¶</a></h3>
+<p>The CVS repository can be downloaded from</p>
+<blockquote>
+<div><a class="reference external" href="http://cvs.sourceforge.net/cvstarballs/python-cvsroot.tar.bz2">http://cvs.sourceforge.net/cvstarballs/python-cvsroot.tar.bz2</a></div></blockquote>
+<p>Since this tarball is generated only once a day, some time must pass
+after the repository freeze before the tarball can be picked up.  It
+should be verified that the last commit, as recorded on the
+python-commits mailing list, is indeed included in the tarball.</p>
+<p>After the conversion, the converted CVS tarball should be kept
+forever on www.python.org/archive/python-cvsroot-&lt;date&gt;.tar.bz2</p>
+</div>
+<div class="section" id="converting-the-cvs-repository">
+<h3><a class="toc-backref" href="#id10">Converting the CVS Repository</a><a class="headerlink" href="#converting-the-cvs-repository" title="Permalink to this headline">¶</a></h3>
+<p>The Python CVS repository contains two modules: distutils and python.
+The python module is further structured into dist and nondist,
+where dist only contains src (the python code proper). nondist
+contains various subdirectories.</p>
+<p>These should be reorganized in the Subversion repository to get
+shorter URLs, following the &lt;project&gt;/{trunk,tags,branches}
+structure.  A project will be created for each nondist directory,
+plus for src (called python), plus distutils.  Reorganizing the
+repository is best done in the CVS tree, as shown below.</p>
+<p>The fsfs backend should be used as the repository format (which
+requires Subversion 1.1).  The fsfs backend has the advantage of being
+more backup-friendly, as it allows incremental repository backups,
+without requiring any dump commands to be run.</p>
+<p>The conversion should be done using the cvs2svn utility, available
+e.g. in the cvs2svn Debian package.  As cvs2svn does not currently
+support the project/trunk structure, each project needs to be
+converted separately.  To get each conversion result into a separate
+directory in the target repository, svnadmin load must be used.</p>
+<p>Subversion has a different view on binary-vs-text files than CVS.
+To correctly carry the CVS semantics forward, svn:eol-style should
+be set to native on all files that are not marked binary in the
+CVS.</p>
+<p>In summary, the conversion script is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>#!/bin/sh
+rm cvs2svn-*
+rm -rf python py.new
+tar xjf python-cvsroot.tar.bz2
+rm -rf python/CVSROOT
+svnadmin create --fs-type fsfs py.new
+mv python/python python/orig
+mv python/orig/dist/src python/python
+mv python/orig/nondist/* python
+# nondist/nondist is empty
+rmdir python/nondist
+rm -rf python/orig
+for a in python/*
+do
+  b=`basename $a`
+  cvs2svn -q --dump-only --encoding=latin1 --force-branch=cnri-16-start \
+  --force-branch=descr-branch --force-branch=release152p1-patches \
+  --force-tag=r16b1 $a
+  svn mkdir -m&quot;Conversion to SVN&quot; file:///`pwd`/py.new/$b
+  svnadmin load -q --parent-dir $b py.new &lt; cvs2svn-dump
+  rm cvs2svn-dump
+done
+</pre></div>
+</div>
+<p>Sample results of this conversion are available at</p>
+<blockquote>
+<div><a class="reference external" href="http://www.dcl.hpi.uni-potsdam.de/pysvn/">http://www.dcl.hpi.uni-potsdam.de/pysvn/</a></div></blockquote>
+</div>
+<div class="section" id="publish-the-repository">
+<h3><a class="toc-backref" href="#id11">Publish the Repository</a><a class="headerlink" href="#publish-the-repository" title="Permalink to this headline">¶</a></h3>
+<p>The repository should be published at <a class="reference external" href="http://svn.python.org/projects">http://svn.python.org/projects</a>.
+Read-write access should be granted to all current SF committers
+through svn+ssh://pythondev&#64;svn.python.org/;
+read-only anonymous access through WebDAV should also be
+granted.</p>
+<p>As an option, websvn (available e.g. from the Debian websvn package)
+could be provided. Unfortunately, in the test installation, websvn
+breaks because it runs out of memory.</p>
+<p>The current SF project admins should get write access to the
+authorized_keys2 file of the pythondev account.</p>
+</div>
+<div class="section" id="disable-cvs">
+<h3><a class="toc-backref" href="#id12">Disable CVS</a><a class="headerlink" href="#disable-cvs" title="Permalink to this headline">¶</a></h3>
+<p>It appears that CVS cannot be disabled entirely.  Only the user
+interface can be removed from the project page; the repository itself
+remains available.  If desired, write access to the python and
+distutils modules can be disabled through a CVS commitinfo entry.</p>
+</div>
+</div>
+<div class="section" id="discussion">
+<h2><a class="toc-backref" href="#id13">Discussion</a><a class="headerlink" href="#discussion" title="Permalink to this headline">¶</a></h2>
+<p>Several alternatives had been suggested to the procedure above.
+The rejected alternatives are shortly discussed here:</p>
+<ul>
+<li><p>create multiple repositories, one for python and one for
+distutils. This would have allowed even shorter URLs, but
+was rejected because a single repository supports moving code
+across projects.</p>
+</li>
+<li><p>Several people suggested to create the project/trunk structure
+through standard cvs2svn, followed by renames. This would have
+the disadvantage that old revisions use different path names
+than recent revisions; the suggested approach through dump files
+works without renames.</p>
+</li>
+<li><p>Several people also expressed concern about the administrative
+overhead that hosting the repository on python.org would cause
+to pydotorg admins.  As a specific alternative, BerliOS has been
+suggested.  The pydotorg admins themselves haven't objected
+to the additional workload; migrating the repository again if
+they get overworked is an option.</p>
+</li>
+<li><p>Different authentication strategies were discussed. As
+alternatives to svn+ssh were suggested</p>
+<ul class="simple">
+<li>Subversion over WebDAV, using SSL and basic authentication,
+with pydotorg-generated passwords mailed to the user. People
+did not like that approach, since they would need to store
+the password on disk (because they can’t remember it); this
+is a security risk.</li>
+<li>Subversion over WebDAV, using SSL client certificates. This would
+work, but would require us to administer a certificate authority.</li>
+</ul>
+</li>
+<li><p>Instead of hosting this on python.org, people suggested hosting
+it elsewhere. One issue is whether this alternative should be
+free or commercial; several people suggested it should better
+be commercial, to reduce the load on the volunteers. In
+particular:</p>
+<ul>
+<li><p>Greg Stein suggested <a class="reference external" href="http://www.wush.net/subversion.php">http://www.wush.net/subversion.php</a>. They
+offer 5 GB for $90/month, with 200 GB download/month.
+The data is on a RAID drive and fully backed up. Anonymous
+access and email commit notifications are supported. wush.net
+elaborated the following details:</p>
+<ul class="simple">
+<li>The machine would be a Virtuozzo Virtual Private Server (VPS),
+hosted at PowerVPS.</li>
+<li>The default repository URL would be <a class="reference external" href="http://python.wush.net/svn/projectname/">http://python.wush.net/svn/projectname/</a>,
+but anything else could be arranged</li>
+<li>we would get SSH login to the machine, with sudo capabilities.</li>
+<li>They have a Web interface for management of the various SVN
+repositories that we want to host, and to manage user accounts.
+While svn+ssh would be supported, the user interface does not
+yet support it.</li>
+<li>For offsite mirroring/backup, they suggest to use rsync
+instead of download of repository tarballs.</li>
+</ul>
+<p>Bob Ippolito reported that they had used wush.net for a
+commercial project for about 6 months, after which time they
+left wush.net, because the service was down for three days,
+with nobody reachable, and no explanation when it came back.</p>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id14">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0347.txt">https://github.com/python/peps/blob/master/pep-0347.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0347.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0346.html">PEP 0346</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0348.html">PEP 0348</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 347 – Migrating the Python CVS to Subversion</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a><ul>
+<li><a class="reference internal" href="#moving-to-subversion">Moving to Subversion</a></li>
+<li><a class="reference internal" href="#moving-to-python-org">Moving to python.org</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#migration-procedure">Migration Procedure</a><ul>
+<li><a class="reference internal" href="#collect-ssh-keys">Collect SSH keys</a></li>
+<li><a class="reference internal" href="#administrator-access">Administrator Access</a></li>
+<li><a class="reference internal" href="#downloading-the-cvs-repository">Downloading the CVS Repository</a></li>
+<li><a class="reference internal" href="#converting-the-cvs-repository">Converting the CVS Repository</a></li>
+<li><a class="reference internal" href="#publish-the-repository">Publish the Repository</a></li>
+<li><a class="reference internal" href="#disable-cvs">Disable CVS</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#discussion">Discussion</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

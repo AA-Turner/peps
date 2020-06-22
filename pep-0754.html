@@ -1,0 +1,308 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 754 – IEEE 754 Floating Point Special Values &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 801 – Reserved" href="pep-0801.html" />
+    <link rel="prev" title="PEP 666 – Reject Foolish Indentation" href="pep-0666.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 754 – IEEE 754 Floating Point Special Values</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-754-ieee-754-floating-point-special-values">
+<h1 class="page-title">PEP 754 – IEEE 754 Floating Point Special Values<a class="headerlink" href="#pep-754-ieee-754-floating-point-special-values" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">754</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">IEEE 754 Floating Point Special Values</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Gregory R. Warnes &lt;gregory_r_warnes&#32;&#97;t&#32;groton.pfizer.com&gt; (Pfizer, Inc.)</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Rejected</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">28-Mar-2003</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.3</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#rejection-notice" id="id5">Rejection Notice</a></li>
+<li><a class="reference internal" href="#abstract" id="id6">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id7">Rationale</a></li>
+<li><a class="reference internal" href="#api-definition" id="id8">API Definition</a><ul>
+<li><a class="reference internal" href="#constants" id="id9">Constants</a></li>
+<li><a class="reference internal" href="#functions" id="id10">Functions</a></li>
+<li><a class="reference internal" href="#example" id="id11">Example</a></li>
+<li><a class="reference internal" href="#implementation" id="id12">Implementation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references" id="id13">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id14">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="rejection-notice">
+<h2><a class="toc-backref" href="#id5">Rejection Notice</a><a class="headerlink" href="#rejection-notice" title="Permalink to this headline">¶</a></h2>
+<p>This PEP has been rejected. After sitting open for four years, it has
+failed to generate sufficient community interest.</p>
+<p>Several ideas of this PEP were implemented for Python 2.6. <code class="docutils literal notranslate"><span class="pre">float('inf')</span></code>
+and <code class="docutils literal notranslate"><span class="pre">repr(float('inf'))</span></code> are now guaranteed to work on every supported
+platform with IEEE 754 semantics. However the <code class="docutils literal notranslate"><span class="pre">eval(repr(float('inf')))</span></code>
+roundtrip is still not supported unless you define inf and nan yourself:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">inf</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">inf</span><span class="p">,</span> <span class="mf">1E400</span>
+<span class="go">(inf, inf)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">neginf</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;-inf&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">neginf</span><span class="p">,</span> <span class="o">-</span><span class="mf">1E400</span>
+<span class="go">(-inf, -inf)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">nan</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;nan&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">nan</span><span class="p">,</span> <span class="n">inf</span> <span class="o">*</span> <span class="mf">0.</span>
+<span class="go">(nan, nan)</span>
+</pre></div>
+</div>
+<p>The math and the sys module also have gained additional features,
+<code class="docutils literal notranslate"><span class="pre">sys.float_info</span></code>, <code class="docutils literal notranslate"><span class="pre">math.isinf</span></code>, <code class="docutils literal notranslate"><span class="pre">math.isnan</span></code>, <code class="docutils literal notranslate"><span class="pre">math.copysign</span></code>.</p>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id6">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes an API and a provides a reference module that
+generates and tests for IEEE 754 double-precision special values:
+positive infinity, negative infinity, and not-a-number (NaN).</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id7">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>The IEEE 754 standard defines a set of binary representations and
+algorithmic rules for floating point arithmetic.  Included in the
+standard is a set of constants for representing special values,
+including positive infinity, negative infinity, and indeterminate or
+non-numeric results (NaN).  Most modern CPUs implement the
+IEEE 754 standard, including the (Ultra)SPARC, PowerPC, and x86
+processor series.</p>
+<p>Currently, the handling of IEEE 754 special values in Python depends
+on the underlying C library.  Unfortunately, there is little
+consistency between C libraries in how or whether these values are
+handled.  For instance, on some systems “float(‘Inf’)” will properly
+return the IEEE 754 constant for positive infinity.  On many systems,
+however, this expression will instead generate an error message.</p>
+<p>The output string representation for an IEEE 754 special value also
+varies by platform.  For example, the expression “float(1e3000)”,
+which is large enough to generate an overflow, should return a string
+representation corresponding to IEEE 754 positive infinity.  Python
+2.1.3 on x86 Debian Linux returns “inf”.  On Sparc Solaris 8 with
+Python 2.2.1, this same expression returns “Infinity”, and on
+MS-Windows 2000 with Active Python 2.2.1, it returns “1.#INF”.</p>
+<p>Adding to the confusion, some platforms generate one string on
+conversion from floating point and accept a different string for
+conversion to floating point.  On these systems</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">float</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>will generate an error when “x” is an IEEE special value.</p>
+<p>In the past, some have recommended that programmers use expressions
+like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PosInf</span> <span class="o">=</span> <span class="mf">1e300</span><span class="o">**</span><span class="mi">2</span>
+<span class="n">NaN</span> <span class="o">=</span> <span class="n">PosInf</span><span class="o">/</span><span class="n">PosInf</span>
+</pre></div>
+</div>
+<p>to obtain positive infinity and not-a-number constants.  However, the
+first expression generates an error on current Python interpreters.  A
+possible alternative is to use:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PosInf</span> <span class="o">=</span> <span class="mf">1e300000</span>
+<span class="n">NaN</span> <span class="o">=</span> <span class="n">PosInf</span><span class="o">/</span><span class="n">PosInf</span>
+</pre></div>
+</div>
+<p>While this does not generate an error with current Python
+interpreters, it is still an ugly and potentially non-portable hack.
+In addition, defining NaN in this way does solve the problem of
+detecting such values.  First, the IEEE 754 standard provides for an
+entire set of constant values for Not-a-Number.  Second, the standard
+requires that</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">NaN</span> <span class="o">!=</span> <span class="n">X</span>
+</pre></div>
+</div>
+<p>for all possible values of X, including NaN.  As a consequence</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">NaN</span> <span class="o">==</span> <span class="n">NaN</span>
+</pre></div>
+</div>
+<p>should always evaluate to false.  However, this behavior also is not
+consistently implemented.  [e.g. Cygwin Python 2.2.2]</p>
+<p>Due to the many platform and library inconsistencies in handling IEEE
+special values, it is impossible to consistently set or detect IEEE
+754 floating point values in normal Python code without resorting to
+directly manipulating bit-patterns.</p>
+<p>This PEP proposes a standard Python API and provides a reference
+module implementation which allows for consistent handling of IEEE 754
+special values on all supported platforms.</p>
+</div>
+<div class="section" id="api-definition">
+<h2><a class="toc-backref" href="#id8">API Definition</a><a class="headerlink" href="#api-definition" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="constants">
+<h3><a class="toc-backref" href="#id9">Constants</a><a class="headerlink" href="#constants" title="Permalink to this headline">¶</a></h3>
+<dl class="simple">
+<dt>NaN</dt><dd>Non-signalling IEEE 754 “Not a Number” value</dd>
+<dt>PosInf</dt><dd>IEEE 754 Positive Infinity value</dd>
+<dt>NegInf</dt><dd>IEEE 754 Negative Infinity value</dd>
+</dl>
+</div>
+<div class="section" id="functions">
+<h3><a class="toc-backref" href="#id10">Functions</a><a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
+<dl class="simple">
+<dt>isNaN(value)</dt><dd>Determine if the argument is an IEEE 754 NaN (Not a Number) value.</dd>
+<dt>isPosInf(value)</dt><dd>Determine if the argument is an IEEE 754 positive infinity value.</dd>
+<dt>isNegInf(value)</dt><dd>Determine if the argument is an IEEE 754 negative infinity value.</dd>
+<dt>isFinite(value)</dt><dd>Determine if the argument is a finite IEEE 754 value (i.e., is
+not NaN, positive, or negative infinity).</dd>
+<dt>isInf(value)</dt><dd>Determine if the argument is an infinite IEEE 754 value (positive
+or negative infinity)</dd>
+</dl>
+</div>
+<div class="section" id="example">
+<h3><a class="toc-backref" href="#id11">Example</a><a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h3>
+<p>(Run under Python 2.2.1 on Solaris 8.)</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">fpconst</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">val</span> <span class="o">=</span> <span class="mf">1e30000</span> <span class="c1"># should be cause overflow and result in &quot;Inf&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">val</span>
+<span class="go">Infinity</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fpconst</span><span class="o">.</span><span class="n">isInf</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+<span class="go">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fpconst</span><span class="o">.</span><span class="n">PosInf</span>
+<span class="go">Infinity</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">nval</span> <span class="o">=</span> <span class="n">val</span><span class="o">/</span><span class="n">val</span> <span class="c1"># should result in NaN</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">nval</span>
+<span class="go">NaN</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fpconst</span><span class="o">.</span><span class="n">isNaN</span><span class="p">(</span><span class="n">nval</span><span class="p">)</span>
+<span class="go">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fpconst</span><span class="o">.</span><span class="n">isNaN</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+<span class="go">0</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="implementation">
+<h3><a class="toc-backref" href="#id12">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h3>
+<p>The reference implementation is provided in the module “fpconst” <a class="footnote-reference brackets" href="#id3" id="id1">1</a>,
+which is written in pure Python by taking advantage of the “struct”
+standard module to directly set or test for the bit patterns that
+define IEEE 754 special values.  Care has been taken to generate
+proper results on both big-endian and little-endian machines.  The
+current implementation is pure Python, but some efficiency could be
+gained by translating the core routines into C.</p>
+<p>Patch 1151323 “New fpconst module” <a class="footnote-reference brackets" href="#id4" id="id2">2</a> on SourceForge adds the
+fpconst module to the Python standard library.</p>
+</div>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id13">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<p>See <a class="reference external" href="http://babbage.cs.qc.edu/courses/cs341/IEEE-754references.html">http://babbage.cs.qc.edu/courses/cs341/IEEE-754references.html</a> for
+reference material on the IEEE 754 floating point standard.</p>
+<dl class="footnote brackets">
+<dt class="label" id="id3"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>Further information on the reference package is available at
+<a class="reference external" href="http://research.warnes.net/projects/rzope/fpconst/">http://research.warnes.net/projects/rzope/fpconst/</a></dd>
+<dt class="label" id="id4"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd><a class="reference external" href="http://sourceforge.net/tracker/?func=detail&amp;aid=1151323&amp;group_id=5470&amp;atid=305470">http://sourceforge.net/tracker/?func=detail&amp;aid=1151323&amp;group_id=5470&amp;atid=305470</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id14">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0754.txt">https://github.com/python/peps/blob/master/pep-0754.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0754.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0666.html">PEP 0666</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0801.html">PEP 0801</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 754 – IEEE 754 Floating Point Special Values</a><ul>
+<li><a class="reference internal" href="#rejection-notice">Rejection Notice</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#api-definition">API Definition</a><ul>
+<li><a class="reference internal" href="#constants">Constants</a></li>
+<li><a class="reference internal" href="#functions">Functions</a></li>
+<li><a class="reference internal" href="#example">Example</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

@@ -1,0 +1,729 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 376 – Database of Installed Python Distributions &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 377 – Allow __enter__() methods to skip the statement body" href="pep-0377.html" />
+    <link rel="prev" title="PEP 375 – Python 3.1 Release Schedule" href="pep-0375.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 376 – Database of Installed Python Distributions</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-376-database-of-installed-python-distributions">
+<h1 class="page-title">PEP 376 – Database of Installed Python Distributions<a class="headerlink" href="#pep-376-database-of-installed-python-distributions" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">376</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Database of Installed Python Distributions</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Tarek Ziadé &lt;tarek&#32;&#97;t&#32;ziade.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">22-Feb-2009</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.7, 3.2</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id14">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id15">Rationale</a><ul>
+<li><a class="reference internal" href="#how-distributions-are-installed" id="id16">How distributions are installed</a></li>
+<li><a class="reference internal" href="#uninstall-information" id="id17">Uninstall information</a></li>
+<li><a class="reference internal" href="#what-this-pep-proposes" id="id18">What this PEP proposes</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#one-dist-info-directory-per-installed-distribution" id="id19">One .dist-info directory per installed distribution</a><ul>
+<li><a class="reference internal" href="#record" id="id20">RECORD</a></li>
+<li><a class="reference internal" href="#installer" id="id21">INSTALLER</a></li>
+<li><a class="reference internal" href="#requested" id="id22">REQUESTED</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation-details" id="id23">Implementation details</a><ul>
+<li><a class="reference internal" href="#new-functions-and-classes-in-pkgutil" id="id24">New functions and classes in pkgutil</a><ul>
+<li><a class="reference internal" href="#functions" id="id25">Functions</a></li>
+<li><a class="reference internal" href="#distribution-class" id="id26">Distribution class</a></li>
+<li><a class="reference internal" href="#examples" id="id27">Examples</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#new-functions-in-distutils" id="id28">New functions in Distutils</a><ul>
+<li><a class="reference internal" href="#filtering" id="id29">Filtering</a></li>
+<li><a class="reference internal" href="#installer-marker" id="id30">Installer marker</a></li>
+<li><a class="reference internal" href="#adding-an-uninstall-script" id="id31">Adding an Uninstall script</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#backward-compatibility-and-roadmap" id="id32">Backward compatibility and roadmap</a></li>
+<li><a class="reference internal" href="#references" id="id33">References</a></li>
+<li><a class="reference internal" href="#acknowledgements" id="id34">Acknowledgements</a></li>
+<li><a class="reference internal" href="#copyright" id="id35">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id14">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>The goal of this PEP is to provide a standard infrastructure to manage
+project distributions installed on a system, so all tools that are
+installing or removing projects are interoperable.</p>
+<p>To achieve this goal, the PEP proposes a new format to describe installed
+distributions on a system. It also describes a reference implementation
+for the standard library.</p>
+<p>In the past an attempt was made to create an installation database (see PEP 262
+<a class="footnote-reference brackets" href="#pep262" id="id1">3</a>).</p>
+<p>Combined with PEP 345, the current proposal supersedes PEP 262.</p>
+<p>Note: the implementation plan didn’t go as expected, so it should be
+considered informative only for this PEP.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id15">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>There are two problems right now in the way distributions are installed in
+Python:</p>
+<ul class="simple">
+<li>There are too many ways to do it and this makes interoperation difficult.</li>
+<li>There is no API to get information on installed distributions.</li>
+</ul>
+<div class="section" id="how-distributions-are-installed">
+<h3><a class="toc-backref" href="#id16">How distributions are installed</a><a class="headerlink" href="#how-distributions-are-installed" title="Permalink to this headline">¶</a></h3>
+<p>Right now, when a distribution is installed in Python, every element can
+be installed in a different directory.</p>
+<p>For instance, <code class="docutils literal notranslate"><span class="pre">Distutils</span></code> installs the pure Python code in the <code class="docutils literal notranslate"><span class="pre">purelib</span></code>
+directory, which is <code class="docutils literal notranslate"><span class="pre">lib/python2.6/site-packages</span></code> for unix-like systems and
+Mac OS X, or <code class="docutils literal notranslate"><span class="pre">Lib\site-packages</span></code> under Python’s installation directory for
+Windows.</p>
+<p>Additionally, the <code class="docutils literal notranslate"><span class="pre">install_egg_info</span></code> subcommand of the Distutils <code class="docutils literal notranslate"><span class="pre">install</span></code>
+command adds an <code class="docutils literal notranslate"><span class="pre">.egg-info</span></code> file for the project into the <code class="docutils literal notranslate"><span class="pre">purelib</span></code>
+directory.</p>
+<p>For example, for the <code class="docutils literal notranslate"><span class="pre">docutils</span></code> distribution, which contains one package an
+extra module and executable scripts, three elements are installed in
+<code class="docutils literal notranslate"><span class="pre">site-packages</span></code>:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">docutils</span></code>: The <code class="docutils literal notranslate"><span class="pre">docutils</span></code> package.</li>
+<li><code class="docutils literal notranslate"><span class="pre">roman.py</span></code>: An extra module used by <code class="docutils literal notranslate"><span class="pre">docutils</span></code>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">docutils-0.5-py2.6.egg-info</span></code>: A file containing the distribution metadata
+as described in PEP 314 <a class="footnote-reference brackets" href="#pep314" id="id2">4</a>. This file corresponds to the file
+called <code class="docutils literal notranslate"><span class="pre">PKG-INFO</span></code>, built by the <code class="docutils literal notranslate"><span class="pre">sdist</span></code> command.</li>
+</ul>
+<p>Some executable scripts, such as <code class="docutils literal notranslate"><span class="pre">rst2html.py</span></code>, are also added in the
+<code class="docutils literal notranslate"><span class="pre">bin</span></code> directory of the Python installation.</p>
+<p>Another project called <code class="docutils literal notranslate"><span class="pre">setuptools</span></code> <a class="footnote-reference brackets" href="#setuptools" id="id3">5</a> has two other formats
+to install distributions, called <code class="docutils literal notranslate"><span class="pre">EggFormats</span></code> <a class="footnote-reference brackets" href="#eggformats" id="id4">8</a>:</p>
+<ul class="simple">
+<li>a self-contained <code class="docutils literal notranslate"><span class="pre">.egg</span></code> directory, that contains all the distribution files
+and the distribution metadata in a file called <code class="docutils literal notranslate"><span class="pre">PKG-INFO</span></code> in a subdirectory
+called <code class="docutils literal notranslate"><span class="pre">EGG-INFO</span></code>. <code class="docutils literal notranslate"><span class="pre">setuptools</span></code> creates other files in that directory that can
+be considered as complementary metadata.</li>
+<li>an <code class="docutils literal notranslate"><span class="pre">.egg-info</span></code> directory installed in <code class="docutils literal notranslate"><span class="pre">site-packages</span></code>, that contains the same
+files <code class="docutils literal notranslate"><span class="pre">EGG-INFO</span></code> has in the <code class="docutils literal notranslate"><span class="pre">.egg</span></code> format.</li>
+</ul>
+<p>The first format is automatically used when you install a distribution that
+uses the <code class="docutils literal notranslate"><span class="pre">setuptools.setup</span></code> function in its setup.py file, instead of
+the <code class="docutils literal notranslate"><span class="pre">distutils.core.setup</span></code> one.</p>
+<p><code class="docutils literal notranslate"><span class="pre">setuptools</span></code> also add a reference to the distribution into an
+<code class="docutils literal notranslate"><span class="pre">easy-install.pth</span></code> file.</p>
+<p>Last, the <code class="docutils literal notranslate"><span class="pre">setuptools</span></code> project provides an executable script called
+<code class="docutils literal notranslate"><span class="pre">easy_install</span></code> <a class="footnote-reference brackets" href="#easyinstall" id="id5">6</a> that installs all distributions, including
+distutils-based ones in self-contained <code class="docutils literal notranslate"><span class="pre">.egg</span></code> directories.</p>
+<p>If you want to have standalone <code class="docutils literal notranslate"><span class="pre">.egg-info</span></code> directories for your distributions,
+e.g. the second <code class="docutils literal notranslate"><span class="pre">setuptools</span></code> format, you have to force it when you work
+with a setuptools-based distribution or with the <code class="docutils literal notranslate"><span class="pre">easy_install</span></code> script.
+You can force it by using the <code class="docutils literal notranslate"><span class="pre">--single-version-externally-managed</span></code> option
+<strong>or</strong> the <code class="docutils literal notranslate"><span class="pre">--root</span></code> option. This will make the <code class="docutils literal notranslate"><span class="pre">setuptools</span></code> project install
+the project like distutils does.</p>
+<p>This option is used by :</p>
+<ul class="simple">
+<li>the <code class="docutils literal notranslate"><span class="pre">pip</span></code> <a class="footnote-reference brackets" href="#pip" id="id6">7</a> installer</li>
+<li>the Fedora packagers <a class="footnote-reference brackets" href="#fedora" id="id7">11</a>.</li>
+<li>the Debian packagers <a class="footnote-reference brackets" href="#debian" id="id8">12</a>.</li>
+</ul>
+</div>
+<div class="section" id="uninstall-information">
+<h3><a class="toc-backref" href="#id17">Uninstall information</a><a class="headerlink" href="#uninstall-information" title="Permalink to this headline">¶</a></h3>
+<p>Distutils doesn’t provide an <code class="docutils literal notranslate"><span class="pre">uninstall</span></code> command. If you want to uninstall
+a distribution, you have to be a power user and remove the various elements
+that were installed, and then look over the <code class="docutils literal notranslate"><span class="pre">.pth</span></code> file to clean them if
+necessary.</p>
+<p>And the process differs depending on the tools you have used to install the
+distribution and if the distribution’s <code class="docutils literal notranslate"><span class="pre">setup.py</span></code> uses Distutils or
+Setuptools.</p>
+<p>Under some circumstances, you might not be able to know for sure that you
+have removed everything, or that you didn’t break another distribution by
+removing a file that is shared among several distributions.</p>
+<p>But there’s a common behavior: when you install a distribution, files are
+copied in your system. And it’s possible to keep track of these files for
+later removal.</p>
+<p>Moreover, the Pip project has gained an <code class="docutils literal notranslate"><span class="pre">uninstall</span></code> feature lately. It
+records all installed files, using the <code class="docutils literal notranslate"><span class="pre">record</span></code> option of the <code class="docutils literal notranslate"><span class="pre">install</span></code>
+command.</p>
+</div>
+<div class="section" id="what-this-pep-proposes">
+<h3><a class="toc-backref" href="#id18">What this PEP proposes</a><a class="headerlink" href="#what-this-pep-proposes" title="Permalink to this headline">¶</a></h3>
+<p>To address those issues, this PEP proposes a few changes:</p>
+<ul class="simple">
+<li>A new <code class="docutils literal notranslate"><span class="pre">.dist-info</span></code> structure using a directory, inspired on one format of
+the <code class="docutils literal notranslate"><span class="pre">EggFormats</span></code> standard from <code class="docutils literal notranslate"><span class="pre">setuptools</span></code>.</li>
+<li>New APIs in <code class="docutils literal notranslate"><span class="pre">pkgutil</span></code> to be able to query the information of installed
+distributions.</li>
+<li>An uninstall function and an uninstall script in Distutils.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="one-dist-info-directory-per-installed-distribution">
+<h2><a class="toc-backref" href="#id19">One .dist-info directory per installed distribution</a><a class="headerlink" href="#one-dist-info-directory-per-installed-distribution" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes an installation format inspired by one of the options in the
+<code class="docutils literal notranslate"><span class="pre">EggFormats</span></code> standard, the one that uses a distinct directory located in the
+site-packages directory.</p>
+<p>This distinct directory is named as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;-&#39;</span> <span class="o">+</span> <span class="n">version</span> <span class="o">+</span> <span class="s1">&#39;.dist-info&#39;</span>
+</pre></div>
+</div>
+<p>This <code class="docutils literal notranslate"><span class="pre">.dist-info</span></code> directory can contain these files:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">METADATA</span></code>: contains metadata, as described in PEP 345, PEP 314 and PEP 241.</li>
+<li><code class="docutils literal notranslate"><span class="pre">RECORD</span></code>: records the list of installed files</li>
+<li><code class="docutils literal notranslate"><span class="pre">INSTALLER</span></code>: records the name of the tool used to install the project</li>
+<li><code class="docutils literal notranslate"><span class="pre">REQUESTED</span></code>: the presence of this file indicates that the project
+installation was explicitly requested (i.e., not installed as a dependency).</li>
+</ul>
+<p>The METADATA, RECORD and INSTALLER files are mandatory, while REQUESTED may
+be missing.</p>
+<p>This proposal will not impact Python itself because the metadata files are not
+used anywhere yet in the standard library besides Distutils.</p>
+<p>It will impact the <code class="docutils literal notranslate"><span class="pre">setuptools</span></code> and <code class="docutils literal notranslate"><span class="pre">pip</span></code> projects but, given the fact that
+they already work with a directory that contains a <code class="docutils literal notranslate"><span class="pre">PKG-INFO</span></code> file, the change
+will have no deep consequences.</p>
+<div class="section" id="record">
+<h3><a class="toc-backref" href="#id20">RECORD</a><a class="headerlink" href="#record" title="Permalink to this headline">¶</a></h3>
+<p>A <code class="docutils literal notranslate"><span class="pre">RECORD</span></code> file is added inside the <code class="docutils literal notranslate"><span class="pre">.dist-info</span></code> directory at installation
+time when installing a source distribution using the <code class="docutils literal notranslate"><span class="pre">install</span></code> command.
+Notice that when installing a binary distribution created with <code class="docutils literal notranslate"><span class="pre">bdist</span></code> command
+or a <code class="docutils literal notranslate"><span class="pre">bdist</span></code>-based command, the <code class="docutils literal notranslate"><span class="pre">RECORD</span></code> file will be installed as well since
+these commands use the <code class="docutils literal notranslate"><span class="pre">install</span></code> command to create binary distributions.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">RECORD</span></code> file holds the list of installed files. These correspond
+to the files listed by the <code class="docutils literal notranslate"><span class="pre">record</span></code> option of the <code class="docutils literal notranslate"><span class="pre">install</span></code> command, and will
+be generated by default. This allows the implementation of an uninstallation
+feature, as explained later in this PEP. The <code class="docutils literal notranslate"><span class="pre">install</span></code> command also provides
+an option to prevent the <code class="docutils literal notranslate"><span class="pre">RECORD</span></code> file from being written and this option
+should be used when creating system packages.</p>
+<p>Third-party installation tools also should not overwrite or delete files
+that are not in a RECORD file without prompting or warning.</p>
+<p>This RECORD file is inspired from PEP 262 FILES <a class="footnote-reference brackets" href="#pep262" id="id9">3</a>.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">RECORD</span></code> file is a CSV file, composed of records, one line per
+installed file. The <code class="docutils literal notranslate"><span class="pre">csv</span></code> module is used to read the file, with
+these options:</p>
+<ul class="simple">
+<li>field delimiter : <code class="docutils literal notranslate"><span class="pre">,</span></code></li>
+<li>quoting char :  <code class="docutils literal notranslate"><span class="pre">&quot;</span></code>.</li>
+<li>line terminator : <code class="docutils literal notranslate"><span class="pre">os.linesep</span></code> (so <code class="docutils literal notranslate"><span class="pre">\r\n</span></code> or <code class="docutils literal notranslate"><span class="pre">\n</span></code>)</li>
+</ul>
+<p>When a distribution is installed, files can be installed under:</p>
+<ul class="simple">
+<li>the <strong>base location</strong>: path defined by the <code class="docutils literal notranslate"><span class="pre">--install-lib</span></code> option,
+which defaults to the site-packages directory.</li>
+<li>the <strong>installation prefix</strong>: path defined by the <code class="docutils literal notranslate"><span class="pre">--prefix</span></code> option, which
+defaults to <code class="docutils literal notranslate"><span class="pre">sys.prefix</span></code>.</li>
+<li>any other path on the system.</li>
+</ul>
+<p>Each record is composed of three elements:</p>
+<ul>
+<li><p>the file’s <strong>path</strong></p>
+<ul class="simple">
+<li>a ‘/’-separated path, relative to the <strong>base location</strong>, if the file is
+under the <strong>base location</strong>.</li>
+<li>a ‘/’-separated path, relative to the <strong>base location</strong>, if the file
+is under the  <strong>installation prefix</strong> AND if the <strong>base location</strong> is a
+subpath of the <strong>installation prefix</strong>.</li>
+<li>an absolute path, using the local platform separator</li>
+</ul>
+</li>
+<li><p>a hash of the file’s contents.
+Notice that <code class="docutils literal notranslate"><span class="pre">pyc</span></code> and <code class="docutils literal notranslate"><span class="pre">pyo</span></code> generated files don’t have any hash because
+they are automatically produced from <code class="docutils literal notranslate"><span class="pre">py</span></code> files. So checking the hash
+of the corresponding <code class="docutils literal notranslate"><span class="pre">py</span></code> file is enough to decide if the file and
+its associated <code class="docutils literal notranslate"><span class="pre">pyc</span></code> or <code class="docutils literal notranslate"><span class="pre">pyo</span></code> files have changed.</p>
+<p>The hash is either the empty string or the hash algorithm as named in
+<code class="docutils literal notranslate"><span class="pre">hashlib.algorithms_guaranteed</span></code>, followed by the equals character
+<code class="docutils literal notranslate"><span class="pre">=</span></code>, followed by the urlsafe-base64-nopad encoding of the digest
+(<code class="docutils literal notranslate"><span class="pre">base64.urlsafe_b64encode(digest)</span></code> with trailing <code class="docutils literal notranslate"><span class="pre">=</span></code> removed).</p>
+</li>
+<li><p>the file’s size in bytes</p>
+</li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">csv</span></code> module is used to generate this file, so the field separator is
+“,”. Any “,” character found within a field is escaped automatically by
+<code class="docutils literal notranslate"><span class="pre">csv</span></code>.</p>
+<p>When the file is read, the <code class="docutils literal notranslate"><span class="pre">U</span></code> option is used so the universal newline
+support (see PEP 278 <a class="footnote-reference brackets" href="#pep278" id="id10">10</a>) is activated, avoiding any trouble
+reading a file produced on a platform that uses a different new line
+terminator.</p>
+<p>Here’s an example of a RECORD file (extract):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">lib</span><span class="o">/</span><span class="n">python2</span><span class="o">.</span><span class="mi">6</span><span class="o">/</span><span class="n">site</span><span class="o">-</span><span class="n">packages</span><span class="o">/</span><span class="n">docutils</span><span class="o">/</span><span class="fm">__init__</span><span class="o">.</span><span class="n">py</span><span class="p">,</span><span class="n">md5</span><span class="o">=</span><span class="n">nWt</span><span class="o">-</span><span class="n">Dge1eug4iAgqLS_uWg</span><span class="p">,</span><span class="mi">9544</span>
+<span class="n">lib</span><span class="o">/</span><span class="n">python2</span><span class="o">.</span><span class="mi">6</span><span class="o">/</span><span class="n">site</span><span class="o">-</span><span class="n">packages</span><span class="o">/</span><span class="n">docutils</span><span class="o">/</span><span class="fm">__init__</span><span class="o">.</span><span class="n">pyc</span><span class="p">,,</span>
+<span class="n">lib</span><span class="o">/</span><span class="n">python2</span><span class="o">.</span><span class="mi">6</span><span class="o">/</span><span class="n">site</span><span class="o">-</span><span class="n">packages</span><span class="o">/</span><span class="n">docutils</span><span class="o">/</span><span class="n">core</span><span class="o">.</span><span class="n">py</span><span class="p">,</span><span class="n">md5</span><span class="o">=</span><span class="n">X90C_JLIcC78PL74iuhPnA</span><span class="p">,</span><span class="mi">66188</span>
+<span class="n">lib</span><span class="o">/</span><span class="n">python2</span><span class="o">.</span><span class="mi">6</span><span class="o">/</span><span class="n">site</span><span class="o">-</span><span class="n">packages</span><span class="o">/</span><span class="n">docutils</span><span class="o">/</span><span class="n">core</span><span class="o">.</span><span class="n">pyc</span><span class="p">,,</span>
+<span class="n">lib</span><span class="o">/</span><span class="n">python2</span><span class="o">.</span><span class="mi">6</span><span class="o">/</span><span class="n">site</span><span class="o">-</span><span class="n">packages</span><span class="o">/</span><span class="n">roman</span><span class="o">.</span><span class="n">py</span><span class="p">,</span><span class="n">md5</span><span class="o">=</span><span class="mi">7</span><span class="n">YhfNczihNjOY0FXlupwBg</span><span class="p">,</span><span class="mi">234</span>
+<span class="n">lib</span><span class="o">/</span><span class="n">python2</span><span class="o">.</span><span class="mi">6</span><span class="o">/</span><span class="n">site</span><span class="o">-</span><span class="n">packages</span><span class="o">/</span><span class="n">roman</span><span class="o">.</span><span class="n">pyc</span><span class="p">,,</span>
+<span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">rst2html</span><span class="o">.</span><span class="n">py</span><span class="p">,</span><span class="n">md5</span><span class="o">=</span><span class="n">g22D3amDLJP</span><span class="o">-</span><span class="n">FhBzCi7EvA</span><span class="p">,</span><span class="mi">234</span>
+<span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">rst2html</span><span class="o">.</span><span class="n">pyc</span><span class="p">,,</span>
+<span class="n">python2</span><span class="o">.</span><span class="mi">6</span><span class="o">/</span><span class="n">site</span><span class="o">-</span><span class="n">packages</span><span class="o">/</span><span class="n">docutils</span><span class="o">-</span><span class="mf">0.5</span><span class="o">.</span><span class="n">dist</span><span class="o">-</span><span class="n">info</span><span class="o">/</span><span class="n">METADATA</span><span class="p">,</span><span class="n">md5</span><span class="o">=</span><span class="n">ovJyUNzXdArGfmVyb0onyA</span><span class="p">,</span><span class="mi">195</span>
+<span class="n">lib</span><span class="o">/</span><span class="n">python2</span><span class="o">.</span><span class="mi">6</span><span class="o">/</span><span class="n">site</span><span class="o">-</span><span class="n">packages</span><span class="o">/</span><span class="n">docutils</span><span class="o">-</span><span class="mf">0.5</span><span class="o">.</span><span class="n">dist</span><span class="o">-</span><span class="n">info</span><span class="o">/</span><span class="n">RECORD</span><span class="p">,,</span>
+</pre></div>
+</div>
+<p>Notice that the <code class="docutils literal notranslate"><span class="pre">RECORD</span></code> file can’t contain a hash of itself and is just mentioned here</p>
+<p>A project that installs a <code class="docutils literal notranslate"><span class="pre">config.ini</span></code> file in <code class="docutils literal notranslate"><span class="pre">/etc/myapp</span></code> will be added like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">myapp</span><span class="o">/</span><span class="n">config</span><span class="o">.</span><span class="n">ini</span><span class="p">,</span><span class="n">md5</span><span class="o">=</span><span class="n">gLfd6IANquzGLhOkW4Mfgg</span><span class="p">,</span><span class="mi">9544</span>
+</pre></div>
+</div>
+<p>For a windows platform, the drive letter is added for the absolute paths,
+so a file that is copied in c:MyAppwill be:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">c</span><span class="p">:</span>\<span class="n">etc</span>\<span class="n">myapp</span>\<span class="n">config</span><span class="o">.</span><span class="n">ini</span><span class="p">,</span><span class="n">md5</span><span class="o">=</span><span class="n">gLfd6IANquzGLhOkW4Mfgg</span><span class="p">,</span><span class="mi">9544</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="installer">
+<h3><a class="toc-backref" href="#id21">INSTALLER</a><a class="headerlink" href="#installer" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">install</span></code> command has a new option called <code class="docutils literal notranslate"><span class="pre">installer</span></code>. This option
+is the name of the tool used to invoke the installation. It’s a normalized
+lower-case string matching <code class="docutils literal notranslate"><span class="pre">[a-z0-9_\-\.]</span></code>.</p>
+<blockquote>
+<div>$ python setup.py install –installer=pkg-system</div></blockquote>
+<p>It defaults to <code class="docutils literal notranslate"><span class="pre">distutils</span></code> if not provided.</p>
+<p>When a distribution is installed, the INSTALLER file is generated in the
+<code class="docutils literal notranslate"><span class="pre">.dist-info</span></code> directory with this value, to keep track of <strong>who</strong> installed the
+distribution. The file is a single-line text file.</p>
+</div>
+<div class="section" id="requested">
+<h3><a class="toc-backref" href="#id22">REQUESTED</a><a class="headerlink" href="#requested" title="Permalink to this headline">¶</a></h3>
+<p>Some install tools automatically detect unfulfilled dependencies and
+install them. In these cases, it is useful to track which
+distributions were installed purely as a dependency, so if their
+dependent distribution is later uninstalled, the user can be alerted
+of the orphaned dependency.</p>
+<p>If a distribution is installed by direct user request (the usual
+case), a file REQUESTED is added to the .dist-info directory of the
+installed distribution. The REQUESTED file may be empty, or may
+contain a marker comment line beginning with the “#” character.</p>
+<p>If an install tool installs a distribution automatically, as a
+dependency of another distribution, the REQUESTED file should not be
+created.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">install</span></code> command of distutils by default creates the REQUESTED
+file. It accepts <code class="docutils literal notranslate"><span class="pre">--requested</span></code> and <code class="docutils literal notranslate"><span class="pre">--no-requested</span></code> options to explicitly
+specify whether the file is created.</p>
+<p>If a distribution that was already installed on the system as a dependency
+is later installed by name, the distutils <code class="docutils literal notranslate"><span class="pre">install</span></code> command will
+create the REQUESTED file in the .dist-info directory of the existing
+installation.</p>
+</div>
+</div>
+<div class="section" id="implementation-details">
+<h2><a class="toc-backref" href="#id23">Implementation details</a><a class="headerlink" href="#implementation-details" title="Permalink to this headline">¶</a></h2>
+<p>Note: this section is non-normative.  In the end, this PEP was
+implemented by third-party libraries and tools, not the standard
+library.</p>
+<div class="section" id="new-functions-and-classes-in-pkgutil">
+<h3><a class="toc-backref" href="#id24">New functions and classes in pkgutil</a><a class="headerlink" href="#new-functions-and-classes-in-pkgutil" title="Permalink to this headline">¶</a></h3>
+<p>To use the <code class="docutils literal notranslate"><span class="pre">.dist-info</span></code> directory content, we need to add in the standard
+library a set of APIs. The best place to put these APIs is <code class="docutils literal notranslate"><span class="pre">pkgutil</span></code>.</p>
+<div class="section" id="functions">
+<h4><a class="toc-backref" href="#id25">Functions</a><a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h4>
+<p>The new functions added in the <code class="docutils literal notranslate"><span class="pre">pkgutil</span></code> module are :</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">distinfo_dirname(name,</span> <span class="pre">version)</span></code> -&gt; directory name</p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">name</span></code> is converted to a standard distribution name by replacing any
+runs of non-alphanumeric characters with a single ‘-‘.</p>
+<p><code class="docutils literal notranslate"><span class="pre">version</span></code> is converted to a standard version string. Spaces become
+dots, and all other non-alphanumeric characters (except dots) become
+dashes, with runs of multiple dashes condensed to a single dash.</p>
+<p>Both attributes are then converted into their filename-escaped form,
+i.e. any ‘-‘ characters are replaced with ‘_’ other than the one in
+‘dist-info’ and the one separating the name from the version number.</p>
+</div></blockquote>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_distributions()</span></code> -&gt; iterator of <code class="docutils literal notranslate"><span class="pre">Distribution</span></code> instances.</p>
+<p>Provides an iterator that looks for <code class="docutils literal notranslate"><span class="pre">.dist-info</span></code> directories in
+<code class="docutils literal notranslate"><span class="pre">sys.path</span></code> and returns <code class="docutils literal notranslate"><span class="pre">Distribution</span></code> instances for
+each one of them.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_distribution(name)</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">Distribution</span></code> or None.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">obsoletes_distribution(name,</span> <span class="pre">version=None)</span></code> -&gt; iterator of <code class="docutils literal notranslate"><span class="pre">Distribution</span></code>
+instances.</p>
+<p>Iterates over all distributions to find which distributions <em>obsolete</em>
+<code class="docutils literal notranslate"><span class="pre">name</span></code>. If a <code class="docutils literal notranslate"><span class="pre">version</span></code> is provided, it will be used to filter the results.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">provides_distribution(name,</span> <span class="pre">version=None)</span></code> -&gt; iterator of <code class="docutils literal notranslate"><span class="pre">Distribution</span></code>
+instances.</p>
+<p>Iterates over all distributions to find which distributions <em>provide</em>
+<code class="docutils literal notranslate"><span class="pre">name</span></code>. If a <code class="docutils literal notranslate"><span class="pre">version</span></code> is provided, it will be used to filter the results.
+Scans all elements in <code class="docutils literal notranslate"><span class="pre">sys.path</span></code> and looks for all directories ending with
+<code class="docutils literal notranslate"><span class="pre">.dist-info</span></code>. Returns a <code class="docutils literal notranslate"><span class="pre">Distribution</span></code> corresponding to the
+<code class="docutils literal notranslate"><span class="pre">.dist-info</span></code> directory that contains a METADATA that matches <code class="docutils literal notranslate"><span class="pre">name</span></code>
+for the <code class="docutils literal notranslate"><span class="pre">name</span></code> metadata.</p>
+<p>This function only returns the first result founded, since no more than one
+values are expected. If the directory is not found, returns None.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_file_users(path)</span></code> -&gt; iterator of <code class="docutils literal notranslate"><span class="pre">Distribution</span></code> instances.</p>
+<p>Iterates over all distributions to find out which distributions uses <code class="docutils literal notranslate"><span class="pre">path</span></code>.
+<code class="docutils literal notranslate"><span class="pre">path</span></code> can be a local absolute path or a relative ‘/’-separated path.</p>
+<p>A local absolute path is an absolute path in which occurrences of ‘/’
+have been replaced by the system separator given by <code class="docutils literal notranslate"><span class="pre">os.sep</span></code>.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="distribution-class">
+<h4><a class="toc-backref" href="#id26">Distribution class</a><a class="headerlink" href="#distribution-class" title="Permalink to this headline">¶</a></h4>
+<p>A new class called <code class="docutils literal notranslate"><span class="pre">Distribution</span></code> is created with the path of the
+<code class="docutils literal notranslate"><span class="pre">.dist-info</span></code> directory provided to the constructor. It reads the metadata
+contained in <code class="docutils literal notranslate"><span class="pre">METADATA</span></code> when it is instantiated.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Distribution(path)</span></code> -&gt; instance</p>
+<blockquote>
+<div>Creates a <code class="docutils literal notranslate"><span class="pre">Distribution</span></code> instance for the given <code class="docutils literal notranslate"><span class="pre">path</span></code>.</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">Distribution</span></code> provides the following attributes:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">name</span></code>: The name of the distribution.</li>
+<li><code class="docutils literal notranslate"><span class="pre">metadata</span></code>: A <code class="docutils literal notranslate"><span class="pre">DistributionMetadata</span></code> instance loaded with the
+distribution’s METADATA file.</li>
+<li><code class="docutils literal notranslate"><span class="pre">requested</span></code>: A boolean that indicates whether the REQUESTED
+metadata file is present (in other words, whether the distribution was
+installed by user request).</li>
+</ul>
+<p>And following methods:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_installed_files(local=False)</span></code> -&gt; iterator of (path, hash, size)</p>
+<p>Iterates over the <code class="docutils literal notranslate"><span class="pre">RECORD</span></code> entries and return a tuple <code class="docutils literal notranslate"><span class="pre">(path,</span> <span class="pre">hash,</span> <span class="pre">size)</span></code>
+for each line. If <code class="docutils literal notranslate"><span class="pre">local</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, the path is transformed into a
+local absolute path. Otherwise the raw value from <code class="docutils literal notranslate"><span class="pre">RECORD</span></code> is returned.</p>
+<p>A local absolute path is an absolute path in which occurrences of ‘/’
+have been replaced by the system separator given by <code class="docutils literal notranslate"><span class="pre">os.sep</span></code>.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">uses(path)</span></code> -&gt; Boolean</p>
+<p>Returns <code class="docutils literal notranslate"><span class="pre">True</span></code> if <code class="docutils literal notranslate"><span class="pre">path</span></code> is listed in <code class="docutils literal notranslate"><span class="pre">RECORD</span></code>. <code class="docutils literal notranslate"><span class="pre">path</span></code>
+can be a local absolute path or a relative ‘/’-separated path.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_distinfo_file(path,</span> <span class="pre">binary=False)</span></code> -&gt; file object</p>
+<blockquote>
+<div><p>Returns a file located under the <code class="docutils literal notranslate"><span class="pre">.dist-info</span></code> directory.</p>
+<p>Returns a <code class="docutils literal notranslate"><span class="pre">file</span></code> instance for the file pointed by <code class="docutils literal notranslate"><span class="pre">path</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">path</span></code> has to be a ‘/’-separated path relative to the <code class="docutils literal notranslate"><span class="pre">.dist-info</span></code>
+directory or an absolute path.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">path</span></code> is an absolute path and doesn’t start with the <code class="docutils literal notranslate"><span class="pre">.dist-info</span></code>
+directory path, a <code class="docutils literal notranslate"><span class="pre">DistutilsError</span></code> is raised.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">binary</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, opens the file in read-only binary mode (<code class="docutils literal notranslate"><span class="pre">rb</span></code>),
+otherwise opens it in read-only mode (<code class="docutils literal notranslate"><span class="pre">r</span></code>).</p>
+</div></blockquote>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_distinfo_files(local=False)</span></code> -&gt; iterator of paths</p>
+<p>Iterates over the <code class="docutils literal notranslate"><span class="pre">RECORD</span></code> entries and returns paths for each line if the path
+is pointing to a file located in the <code class="docutils literal notranslate"><span class="pre">.dist-info</span></code> directory or one of its
+subdirectories.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">local</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, each path is transformed into a
+local absolute path. Otherwise the raw value from <code class="docutils literal notranslate"><span class="pre">RECORD</span></code> is returned.</p>
+</li>
+</ul>
+<p>Notice that the API is organized in five classes that work with directories
+and Zip files (so it works with files included in Zip files, see PEP 273 for
+more details <a class="footnote-reference brackets" href="#pep273" id="id11">9</a>). These classes are described in the documentation
+of the prototype implementation for interested readers <a class="footnote-reference brackets" href="#prototype" id="id12">13</a>.</p>
+</div>
+<div class="section" id="examples">
+<h4><a class="toc-backref" href="#id27">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h4>
+<p>Let’s use some of the new APIs with our <code class="docutils literal notranslate"><span class="pre">docutils</span></code> example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pkgutil</span> <span class="kn">import</span> <span class="n">get_distribution</span><span class="p">,</span> <span class="n">get_file_users</span><span class="p">,</span> <span class="n">distinfo_dirname</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dist</span> <span class="o">=</span> <span class="n">get_distribution</span><span class="p">(</span><span class="s1">&#39;docutils&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dist</span><span class="o">.</span><span class="n">name</span>
+<span class="go">&#39;docutils&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dist</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">version</span>
+<span class="go">&#39;0.5&#39;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">distinfo_dirname</span><span class="p">(</span><span class="s1">&#39;docutils&#39;</span><span class="p">,</span> <span class="s1">&#39;0.5&#39;</span><span class="p">)</span>
+<span class="go">&#39;docutils-0.5.dist-info&#39;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">distinfo_dirname</span><span class="p">(</span><span class="s1">&#39;python-ldap&#39;</span><span class="p">,</span> <span class="s1">&#39;2.5&#39;</span><span class="p">)</span>
+<span class="go">&#39;python_ldap-2.5.dist-info&#39;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">distinfo_dirname</span><span class="p">(</span><span class="s1">&#39;python-ldap&#39;</span><span class="p">,</span> <span class="s1">&#39;2.5 a---5&#39;</span><span class="p">)</span>
+<span class="go">&#39;python_ldap-2.5.a_5.dist-info&#39;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">path</span><span class="p">,</span> <span class="nb">hash</span><span class="p">,</span> <span class="n">size</span> <span class="ow">in</span> <span class="n">dist</span><span class="o">.</span><span class="n">get_installed_files</span><span class="p">()::</span>
+<span class="gp">... </span>    <span class="nb">print</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> </span><span class="si">%s</span><span class="s1"> </span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="nb">hash</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
+<span class="gp">...</span>
+<span class="go">python2.6/site-packages/docutils/__init__.py,b690274f621402dda63bf11ba5373bf2,9544</span>
+<span class="go">python2.6/site-packages/docutils/core.py,9c4b84aff68aa55f2e9bf70481b94333,66188</span>
+<span class="go">python2.6/site-packages/roman.py,a4b84aff68aa55f2e9bf70481b943D3,234</span>
+<span class="go">/usr/local/bin/rst2html.py,a4b84aff68aa55f2e9bf70481b943D3,234</span>
+<span class="go">python2.6/site-packages/docutils-0.5.dist-info/METADATA,6fe57de576d749536082d8e205b77748,195</span>
+<span class="go">python2.6/site-packages/docutils-0.5.dist-info/RECORD</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dist</span><span class="o">.</span><span class="n">uses</span><span class="p">(</span><span class="s1">&#39;docutils/core.py&#39;</span><span class="p">)</span>
+<span class="go">True</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dist</span><span class="o">.</span><span class="n">uses</span><span class="p">(</span><span class="s1">&#39;/usr/local/bin/rst2html.py&#39;</span><span class="p">)</span>
+<span class="go">True</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dist</span><span class="o">.</span><span class="n">get_distinfo_file</span><span class="p">(</span><span class="s1">&#39;METADATA&#39;</span><span class="p">)</span>
+<span class="go">&lt;open file at ...&gt;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dist</span><span class="o">.</span><span class="n">requested</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="new-functions-in-distutils">
+<h3><a class="toc-backref" href="#id28">New functions in Distutils</a><a class="headerlink" href="#new-functions-in-distutils" title="Permalink to this headline">¶</a></h3>
+<p>Distutils already provides a very basic way to install a distribution, which
+is running the <code class="docutils literal notranslate"><span class="pre">install</span></code> command over the <code class="docutils literal notranslate"><span class="pre">setup.py</span></code> script of the
+distribution.</p>
+<p>Distutils2 <a class="footnote-reference brackets" href="#pep262" id="id13">3</a> will provide a very basic <code class="docutils literal notranslate"><span class="pre">uninstall</span></code> function, that
+is added in <code class="docutils literal notranslate"><span class="pre">distutils2.util</span></code> and takes the name of the distribution to
+uninstall as its argument. <code class="docutils literal notranslate"><span class="pre">uninstall</span></code> uses the APIs described earlier and
+remove all unique files, as long as their hash didn’t change. Then it removes
+empty directories left behind.</p>
+<p><code class="docutils literal notranslate"><span class="pre">uninstall</span></code> returns a list of uninstalled files:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">distutils2.util</span> <span class="kn">import</span> <span class="n">uninstall</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">uninstall</span><span class="p">(</span><span class="s1">&#39;docutils&#39;</span><span class="p">)</span>
+<span class="go">[&#39;/opt/local/lib/python2.6/site-packages/docutils/core.py&#39;,</span>
+<span class="go"> ...</span>
+<span class="go"> &#39;/opt/local/lib/python2.6/site-packages/docutils/__init__.py&#39;]</span>
+</pre></div>
+</div>
+<p>If the distribution is not found, a <code class="docutils literal notranslate"><span class="pre">DistutilsUninstallError</span></code> is raised.</p>
+<div class="section" id="filtering">
+<h4><a class="toc-backref" href="#id29">Filtering</a><a class="headerlink" href="#filtering" title="Permalink to this headline">¶</a></h4>
+<p>To make it a reference API for third-party projects that wish to control
+how <code class="docutils literal notranslate"><span class="pre">uninstall</span></code> works, a second callable argument can be used. It’s
+called for each file that is removed. If the callable returns <code class="docutils literal notranslate"><span class="pre">True</span></code>, the
+file is removed. If it returns False, it’s left alone.</p>
+<p>Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">_remove_and_log</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Removing </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">path</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="k">return</span> <span class="kc">True</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">uninstall</span><span class="p">(</span><span class="s1">&#39;docutils&#39;</span><span class="p">,</span> <span class="n">_remove_and_log</span><span class="p">)</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">_dry_run</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Removing </span><span class="si">%s</span><span class="s1"> (dry run)&#39;</span> <span class="o">%</span> <span class="n">path</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="k">return</span> <span class="kc">False</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">uninstall</span><span class="p">(</span><span class="s1">&#39;docutils&#39;</span><span class="p">,</span> <span class="n">_dry_run</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Of course, a third-party tool can use lower-level <code class="docutils literal notranslate"><span class="pre">pkgutil</span></code> APIs to
+implement its own uninstall feature.</p>
+</div>
+<div class="section" id="installer-marker">
+<h4><a class="toc-backref" href="#id30">Installer marker</a><a class="headerlink" href="#installer-marker" title="Permalink to this headline">¶</a></h4>
+<p>As explained earlier in this PEP, the <code class="docutils literal notranslate"><span class="pre">install</span></code> command adds an <code class="docutils literal notranslate"><span class="pre">INSTALLER</span></code>
+file in the <code class="docutils literal notranslate"><span class="pre">.dist-info</span></code> directory with the name of the installer.</p>
+<p>To avoid removing distributions that were installed by another packaging
+system, the <code class="docutils literal notranslate"><span class="pre">uninstall</span></code> function takes an extra argument <code class="docutils literal notranslate"><span class="pre">installer</span></code> which
+defaults to <code class="docutils literal notranslate"><span class="pre">distutils2</span></code>.</p>
+<p>When called, <code class="docutils literal notranslate"><span class="pre">uninstall</span></code> controls that the <code class="docutils literal notranslate"><span class="pre">INSTALLER</span></code> file matches
+this argument. If not, it raises a <code class="docutils literal notranslate"><span class="pre">DistutilsUninstallError</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">uninstall</span><span class="p">(</span><span class="s1">&#39;docutils&#39;</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+<span class="c">...</span>
+<span class="gr">DistutilsUninstallError</span>: <span class="n">docutils was installed by &#39;cool-pkg-manager&#39;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">uninstall</span><span class="p">(</span><span class="s1">&#39;docutils&#39;</span><span class="p">,</span> <span class="n">installer</span><span class="o">=</span><span class="s1">&#39;cool-pkg-manager&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This allows a third-party application to use the <code class="docutils literal notranslate"><span class="pre">uninstall</span></code> function
+and strongly suggest that no other program remove a distribution it has
+previously installed. This is useful when a third-party program that relies
+on Distutils APIs does extra steps on the system at installation time,
+it has to undo at uninstallation time.</p>
+</div>
+<div class="section" id="adding-an-uninstall-script">
+<h4><a class="toc-backref" href="#id31">Adding an Uninstall script</a><a class="headerlink" href="#adding-an-uninstall-script" title="Permalink to this headline">¶</a></h4>
+<p>An <code class="docutils literal notranslate"><span class="pre">uninstall</span></code> script is added in Distutils2. and is used like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python -m distutils2.uninstall projectname
+</pre></div>
+</div>
+<p>Notice that script doesn’t control if the removal of a distribution breaks
+another distribution. Although it makes sure that all the files it removes
+are not used by any other distribution, by using the uninstall function.</p>
+<p>Also note that this uninstall script pays no attention to the
+REQUESTED metadata; that is provided only for use by external tools to
+provide more advanced dependency management.</p>
+</div>
+</div>
+</div>
+<div class="section" id="backward-compatibility-and-roadmap">
+<h2><a class="toc-backref" href="#id32">Backward compatibility and roadmap</a><a class="headerlink" href="#backward-compatibility-and-roadmap" title="Permalink to this headline">¶</a></h2>
+<p>These changes don’t introduce any compatibility problems since they
+will be implemented in:</p>
+<ul class="simple">
+<li>pkgutil in new functions</li>
+<li>distutils2</li>
+</ul>
+<p>The plan is to include the functionality outlined in this PEP in pkgutil for
+Python 3.2, and in Distutils2.</p>
+<p>Distutils2 will also contain a backport of the new pgkutil, and can be used for
+2.4 onward.</p>
+<p>Distributions installed using existing, pre-standardization formats do not have
+the necessary metadata available for the new API, and thus will be
+ignored. Third-party tools may of course to continue to support previous
+formats in addition to the new format, in order to ease the transition.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id33">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="distutils"><span class="brackets">1</span></dt>
+<dd><a class="reference external" href="http://docs.python.org/distutils">http://docs.python.org/distutils</a></dd>
+<dt class="label" id="distutils2"><span class="brackets">2</span></dt>
+<dd><a class="reference external" href="http://hg.python.org/distutils2">http://hg.python.org/distutils2</a></dd>
+<dt class="label" id="pep262"><span class="brackets">3</span><span class='fn-backref'><em> (<a href="#id1">1</a>, <a href="#id9">2</a>, <a href="#id13">3</a>) </em></span></dt>
+<dd><a class="reference external" href="http://www.python.org/dev/peps/pep-0262">http://www.python.org/dev/peps/pep-0262</a></dd>
+<dt class="label" id="pep314"><span class="brackets"><a class="fn-backref" href="#id2">4</a></span></dt>
+<dd><a class="reference external" href="http://www.python.org/dev/peps/pep-0314">http://www.python.org/dev/peps/pep-0314</a></dd>
+<dt class="label" id="setuptools"><span class="brackets"><a class="fn-backref" href="#id3">5</a></span></dt>
+<dd><a class="reference external" href="http://peak.telecommunity.com/DevCenter/setuptools">http://peak.telecommunity.com/DevCenter/setuptools</a></dd>
+<dt class="label" id="easyinstall"><span class="brackets"><a class="fn-backref" href="#id5">6</a></span></dt>
+<dd><a class="reference external" href="http://peak.telecommunity.com/DevCenter/EasyInstall">http://peak.telecommunity.com/DevCenter/EasyInstall</a></dd>
+<dt class="label" id="pip"><span class="brackets"><a class="fn-backref" href="#id6">7</a></span></dt>
+<dd><a class="reference external" href="http://pypi.python.org/pypi/pip">http://pypi.python.org/pypi/pip</a></dd>
+<dt class="label" id="eggformats"><span class="brackets"><a class="fn-backref" href="#id4">8</a></span></dt>
+<dd><a class="reference external" href="http://peak.telecommunity.com/DevCenter/EggFormats">http://peak.telecommunity.com/DevCenter/EggFormats</a></dd>
+<dt class="label" id="pep273"><span class="brackets"><a class="fn-backref" href="#id11">9</a></span></dt>
+<dd><a class="reference external" href="http://www.python.org/dev/peps/pep-0273">http://www.python.org/dev/peps/pep-0273</a></dd>
+<dt class="label" id="pep278"><span class="brackets"><a class="fn-backref" href="#id10">10</a></span></dt>
+<dd><a class="reference external" href="http://www.python.org/dev/peps/pep-0278">http://www.python.org/dev/peps/pep-0278</a></dd>
+<dt class="label" id="fedora"><span class="brackets"><a class="fn-backref" href="#id7">11</a></span></dt>
+<dd><a class="reference external" href="http://fedoraproject.org/wiki/Packaging/Python/Eggs#Providing_Eggs_using_Setuptools">http://fedoraproject.org/wiki/Packaging/Python/Eggs#Providing_Eggs_using_Setuptools</a></dd>
+<dt class="label" id="debian"><span class="brackets"><a class="fn-backref" href="#id8">12</a></span></dt>
+<dd><a class="reference external" href="http://wiki.debian.org/DebianPython/NewPolicy">http://wiki.debian.org/DebianPython/NewPolicy</a></dd>
+<dt class="label" id="prototype"><span class="brackets"><a class="fn-backref" href="#id12">13</a></span></dt>
+<dd><a class="reference external" href="http://bitbucket.org/tarek/pep376/">http://bitbucket.org/tarek/pep376/</a></dd>
+</dl>
+</div>
+<div class="section" id="acknowledgements">
+<h2><a class="toc-backref" href="#id34">Acknowledgements</a><a class="headerlink" href="#acknowledgements" title="Permalink to this headline">¶</a></h2>
+<p>Jim Fulton, Ian Bicking, Phillip Eby, Rafael Villar Burke, and many people at
+Pycon and Distutils-SIG.</p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id35">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0376.txt">https://github.com/python/peps/blob/master/pep-0376.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0376.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0375.html">PEP 0375</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0377.html">PEP 0377</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 376 – Database of Installed Python Distributions</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a><ul>
+<li><a class="reference internal" href="#how-distributions-are-installed">How distributions are installed</a></li>
+<li><a class="reference internal" href="#uninstall-information">Uninstall information</a></li>
+<li><a class="reference internal" href="#what-this-pep-proposes">What this PEP proposes</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#one-dist-info-directory-per-installed-distribution">One .dist-info directory per installed distribution</a><ul>
+<li><a class="reference internal" href="#record">RECORD</a></li>
+<li><a class="reference internal" href="#installer">INSTALLER</a></li>
+<li><a class="reference internal" href="#requested">REQUESTED</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation-details">Implementation details</a><ul>
+<li><a class="reference internal" href="#new-functions-and-classes-in-pkgutil">New functions and classes in pkgutil</a><ul>
+<li><a class="reference internal" href="#functions">Functions</a></li>
+<li><a class="reference internal" href="#distribution-class">Distribution class</a></li>
+<li><a class="reference internal" href="#examples">Examples</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#new-functions-in-distutils">New functions in Distutils</a><ul>
+<li><a class="reference internal" href="#filtering">Filtering</a></li>
+<li><a class="reference internal" href="#installer-marker">Installer marker</a></li>
+<li><a class="reference internal" href="#adding-an-uninstall-script">Adding an Uninstall script</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#backward-compatibility-and-roadmap">Backward compatibility and roadmap</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#acknowledgements">Acknowledgements</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

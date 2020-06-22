@@ -1,0 +1,363 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 222 – Web Library Enhancements &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 223 – Change the Meaning of ``\x`` Escapes" href="pep-0223.html" />
+    <link rel="prev" title="PEP 221 – Import As" href="pep-0221.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 222 – Web Library Enhancements</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-222-web-library-enhancements">
+<h1 class="page-title">PEP 222 – Web Library Enhancements<a class="headerlink" href="#pep-222-web-library-enhancements" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">222</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Web Library Enhancements</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">A.M. Kuchling &lt;amk&#32;&#97;t&#32;amk.ca&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Deferred</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">18-Aug-2000</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.1</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">22-Dec-2000</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id2">Abstract</a></li>
+<li><a class="reference internal" href="#open-issues" id="id3">Open Issues</a></li>
+<li><a class="reference internal" href="#new-modules" id="id4">New Modules</a></li>
+<li><a class="reference internal" href="#major-changes-to-existing-modules" id="id5">Major Changes to Existing Modules</a></li>
+<li><a class="reference internal" href="#minor-changes-to-existing-modules" id="id6">Minor Changes to Existing Modules</a></li>
+<li><a class="reference internal" href="#rejected-changes" id="id7">Rejected Changes</a></li>
+<li><a class="reference internal" href="#proposed-interface" id="id8">Proposed Interface</a></li>
+<li><a class="reference internal" href="#copyright" id="id9">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id2">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes a set of enhancements to the CGI development
+facilities in the Python standard library.  Enhancements might be
+new features, new modules for tasks such as cookie support, or
+removal of obsolete code.</p>
+<p>The original intent was to make improvements to Python 2.1.
+However, there seemed little interest from the Python community,
+and time was lacking, so this PEP has been deferred to some future
+Python release.</p>
+</div>
+<div class="section" id="open-issues">
+<h2><a class="toc-backref" href="#id3">Open Issues</a><a class="headerlink" href="#open-issues" title="Permalink to this headline">¶</a></h2>
+<p>This section lists changes that have been suggested, but about
+which no firm decision has yet been made.  In the final version of
+this PEP, this section should be empty, as all the changes should
+be classified as accepted or rejected.</p>
+<p>cgi.py: We should not be told to create our own subclass just so
+we can handle file uploads. As a practical matter, I have yet to
+find the time to do this right, so I end up reading cgi.py’s temp
+file into, at best, another file. Some of our legacy code actually
+reads it into a second temp file, then into a final destination!
+And even if we did, that would mean creating yet another object
+with its <code class="docutils literal notranslate"><span class="pre">__init__</span></code> call and associated overhead.</p>
+<p>cgi.py: Currently, query data with no <code class="docutils literal notranslate"><span class="pre">=</span></code> are ignored.  Even if
+<code class="docutils literal notranslate"><span class="pre">keep_blank_values</span></code> is set, queries like <code class="docutils literal notranslate"><span class="pre">...?value=&amp;...</span></code> are
+returned with blank values but queries like <code class="docutils literal notranslate"><span class="pre">...?value&amp;...</span></code> are
+completely lost.  It would be great if such data were made
+available through the <code class="docutils literal notranslate"><span class="pre">FieldStorage</span></code> interface, either as entries
+with <code class="docutils literal notranslate"><span class="pre">None</span></code> as values, or in a separate list.</p>
+<p>Utility function: build a query string from a list of 2-tuples</p>
+<p>Dictionary-related utility classes: <code class="docutils literal notranslate"><span class="pre">NoKeyErrors</span></code> (returns an empty
+string, never a <code class="docutils literal notranslate"><span class="pre">KeyError</span></code>), <code class="docutils literal notranslate"><span class="pre">PartialStringSubstitution</span></code> (returns
+the original key string, never a <code class="docutils literal notranslate"><span class="pre">KeyError</span></code>)</p>
+</div>
+<div class="section" id="new-modules">
+<h2><a class="toc-backref" href="#id4">New Modules</a><a class="headerlink" href="#new-modules" title="Permalink to this headline">¶</a></h2>
+<p>This section lists details about entire new packages or modules
+that should be added to the Python standard library.</p>
+<ul class="simple">
+<li>fcgi.py : A new module adding support for the FastCGI protocol.
+Robin Dunn’s code needs to be ported to Windows, though.</li>
+</ul>
+</div>
+<div class="section" id="major-changes-to-existing-modules">
+<h2><a class="toc-backref" href="#id5">Major Changes to Existing Modules</a><a class="headerlink" href="#major-changes-to-existing-modules" title="Permalink to this headline">¶</a></h2>
+<p>This section lists details of major changes to existing modules,
+whether in implementation or in interface.  The changes in this
+section therefore carry greater degrees of risk, either in
+introducing bugs or a backward incompatibility.</p>
+<p>The cgi.py module would be deprecated.  (XXX A new module or
+package name hasn’t been chosen yet: ‘web’?  ‘cgilib’?)</p>
+</div>
+<div class="section" id="minor-changes-to-existing-modules">
+<h2><a class="toc-backref" href="#id6">Minor Changes to Existing Modules</a><a class="headerlink" href="#minor-changes-to-existing-modules" title="Permalink to this headline">¶</a></h2>
+<p>This section lists details of minor changes to existing modules.
+These changes should have relatively small implementations, and
+have little risk of introducing incompatibilities with previous
+versions.</p>
+</div>
+<div class="section" id="rejected-changes">
+<h2><a class="toc-backref" href="#id7">Rejected Changes</a><a class="headerlink" href="#rejected-changes" title="Permalink to this headline">¶</a></h2>
+<p>The changes listed in this section were proposed for Python 2.1,
+but were rejected as unsuitable.  For each rejected change, a
+rationale is given describing why the change was deemed
+inappropriate.</p>
+<ul class="simple">
+<li>An HTML generation module is not part of this PEP.  Several such
+modules exist, ranging from HTMLgen’s purely programming
+interface to ASP-inspired simple templating to DTML’s complex
+templating.  There’s no indication of which templating module to
+enshrine in the standard library, and that probably means that
+no module should be so chosen.</li>
+<li>cgi.py: Allowing a combination of query data and POST data.
+This doesn’t seem to be standard at all, and therefore is
+dubious practice.</li>
+</ul>
+</div>
+<div class="section" id="proposed-interface">
+<h2><a class="toc-backref" href="#id8">Proposed Interface</a><a class="headerlink" href="#proposed-interface" title="Permalink to this headline">¶</a></h2>
+<p>XXX open issues: naming convention (studlycaps or
+underline-separated?); need to look at the <code class="docutils literal notranslate"><span class="pre">cgi.parse*()</span></code> functions
+and see if they can be simplified, too.</p>
+<p>Parsing functions: carry over most of the <code class="docutils literal notranslate"><span class="pre">parse*</span></code> functions from
+cgi.py</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># The Response class borrows most of its methods from Zope&#39;s</span>
+<span class="c1"># HTTPResponse class.</span>
+
+<span class="k">class</span> <span class="nc">Response</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Attributes:</span>
+<span class="sd">    status: HTTP status code to return</span>
+<span class="sd">    headers: dictionary of response headers</span>
+<span class="sd">    body: string containing the body of the HTTP response</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="p">{},</span> <span class="n">body</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">setStatus</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="s2">&quot;Set the numeric HTTP response code&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">setHeader</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="s2">&quot;Set an HTTP header&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">setBody</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">body</span><span class="p">):</span>
+        <span class="s2">&quot;Set the body of the response&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">setCookie</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span>
+                  <span class="n">path</span> <span class="o">=</span> <span class="s1">&#39;/&#39;</span><span class="p">,</span>
+                  <span class="n">comment</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">domain</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="nb">max</span><span class="o">-</span><span class="n">age</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">expires</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">secure</span> <span class="o">=</span> <span class="mi">0</span>
+                  <span class="p">):</span>
+        <span class="s2">&quot;Set a cookie&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">expireCookie</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="s2">&quot;Remove a cookie from the user&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">redirect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">):</span>
+        <span class="s2">&quot;Redirect the browser to another URL&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Convert entire response to a string&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">dump</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Return a string representation useful for debugging&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="c1"># XXX methods for specific classes of error:serverError,</span>
+    <span class="c1"># badRequest, etc.?</span>
+
+
+<span class="k">class</span> <span class="nc">Request</span><span class="p">:</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Attributes:</span>
+
+<span class="sd">    XXX should these be dictionaries, or dictionary-like objects?</span>
+<span class="sd">    .headers : dictionary containing HTTP headers</span>
+<span class="sd">    .cookies : dictionary of cookies</span>
+<span class="sd">    .fields  : data from the form</span>
+<span class="sd">    .env     : environment dictionary</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">environ</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">,</span> <span class="n">stdin</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stdin</span><span class="p">,</span>
+                 <span class="n">keep_blank_values</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">strict_parsing</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialize the request object, using the provided environment</span>
+<span class="sd">        and standard input.&quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="c1"># Should people just use the dictionaries directly?</span>
+    <span class="k">def</span> <span class="nf">getHeader</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">getCookie</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">getField</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="s2">&quot;Return field&#39;s value as a string (even if it&#39;s an uploaded file)&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">getUploadedFile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a file object that can be read to obtain the contents</span>
+<span class="sd">        of an uploaded file.  XXX should this report an error if the</span>
+<span class="sd">        field isn&#39;t actually an uploaded file?  Or should it wrap</span>
+<span class="sd">        a StringIO around simple fields for consistency?</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">getURL</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">query_string</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the URL of the current request, chopping off &#39;n&#39; path</span>
+<span class="sd">        components from the right.  Eg. if the URL is</span>
+<span class="sd">        &quot;http://foo.com/bar/baz/quux&quot;, n=2 would return</span>
+<span class="sd">        &quot;http://foo.com/bar&quot;.  Does not include the query string (if</span>
+<span class="sd">        any)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">getBaseURL</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the base URL of the current request, adding &#39;n&#39; path</span>
+<span class="sd">        components to the end to recreate more of the whole URL.</span>
+
+<span class="sd">        Eg. if the request URL is</span>
+<span class="sd">        &quot;http://foo.com/q/bar/baz/qux&quot;, n=0 would return</span>
+<span class="sd">        &quot;http://foo.com/&quot;, and n=2 &quot;http://foo.com/q/bar&quot;.</span>
+
+<span class="sd">        Returned URL does not include the query string, if any.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">dump</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;String representation suitable for debugging output&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="c1"># Possibilities?  I don&#39;t know if these are worth doing in the</span>
+    <span class="c1"># basic objects.</span>
+    <span class="k">def</span> <span class="nf">getBrowser</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Returns Mozilla/IE/Lynx/Opera/whatever&quot;</span>
+
+    <span class="k">def</span> <span class="nf">isSecure</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Return true if this is an SSLified request&quot;</span>
+
+
+<span class="c1"># Module-level function</span>
+<span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">logfile</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calls the function &#39;func&#39;, passing it the arguments</span>
+<span class="sd">    (request, response, logfile).  Exceptions are trapped and</span>
+<span class="sd">    sent to the file &#39;logfile&#39;.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># This wrapper will detect if it&#39;s being called from the command-line,</span>
+    <span class="c1"># and if so, it will run in a debugging mode; name=value pairs</span>
+    <span class="c1"># can be entered on standard input to set field values.</span>
+    <span class="c1"># (XXX how to do file uploads in this syntax?)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id9">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0222.txt">https://github.com/python/peps/blob/master/pep-0222.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0222.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0221.html">PEP 0221</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0223.html">PEP 0223</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 222 – Web Library Enhancements</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#open-issues">Open Issues</a></li>
+<li><a class="reference internal" href="#new-modules">New Modules</a></li>
+<li><a class="reference internal" href="#major-changes-to-existing-modules">Major Changes to Existing Modules</a></li>
+<li><a class="reference internal" href="#minor-changes-to-existing-modules">Minor Changes to Existing Modules</a></li>
+<li><a class="reference internal" href="#rejected-changes">Rejected Changes</a></li>
+<li><a class="reference internal" href="#proposed-interface">Proposed Interface</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

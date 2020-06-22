@@ -1,0 +1,352 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 7 – Style Guide for C Code &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 8 – Style Guide for Python Code" href="pep-0008.html" />
+    <link rel="prev" title="PEP 6 – Bug Fix Releases" href="pep-0006.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 7 – Style Guide for C Code</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-7-style-guide-for-c-code">
+<h1 class="page-title">PEP 7 – Style Guide for C Code<a class="headerlink" href="#pep-7-style-guide-for-c-code" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">7</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Style Guide for C Code</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Guido van Rossum &lt;guido&#32;&#97;t&#32;python.org&gt;, Barry Warsaw &lt;barry&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Active</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Process</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">05-Jul-2001</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#introduction" id="id3">Introduction</a></li>
+<li><a class="reference internal" href="#c-dialect" id="id4">C dialect</a></li>
+<li><a class="reference internal" href="#code-lay-out" id="id5">Code lay-out</a></li>
+<li><a class="reference internal" href="#naming-conventions" id="id6">Naming conventions</a></li>
+<li><a class="reference internal" href="#documentation-strings" id="id7">Documentation Strings</a></li>
+<li><a class="reference internal" href="#references" id="id8">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id9">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="introduction">
+<h2><a class="toc-backref" href="#id3">Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>This document gives coding conventions for the C code comprising the C
+implementation of Python.  Please see the companion informational PEP
+describing style guidelines for Python code <a class="footnote-reference brackets" href="#id2" id="id1">1</a>.</p>
+<p>Note, rules are there to be broken.  Two good reasons to break a
+particular rule:</p>
+<ol class="arabic simple">
+<li>When applying the rule would make the code less readable, even for
+someone who is used to reading code that follows the rules.</li>
+<li>To be consistent with surrounding code that also breaks it (maybe
+for historic reasons) – although this is also an opportunity to
+clean up someone else’s mess (in true XP style).</li>
+</ol>
+</div>
+<div class="section" id="c-dialect">
+<h2><a class="toc-backref" href="#id4">C dialect</a><a class="headerlink" href="#c-dialect" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p>Python versions before 3.6 use ANSI/ISO standard C (the 1989 version
+of the standard).  This means (amongst many other things) that all
+declarations must be at the top of a block (not necessarily at the
+top of function).</p>
+</li>
+<li><p>Python versions greater than or equal to 3.6 use C89 with several
+select C99 features:</p>
+<ul class="simple">
+<li>Standard integer types in <code class="docutils literal notranslate"><span class="pre">&lt;stdint.h&gt;</span></code> and <code class="docutils literal notranslate"><span class="pre">&lt;inttypes.h&gt;</span></code>. We
+require the fixed width integer types.</li>
+<li><code class="docutils literal notranslate"><span class="pre">static</span> <span class="pre">inline</span></code> functions</li>
+<li>designated initializers (especially nice for type declarations)</li>
+<li>intermingled declarations</li>
+<li>booleans</li>
+<li>C++-style line comments</li>
+</ul>
+<p>Future C99 features may be added to this list in the future
+depending on compiler support (mostly significantly MSVC).</p>
+</li>
+<li><p>Don’t use GCC extensions (e.g. don’t write multi-line strings
+without trailing backslashes).</p>
+</li>
+<li><p>All function declarations and definitions must use full prototypes
+(i.e. specify the types of all arguments).</p>
+</li>
+<li><p>Only use C++ style // one-line comments in Python 3.6 or later.</p>
+</li>
+<li><p>No compiler warnings with major compilers (gcc, VC++, a few others).</p>
+</li>
+</ul>
+</div>
+<div class="section" id="code-lay-out">
+<h2><a class="toc-backref" href="#id5">Code lay-out</a><a class="headerlink" href="#code-lay-out" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p>Use 4-space indents and no tabs at all.</p>
+</li>
+<li><p>No line should be longer than 79 characters.  If this and the
+previous rule together don’t give you enough room to code, your code
+is too complicated – consider using subroutines.</p>
+</li>
+<li><p>No line should end in whitespace.  If you think you need significant
+trailing whitespace, think again – somebody’s editor might delete
+it as a matter of routine.</p>
+</li>
+<li><p>Function definition style: function name in column 1, outermost
+curly braces in column 1, blank line after local variable
+declarations.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>static int
+extra_ivars(PyTypeObject *type, PyTypeObject *base)
+{
+    int t_size = PyType_BASICSIZE(type);
+    int b_size = PyType_BASICSIZE(base);
+
+    assert(t_size &gt;= b_size); /* type smaller than base! */
+    ...
+    return 1;
+}
+</pre></div>
+</div>
+</li>
+<li><p>Code structure: one space between keywords like <code class="docutils literal notranslate"><span class="pre">if</span></code>, <code class="docutils literal notranslate"><span class="pre">for</span></code> and
+the following left paren; no spaces inside the paren; braces are
+required everywhere, even where C permits them to be omitted, but do
+not add them to code you are not otherwise modifying.  All new C
+code requires braces.  Braces should be formatted as shown:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="p">(</span><span class="n">mro</span> <span class="o">!=</span> <span class="n">NULL</span><span class="p">)</span> <span class="p">{</span>
+    <span class="o">...</span>
+<span class="p">}</span>
+<span class="k">else</span> <span class="p">{</span>
+    <span class="o">...</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</li>
+<li><p>The return statement should <em>not</em> get redundant parentheses:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">return</span> <span class="n">albatross</span><span class="p">;</span> <span class="o">/*</span> <span class="n">correct</span> <span class="o">*/</span>
+<span class="k">return</span><span class="p">(</span><span class="n">albatross</span><span class="p">);</span> <span class="o">/*</span> <span class="n">incorrect</span> <span class="o">*/</span>
+</pre></div>
+</div>
+</li>
+<li><p>Function and macro call style: <code class="docutils literal notranslate"><span class="pre">foo(a,</span> <span class="pre">b,</span> <span class="pre">c)</span></code> – no space before
+the open paren, no spaces inside the parens, no spaces before
+commas, one space after each comma.</p>
+</li>
+<li><p>Always put spaces around assignment, Boolean and comparison
+operators.  In expressions using a lot of operators, add spaces
+around the outermost (lowest-priority) operators.</p>
+</li>
+<li><p>Breaking long lines: if you can, break after commas in the outermost
+argument list.  Always indent continuation lines appropriately,
+e.g.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyErr_Format</span><span class="p">(</span><span class="n">PyExc_TypeError</span><span class="p">,</span>
+             <span class="s2">&quot;cannot create &#39;</span><span class="si">%.100s</span><span class="s2">&#39; instances&quot;</span><span class="p">,</span>
+             <span class="nb">type</span><span class="o">-&gt;</span><span class="n">tp_name</span><span class="p">);</span>
+</pre></div>
+</div>
+</li>
+<li><p>When you break a long expression at a binary operator, the
+operator goes at the end of the previous line, and braces should be
+formatted as shown.  E.g.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="p">(</span><span class="nb">type</span><span class="o">-&gt;</span><span class="n">tp_dictoffset</span> <span class="o">!=</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="n">base</span><span class="o">-&gt;</span><span class="n">tp_dictoffset</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span>
+    <span class="nb">type</span><span class="o">-&gt;</span><span class="n">tp_dictoffset</span> <span class="o">==</span> <span class="n">b_size</span> <span class="o">&amp;&amp;</span>
+    <span class="p">(</span><span class="n">size_t</span><span class="p">)</span><span class="n">t_size</span> <span class="o">==</span> <span class="n">b_size</span> <span class="o">+</span> <span class="n">sizeof</span><span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="p">))</span>
+<span class="p">{</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span> <span class="o">/*</span> <span class="s2">&quot;Forgive&quot;</span> <span class="n">adding</span> <span class="n">a</span> <span class="vm">__dict__</span> <span class="n">only</span> <span class="o">*/</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</li>
+<li><p>Put blank lines around functions, structure definitions, and major
+sections inside functions.</p>
+</li>
+<li><p>Comments go before the code they describe.</p>
+</li>
+<li><p>All functions and global variables should be declared static unless
+they are to be part of a published interface</p>
+</li>
+<li><p>For external functions and variables, we always have a declaration
+in an appropriate header file in the “Include” directory, which uses
+the <code class="docutils literal notranslate"><span class="pre">PyAPI_FUNC()</span></code> macro, like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyAPI_FUNC</span><span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="p">)</span> <span class="n">PyObject_Repr</span><span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="p">);</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</div>
+<div class="section" id="naming-conventions">
+<h2><a class="toc-backref" href="#id6">Naming conventions</a><a class="headerlink" href="#naming-conventions" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Use a <code class="docutils literal notranslate"><span class="pre">Py</span></code> prefix for public functions; never for static
+functions.  The <code class="docutils literal notranslate"><span class="pre">Py_</span></code> prefix is reserved for global service
+routines like <code class="docutils literal notranslate"><span class="pre">Py_FatalError</span></code>; specific groups of routines
+(e.g. specific object type APIs) use a longer prefix,
+e.g. <code class="docutils literal notranslate"><span class="pre">PyString_</span></code> for string functions.</li>
+<li>Public functions and variables use MixedCase with underscores, like
+this: <code class="docutils literal notranslate"><span class="pre">PyObject_GetAttr</span></code>, <code class="docutils literal notranslate"><span class="pre">Py_BuildValue</span></code>, <code class="docutils literal notranslate"><span class="pre">PyExc_TypeError</span></code>.</li>
+<li>Occasionally an “internal” function has to be visible to the loader;
+we use the <code class="docutils literal notranslate"><span class="pre">_Py</span></code> prefix for this, e.g.: <code class="docutils literal notranslate"><span class="pre">_PyObject_Dump</span></code>.</li>
+<li>Macros should have a MixedCase prefix and then use upper case, for
+example: <code class="docutils literal notranslate"><span class="pre">PyString_AS_STRING</span></code>, <code class="docutils literal notranslate"><span class="pre">Py_PRINT_RAW</span></code>.</li>
+</ul>
+</div>
+<div class="section" id="documentation-strings">
+<h2><a class="toc-backref" href="#id7">Documentation Strings</a><a class="headerlink" href="#documentation-strings" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p>Use the <code class="docutils literal notranslate"><span class="pre">PyDoc_STR()</span></code> or <code class="docutils literal notranslate"><span class="pre">PyDoc_STRVAR()</span></code> macro for docstrings
+to support building Python without docstrings (<code class="docutils literal notranslate"><span class="pre">./configure</span>
+<span class="pre">--without-doc-strings</span></code>).</p>
+<p>For C code that needs to support versions of Python older than 2.3,
+you can include this after including <code class="docutils literal notranslate"><span class="pre">Python.h</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#ifndef PyDoc_STR</span>
+<span class="c1">#define PyDoc_VAR(name)         static char name[]</span>
+<span class="c1">#define PyDoc_STR(str)          (str)</span>
+<span class="c1">#define PyDoc_STRVAR(name, str) PyDoc_VAR(name) = PyDoc_STR(str)</span>
+<span class="c1">#endif</span>
+</pre></div>
+</div>
+</li>
+<li><p>The first line of each function docstring should be a “signature
+line” that gives a brief synopsis of the arguments and return value.
+For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyDoc_STRVAR</span><span class="p">(</span><span class="n">myfunction__doc__</span><span class="p">,</span>
+<span class="s2">&quot;myfunction(name, value) -&gt; bool</span><span class="se">\n\n\</span>
+<span class="s2">Determine whether name and value make a valid pair.&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Always include a blank line between the signature line and the text
+of the description.</p>
+<p>If the return value for the function is always None (because there
+is no meaningful return value), do not include the indication of the
+return type.</p>
+</li>
+<li><p>When writing multi-line docstrings, be sure to always use backslash
+continuations, as in the example above, or string literal
+concatenation:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyDoc_STRVAR</span><span class="p">(</span><span class="n">myfunction__doc__</span><span class="p">,</span>
+<span class="s2">&quot;myfunction(name, value) -&gt; bool</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+<span class="s2">&quot;Determine whether name and value make a valid pair.&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Though some C compilers accept string literals without either:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">/*</span> <span class="n">BAD</span> <span class="o">--</span> <span class="n">don</span><span class="s1">&#39;t do this! */</span>
+<span class="n">PyDoc_STRVAR</span><span class="p">(</span><span class="n">myfunction__doc__</span><span class="p">,</span>
+<span class="s2">&quot;myfunction(name, value) -&gt; bool</span><span class="se">\n\n</span>
+<span class="n">Determine</span> <span class="n">whether</span> <span class="n">name</span> <span class="ow">and</span> <span class="n">value</span> <span class="n">make</span> <span class="n">a</span> <span class="n">valid</span> <span class="n">pair</span><span class="o">.</span><span class="s2">&quot;);</span>
+</pre></div>
+</div>
+<p>not all do; the MSVC compiler is known to complain about this.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id8">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>PEP 8, “Style Guide for Python Code”, van Rossum, Warsaw
+(<a class="reference external" href="http://www.python.org/dev/peps/pep-0008">http://www.python.org/dev/peps/pep-0008</a>)</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id9">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0007.txt">https://github.com/python/peps/blob/master/pep-0007.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0007.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0006.html">PEP 0006</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0008.html">PEP 0008</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 7 – Style Guide for C Code</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#c-dialect">C dialect</a></li>
+<li><a class="reference internal" href="#code-lay-out">Code lay-out</a></li>
+<li><a class="reference internal" href="#naming-conventions">Naming conventions</a></li>
+<li><a class="reference internal" href="#documentation-strings">Documentation Strings</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

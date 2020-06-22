@@ -1,0 +1,262 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 288 – Generators Attributes and Exceptions &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 289 – Generator Expressions" href="pep-0289.html" />
+    <link rel="prev" title="PEP 287 – reStructuredText Docstring Format" href="pep-0287.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 288 – Generators Attributes and Exceptions</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-288-generators-attributes-and-exceptions">
+<h1 class="page-title">PEP 288 – Generators Attributes and Exceptions<a class="headerlink" href="#pep-288-generators-attributes-and-exceptions" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">288</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Generators Attributes and Exceptions</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">python&#32;&#97;t&#32;rcn.com (Raymond Hettinger)</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Withdrawn</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">21-Mar-2002</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.5</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id6">Abstract</a></li>
+<li><a class="reference internal" href="#status" id="id7">Status</a></li>
+<li><a class="reference internal" href="#rationale" id="id8">Rationale</a></li>
+<li><a class="reference internal" href="#specification-for-generator-attributes" id="id9">Specification for Generator Attributes</a></li>
+<li><a class="reference internal" href="#specification-for-generator-exception-passing" id="id10">Specification for Generator Exception Passing</a></li>
+<li><a class="reference internal" href="#references" id="id11">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id12">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id6">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes to enhance generators by providing mechanisms for
+raising exceptions and sharing data with running generators.</p>
+</div>
+<div class="section" id="status">
+<h2><a class="toc-backref" href="#id7">Status</a><a class="headerlink" href="#status" title="Permalink to this headline">¶</a></h2>
+<p>This PEP is withdrawn.  The exception raising mechanism was extended
+and subsumed into PEP 343.  The attribute passing capability
+never built a following, did not have a clear implementation,
+and did not have a clean way for the running generator to access
+its own namespace.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id8">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Currently, only class based iterators can provide attributes and
+exception handling.  However, class based iterators are harder to
+write, less compact, less readable, and slower.  A better solution
+is to enable these capabilities for generators.</p>
+<p>Enabling attribute assignments allows data to be passed to and from
+running generators.  The approach of sharing data using attributes
+pervades Python.  Other approaches exist but are somewhat hackish
+in comparison.</p>
+<p>Another evolutionary step is to add a generator method to allow
+exceptions to be passed to a generator.  Currently, there is no
+clean method for triggering exceptions from outside the generator.
+Also, generator exception passing helps mitigate the try/finally
+prohibition for generators.  The need is especially acute for
+generators needing to flush buffers or close resources upon termination.</p>
+<p>The two proposals are backwards compatible and require no new
+keywords.  They are being recommended for Python version 2.5.</p>
+</div>
+<div class="section" id="specification-for-generator-attributes">
+<h2><a class="toc-backref" href="#id9">Specification for Generator Attributes</a><a class="headerlink" href="#specification-for-generator-attributes" title="Permalink to this headline">¶</a></h2>
+<p>Essentially, the proposal is to emulate attribute writing for classes.
+The only wrinkle is that generators lack a way to refer to instances of
+themselves.  So, the proposal is to provide a function for discovering
+the reference.  For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">mygen</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+    <span class="bp">self</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">get_generator</span><span class="p">()</span>
+    <span class="n">myfile</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">myfile</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pos</span> <span class="o">=</span> <span class="n">myfile</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span>
+        <span class="k">yield</span> <span class="n">line</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+
+<span class="n">g</span> <span class="o">=</span> <span class="n">mygen</span><span class="p">(</span><span class="s1">&#39;sample.txt&#39;</span><span class="p">)</span>
+<span class="n">line1</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+<span class="nb">print</span> <span class="s1">&#39;Position&#39;</span><span class="p">,</span> <span class="n">g</span><span class="o">.</span><span class="n">pos</span>
+</pre></div>
+</div>
+<p>Uses for generator attributes include:</p>
+<ol class="arabic simple">
+<li>Providing generator clients with extra information (as shown
+above).</li>
+<li>Externally setting control flags governing generator operation
+(possibly telling a generator when to step in or step over
+data groups).</li>
+<li>Writing lazy consumers with complex execution states
+(an arithmetic encoder output stream for example).</li>
+<li>Writing co-routines (as demonstrated in Dr. Mertz’s articles <a class="footnote-reference brackets" href="#id3" id="id1">1</a>).</li>
+</ol>
+<p>The control flow of ‘yield’ and ‘next’ is unchanged by this
+proposal.  The only change is that data can passed to and from the
+generator.  Most of the underlying machinery is already in place,
+only the access function needs to be added.</p>
+</div>
+<div class="section" id="specification-for-generator-exception-passing">
+<h2><a class="toc-backref" href="#id10">Specification for Generator Exception Passing</a><a class="headerlink" href="#specification-for-generator-exception-passing" title="Permalink to this headline">¶</a></h2>
+<p>Add a <code class="docutils literal notranslate"><span class="pre">.throw(exception)</span></code> method to the generator interface:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">logger</span><span class="p">():</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">log</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">log</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">except</span> <span class="n">WriteLog</span><span class="p">:</span>
+        <span class="n">writelog</span><span class="p">(</span><span class="n">log</span><span class="p">)</span>
+
+<span class="n">g</span> <span class="o">=</span> <span class="n">logger</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span><span class="mi">20</span><span class="p">,</span><span class="mi">40</span><span class="p">,</span><span class="mi">80</span><span class="p">,</span><span class="mi">160</span><span class="p">]:</span>
+    <span class="n">testsuite</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+    <span class="n">g</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+<span class="n">g</span><span class="o">.</span><span class="n">throw</span><span class="p">(</span><span class="n">WriteLog</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>There is no existing work-around for triggering an exception
+inside a generator.  It is the only case in Python where active
+code cannot be excepted to or through.</p>
+<p>Generator exception passing also helps address an intrinsic
+limitation on generators, the prohibition against their using
+try/finally to trigger clean-up code <a class="footnote-reference brackets" href="#id4" id="id2">2</a>.</p>
+<p>Note A: The name of the throw method was selected for several
+reasons.  Raise is a keyword and so cannot be used as a method
+name.  Unlike raise which immediately raises an exception from the
+current execution point, throw will first return to the generator
+and then raise the exception.  The word throw is suggestive of
+putting the exception in another location.  The word throw is
+already associated with exceptions in other languages.</p>
+<p>Alternative method names were considered: <code class="docutils literal notranslate"><span class="pre">resolve()</span></code>, <code class="docutils literal notranslate"><span class="pre">signal()</span></code>,
+<code class="docutils literal notranslate"><span class="pre">genraise()</span></code>, <code class="docutils literal notranslate"><span class="pre">raiseinto()</span></code>, and <code class="docutils literal notranslate"><span class="pre">flush()</span></code>.  None of these fit as well
+as <code class="docutils literal notranslate"><span class="pre">throw()</span></code>.</p>
+<p>Note B:  To keep the <code class="docutils literal notranslate"><span class="pre">throw()</span></code> syntax simple only the instance
+version of the raise syntax would be supported (no variants for
+“<code class="docutils literal notranslate"><span class="pre">raise</span> <span class="pre">string</span></code>” or “<code class="docutils literal notranslate"><span class="pre">raise</span> <span class="pre">class,</span> <span class="pre">instance</span></code>”).</p>
+<p>Calling <code class="docutils literal notranslate"><span class="pre">g.throw(instance)</span></code> would correspond to writing
+<code class="docutils literal notranslate"><span class="pre">raise</span> <span class="pre">instance</span></code> immediately after the most recent yield.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id11">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id3"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>Dr. David Mertz’s draft columns for Charming Python
+<a class="reference external" href="http://gnosis.cx/publish/programming/charming_python_b5.txt">http://gnosis.cx/publish/programming/charming_python_b5.txt</a>
+<a class="reference external" href="http://gnosis.cx/publish/programming/charming_python_b7.txt">http://gnosis.cx/publish/programming/charming_python_b7.txt</a></dd>
+<dt class="label" id="id4"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>PEP 255 Simple Generators
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0255/">http://www.python.org/dev/peps/pep-0255/</a></dd>
+<dt class="label" id="id5"><span class="brackets">3</span></dt>
+<dd>Proof-of-concept recipe
+<a class="reference external" href="http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/164044">http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/164044</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id12">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0288.txt">https://github.com/python/peps/blob/master/pep-0288.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0288.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0287.html">PEP 0287</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0289.html">PEP 0289</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 288 – Generators Attributes and Exceptions</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#status">Status</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification-for-generator-attributes">Specification for Generator Attributes</a></li>
+<li><a class="reference internal" href="#specification-for-generator-exception-passing">Specification for Generator Exception Passing</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

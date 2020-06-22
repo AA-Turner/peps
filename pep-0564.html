@@ -1,0 +1,627 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 564 – Add new time functions with nanosecond resolution &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 565 – Show DeprecationWarning in __main__" href="pep-0565.html" />
+    <link rel="prev" title="PEP 563 – Postponed Evaluation of Annotations" href="pep-0563.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 564 – Add new time functions with nanosecond resolution</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-564-add-new-time-functions-with-nanosecond-resolution">
+<h1 class="page-title">PEP 564 – Add new time functions with nanosecond resolution<a class="headerlink" href="#pep-564-add-new-time-functions-with-nanosecond-resolution" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">564</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Add new time functions with nanosecond resolution</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Victor Stinner &lt;vstinner&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">16-October-2017</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.7</dd>
+<dt class="field-even">Resolution</dt>
+<dd class="field-even"><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2017-October/150046.html">https://mail.python.org/pipermail/python-dev/2017-October/150046.html</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id2">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id3">Rationale</a><ul>
+<li><a class="reference internal" href="#float-type-limited-to-104-days" id="id4">Float type limited to 104 days</a></li>
+<li><a class="reference internal" href="#previous-rejected-pep" id="id5">Previous rejected PEP</a></li>
+<li><a class="reference internal" href="#issues-caused-by-precision-loss" id="id6">Issues caused by precision loss</a><ul>
+<li><a class="reference internal" href="#example-1-measure-time-delta-in-long-running-process" id="id7">Example 1: measure time delta in long-running process</a></li>
+<li><a class="reference internal" href="#example-2-compare-times-with-different-resolution" id="id8">Example 2: compare times with different resolution</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#cpython-enhancements-of-the-last-5-years" id="id9">CPython enhancements of the last 5 years</a></li>
+<li><a class="reference internal" href="#existing-python-apis-using-nanoseconds-as-int" id="id10">Existing Python APIs using nanoseconds as int</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#changes" id="id11">Changes</a><ul>
+<li><a class="reference internal" href="#new-functions" id="id12">New functions</a></li>
+<li><a class="reference internal" href="#unchanged-functions" id="id13">Unchanged functions</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#alternatives-and-discussion" id="id14">Alternatives and discussion</a><ul>
+<li><a class="reference internal" href="#sub-nanosecond-resolution" id="id15">Sub-nanosecond resolution</a></li>
+<li><a class="reference internal" href="#modifying-time-time-result-type" id="id16">Modifying time.time() result type</a></li>
+<li><a class="reference internal" href="#different-types" id="id17">Different types</a></li>
+<li><a class="reference internal" href="#different-api" id="id18">Different API</a></li>
+<li><a class="reference internal" href="#a-new-module" id="id19">A new module</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#annex-clocks-resolution-in-python" id="id20">Annex: Clocks Resolution in Python</a><ul>
+<li><a class="reference internal" href="#script" id="id21">Script</a></li>
+<li><a class="reference internal" href="#linux" id="id22">Linux</a></li>
+<li><a class="reference internal" href="#windows" id="id23">Windows</a></li>
+<li><a class="reference internal" href="#analysis" id="id24">Analysis</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#links" id="id25">Links</a></li>
+<li><a class="reference internal" href="#copyright" id="id26">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id2">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Add six new “nanosecond” variants of existing functions to the <code class="docutils literal notranslate"><span class="pre">time</span></code>
+module: <code class="docutils literal notranslate"><span class="pre">clock_gettime_ns()</span></code>, <code class="docutils literal notranslate"><span class="pre">clock_settime_ns()</span></code>,
+<code class="docutils literal notranslate"><span class="pre">monotonic_ns()</span></code>, <code class="docutils literal notranslate"><span class="pre">perf_counter_ns()</span></code>, <code class="docutils literal notranslate"><span class="pre">process_time_ns()</span></code> and
+<code class="docutils literal notranslate"><span class="pre">time_ns()</span></code>.  While similar to the existing functions without the
+<code class="docutils literal notranslate"><span class="pre">_ns</span></code> suffix, they provide nanosecond resolution: they return a number of
+nanoseconds as a Python <code class="docutils literal notranslate"><span class="pre">int</span></code>.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">time.time_ns()</span></code> resolution is 3 times better than the <code class="docutils literal notranslate"><span class="pre">time.time()</span></code>
+resolution on Linux and Windows.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id3">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="float-type-limited-to-104-days">
+<h3><a class="toc-backref" href="#id4">Float type limited to 104 days</a><a class="headerlink" href="#float-type-limited-to-104-days" title="Permalink to this headline">¶</a></h3>
+<p>The clocks resolution of desktop and laptop computers is getting closer
+to nanosecond resolution.  More and more clocks have a frequency in MHz,
+up to GHz for the CPU TSC clock.</p>
+<p>The Python <code class="docutils literal notranslate"><span class="pre">time.time()</span></code> function returns the current time as a
+floating-point number which is usually a 64-bit binary floating-point
+number (in the IEEE 754 format).</p>
+<p>The problem is that the <code class="docutils literal notranslate"><span class="pre">float</span></code> type starts to lose nanoseconds after 104
+days.  Converting from nanoseconds (<code class="docutils literal notranslate"><span class="pre">int</span></code>) to seconds (<code class="docutils literal notranslate"><span class="pre">float</span></code>) and
+then back to nanoseconds (<code class="docutils literal notranslate"><span class="pre">int</span></code>) to check if conversions lose
+precision:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># no precision loss</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">x</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">**</span> <span class="mi">52</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span> <span class="nb">int</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="mf">1e-9</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1e9</span><span class="p">)</span> <span class="o">-</span> <span class="n">x</span>
+<span class="mi">0</span>
+<span class="c1"># precision loss! (1 nanosecond)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">x</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">**</span> <span class="mi">53</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span> <span class="nb">int</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="mf">1e-9</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1e9</span><span class="p">)</span> <span class="o">-</span> <span class="n">x</span>
+<span class="o">-</span><span class="mi">1</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="nb">print</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="mi">2</span> <span class="o">**</span> <span class="mi">53</span> <span class="o">/</span> <span class="mf">1e9</span><span class="p">))</span>
+<span class="mi">104</span> <span class="n">days</span><span class="p">,</span> <span class="mi">5</span><span class="p">:</span><span class="mi">59</span><span class="p">:</span><span class="mf">59.254741</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">time.time()</span></code> returns seconds elapsed since the UNIX epoch: January
+1st, 1970.  This function hasn’t had nanosecond precision since May 1970
+(47 years ago):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">datetime</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">unix_epoch</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="mi">1970</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">unix_epoch</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="mi">2</span><span class="o">**</span><span class="mi">53</span> <span class="o">/</span> <span class="mf">1e9</span><span class="p">))</span>
+<span class="go">1970-04-15 05:59:59.254741</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="previous-rejected-pep">
+<h3><a class="toc-backref" href="#id5">Previous rejected PEP</a><a class="headerlink" href="#previous-rejected-pep" title="Permalink to this headline">¶</a></h3>
+<p>Five years ago, the PEP 410 proposed a large and complex change in all
+Python functions returning time to support nanosecond resolution using
+the <code class="docutils literal notranslate"><span class="pre">decimal.Decimal</span></code> type.</p>
+<p>The PEP was rejected for different reasons:</p>
+<ul class="simple">
+<li>The idea of adding a new optional parameter to change the result type
+was rejected. It’s an uncommon (and bad?) programming practice in
+Python.</li>
+<li>It was not clear if hardware clocks really had a resolution of 1
+nanosecond, or if that made sense at the Python level.</li>
+<li>The <code class="docutils literal notranslate"><span class="pre">decimal.Decimal</span></code> type is uncommon in Python and so requires
+to adapt code to handle it.</li>
+</ul>
+</div>
+<div class="section" id="issues-caused-by-precision-loss">
+<h3><a class="toc-backref" href="#id6">Issues caused by precision loss</a><a class="headerlink" href="#issues-caused-by-precision-loss" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="example-1-measure-time-delta-in-long-running-process">
+<h4><a class="toc-backref" href="#id7">Example 1: measure time delta in long-running process</a><a class="headerlink" href="#example-1-measure-time-delta-in-long-running-process" title="Permalink to this headline">¶</a></h4>
+<p>A server is running for longer than 104 days.  A clock is read before and
+after running a function to measure its performance to detect
+performance issues at runtime.  Such benchmark only loses precision
+because of the float type used by clocks, not because of the clock
+resolution.</p>
+<p>On Python microbenchmarks, it is common to see function calls taking
+less than 100 ns.  A difference of a few nanoseconds might become
+significant.</p>
+</div>
+<div class="section" id="example-2-compare-times-with-different-resolution">
+<h4><a class="toc-backref" href="#id8">Example 2: compare times with different resolution</a><a class="headerlink" href="#example-2-compare-times-with-different-resolution" title="Permalink to this headline">¶</a></h4>
+<p>Two programs “A” and “B” are running on the same system and use the system
+clock.  The program A reads the system clock with nanosecond resolution
+and writes a timestamp with nanosecond resolution.  The program B reads
+the timestamp with nanosecond resolution, but compares it to the system
+clock read with a worse resolution.  To simplify the example, let’s say
+that B reads the clock with second resolution.  If that case, there is a
+window of 1 second while the program B can see the timestamp written by A
+as “in the future”.</p>
+<p>Nowadays, more and more databases and filesystems support storing times
+with nanosecond resolution.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This issue was already fixed for file modification time by adding the
+<code class="docutils literal notranslate"><span class="pre">st_mtime_ns</span></code> field to the <code class="docutils literal notranslate"><span class="pre">os.stat()</span></code> result, and by accepting
+nanoseconds in <code class="docutils literal notranslate"><span class="pre">os.utime()</span></code>. This PEP proposes to generalize the
+fix.</p>
+</div>
+</div>
+</div>
+<div class="section" id="cpython-enhancements-of-the-last-5-years">
+<h3><a class="toc-backref" href="#id9">CPython enhancements of the last 5 years</a><a class="headerlink" href="#cpython-enhancements-of-the-last-5-years" title="Permalink to this headline">¶</a></h3>
+<p>Since the PEP 410 was rejected:</p>
+<ul class="simple">
+<li>The <code class="docutils literal notranslate"><span class="pre">os.stat_result</span></code> structure got 3 new fields for timestamps as
+nanoseconds (Python <code class="docutils literal notranslate"><span class="pre">int</span></code>): <code class="docutils literal notranslate"><span class="pre">st_atime_ns</span></code>, <code class="docutils literal notranslate"><span class="pre">st_ctime_ns</span></code>
+and <code class="docutils literal notranslate"><span class="pre">st_mtime_ns</span></code>.</li>
+<li>The PEP 418 was accepted, Python 3.3 got 3 new clocks:
+<code class="docutils literal notranslate"><span class="pre">time.monotonic()</span></code>, <code class="docutils literal notranslate"><span class="pre">time.perf_counter()</span></code> and
+<code class="docutils literal notranslate"><span class="pre">time.process_time()</span></code>.</li>
+<li>The CPython private “pytime” C API handling time now uses a new
+<code class="docutils literal notranslate"><span class="pre">_PyTime_t</span></code> type: simple 64-bit signed integer (C <code class="docutils literal notranslate"><span class="pre">int64_t</span></code>).
+The <code class="docutils literal notranslate"><span class="pre">_PyTime_t</span></code> unit is an implementation detail and not part of the
+API. The unit is currently <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">nanosecond</span></code>.</li>
+</ul>
+</div>
+<div class="section" id="existing-python-apis-using-nanoseconds-as-int">
+<h3><a class="toc-backref" href="#id10">Existing Python APIs using nanoseconds as int</a><a class="headerlink" href="#existing-python-apis-using-nanoseconds-as-int" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">os.stat_result</span></code> structure has 3 fields for timestamps as
+nanoseconds (<code class="docutils literal notranslate"><span class="pre">int</span></code>): <code class="docutils literal notranslate"><span class="pre">st_atime_ns</span></code>, <code class="docutils literal notranslate"><span class="pre">st_ctime_ns</span></code> and
+<code class="docutils literal notranslate"><span class="pre">st_mtime_ns</span></code>.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">ns</span></code> parameter of the <code class="docutils literal notranslate"><span class="pre">os.utime()</span></code> function accepts a
+<code class="docutils literal notranslate"><span class="pre">(atime_ns:</span> <span class="pre">int,</span> <span class="pre">mtime_ns:</span> <span class="pre">int)</span></code> tuple: nanoseconds.</p>
+</div>
+</div>
+<div class="section" id="changes">
+<h2><a class="toc-backref" href="#id11">Changes</a><a class="headerlink" href="#changes" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="new-functions">
+<h3><a class="toc-backref" href="#id12">New functions</a><a class="headerlink" href="#new-functions" title="Permalink to this headline">¶</a></h3>
+<p>This PEP adds six new functions to the <code class="docutils literal notranslate"><span class="pre">time</span></code> module:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">time.clock_gettime_ns(clock_id)</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">time.clock_settime_ns(clock_id,</span> <span class="pre">time:</span> <span class="pre">int)</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">time.monotonic_ns()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">time.perf_counter_ns()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">time.process_time_ns()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">time.time_ns()</span></code></li>
+</ul>
+<p>These functions are similar to the version without the <code class="docutils literal notranslate"><span class="pre">_ns</span></code> suffix,
+but return a number of nanoseconds as a Python <code class="docutils literal notranslate"><span class="pre">int</span></code>.</p>
+<p>For example, <code class="docutils literal notranslate"><span class="pre">time.monotonic_ns()</span> <span class="pre">==</span> <span class="pre">int(time.monotonic()</span> <span class="pre">*</span> <span class="pre">1e9)</span></code> if
+<code class="docutils literal notranslate"><span class="pre">monotonic()</span></code> value is small enough to not lose precision.</p>
+<p>These functions are needed because they may return “large” timestamps,
+like <code class="docutils literal notranslate"><span class="pre">time.time()</span></code> which uses the UNIX epoch as reference, and so their
+<code class="docutils literal notranslate"><span class="pre">float</span></code>-returning variants are likely to lose precision at the nanosecond
+resolution.</p>
+</div>
+<div class="section" id="unchanged-functions">
+<h3><a class="toc-backref" href="#id13">Unchanged functions</a><a class="headerlink" href="#unchanged-functions" title="Permalink to this headline">¶</a></h3>
+<p>Since the <code class="docutils literal notranslate"><span class="pre">time.clock()</span></code> function was deprecated in Python 3.3, no
+<code class="docutils literal notranslate"><span class="pre">time.clock_ns()</span></code> is added.</p>
+<p>Python has other time-returning functions.  No nanosecond variant is
+proposed for these other functions, either because their internal
+resolution is greater or equal to 1 us, or because their maximum value
+is small enough to not lose precision.  For example, the maximum value of
+<code class="docutils literal notranslate"><span class="pre">time.clock_getres()</span></code> should be 1 second.</p>
+<p>Examples of unchanged functions:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">os</span></code> module: <code class="docutils literal notranslate"><span class="pre">sched_rr_get_interval()</span></code>, <code class="docutils literal notranslate"><span class="pre">times()</span></code>, <code class="docutils literal notranslate"><span class="pre">wait3()</span></code>
+and <code class="docutils literal notranslate"><span class="pre">wait4()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">resource</span></code> module: <code class="docutils literal notranslate"><span class="pre">ru_utime</span></code> and <code class="docutils literal notranslate"><span class="pre">ru_stime</span></code> fields of
+<code class="docutils literal notranslate"><span class="pre">getrusage()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">signal</span></code> module: <code class="docutils literal notranslate"><span class="pre">getitimer()</span></code>, <code class="docutils literal notranslate"><span class="pre">setitimer()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">time</span></code> module: <code class="docutils literal notranslate"><span class="pre">clock_getres()</span></code></li>
+</ul>
+<p>See also the <a class="reference internal" href="#annex-clocks-resolution-in-python">Annex: Clocks Resolution in Python</a>.</p>
+<p>A new nanosecond-returning flavor of these functions may be added later
+if an operating system exposes new functions providing better resolution.</p>
+</div>
+</div>
+<div class="section" id="alternatives-and-discussion">
+<h2><a class="toc-backref" href="#id14">Alternatives and discussion</a><a class="headerlink" href="#alternatives-and-discussion" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="sub-nanosecond-resolution">
+<h3><a class="toc-backref" href="#id15">Sub-nanosecond resolution</a><a class="headerlink" href="#sub-nanosecond-resolution" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">time.time_ns()</span></code> API is not theoretically future-proof: if clock
+resolutions continue to increase below the nanosecond level, new Python
+functions may be needed.</p>
+<p>In practice, the 1 nanosecond resolution is currently enough for all
+structures returned by all common operating systems functions.</p>
+<p>Hardware clocks with a resolution better than 1 nanosecond already
+exist.  For example, the frequency of a CPU TSC clock is the CPU base
+frequency: the resolution is around 0.3 ns for a CPU running at 3
+GHz.  Users who have access to such hardware and really need
+sub-nanosecond resolution can however extend Python for their needs.
+Such a rare use case doesn’t justify to design the Python standard library
+to support sub-nanosecond resolution.</p>
+<p>For the CPython implementation, nanosecond resolution is convenient: the
+standard and well supported <code class="docutils literal notranslate"><span class="pre">int64_t</span></code> type can be used to store a
+nanosecond-precise timestamp.  It supports a timespan of -292 years
+to +292 years.  Using the UNIX epoch as reference, it therefore supports
+representing times since year 1677 to year 2262:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="mi">1970</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">**</span> <span class="mi">63</span> <span class="o">/</span> <span class="p">(</span><span class="mi">10</span> <span class="o">**</span> <span class="mi">9</span> <span class="o">*</span> <span class="mi">3600</span> <span class="o">*</span> <span class="mi">24</span> <span class="o">*</span> <span class="mf">365.25</span><span class="p">)</span>
+<span class="go">1677.728976954687</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="mi">1970</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">**</span> <span class="mi">63</span> <span class="o">/</span> <span class="p">(</span><span class="mi">10</span> <span class="o">**</span> <span class="mi">9</span> <span class="o">*</span> <span class="mi">3600</span> <span class="o">*</span> <span class="mi">24</span> <span class="o">*</span> <span class="mf">365.25</span><span class="p">)</span>
+<span class="go">2262.271023045313</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="modifying-time-time-result-type">
+<h3><a class="toc-backref" href="#id16">Modifying time.time() result type</a><a class="headerlink" href="#modifying-time-time-result-type" title="Permalink to this headline">¶</a></h3>
+<p>It was proposed to modify <code class="docutils literal notranslate"><span class="pre">time.time()</span></code> to return a different number
+type with better precision.</p>
+<p>The PEP 410 proposed to return <code class="docutils literal notranslate"><span class="pre">decimal.Decimal</span></code> which already exists and
+supports arbitrary precision, but it was rejected.  Apart from
+<code class="docutils literal notranslate"><span class="pre">decimal.Decimal</span></code>, no portable real number type with better precision
+is currently available in Python.</p>
+<p>Changing the built-in Python <code class="docutils literal notranslate"><span class="pre">float</span></code> type is out of the scope of this
+PEP.</p>
+<p>Moreover, changing existing functions to return a new type introduces a
+risk of breaking the backward compatibility even if the new type is
+designed carefully.</p>
+</div>
+<div class="section" id="different-types">
+<h3><a class="toc-backref" href="#id17">Different types</a><a class="headerlink" href="#different-types" title="Permalink to this headline">¶</a></h3>
+<p>Many ideas of new types were proposed to support larger or arbitrary
+precision: fractions, structures or 2-tuple using integers,
+fixed-point number, etc.</p>
+<p>See also the PEP 410 for a previous long discussion on other types.</p>
+<p>Adding a new type requires more effort to support it, than reusing
+the existing <code class="docutils literal notranslate"><span class="pre">int</span></code> type.  The standard library, third party code and
+applications would have to be modified to support it.</p>
+<p>The Python <code class="docutils literal notranslate"><span class="pre">int</span></code> type is well known, well supported, easy to
+manipulate, and supports all arithmetic operations such as
+<code class="docutils literal notranslate"><span class="pre">dt</span> <span class="pre">=</span> <span class="pre">t2</span> <span class="pre">-</span> <span class="pre">t1</span></code>.</p>
+<p>Moreover, taking/returning an integer number of nanoseconds is not a
+new concept in Python, as witnessed by <code class="docutils literal notranslate"><span class="pre">os.stat_result</span></code> and
+<code class="docutils literal notranslate"><span class="pre">os.utime(ns=(atime_ns,</span> <span class="pre">mtime_ns))</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If the Python <code class="docutils literal notranslate"><span class="pre">float</span></code> type becomes larger (e.g. decimal128 or
+float128), the <code class="docutils literal notranslate"><span class="pre">time.time()</span></code> precision will increase as well.</p>
+</div>
+</div>
+<div class="section" id="different-api">
+<h3><a class="toc-backref" href="#id18">Different API</a><a class="headerlink" href="#different-api" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">time.time(ns=False)</span></code> API was proposed to avoid adding new
+functions. It’s an uncommon (and bad?) programming practice in Python to
+change the result type depending on a parameter.</p>
+<p>Different options were proposed to allow the user to choose the time
+resolution. If each Python module uses a different resolution, it can
+become difficult to handle different resolutions, instead of just
+seconds (<code class="docutils literal notranslate"><span class="pre">time.time()</span></code> returning <code class="docutils literal notranslate"><span class="pre">float</span></code>) and nanoseconds
+(<code class="docutils literal notranslate"><span class="pre">time.time_ns()</span></code> returning <code class="docutils literal notranslate"><span class="pre">int</span></code>). Moreover, as written above,
+there is no need for resolution better than 1 nanosecond in practice in
+the Python standard library.</p>
+</div>
+<div class="section" id="a-new-module">
+<h3><a class="toc-backref" href="#id19">A new module</a><a class="headerlink" href="#a-new-module" title="Permalink to this headline">¶</a></h3>
+<p>It was proposed to add a new <code class="docutils literal notranslate"><span class="pre">time_ns</span></code> module containing the following
+functions:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">time_ns.clock_gettime(clock_id)</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">time_ns.clock_settime(clock_id,</span> <span class="pre">time:</span> <span class="pre">int)</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">time_ns.monotonic()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">time_ns.perf_counter()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">time_ns.process_time()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">time_ns.time()</span></code></li>
+</ul>
+<p>The first question is whether the <code class="docutils literal notranslate"><span class="pre">time_ns</span></code> module should expose exactly
+the same API (constants, functions, etc.) as the <code class="docutils literal notranslate"><span class="pre">time</span></code> module. It can be
+painful to maintain two flavors of the <code class="docutils literal notranslate"><span class="pre">time</span></code> module. How are users use
+supposed to make a choice between these two modules?</p>
+<p>If tomorrow, other nanosecond variants are needed in the <code class="docutils literal notranslate"><span class="pre">os</span></code> module,
+will we have to add a new <code class="docutils literal notranslate"><span class="pre">os_ns</span></code> module as well? There are functions
+related to time in many modules: <code class="docutils literal notranslate"><span class="pre">time</span></code>, <code class="docutils literal notranslate"><span class="pre">os</span></code>, <code class="docutils literal notranslate"><span class="pre">signal</span></code>,
+<code class="docutils literal notranslate"><span class="pre">resource</span></code>, <code class="docutils literal notranslate"><span class="pre">select</span></code>, etc.</p>
+<p>Another idea is to add a <code class="docutils literal notranslate"><span class="pre">time.ns</span></code> submodule or a nested-namespace to
+get the <code class="docutils literal notranslate"><span class="pre">time.ns.time()</span></code> syntax, but it suffers from the same issues.</p>
+</div>
+</div>
+<div class="section" id="annex-clocks-resolution-in-python">
+<h2><a class="toc-backref" href="#id20">Annex: Clocks Resolution in Python</a><a class="headerlink" href="#annex-clocks-resolution-in-python" title="Permalink to this headline">¶</a></h2>
+<p>This annex contains the resolution of clocks as measured in Python, and
+not the resolution announced by the operating system or the resolution of
+the internal structure used by the operating system.</p>
+<div class="section" id="script">
+<h3><a class="toc-backref" href="#id21">Script</a><a class="headerlink" href="#script" title="Permalink to this headline">¶</a></h3>
+<p>Example of script to measure the smallest difference between two
+<code class="docutils literal notranslate"><span class="pre">time.time()</span></code> and <code class="docutils literal notranslate"><span class="pre">time.time_ns()</span></code> reads ignoring differences of zero:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="n">LOOPS</span> <span class="o">=</span> <span class="mi">10</span> <span class="o">**</span> <span class="mi">6</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;time.time_ns(): </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">time</span><span class="o">.</span><span class="n">time_ns</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;time.time(): </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">())</span>
+
+<span class="n">min_dt</span> <span class="o">=</span> <span class="p">[</span><span class="nb">abs</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time_ns</span><span class="p">()</span> <span class="o">-</span> <span class="n">time</span><span class="o">.</span><span class="n">time_ns</span><span class="p">())</span>
+          <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">LOOPS</span><span class="p">)]</span>
+<span class="n">min_dt</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="nb">bool</span><span class="p">,</span> <span class="n">min_dt</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;min time_ns() delta: </span><span class="si">%s</span><span class="s2"> ns&quot;</span> <span class="o">%</span> <span class="n">min_dt</span><span class="p">)</span>
+
+<span class="n">min_dt</span> <span class="o">=</span> <span class="p">[</span><span class="nb">abs</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">())</span>
+          <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">LOOPS</span><span class="p">)]</span>
+<span class="n">min_dt</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="nb">bool</span><span class="p">,</span> <span class="n">min_dt</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;min time() delta: </span><span class="si">%s</span><span class="s2"> ns&quot;</span> <span class="o">%</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">min_dt</span> <span class="o">*</span> <span class="mf">1e9</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="linux">
+<h3><a class="toc-backref" href="#id22">Linux</a><a class="headerlink" href="#linux" title="Permalink to this headline">¶</a></h3>
+<p>Clocks resolution measured in Python on Fedora 26 (kernel 4.12):</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 67%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head">Function</th>
+<th class="head">Resolution</th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td>clock()</td>
+<td>1 us</td>
+</tr>
+<tr class="row-odd"><td>monotonic()</td>
+<td>81 ns</td>
+</tr>
+<tr class="row-even"><td>monotonic_ns()</td>
+<td>84 ns</td>
+</tr>
+<tr class="row-odd"><td>perf_counter()</td>
+<td>82 ns</td>
+</tr>
+<tr class="row-even"><td>perf_counter_ns()</td>
+<td>84 ns</td>
+</tr>
+<tr class="row-odd"><td>process_time()</td>
+<td>2 ns</td>
+</tr>
+<tr class="row-even"><td>process_time_ns()</td>
+<td>1 ns</td>
+</tr>
+<tr class="row-odd"><td>resource.getrusage()</td>
+<td>1 us</td>
+</tr>
+<tr class="row-even"><td>time()</td>
+<td><strong>239 ns</strong></td>
+</tr>
+<tr class="row-odd"><td>time_ns()</td>
+<td><strong>84 ns</strong></td>
+</tr>
+<tr class="row-even"><td>times().elapsed</td>
+<td>10 ms</td>
+</tr>
+<tr class="row-odd"><td>times().user</td>
+<td>10 ms</td>
+</tr>
+</tbody>
+</table>
+<p>Notes on resolutions:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">clock()</span></code> frequency is <code class="docutils literal notranslate"><span class="pre">CLOCKS_PER_SECOND</span></code> which is 1,000,000 Hz
+(1 MHz): resolution of 1 us.</li>
+<li><code class="docutils literal notranslate"><span class="pre">times()</span></code> frequency is <code class="docutils literal notranslate"><span class="pre">os.sysconf(&quot;SC_CLK_TCK&quot;)</span></code> (or the <code class="docutils literal notranslate"><span class="pre">HZ</span></code>
+constant) which is equal to 100 Hz: resolution of 10 ms.</li>
+<li><code class="docutils literal notranslate"><span class="pre">resource.getrusage()</span></code>, <code class="docutils literal notranslate"><span class="pre">os.wait3()</span></code> and <code class="docutils literal notranslate"><span class="pre">os.wait4()</span></code> use the
+<code class="docutils literal notranslate"><span class="pre">ru_usage</span></code> structure. The type of the <code class="docutils literal notranslate"><span class="pre">ru_usage.ru_utime</span></code> and
+<code class="docutils literal notranslate"><span class="pre">ru_usage.ru_stime</span></code> fields is the <code class="docutils literal notranslate"><span class="pre">timeval</span></code> structure which has a
+resolution of 1 us.</li>
+</ul>
+</div>
+<div class="section" id="windows">
+<h3><a class="toc-backref" href="#id23">Windows</a><a class="headerlink" href="#windows" title="Permalink to this headline">¶</a></h3>
+<p>Clocks resolution measured in Python on Windows 8.1:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 57%" />
+<col style="width: 43%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head">Function</th>
+<th class="head">Resolution</th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td>monotonic()</td>
+<td>15 ms</td>
+</tr>
+<tr class="row-odd"><td>monotonic_ns()</td>
+<td>15 ms</td>
+</tr>
+<tr class="row-even"><td>perf_counter()</td>
+<td>100 ns</td>
+</tr>
+<tr class="row-odd"><td>perf_counter_ns()</td>
+<td>100 ns</td>
+</tr>
+<tr class="row-even"><td>process_time()</td>
+<td>15.6 ms</td>
+</tr>
+<tr class="row-odd"><td>process_time_ns()</td>
+<td>15.6 ms</td>
+</tr>
+<tr class="row-even"><td>time()</td>
+<td><strong>894.1 us</strong></td>
+</tr>
+<tr class="row-odd"><td>time_ns()</td>
+<td><strong>318 us</strong></td>
+</tr>
+</tbody>
+</table>
+<p>The frequency of <code class="docutils literal notranslate"><span class="pre">perf_counter()</span></code> and <code class="docutils literal notranslate"><span class="pre">perf_counter_ns()</span></code> comes from
+<code class="docutils literal notranslate"><span class="pre">QueryPerformanceFrequency()</span></code>. The frequency is usually 10 MHz: resolution of
+100 ns. In old Windows versions, the frequency was sometimes 3,579,545 Hz (3.6
+MHz): resolution of 279 ns.</p>
+</div>
+<div class="section" id="analysis">
+<h3><a class="toc-backref" href="#id24">Analysis</a><a class="headerlink" href="#analysis" title="Permalink to this headline">¶</a></h3>
+<p>The resolution of <code class="docutils literal notranslate"><span class="pre">time.time_ns()</span></code> is much better than
+<code class="docutils literal notranslate"><span class="pre">time.time()</span></code>: <strong>84 ns (2.8x better) vs 239 ns on Linux and 318 us
+(2.8x better) vs 894 us on Windows</strong>. The <code class="docutils literal notranslate"><span class="pre">time.time()</span></code> resolution will
+only become larger (worse) as years pass since every day adds
+86,400,000,000,000 nanoseconds to the system clock, which increases the
+precision loss.</p>
+<p>The difference between <code class="docutils literal notranslate"><span class="pre">time.perf_counter()</span></code>, <code class="docutils literal notranslate"><span class="pre">time.monotonic()</span></code>,
+<code class="docutils literal notranslate"><span class="pre">time.process_time()</span></code> and their respective nanosecond variants is
+not visible in this quick script since the script runs for less than 1
+minute, and the uptime of the computer used to run the script was
+smaller than 1 week.  A significant difference may be seen if uptime
+reaches 104 days or more.</p>
+<p><code class="docutils literal notranslate"><span class="pre">resource.getrusage()</span></code> and <code class="docutils literal notranslate"><span class="pre">times()</span></code> have a resolution greater or
+equal to 1 microsecond, and so don’t need a variant with nanosecond
+resolution.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Internally, Python starts <code class="docutils literal notranslate"><span class="pre">monotonic()</span></code> and <code class="docutils literal notranslate"><span class="pre">perf_counter()</span></code>
+clocks at zero on some platforms which indirectly reduce the
+precision loss.</p>
+</div>
+</div>
+</div>
+<div class="section" id="links">
+<h2><a class="toc-backref" href="#id25">Links</a><a class="headerlink" href="#links" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference external" href="https://bugs.python.org/issue31784">bpo-31784: Implementation of the PEP 564</a></li>
+</ul>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id26">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0564.rst">https://github.com/python/peps/blob/master/pep-0564.rst</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0564.rst.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0563.html">PEP 0563</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0565.html">PEP 0565</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 564 – Add new time functions with nanosecond resolution</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a><ul>
+<li><a class="reference internal" href="#float-type-limited-to-104-days">Float type limited to 104 days</a></li>
+<li><a class="reference internal" href="#previous-rejected-pep">Previous rejected PEP</a></li>
+<li><a class="reference internal" href="#issues-caused-by-precision-loss">Issues caused by precision loss</a><ul>
+<li><a class="reference internal" href="#example-1-measure-time-delta-in-long-running-process">Example 1: measure time delta in long-running process</a></li>
+<li><a class="reference internal" href="#example-2-compare-times-with-different-resolution">Example 2: compare times with different resolution</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#cpython-enhancements-of-the-last-5-years">CPython enhancements of the last 5 years</a></li>
+<li><a class="reference internal" href="#existing-python-apis-using-nanoseconds-as-int">Existing Python APIs using nanoseconds as int</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#changes">Changes</a><ul>
+<li><a class="reference internal" href="#new-functions">New functions</a></li>
+<li><a class="reference internal" href="#unchanged-functions">Unchanged functions</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#alternatives-and-discussion">Alternatives and discussion</a><ul>
+<li><a class="reference internal" href="#sub-nanosecond-resolution">Sub-nanosecond resolution</a></li>
+<li><a class="reference internal" href="#modifying-time-time-result-type">Modifying time.time() result type</a></li>
+<li><a class="reference internal" href="#different-types">Different types</a></li>
+<li><a class="reference internal" href="#different-api">Different API</a></li>
+<li><a class="reference internal" href="#a-new-module">A new module</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#annex-clocks-resolution-in-python">Annex: Clocks Resolution in Python</a><ul>
+<li><a class="reference internal" href="#script">Script</a></li>
+<li><a class="reference internal" href="#linux">Linux</a></li>
+<li><a class="reference internal" href="#windows">Windows</a></li>
+<li><a class="reference internal" href="#analysis">Analysis</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#links">Links</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

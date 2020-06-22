@@ -1,0 +1,180 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 5 – Guidelines for Language Evolution &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 6 – Bug Fix Releases" href="pep-0006.html" />
+    <link rel="prev" title="PEP 4 – Deprecation of Standard Modules" href="pep-0004.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 5 – Guidelines for Language Evolution</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-5-guidelines-for-language-evolution">
+<h1 class="page-title">PEP 5 – Guidelines for Language Evolution<a class="headerlink" href="#pep-5-guidelines-for-language-evolution" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">5</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Guidelines for Language Evolution</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">paul&#32;&#97;t&#32;prescod.net (Paul Prescod)</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Active</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Process</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">26-Oct-2000</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id2">Abstract</a></li>
+<li><a class="reference internal" href="#implementation-details" id="id3">Implementation Details</a></li>
+<li><a class="reference internal" href="#scope" id="id4">Scope</a></li>
+<li><a class="reference internal" href="#steps-for-introducing-backwards-incompatible-features" id="id5">Steps For Introducing Backwards-Incompatible Features</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id2">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>In the natural evolution of programming languages it is sometimes
+necessary to make changes that modify the behavior of older programs.
+This PEP proposes a policy for implementing these changes in a manner
+respectful of the installed base of Python users.</p>
+</div>
+<div class="section" id="implementation-details">
+<h2><a class="toc-backref" href="#id3">Implementation Details</a><a class="headerlink" href="#implementation-details" title="Permalink to this headline">¶</a></h2>
+<p>Implementation of this PEP requires the addition of a formal warning
+and deprecation facility that will be described in another proposal.</p>
+</div>
+<div class="section" id="scope">
+<h2><a class="toc-backref" href="#id4">Scope</a><a class="headerlink" href="#scope" title="Permalink to this headline">¶</a></h2>
+<p>These guidelines apply to future versions of Python that introduce
+backward-incompatible behavior.  Backward incompatible behavior is a
+major deviation in Python interpretation from an earlier behavior
+described in the standard Python documentation.  Removal of a feature
+also constitutes a change of behavior.</p>
+<p>This PEP does not replace or preclude other compatibility strategies
+such as dynamic loading of backwards-compatible parsers.  On the other
+hand, if execution of “old code” requires a special switch or pragma
+then that is indeed a change of behavior from the point of view of the
+user and that change should be implemented according to these
+guidelines.</p>
+<p>In general, common sense must prevail in the implementation of these
+guidelines.  For instance changing “sys.copyright” does not constitute
+a backwards-incompatible change of behavior!</p>
+</div>
+<div class="section" id="steps-for-introducing-backwards-incompatible-features">
+<h2><a class="toc-backref" href="#id5">Steps For Introducing Backwards-Incompatible Features</a><a class="headerlink" href="#steps-for-introducing-backwards-incompatible-features" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li>Propose backwards-incompatible behavior in a PEP.  The PEP must
+include a section on backwards compatibility that describes in
+detail a plan to complete the remainder of these steps.</li>
+<li>Once the PEP is accepted as a productive direction, implement an
+alternate way to accomplish the task previously provided by the
+feature that is being removed or changed.  For instance if the
+addition operator were scheduled for removal, a new version of
+Python could implement an “add()” built-in function.</li>
+<li>Formally deprecate the obsolete construct in the Python
+documentation.</li>
+<li>Add an optional warning mode to the parser that will inform users
+when the deprecated construct is used.  In other words, all
+programs that will behave differently in the future must trigger
+warnings in this mode.  Compile-time warnings are preferable to
+runtime warnings.  The warning messages should steer people from
+the deprecated construct to the alternative construct.</li>
+<li>There must be at least a one-year transition period between the
+release of the transitional version of Python and the release of
+the backwards incompatible version.  Users will have at least a
+year to test their programs and migrate them from use of the
+deprecated construct to the alternative one.</li>
+</ol>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0005.txt">https://github.com/python/peps/blob/master/pep-0005.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0005.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0004.html">PEP 0004</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0006.html">PEP 0006</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 5 – Guidelines for Language Evolution</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#implementation-details">Implementation Details</a></li>
+<li><a class="reference internal" href="#scope">Scope</a></li>
+<li><a class="reference internal" href="#steps-for-introducing-backwards-incompatible-features">Steps For Introducing Backwards-Incompatible Features</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

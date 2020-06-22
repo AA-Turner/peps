@@ -1,0 +1,358 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 601 – Forbid return/break/continue breaking out of finally &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 602 – Annual Release Cycle for Python" href="pep-0602.html" />
+    <link rel="prev" title="PEP 600 – Future ‘manylinux’ Platform Tags for Portable Linux Built Distributions" href="pep-0600.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 601 – Forbid return/break/continue breaking out of finally</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-601-forbid-return-break-continue-breaking-out-of-finally">
+<h1 class="page-title">PEP 601 – Forbid return/break/continue breaking out of finally<a class="headerlink" href="#pep-601-forbid-return-break-continue-breaking-out-of-finally" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">601</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Forbid return/break/continue breaking out of finally</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Damien George, Batuhan Taskaya</dd>
+<dt class="field-even">Sponsor</dt>
+<dd class="field-even">Nick Coghlan</dd>
+<dt class="field-odd">Discussions-To</dt>
+<dd class="field-odd"><a class="reference external" href="https://discuss.python.org/t/pep-601-forbid-return-break-continue-breaking-out-of-finally/2239">https://discuss.python.org/t/pep-601-forbid-return-break-continue-breaking-out-of-finally/2239</a></dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Rejected</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">26-Aug-2019</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.8</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">26-Aug-2019 23-Sep-2019</dd>
+<dt class="field-odd">Resolution</dt>
+<dd class="field-odd"><a class="reference external" href="https://discuss.python.org/t/pep-601-forbid-return-break-continue-breaking-out-of-finally/2239/32">https://discuss.python.org/t/pep-601-forbid-return-break-continue-breaking-out-of-finally/2239/32</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#rejection-note" id="id10">Rejection Note</a></li>
+<li><a class="reference internal" href="#abstract" id="id11">Abstract</a></li>
+<li><a class="reference internal" href="#motivation" id="id12">Motivation</a></li>
+<li><a class="reference internal" href="#other-languages" id="id13">Other languages</a></li>
+<li><a class="reference internal" href="#rationale" id="id14">Rationale</a></li>
+<li><a class="reference internal" href="#specification" id="id15">Specification</a></li>
+<li><a class="reference internal" href="#backwards-compatibility" id="id16">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#security-implications" id="id17">Security Implications</a></li>
+<li><a class="reference internal" href="#how-to-teach-this" id="id18">How to Teach This</a></li>
+<li><a class="reference internal" href="#reference-implementation" id="id19">Reference Implementation</a></li>
+<li><a class="reference internal" href="#references" id="id20">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id21">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="rejection-note">
+<h2><a class="toc-backref" href="#id10">Rejection Note</a><a class="headerlink" href="#rejection-note" title="Permalink to this headline">¶</a></h2>
+<p>This PEP was rejected by the Steering Council by a vote of 4/4.</p>
+<p>Guido’s arguments for rejecting the PEP are: “it seems to me that most languages
+implement this kind of construct but have style guides and/or linters that
+reject it.  I would support a proposal to add this to PEP 8”, and “I note that
+the toy examples are somewhat misleading – the functionality that may be useful
+is a conditional return (or break etc.) inside a finally block.”.</p>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id11">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes to forbid return, break and continue statements within
+a finally suite where they would break out of the finally.  Their use in
+such a location silently cancels any active exception being raised through
+the finally, leading to unclear code and possible bugs.</p>
+<p>Continue is currently not supported in a finally in Python 3.7 (due to
+implementation issues) and the proposal is to not add support for it in
+Python 3.8.  For return and break the proposal is to deprecate their use
+in Python 3.9, emit a compilation warning in Python 3.10 and then forbid
+their use after that.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id12">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>The use of return, break and continue within a finally suite leads to behaviour
+which is not at all obvious.  Consider the following function:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">foo</span><span class="p">():</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">foo</span><span class="p">()</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="k">return</span>
+</pre></div>
+</div>
+<p>This will return cleanly (without an exception) even though it has infinite
+recursion and raises an exception within the try.  The reason is that the return
+within the finally will silently cancel any exception that propagates through
+the finally suite.  Such behaviour is unexpected and not at all obvious.
+This function is equivalent to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">foo</span><span class="p">():</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">foo</span><span class="p">()</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="k">return</span>
+</pre></div>
+</div>
+<p>Break and continue have similar behaviour (they silence exceptions) if they
+jump to code outside the finally suite.  For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">bar</span><span class="p">():</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="mi">1</span> <span class="o">/</span> <span class="mi">0</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="k">break</span>
+</pre></div>
+</div>
+<p>This behaviour goes against the following parts of The Zen of Python:</p>
+<ul class="simple">
+<li>Explicit is better than implicit - exceptions are implicitly silenced</li>
+<li>Readability counts - the intention of the code is not obvious</li>
+<li>Errors should never pass silently; Unless explicitly silenced - exceptions
+are implicitly silenced</li>
+</ul>
+<p>If this behaviour of silencing exceptions is really needed then the explicit
+form of a try-except can be used instead, and this makes the code clearer.</p>
+<p>Independent to the semantics, implementing return/break/continue within a
+finally suite is non-trivial as it requires to correctly track any active
+exceptions at runtime (an executing finally suite may or may not have an
+active exception) and cancel them as appropriate.  CPython did have a bug in
+this for the case of continue and so originally disallowed it [1].  Requiring
+correct behaviour for return/break/continue within a finally puts an
+unnecessary burden on alternative implementations of Python.</p>
+</div>
+<div class="section" id="other-languages">
+<h2><a class="toc-backref" href="#id13">Other languages</a><a class="headerlink" href="#other-languages" title="Permalink to this headline">¶</a></h2>
+<p>Java allows to return from within a finally block, but its use is discouraged
+according to [2], [3], [4].  The Java compiler later on included a linting
+option -Xlint:finally to warn against the use of return within a finally block.
+The Eclipse editor also warns about this use.</p>
+<p>Ruby allows return from inside ensure (Python’s finally), but it should be an
+explicit return.  It is discouraged and handled by linters [5], [6].</p>
+<p>Like Ruby, JavaScript also allows use of return/break/continue within a finally
+but it is seen as unsafe and it is handled by eslint [7].</p>
+<p>C# forbids the use of ending statements like return/goto/break within a finally
+[8], [9].</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id14">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Since the behaviour of return/break/continue within a finally is unclear, the
+pattern is rarely used, and there is a simple alternative to writing equivalent
+code (which is more explicit), forbidding the syntax is the most straightforward
+approach.</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id15">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>This is a change to the compiler, not the grammar.  The compiler should
+check for the following in a finally suite:</p>
+<ul class="simple">
+<li>A return in any statement, at any level of nesting.</li>
+<li>A break/continue in any statement, at any level of nesting, that would
+transfer control flow outside the finally suite.</li>
+</ul>
+<p>Upon finding such a case it should emit the appropriate exception:</p>
+<ul class="simple">
+<li>For continue, a SyntaxError (this is the current behaviour of 3.7).</li>
+<li>For return/break, a SyntaxWarning in 3.10, and a SyntaxError after that.</li>
+</ul>
+<p>For example, the following are all forbidden by this proposal:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">f</span><span class="p">():</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="k">return</span>
+
+<span class="k">def</span> <span class="nf">g</span><span class="p">():</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+<span class="k">def</span> <span class="nf">h</span><span class="p">():</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+                <span class="k">return</span>
+</pre></div>
+</div>
+<p>The following is still allowed because the continue doesn’t escape the
+finally:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="k">pass</span>
+<span class="k">finally</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+        <span class="k">continue</span>
+</pre></div>
+</div>
+<p>Note that yielding from within a finally remains acceptable by this PEP
+because resuming the generator will resume the finally and eventually
+raise any active exceptions (so they are never silenced by yielding).</p>
+</div>
+<div class="section" id="backwards-compatibility">
+<h2><a class="toc-backref" href="#id16">Backwards Compatibility</a><a class="headerlink" href="#backwards-compatibility" title="Permalink to this headline">¶</a></h2>
+<p>This is a backwards incompatible change, for return and break.</p>
+<p>The following locations in the CPython standard library (at
+v3.8.0b1-651-g7fcc2088a5) use return within finally:</p>
+<ul class="simple">
+<li>Lib/subprocess.py:921 - the use here looks like a bug</li>
+<li>Lib/multiprocessing/connection.py:316 - the use here looks legitimate
+but the intention is not clear</li>
+<li>Lib/multiprocessing/connection.py:318 - the use here looks legitimate
+but the intention is not clear</li>
+<li>Lib/test/test_sys_settrace.py:837 - a test for return within finally</li>
+<li>Lib/test/test_sys_settrace.py:1346 - a test for return within finally</li>
+</ul>
+<p>There are no uses of break within a finally (that break out of the finally)
+in the standard library.</p>
+</div>
+<div class="section" id="security-implications">
+<h2><a class="toc-backref" href="#id17">Security Implications</a><a class="headerlink" href="#security-implications" title="Permalink to this headline">¶</a></h2>
+<p>This is a simplification of the language, and removal of associated code,
+so should not introduce any new paths for a security exploit.</p>
+</div>
+<div class="section" id="how-to-teach-this">
+<h2><a class="toc-backref" href="#id18">How to Teach This</a><a class="headerlink" href="#how-to-teach-this" title="Permalink to this headline">¶</a></h2>
+<p>This feature is very rarely used so forbidding it will likely only impact
+advanced users, not beginners and probably not any existing teaching
+material.  Since this is the removal of a feature teaching users will be
+one by the raising of a SyntaxError if/when the forbidden feature is used.</p>
+</div>
+<div class="section" id="reference-implementation">
+<h2><a class="toc-backref" href="#id19">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>There is currently no reference implementation, although the way continue
+is currently handled in a finally (raising a SyntaxError) can be extended
+to return and break.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id20">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id1"><span class="brackets">1</span></dt>
+<dd><a class="reference external" href="https://bugs.python.org/issue37830">https://bugs.python.org/issue37830</a></dd>
+<dt class="label" id="id2"><span class="brackets">2</span></dt>
+<dd><a class="reference external" href="https://stackoverflow.com/questions/48088/returning-from-a-finally-block-in-java">https://stackoverflow.com/questions/48088/returning-from-a-finally-block-in-java</a></dd>
+<dt class="label" id="id3"><span class="brackets">3</span></dt>
+<dd><a class="reference external" href="https://web.archive.org/web/20070922061412/http://weblogs.java.net/blog/staufferjames/archive/2007/06/_dont_return_in.html">https://web.archive.org/web/20070922061412/http://weblogs.java.net/blog/staufferjames/archive/2007/06/_dont_return_in.html</a></dd>
+<dt class="label" id="id4"><span class="brackets">4</span></dt>
+<dd><a class="reference external" href="https://wiki.sei.cmu.edu/confluence/display/java/ERR04-J.+Do+not+complete+abruptly+from+a+finally+block">https://wiki.sei.cmu.edu/confluence/display/java/ERR04-J.+Do+not+complete+abruptly+from+a+finally+block</a></dd>
+<dt class="label" id="id5"><span class="brackets">5</span></dt>
+<dd><a class="reference external" href="https://github.com/rubocop-hq/rubocop/issues/5949">https://github.com/rubocop-hq/rubocop/issues/5949</a></dd>
+<dt class="label" id="id6"><span class="brackets">6</span></dt>
+<dd><a class="reference external" href="https://www.rubydoc.info/gems/rubocop/RuboCop/Cop/Lint/EnsureReturn">https://www.rubydoc.info/gems/rubocop/RuboCop/Cop/Lint/EnsureReturn</a></dd>
+<dt class="label" id="id7"><span class="brackets">7</span></dt>
+<dd><a class="reference external" href="https://eslint.org/docs/rules/no-unsafe-finally">https://eslint.org/docs/rules/no-unsafe-finally</a></dd>
+<dt class="label" id="id8"><span class="brackets">8</span></dt>
+<dd><a class="reference external" href="https://social.msdn.microsoft.com/Forums/vstudio/en-US/87faf259-3c54-4f3a-8d2b-ff82de44992f/return-statement-in-finally-block?forum=netfxbcl">https://social.msdn.microsoft.com/Forums/vstudio/en-US/87faf259-3c54-4f3a-8d2b-ff82de44992f/return-statement-in-finally-block?forum=netfxbcl</a></dd>
+<dt class="label" id="id9"><span class="brackets">9</span></dt>
+<dd><a class="reference external" href="https://stackoverflow.com/a/5788268">https://stackoverflow.com/a/5788268</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id21">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document is placed in the public domain or under the
+CC0-1.0-Universal license, whichever is more permissive.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0601.txt">https://github.com/python/peps/blob/master/pep-0601.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0601.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0600.html">PEP 0600</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0602.html">PEP 0602</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 601 – Forbid return/break/continue breaking out of finally</a><ul>
+<li><a class="reference internal" href="#rejection-note">Rejection Note</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#other-languages">Other languages</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#security-implications">Security Implications</a></li>
+<li><a class="reference internal" href="#how-to-teach-this">How to Teach This</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

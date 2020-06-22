@@ -1,0 +1,340 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 370 – Per user site-packages directory &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 371 – Addition of the multiprocessing package to the standard library" href="pep-0371.html" />
+    <link rel="prev" title="PEP 369 – Post import hooks" href="pep-0369.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 370 – Per user site-packages directory</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-370-per-user-site-packages-directory">
+<h1 class="page-title">PEP 370 – Per user site-packages directory<a class="headerlink" href="#pep-370-per-user-site-packages-directory" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">370</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Per user site-packages directory</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Christian Heimes &lt;christian&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">11-Jan-2008</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.6, 3.0</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id26">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id27">Rationale</a></li>
+<li><a class="reference internal" href="#specification" id="id28">Specification</a><ul>
+<li><a class="reference internal" href="#windows-notes" id="id29">Windows Notes</a></li>
+<li><a class="reference internal" href="#unix-notes" id="id30">Unix Notes</a></li>
+<li><a class="reference internal" href="#mac-os-x-notes" id="id31">Mac OS X Notes</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation" id="id32">Implementation</a></li>
+<li><a class="reference internal" href="#backwards-compatibility" id="id33">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#reference-implementation" id="id34">Reference Implementation</a></li>
+<li><a class="reference internal" href="#copyright" id="id35">Copyright</a></li>
+<li><a class="reference internal" href="#references" id="id36">References</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id26">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes a new a per user site-packages directory to allow
+users the local installation of Python packages in their home directory.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id27">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Current Python versions don’t have a unified way to install packages
+into the home directory of a user (except for Mac Framework
+builds). Users are either forced to ask the system administrator to
+install or update a package for them or to use one of the many
+workarounds like Virtual Python <a class="footnote-reference brackets" href="#id13" id="id1">1</a>, Working Env <a class="footnote-reference brackets" href="#id14" id="id2">2</a> or
+Virtual Env <a class="footnote-reference brackets" href="#id15" id="id3">3</a>.</p>
+<p>It’s not the goal of the PEP to replace the tools or to implement
+isolated installations of Python. It only implements the most common
+use case of an additional site-packages directory for each user.</p>
+<p>The feature can’t be implemented using the environment variable
+<em>PYTHONPATH</em>. The env var just inserts a new directory to the beginning
+of <em>sys.path</em> but it doesn’t parse the pth files in the directory. A
+full blown site-packages path is required for several applications
+and Python eggs.</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id28">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>site directory (site-packages)</p>
+<blockquote>
+<div>A directory in <code class="docutils literal notranslate"><span class="pre">sys.path</span></code>. In contrast to ordinary directories the pth
+files in the directory are processed, too.</div></blockquote>
+<p>user site directory</p>
+<blockquote>
+<div><p>A site directory inside the users’ home directory. A user site
+directory is specific to a Python version. The path contains
+the version number (major and minor only).</p>
+<dl class="simple">
+<dt>Unix (including Mac OS X)</dt><dd><code class="docutils literal notranslate"><span class="pre">~/.local/lib/python2.6/site-packages</span></code></dd>
+<dt>Windows</dt><dd><code class="docutils literal notranslate"><span class="pre">%APPDATA%/Python/Python26/site-packages</span></code></dd>
+</dl>
+</div></blockquote>
+<p>user data directory</p>
+<blockquote>
+<div><p>Usually the parent directory of the user site directory. It’s meant
+for Python version specific data like config files, docs, images
+and translations.</p>
+<dl class="simple">
+<dt>Unix (including Mac)</dt><dd><code class="docutils literal notranslate"><span class="pre">~/.local/lib/python2.6</span></code></dd>
+<dt>Windows</dt><dd><code class="docutils literal notranslate"><span class="pre">%APPDATA%/Python/Python26</span></code></dd>
+</dl>
+</div></blockquote>
+<p>user base directory</p>
+<blockquote>
+<div><p>It’s located inside the user’s home directory. The user site and
+use config directory are inside the base directory. On some systems
+the directory may be shared with 3rd party apps.</p>
+<dl class="simple">
+<dt>Unix (including Mac)</dt><dd><code class="docutils literal notranslate"><span class="pre">~/.local</span></code></dd>
+<dt>Windows</dt><dd><code class="docutils literal notranslate"><span class="pre">%APPDATA%/Python</span></code></dd>
+</dl>
+</div></blockquote>
+<p>user script directory</p>
+<blockquote>
+<div><p>A directory for binaries and scripts. <a class="footnote-reference brackets" href="#id22" id="id4">10</a> It’s shared across Python
+versions and the destination directory for scripts.</p>
+<dl class="simple">
+<dt>Unix (including Mac)</dt><dd><code class="docutils literal notranslate"><span class="pre">~/.local/bin</span></code></dd>
+<dt>Windows</dt><dd><code class="docutils literal notranslate"><span class="pre">%APPDATA%/Python/Scripts</span></code></dd>
+</dl>
+</div></blockquote>
+<div class="section" id="windows-notes">
+<h3><a class="toc-backref" href="#id29">Windows Notes</a><a class="headerlink" href="#windows-notes" title="Permalink to this headline">¶</a></h3>
+<p>On Windows the <em>Application Data</em> directory (aka <code class="docutils literal notranslate"><span class="pre">APPDATA</span></code>) was chosen
+because it is the most designated place for application data. Microsoft
+recommends that software doesn’t write to <code class="docutils literal notranslate"><span class="pre">USERPROFILE</span></code> <a class="footnote-reference brackets" href="#id17" id="id5">5</a> and
+<code class="docutils literal notranslate"><span class="pre">My</span> <span class="pre">Documents</span></code> is not suited for application data, either. <a class="footnote-reference brackets" href="#id20" id="id6">8</a> The code
+doesn’t query the Win32 API, instead it uses the environment variable
+%APPDATA%.</p>
+<p>The application data directory is part of the roaming profile. In networks
+with domain logins the application data may be copied from and to the a
+central server. This can slow down log-in and log-off. Users can keep
+the data on the server by e.g. setting PYTHONUSERBASE to the value
+“%HOMEDRIVE%%HOMEPATH%Applicata Data”. Users should consult their local
+administrator for more information. <a class="footnote-reference brackets" href="#id25" id="id7">13</a></p>
+</div>
+<div class="section" id="unix-notes">
+<h3><a class="toc-backref" href="#id30">Unix Notes</a><a class="headerlink" href="#unix-notes" title="Permalink to this headline">¶</a></h3>
+<p>On Unix <code class="docutils literal notranslate"><span class="pre">~/.local</span></code> was chosen in favor over <code class="docutils literal notranslate"><span class="pre">~/.python</span></code> because the
+directory is already used by several other programs in analogy to
+<code class="docutils literal notranslate"><span class="pre">/usr/local</span></code>. <a class="footnote-reference brackets" href="#id19" id="id8">7</a> <a class="footnote-reference brackets" href="#id23" id="id9">11</a></p>
+</div>
+<div class="section" id="mac-os-x-notes">
+<h3><a class="toc-backref" href="#id31">Mac OS X Notes</a><a class="headerlink" href="#mac-os-x-notes" title="Permalink to this headline">¶</a></h3>
+<p>On Mac OS X Python uses ~/.local directory as well. <a class="footnote-reference brackets" href="#id24" id="id10">12</a> Framework builds
+of Python include <code class="docutils literal notranslate"><span class="pre">~/Library/Python/2.6/site-packages</span></code> as an additional
+search path.</p>
+</div>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id32">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>The site module gets a new method <code class="docutils literal notranslate"><span class="pre">adduserpackage()</span></code> which adds the
+appropriate directory to the search path. The directory is not added if
+it doesn’t exist when Python is started. However the location of the
+user site directory and user base directory is stored in an internal
+variable for distutils.</p>
+<p>The user site directory is added before the system site directories
+but after Python’s search paths and <code class="docutils literal notranslate"><span class="pre">PYTHONPATH</span></code>. This setup allows
+the user to install a different version of a package than the system
+administrator but it prevents the user from accidentally overwriting a
+stdlib module. Stdlib modules can still be overwritten with
+<code class="docutils literal notranslate"><span class="pre">PYTHONPATH</span></code>.</p>
+<p>For security reasons the user site directory is <em>not</em> added to
+<code class="docutils literal notranslate"><span class="pre">sys.path</span></code> when the effective user id or group id is not equal to the
+process uid / gid <a class="footnote-reference brackets" href="#id21" id="id11">9</a>. It’s an additional barrier against code injection
+into suid apps.  However Python suid scripts <em>must</em> always use the -E
+and -s option or users can sneak in their own code.</p>
+<p>The user site directory can be suppressed with a new option <code class="docutils literal notranslate"><span class="pre">-s</span></code> or
+the environment variable <code class="docutils literal notranslate"><span class="pre">PYTHONNOUSERSITE</span></code>. The feature can be
+disabled globally by setting <code class="docutils literal notranslate"><span class="pre">site.ENABLE_USER_SITE</span></code> to the value
+<code class="docutils literal notranslate"><span class="pre">False</span></code>. It must be set by editing <code class="docutils literal notranslate"><span class="pre">site.py</span></code>. It can’t be altered
+<code class="docutils literal notranslate"><span class="pre">in</span> <span class="pre">sitecustomize.py</span></code> or later.</p>
+<p>The path to the user base directory can be overwritten with the
+environment variable <code class="docutils literal notranslate"><span class="pre">PYTHONUSERBASE</span></code>. The default location is used
+when <code class="docutils literal notranslate"><span class="pre">PYTHONUSERBASE</span></code> is not set or empty.</p>
+<p><code class="docutils literal notranslate"><span class="pre">distutils.command.install</span></code> (setup.py install) gets a new argument
+<code class="docutils literal notranslate"><span class="pre">--user</span></code> to install packages in the user site directory. The required
+directories are created on demand.</p>
+<p><code class="docutils literal notranslate"><span class="pre">distutils.command.build_ext</span></code> (setup.py build_ext) gets a new argument
+<code class="docutils literal notranslate"><span class="pre">--user</span></code> which adds the include/ and lib/ directories in the user base
+directory to the search paths for header files and libraries. It also
+adds the lib/ directory to rpath.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">site</span></code> module gets two arguments <code class="docutils literal notranslate"><span class="pre">--user-base</span></code> and <code class="docutils literal notranslate"><span class="pre">--user-site</span></code>
+to print the path to the user base or user site directory to the standard
+output. The feature is intended for scripting, e.g.
+<code class="docutils literal notranslate"><span class="pre">./configure</span> <span class="pre">--prefix</span> <span class="pre">$(python2.5</span> <span class="pre">-m</span> <span class="pre">site</span> <span class="pre">--user-base)</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">distutils.sysconfig</span></code> will get methods to access the private variables
+of site. (not yet implemented)</p>
+<p>The Windows updater needs to be updated, too. It should create a menu
+item which opens the user site directory in a new explorer windows.</p>
+</div>
+<div class="section" id="backwards-compatibility">
+<h2><a class="toc-backref" href="#id33">Backwards Compatibility</a><a class="headerlink" href="#backwards-compatibility" title="Permalink to this headline">¶</a></h2>
+<p>TBD</p>
+</div>
+<div class="section" id="reference-implementation">
+<h2><a class="toc-backref" href="#id34">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>A reference implementation is available in the bug tracker. <a class="footnote-reference brackets" href="#id16" id="id12">4</a></p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id35">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id36">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id13"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>Virtual Python
+<a class="reference external" href="http://peak.telecommunity.com/DevCenter/EasyInstall#creating-a-virtual-python">http://peak.telecommunity.com/DevCenter/EasyInstall#creating-a-virtual-python</a></dd>
+<dt class="label" id="id14"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>Working Env
+<a class="reference external" href="http://pypi.python.org/pypi/workingenv.py">http://pypi.python.org/pypi/workingenv.py</a>
+<a class="reference external" href="http://blog.ianbicking.org/workingenv-revisited.html">http://blog.ianbicking.org/workingenv-revisited.html</a></dd>
+<dt class="label" id="id15"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd>Virtual Env
+<a class="reference external" href="http://pypi.python.org/pypi/virtualenv">http://pypi.python.org/pypi/virtualenv</a></dd>
+<dt class="label" id="id16"><span class="brackets"><a class="fn-backref" href="#id12">4</a></span></dt>
+<dd>reference implementation
+<a class="reference external" href="http://bugs.python.org/issue1799">http://bugs.python.org/issue1799</a>
+<a class="reference external" href="http://svn.python.org/view/sandbox/trunk/pep370">http://svn.python.org/view/sandbox/trunk/pep370</a></dd>
+<dt class="label" id="id17"><span class="brackets"><a class="fn-backref" href="#id5">5</a></span></dt>
+<dd>MSDN: CSIDL
+<a class="reference external" href="http://msdn2.microsoft.com/en-us/library/bb762494.aspx">http://msdn2.microsoft.com/en-us/library/bb762494.aspx</a></dd>
+<dt class="label" id="id18"><span class="brackets">6</span></dt>
+<dd>Initial suggestion for a per user site-packages directory
+<a class="reference external" href="http://permalink.gmane.org/gmane.comp.python.devel/90902">http://permalink.gmane.org/gmane.comp.python.devel/90902</a></dd>
+<dt class="label" id="id19"><span class="brackets"><a class="fn-backref" href="#id8">7</a></span></dt>
+<dd>Suggestion of ~/.local/
+<a class="reference external" href="http://permalink.gmane.org/gmane.comp.python.devel/90925">http://permalink.gmane.org/gmane.comp.python.devel/90925</a></dd>
+<dt class="label" id="id20"><span class="brackets"><a class="fn-backref" href="#id6">8</a></span></dt>
+<dd>APPDATA discussion
+<a class="reference external" href="http://permalink.gmane.org/gmane.comp.python.devel/90932">http://permalink.gmane.org/gmane.comp.python.devel/90932</a></dd>
+<dt class="label" id="id21"><span class="brackets"><a class="fn-backref" href="#id11">9</a></span></dt>
+<dd>Security concerns and -s option
+<a class="reference external" href="http://permalink.gmane.org/gmane.comp.python.devel/91063">http://permalink.gmane.org/gmane.comp.python.devel/91063</a></dd>
+<dt class="label" id="id22"><span class="brackets"><a class="fn-backref" href="#id4">10</a></span></dt>
+<dd>Discussion about the bin directory
+<a class="reference external" href="http://permalink.gmane.org/gmane.comp.python.devel/91095">http://permalink.gmane.org/gmane.comp.python.devel/91095</a></dd>
+<dt class="label" id="id23"><span class="brackets"><a class="fn-backref" href="#id9">11</a></span></dt>
+<dd>freedesktop.org XGD basedir specs mentions ~/.local
+<a class="reference external" href="http://www.freedesktop.org/wiki/Specifications/basedir-spec">http://www.freedesktop.org/wiki/Specifications/basedir-spec</a></dd>
+<dt class="label" id="id24"><span class="brackets"><a class="fn-backref" href="#id10">12</a></span></dt>
+<dd>~/.local for Mac and usercustomize file
+<a class="reference external" href="http://permalink.gmane.org/gmane.comp.python.devel/91167">http://permalink.gmane.org/gmane.comp.python.devel/91167</a></dd>
+<dt class="label" id="id25"><span class="brackets"><a class="fn-backref" href="#id7">13</a></span></dt>
+<dd>Roaming profile on Windows
+<a class="reference external" href="http://permalink.gmane.org/gmane.comp.python.devel/91187">http://permalink.gmane.org/gmane.comp.python.devel/91187</a></dd>
+</dl>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0370.txt">https://github.com/python/peps/blob/master/pep-0370.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0370.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0369.html">PEP 0369</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0371.html">PEP 0371</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 370 – Per user site-packages directory</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#windows-notes">Windows Notes</a></li>
+<li><a class="reference internal" href="#unix-notes">Unix Notes</a></li>
+<li><a class="reference internal" href="#mac-os-x-notes">Mac OS X Notes</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

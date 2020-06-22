@@ -1,0 +1,278 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 530 – Asynchronous Comprehensions &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 531 – Existence checking operators" href="pep-0531.html" />
+    <link rel="prev" title="PEP 529 – Change Windows filesystem encoding to UTF-8" href="pep-0529.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 530 – Asynchronous Comprehensions</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-530-asynchronous-comprehensions">
+<h1 class="page-title">PEP 530 – Asynchronous Comprehensions<a class="headerlink" href="#pep-530-asynchronous-comprehensions" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">530</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Asynchronous Comprehensions</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Yury Selivanov &lt;yury&#32;&#97;t&#32;edgedb.com&gt;</dd>
+<dt class="field-even">Discussions-To</dt>
+<dd class="field-even">&lt;<a class="reference external" href="mailto:python-dev&#37;&#52;&#48;python&#46;org?subject=PEP%20530">python-dev&#32;&#97;t&#32;python.org</a>&gt;</dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd">Final</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even">Standards Track</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">03-Sep-2016</dd>
+<dt class="field-even">Python-Version</dt>
+<dd class="field-even">3.6</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd">03-Sep-2016</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id7">Abstract</a></li>
+<li><a class="reference internal" href="#rationale-and-goals" id="id8">Rationale and Goals</a></li>
+<li><a class="reference internal" href="#specification" id="id9">Specification</a><ul>
+<li><a class="reference internal" href="#asynchronous-comprehensions" id="id10">Asynchronous Comprehensions</a></li>
+<li><a class="reference internal" href="#await-in-comprehensions" id="id11"><code class="docutils literal notranslate"><span class="pre">await</span></code> in Comprehensions</a></li>
+<li><a class="reference internal" href="#grammar-updates" id="id12">Grammar Updates</a></li>
+<li><a class="reference internal" href="#backwards-compatibility" id="id13">Backwards Compatibility</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#acceptance" id="id14">Acceptance</a></li>
+<li><a class="reference internal" href="#implementation" id="id15">Implementation</a></li>
+<li><a class="reference internal" href="#references" id="id16">References</a></li>
+<li><a class="reference internal" href="#acknowledgments" id="id17">Acknowledgments</a></li>
+<li><a class="reference internal" href="#copyright" id="id18">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id7">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>PEP 492 and PEP 525 introduce support for native coroutines and
+asynchronous generators using <code class="docutils literal notranslate"><span class="pre">async</span></code> / <code class="docutils literal notranslate"><span class="pre">await</span></code> syntax.  This PEP
+proposes to add asynchronous versions of list, set, dict comprehensions
+and generator expressions.</p>
+</div>
+<div class="section" id="rationale-and-goals">
+<h2><a class="toc-backref" href="#id8">Rationale and Goals</a><a class="headerlink" href="#rationale-and-goals" title="Permalink to this headline">¶</a></h2>
+<p>Python has extensive support for synchronous comprehensions, allowing
+to produce lists, dicts, and sets with a simple and concise syntax.  We
+propose implementing similar syntactic constructions for the
+asynchronous code.</p>
+<p>To illustrate the readability improvement, consider the following
+example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">async</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">aiter</span><span class="p">():</span>
+    <span class="k">if</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>With the proposed asynchronous comprehensions syntax, the above code
+becomes as short as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">async</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">aiter</span><span class="p">()</span> <span class="k">if</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">2</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>The PEP also makes it possible to use the <code class="docutils literal notranslate"><span class="pre">await</span></code> expressions in
+all kinds of comprehensions:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="p">[</span><span class="k">await</span> <span class="n">fun</span><span class="p">()</span> <span class="k">for</span> <span class="n">fun</span> <span class="ow">in</span> <span class="n">funcs</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id9">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="asynchronous-comprehensions">
+<h3><a class="toc-backref" href="#id10">Asynchronous Comprehensions</a><a class="headerlink" href="#asynchronous-comprehensions" title="Permalink to this headline">¶</a></h3>
+<p>We propose to allow using <code class="docutils literal notranslate"><span class="pre">async</span> <span class="pre">for</span></code> inside list, set and dict
+comprehensions.  Pending PEP 525 approval, we can also allow creation
+of asynchronous generator expressions.</p>
+<p>Examples:</p>
+<ul class="simple">
+<li>set comprehension: <code class="docutils literal notranslate"><span class="pre">{i</span> <span class="pre">async</span> <span class="pre">for</span> <span class="pre">i</span> <span class="pre">in</span> <span class="pre">agen()}</span></code>;</li>
+<li>list comprehension: <code class="docutils literal notranslate"><span class="pre">[i</span> <span class="pre">async</span> <span class="pre">for</span> <span class="pre">i</span> <span class="pre">in</span> <span class="pre">agen()]</span></code>;</li>
+<li>dict comprehension: <code class="docutils literal notranslate"><span class="pre">{i:</span> <span class="pre">i</span> <span class="pre">**</span> <span class="pre">2</span> <span class="pre">async</span> <span class="pre">for</span> <span class="pre">i</span> <span class="pre">in</span> <span class="pre">agen()}</span></code>;</li>
+<li>generator expression: <code class="docutils literal notranslate"><span class="pre">(i</span> <span class="pre">**</span> <span class="pre">2</span> <span class="pre">async</span> <span class="pre">for</span> <span class="pre">i</span> <span class="pre">in</span> <span class="pre">agen())</span></code>.</li>
+</ul>
+<p>It is allowed to use <code class="docutils literal notranslate"><span class="pre">async</span> <span class="pre">for</span></code> along with  <code class="docutils literal notranslate"><span class="pre">if</span></code> and <code class="docutils literal notranslate"><span class="pre">for</span></code>
+clauses in asynchronous comprehensions and generator expressions:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dataset</span> <span class="o">=</span> <span class="p">{</span><span class="n">data</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">aiter</span><span class="p">()</span>
+                <span class="k">async</span> <span class="k">for</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">line</span>
+                <span class="k">if</span> <span class="n">check</span><span class="p">(</span><span class="n">data</span><span class="p">)}</span>
+</pre></div>
+</div>
+<p>Asynchronous comprehensions are only allowed inside an <code class="docutils literal notranslate"><span class="pre">async</span> <span class="pre">def</span></code>
+function.</p>
+<p>In principle, asynchronous generator expressions are allowed in
+any context.  However, in Python 3.6, due to <code class="docutils literal notranslate"><span class="pre">async</span></code> and <code class="docutils literal notranslate"><span class="pre">await</span></code>
+soft-keyword status, asynchronous generator expressions are only
+allowed in an <code class="docutils literal notranslate"><span class="pre">async</span> <span class="pre">def</span></code> function.  Once <code class="docutils literal notranslate"><span class="pre">async</span></code> and <code class="docutils literal notranslate"><span class="pre">await</span></code>
+become reserved keywords in Python 3.7, this restriction will be
+removed.</p>
+</div>
+<div class="section" id="await-in-comprehensions">
+<h3><a class="toc-backref" href="#id11"><code class="docutils literal notranslate"><span class="pre">await</span></code> in Comprehensions</a><a class="headerlink" href="#await-in-comprehensions" title="Permalink to this headline">¶</a></h3>
+<p>We propose to allow the use of <code class="docutils literal notranslate"><span class="pre">await</span></code> expressions in both
+asynchronous and synchronous comprehensions:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="p">[</span><span class="k">await</span> <span class="n">fun</span><span class="p">()</span> <span class="k">for</span> <span class="n">fun</span> <span class="ow">in</span> <span class="n">funcs</span><span class="p">]</span>
+<span class="n">result</span> <span class="o">=</span> <span class="p">{</span><span class="k">await</span> <span class="n">fun</span><span class="p">()</span> <span class="k">for</span> <span class="n">fun</span> <span class="ow">in</span> <span class="n">funcs</span><span class="p">}</span>
+<span class="n">result</span> <span class="o">=</span> <span class="p">{</span><span class="n">fun</span><span class="p">:</span> <span class="k">await</span> <span class="n">fun</span><span class="p">()</span> <span class="k">for</span> <span class="n">fun</span> <span class="ow">in</span> <span class="n">funcs</span><span class="p">}</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="p">[</span><span class="k">await</span> <span class="n">fun</span><span class="p">()</span> <span class="k">for</span> <span class="n">fun</span> <span class="ow">in</span> <span class="n">funcs</span> <span class="k">if</span> <span class="k">await</span> <span class="n">smth</span><span class="p">]</span>
+<span class="n">result</span> <span class="o">=</span> <span class="p">{</span><span class="k">await</span> <span class="n">fun</span><span class="p">()</span> <span class="k">for</span> <span class="n">fun</span> <span class="ow">in</span> <span class="n">funcs</span> <span class="k">if</span> <span class="k">await</span> <span class="n">smth</span><span class="p">}</span>
+<span class="n">result</span> <span class="o">=</span> <span class="p">{</span><span class="n">fun</span><span class="p">:</span> <span class="k">await</span> <span class="n">fun</span><span class="p">()</span> <span class="k">for</span> <span class="n">fun</span> <span class="ow">in</span> <span class="n">funcs</span> <span class="k">if</span> <span class="k">await</span> <span class="n">smth</span><span class="p">}</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="p">[</span><span class="k">await</span> <span class="n">fun</span><span class="p">()</span> <span class="k">async</span> <span class="k">for</span> <span class="n">fun</span> <span class="ow">in</span> <span class="n">funcs</span><span class="p">]</span>
+<span class="n">result</span> <span class="o">=</span> <span class="p">{</span><span class="k">await</span> <span class="n">fun</span><span class="p">()</span> <span class="k">async</span> <span class="k">for</span> <span class="n">fun</span> <span class="ow">in</span> <span class="n">funcs</span><span class="p">}</span>
+<span class="n">result</span> <span class="o">=</span> <span class="p">{</span><span class="n">fun</span><span class="p">:</span> <span class="k">await</span> <span class="n">fun</span><span class="p">()</span> <span class="k">async</span> <span class="k">for</span> <span class="n">fun</span> <span class="ow">in</span> <span class="n">funcs</span><span class="p">}</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="p">[</span><span class="k">await</span> <span class="n">fun</span><span class="p">()</span> <span class="k">async</span> <span class="k">for</span> <span class="n">fun</span> <span class="ow">in</span> <span class="n">funcs</span> <span class="k">if</span> <span class="k">await</span> <span class="n">smth</span><span class="p">]</span>
+<span class="n">result</span> <span class="o">=</span> <span class="p">{</span><span class="k">await</span> <span class="n">fun</span><span class="p">()</span> <span class="k">async</span> <span class="k">for</span> <span class="n">fun</span> <span class="ow">in</span> <span class="n">funcs</span> <span class="k">if</span> <span class="k">await</span> <span class="n">smth</span><span class="p">}</span>
+<span class="n">result</span> <span class="o">=</span> <span class="p">{</span><span class="n">fun</span><span class="p">:</span> <span class="k">await</span> <span class="n">fun</span><span class="p">()</span> <span class="k">async</span> <span class="k">for</span> <span class="n">fun</span> <span class="ow">in</span> <span class="n">funcs</span> <span class="k">if</span> <span class="k">await</span> <span class="n">smth</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>This is only valid in <code class="docutils literal notranslate"><span class="pre">async</span> <span class="pre">def</span></code> function body.</p>
+</div>
+<div class="section" id="grammar-updates">
+<h3><a class="toc-backref" href="#id12">Grammar Updates</a><a class="headerlink" href="#grammar-updates" title="Permalink to this headline">¶</a></h3>
+<p>The proposal requires one change on the grammar level: adding the
+optional “async” keyword to <code class="docutils literal notranslate"><span class="pre">comp_for</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comp_for</span><span class="p">:</span> <span class="p">[</span><span class="n">ASYNC</span><span class="p">]</span> <span class="s1">&#39;for&#39;</span> <span class="n">exprlist</span> <span class="s1">&#39;in&#39;</span> <span class="n">or_test</span> <span class="p">[</span><span class="n">comp_iter</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">comprehension</span></code> AST node will have the new <code class="docutils literal notranslate"><span class="pre">is_async</span></code> argument.</p>
+</div>
+<div class="section" id="backwards-compatibility">
+<h3><a class="toc-backref" href="#id13">Backwards Compatibility</a><a class="headerlink" href="#backwards-compatibility" title="Permalink to this headline">¶</a></h3>
+<p>The proposal is fully backwards compatible.</p>
+</div>
+</div>
+<div class="section" id="acceptance">
+<h2><a class="toc-backref" href="#id14">Acceptance</a><a class="headerlink" href="#acceptance" title="Permalink to this headline">¶</a></h2>
+<p>PEP 530 was accepted by Guido, September 6, 2016 <a class="footnote-reference brackets" href="#id4" id="id1">1</a>.</p>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id15">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>The implementation is tracked in issue 28008 <a class="footnote-reference brackets" href="#id6" id="id2">3</a>.  The reference
+implementation git repository is available at <a class="footnote-reference brackets" href="#id5" id="id3">2</a>.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id16">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id4"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2016-September/042141.html">https://mail.python.org/pipermail/python-ideas/2016-September/042141.html</a></dd>
+<dt class="label" id="id5"><span class="brackets"><a class="fn-backref" href="#id3">2</a></span></dt>
+<dd><a class="reference external" href="https://github.com/1st1/cpython/tree/asyncomp">https://github.com/1st1/cpython/tree/asyncomp</a></dd>
+<dt class="label" id="id6"><span class="brackets"><a class="fn-backref" href="#id2">3</a></span></dt>
+<dd><a class="reference external" href="http://bugs.python.org/issue28008">http://bugs.python.org/issue28008</a></dd>
+</dl>
+</div>
+<div class="section" id="acknowledgments">
+<h2><a class="toc-backref" href="#id17">Acknowledgments</a><a class="headerlink" href="#acknowledgments" title="Permalink to this headline">¶</a></h2>
+<p>I thank Guido van Rossum, Victor Stinner and Elvis Pranskevichus
+for their feedback, code reviews, and discussions around this
+PEP.</p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id18">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0530.txt">https://github.com/python/peps/blob/master/pep-0530.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0530.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0529.html">PEP 0529</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0531.html">PEP 0531</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 530 – Asynchronous Comprehensions</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale-and-goals">Rationale and Goals</a></li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#asynchronous-comprehensions">Asynchronous Comprehensions</a></li>
+<li><a class="reference internal" href="#await-in-comprehensions"><code class="docutils literal notranslate"><span class="pre">await</span></code> in Comprehensions</a></li>
+<li><a class="reference internal" href="#grammar-updates">Grammar Updates</a></li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#acceptance">Acceptance</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#acknowledgments">Acknowledgments</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

@@ -1,0 +1,549 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 205 – Weak References &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 206 – Python Advanced Library" href="pep-0206.html" />
+    <link rel="prev" title="PEP 204 – Range Literals" href="pep-0204.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 205 – Weak References</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-205-weak-references">
+<h1 class="page-title">PEP 205 – Weak References<a class="headerlink" href="#pep-205-weak-references" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">205</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Weak References</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Fred L. Drake, Jr. &lt;fred&#32;&#97;t&#32;fdrake.net&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even"><p></p></dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.1</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">11-Jan-2001</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#motivation" id="id1">Motivation</a><ul>
+<li><a class="reference internal" href="#caches-weak-dictionaries" id="id2">Caches (weak dictionaries)</a></li>
+<li><a class="reference internal" href="#circular-references" id="id3">Circular references</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#aspects-of-the-solution-space" id="id4">Aspects of the Solution Space</a><ul>
+<li><a class="reference internal" href="#invalidation" id="id5">Invalidation</a></li>
+<li><a class="reference internal" href="#presentation" id="id6">Presentation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#proposed-solution" id="id7">Proposed Solution</a></li>
+<li><a class="reference internal" href="#implementation-strategy" id="id8">Implementation Strategy</a></li>
+<li><a class="reference internal" href="#possible-applications" id="id9">Possible Applications</a></li>
+<li><a class="reference internal" href="#previous-weak-reference-work-in-python" id="id10">Previous Weak Reference Work in Python</a></li>
+<li><a class="reference internal" href="#weak-references-in-java" id="id11">Weak References in Java</a></li>
+<li><a class="reference internal" href="#appendix-dianne-hackborn-s-vref-proposal-1995" id="id12">Appendix – Dianne Hackborn’s vref proposal (1995)</a><ul>
+<li><a class="reference internal" href="#proposal-virtual-references" id="id13">Proposal: Virtual References</a></li>
+<li><a class="reference internal" href="#pointer-semantics" id="id14">Pointer semantics</a></li>
+<li><a class="reference internal" href="#proxy-semantics" id="id15">Proxy semantics</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#copyright" id="id16">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id1">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>There are two basic applications for weak references which have
+been noted by Python programmers: object caches and reduction of
+pain from circular references.</p>
+<div class="section" id="caches-weak-dictionaries">
+<h3><a class="toc-backref" href="#id2">Caches (weak dictionaries)</a><a class="headerlink" href="#caches-weak-dictionaries" title="Permalink to this headline">¶</a></h3>
+<p>There is a need to allow objects to be maintained that represent
+external state, mapping a single instance to the external
+reality, where allowing multiple instances to be mapped to the
+same external resource would create unnecessary difficulty
+maintaining synchronization among instances.  In these cases,
+a common idiom is to support a cache of instances; a factory
+function is used to return either a new or existing instance.</p>
+<p>The difficulty in this approach is that one of two things must
+be tolerated: either the cache grows without bound, or there
+needs to be explicit management of the cache elsewhere in the
+application.  The later can be very tedious and leads to more
+code than is really necessary to solve the problem at hand,
+and the former can be unacceptable for long-running processes
+or even relatively short processes with substantial memory
+requirements.</p>
+<ul class="simple">
+<li>External objects that need to be represented by a single
+instance, no matter how many internal users there are.  This
+can be useful for representing files that need to be written
+back to disk in whole rather than locked &amp; modified for
+every use.</li>
+<li>Objects that are expensive to create, but may be needed by
+multiple internal consumers.  Similar to the first case, but
+not necessarily bound to external resources, and possibly
+not an issue for shared state.  Weak references are only
+useful in this case if there is some flavor of “soft”
+references or if there is a high likelihood that users of
+individual objects will overlap in lifespan.</li>
+</ul>
+</div>
+<div class="section" id="circular-references">
+<h3><a class="toc-backref" href="#id3">Circular references</a><a class="headerlink" href="#circular-references" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>DOMs require a huge amount of circular (to parent &amp; document
+nodes) references, but these could be eliminated using a weak
+dictionary mapping from each node to its parent.  This
+might be especially useful in the context of something like
+<code class="docutils literal notranslate"><span class="pre">xml.dom.pulldom</span></code>, allowing the <code class="docutils literal notranslate"><span class="pre">.unlink()</span></code> operation to become
+a no-op.</li>
+</ul>
+<p>This proposal is divided into the following sections:</p>
+<ul class="simple">
+<li>Proposed Solution</li>
+<li>Implementation Strategy</li>
+<li>Possible Applications</li>
+<li>Previous Weak Reference Work in Python</li>
+<li>Weak References in Java</li>
+</ul>
+<p>The full text of one early proposal is included as an appendix
+since it does not appear to be available on the net.</p>
+</div>
+</div>
+<div class="section" id="aspects-of-the-solution-space">
+<h2><a class="toc-backref" href="#id4">Aspects of the Solution Space</a><a class="headerlink" href="#aspects-of-the-solution-space" title="Permalink to this headline">¶</a></h2>
+<p>There are two distinct aspects to the weak references problem:</p>
+<ul class="simple">
+<li>Invalidation of weak references</li>
+<li>Presentation of weak references to Python code</li>
+</ul>
+<div class="section" id="invalidation">
+<h3><a class="toc-backref" href="#id5">Invalidation</a><a class="headerlink" href="#invalidation" title="Permalink to this headline">¶</a></h3>
+<p>Past approaches to weak reference invalidation have often hinged
+on storing a strong reference and being able to examine all the
+instances of weak reference objects, and invalidating them when
+the reference count of their referent goes to one (indicating that
+the reference stored by the weak reference is the last remaining
+reference).  This has the advantage that the memory management
+machinery in Python need not change, and that any type can be
+weakly referenced.</p>
+<p>The disadvantage of this approach to invalidation is that it
+assumes that the management of the weak references is called
+sufficiently frequently that weakly-referenced objects are noticed
+within a reasonably short time frame; since this means a scan over
+some data structure to invalidate references, an operation which
+is O(N) on the number of weakly referenced objects, this is not
+effectively amortized for any single object which is weakly
+referenced.  This also assumes that the application is calling
+into code which handles weakly-referenced objects with some
+frequency, which makes weak-references less attractive for library
+code.</p>
+<p>An alternate approach to invalidation is that the de-allocation
+code to be aware of the possibility of weak references and make a
+specific call into the weak-reference management code to all
+invalidation whenever an object is deallocated.  This requires a
+change in the tp_dealloc handler for weakly-referencable objects;
+an additional call is needed at the “top” of the handler for
+objects which support weak-referencing, and an efficient way to
+map from an object to a chain of weak references for that object
+is needed as well.</p>
+</div>
+<div class="section" id="presentation">
+<h3><a class="toc-backref" href="#id6">Presentation</a><a class="headerlink" href="#presentation" title="Permalink to this headline">¶</a></h3>
+<p>Two ways that weak references are presented to the Python layer
+have been as explicit reference objects upon which some operation
+is required in order to retrieve a usable reference to the
+underlying object, and proxy objects which masquerade as the
+original objects as much as possible.</p>
+<p>Reference objects are easy to work with when some additional layer
+of object management is being added in Python; references can be
+checked for liveness explicitly, without having to invoke
+operations on the referents and catching some special exception
+raised when an invalid weak reference is used.</p>
+<p>However, a number of users favor the proxy approach simply because
+the weak reference looks so much like the original object.</p>
+</div>
+</div>
+<div class="section" id="proposed-solution">
+<h2><a class="toc-backref" href="#id7">Proposed Solution</a><a class="headerlink" href="#proposed-solution" title="Permalink to this headline">¶</a></h2>
+<p>Weak references should be able to point to any Python object that
+may have substantial memory size (directly or indirectly), or hold
+references to external resources (database connections, open
+files, etc.).</p>
+<p>A new module, weakref, will contain new functions used to create
+weak references.  <code class="docutils literal notranslate"><span class="pre">weakref.ref()</span></code> will create a “weak reference
+object” and optionally attach a callback which will be called when
+the object is about to be finalized.  <code class="docutils literal notranslate"><span class="pre">weakref.mapping()</span></code> will
+create a “weak dictionary”.  A third function, <code class="docutils literal notranslate"><span class="pre">weakref.proxy()</span></code>,
+will create a proxy object that behaves somewhat like the original
+object.</p>
+<p>A weak reference object will allow access to the referenced object
+if it hasn’t been collected and to determine if the object still
+exists in memory.  Retrieving the referent is done by calling the
+reference object.  If the referent is no longer alive, this will
+return None instead.</p>
+<p>A weak dictionary maps arbitrary keys to values, but does not own
+a reference to the values.  When the values are finalized, the
+(key, value) pairs for which it is a value are removed from all
+the mappings containing such pairs.  Like dictionaries, weak
+dictionaries are not hashable.</p>
+<p>Proxy objects are weak references that attempt to behave like the
+object they proxy, as much as they can.  Regardless of the
+underlying type, proxies are not hashable since their ability to
+act as a weak reference relies on a fundamental mutability that
+will cause failures when used as dictionary keys – even if the
+proper hash value is computed before the referent dies, the
+resulting proxy cannot be used as a dictionary key since it cannot
+be compared once the referent has expired, and comparability is
+necessary for dictionary keys.  Operations on proxy objects after
+the referent dies cause weakref.ReferenceError to be raised in
+most cases.  “is” comparisons, <code class="docutils literal notranslate"><span class="pre">type()</span></code>, and <code class="docutils literal notranslate"><span class="pre">id()</span></code> will continue to
+work, but always refer to the proxy and not the referent.</p>
+<p>The callbacks registered with weak references must accept a single
+parameter, which will be the weak reference or proxy object
+itself.  The object cannot be accessed or resurrected in the
+callback.</p>
+</div>
+<div class="section" id="implementation-strategy">
+<h2><a class="toc-backref" href="#id8">Implementation Strategy</a><a class="headerlink" href="#implementation-strategy" title="Permalink to this headline">¶</a></h2>
+<p>The implementation of weak references will include a list of
+reference containers that must be cleared for each weakly-
+referencable object.  If the reference is from a weak dictionary,
+the dictionary entry is cleared first.  Then, any associated
+callback is called with the object passed as a parameter.  Once
+all callbacks have been called, the object is finalized and
+deallocated.</p>
+<p>Many built-in types will participate in the weak-reference
+management, and any extension type can elect to do so.  The type
+structure will contain an additional field which provides an
+offset into the instance structure which contains a list of weak
+reference structures.  If the value of the field is &lt;= 0, the
+object does not participate.  In this case, <code class="docutils literal notranslate"><span class="pre">weakref.ref()</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&lt;weakdict&gt;.__setitem__()</span></code> and <code class="docutils literal notranslate"><span class="pre">.setdefault()</span></code>, and item assignment will
+raise <code class="docutils literal notranslate"><span class="pre">TypeError</span></code>.  If the value of the field is &gt; 0, a new weak
+reference can be generated and added to the list.</p>
+<p>This approach is taken to allow arbitrary extension types to
+participate, without taking a memory hit for numbers or other
+small types.</p>
+<p>Standard types which support weak references include instances,
+functions, and bound &amp; unbound methods.  With the addition of
+class types (“new-style classes”) in Python 2.2, types grew
+support for weak references.  Instances of class types are weakly
+referencable if they have a base type which is weakly referencable,
+the class not specify <code class="docutils literal notranslate"><span class="pre">__slots__</span></code>, or a slot is named <code class="docutils literal notranslate"><span class="pre">__weakref__</span></code>.
+Generators also support weak references.</p>
+</div>
+<div class="section" id="possible-applications">
+<h2><a class="toc-backref" href="#id9">Possible Applications</a><a class="headerlink" href="#possible-applications" title="Permalink to this headline">¶</a></h2>
+<p>PyGTK+ bindings?</p>
+<p>Tkinter – could avoid circular references by using weak
+references from widgets to their parents.  Objects won’t be
+discarded any sooner in the typical case, but there won’t be so
+much dependence on the programmer calling <code class="docutils literal notranslate"><span class="pre">.destroy()</span></code> before
+releasing a reference.  This would mostly benefit long-running
+applications.</p>
+<p>DOM trees.</p>
+</div>
+<div class="section" id="previous-weak-reference-work-in-python">
+<h2><a class="toc-backref" href="#id10">Previous Weak Reference Work in Python</a><a class="headerlink" href="#previous-weak-reference-work-in-python" title="Permalink to this headline">¶</a></h2>
+<p>Dianne Hackborn has proposed something called “virtual references”.
+‘vref’ objects are very similar to java.lang.ref.WeakReference
+objects, except there is no equivalent to the invalidation
+queues.  Implementing a “weak dictionary” would be just as
+difficult as using only weak references (without the invalidation
+queue) in Java.  Information on this has disappeared from the Web,
+but is included below as an Appendix.</p>
+<p>Marc-André Lemburg’s mx.Proxy package:</p>
+<blockquote>
+<div><a class="reference external" href="http://www.lemburg.com/files/python/mxProxy.html">http://www.lemburg.com/files/python/mxProxy.html</a></div></blockquote>
+<p>The weakdict module by Dieter Maurer is implemented in C and
+Python.  It appears that the Web pages have not been updated since
+Python 1.5.2a, so I’m not yet sure if the implementation is
+compatible with Python 2.0.</p>
+<blockquote>
+<div><a class="reference external" href="http://www.handshake.de/~dieter/weakdict.html">http://www.handshake.de/~dieter/weakdict.html</a></div></blockquote>
+<p>PyWeakReference by Alex Shindich:</p>
+<blockquote>
+<div><a class="reference external" href="http://sourceforge.net/projects/pyweakreference/">http://sourceforge.net/projects/pyweakreference/</a></div></blockquote>
+<p>Eric Tiedemann has a weak dictionary implementation:</p>
+<blockquote>
+<div><a class="reference external" href="http://www.hyperreal.org/~est/python/weak/">http://www.hyperreal.org/~est/python/weak/</a></div></blockquote>
+</div>
+<div class="section" id="weak-references-in-java">
+<h2><a class="toc-backref" href="#id11">Weak References in Java</a><a class="headerlink" href="#weak-references-in-java" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="http://java.sun.com/j2se/1.3/docs/api/java/lang/ref/package-summary.html">http://java.sun.com/j2se/1.3/docs/api/java/lang/ref/package-summary.html</a></p>
+<p>Java provides three forms of weak references, and one interesting
+helper class.  The three forms are called “weak”, “soft”, and
+“phantom” references.  The relevant classes are defined in the
+java.lang.ref package.</p>
+<p>For each of the reference types, there is an option to add the
+reference to a queue when it is invalidated by the memory
+allocator.  The primary purpose of this facility seems to be that
+it allows larger structures to be composed to incorporate
+weak-reference semantics without having to impose substantial
+additional locking requirements.  For instance, it would not be
+difficult to use this facility to create a “weak” hash table which
+removes keys and referents when a reference is no longer used
+elsewhere.  Using weak references for the objects without some
+sort of notification queue for invalidations leads to much more
+tedious implementation of the various operations required on hash
+tables.  This can be a performance bottleneck if deallocations of
+the stored objects are infrequent.</p>
+<p>Java’s “weak” references are most like Dianne Hackborn’s old vref
+proposal: a reference object refers to a single Python object,
+but does not own a reference to that object.  When that object is
+deallocated, the reference object is invalidated.  Users of the
+reference object can easily determine that the reference has been
+invalidated, or a NullObjectDereferenceError can be raised when
+an attempt is made to use the referred-to object.</p>
+<p>The “soft” references are similar, but are not invalidated as soon
+as all other references to the referred-to object have been
+released.  The “soft” reference does own a reference, but allows
+the memory allocator to free the referent if the memory is needed
+elsewhere.  It is not clear whether this means soft references are
+released before the <code class="docutils literal notranslate"><span class="pre">malloc()</span></code> implementation calls <code class="docutils literal notranslate"><span class="pre">sbrk()</span></code> or its
+equivalent, or if soft references are only cleared when <code class="docutils literal notranslate"><span class="pre">malloc()</span></code>
+returns <code class="docutils literal notranslate"><span class="pre">NULL</span></code>.</p>
+<p>“Phantom” references are a little different; unlike weak and soft
+references, the referent is not cleared when the reference is
+added to its queue.  When all phantom references for an object
+are dequeued, the object is cleared.  This can be used to keep an
+object alive until some additional cleanup is performed which
+needs to happen before the objects <code class="docutils literal notranslate"><span class="pre">.finalize()</span></code> method is called.</p>
+<p>Unlike the other two reference types, “phantom” references must be
+associated with an invalidation queue.</p>
+</div>
+<div class="section" id="appendix-dianne-hackborn-s-vref-proposal-1995">
+<h2><a class="toc-backref" href="#id12">Appendix – Dianne Hackborn’s vref proposal (1995)</a><a class="headerlink" href="#appendix-dianne-hackborn-s-vref-proposal-1995" title="Permalink to this headline">¶</a></h2>
+<p>[This has been indented and paragraphs reflowed, but there have be
+no content changes.  –Fred]</p>
+<div class="section" id="proposal-virtual-references">
+<h3><a class="toc-backref" href="#id13">Proposal: Virtual References</a><a class="headerlink" href="#proposal-virtual-references" title="Permalink to this headline">¶</a></h3>
+<p>In an attempt to partly address the recurring discussion
+concerning reference counting vs. garbage collection, I would like
+to propose an extension to Python which should help in the
+creation of “well structured” cyclic graphs.  In particular, it
+should allow at least trees with parent back-pointers and
+doubly-linked lists to be created without worry about cycles.</p>
+<p>The basic mechanism I’d like to propose is that of a “virtual
+reference,” or a “vref” from here on out.  A vref is essentially a
+handle on an object that does not increment the object’s reference
+count.  This means that holding a vref on an object will not keep
+the object from being destroyed.  This would allow the Python
+programmer, for example, to create the aforementioned tree
+structure tree structure, which is automatically destroyed when it
+is no longer in use – by making all of the parent back-references
+into vrefs, they no longer create reference cycles which keep the
+tree from being destroyed.</p>
+<p>In order to implement this mechanism, the Python core must ensure
+that no -real- pointers are ever left referencing objects that no
+longer exist.  The implementation I would like to propose involves
+two basic additions to the current Python system:</p>
+<ol class="arabic simple">
+<li>A new “vref” type, through which the Python programmer creates
+and manipulates virtual references.  Internally, it is
+basically a C-level Python object with a pointer to the Python
+object it is a reference to.  Unlike all other Python code,
+however, it does not change the reference count of this object.
+In addition, it includes two pointers to implement a
+doubly-linked list, which is used below.</li>
+<li>The addition of a new field to the basic Python object
+[<code class="docutils literal notranslate"><span class="pre">PyObject_Head</span></code> in object.h], which is either <code class="docutils literal notranslate"><span class="pre">NULL</span></code>, or points to
+the head of a list of all vref objects that reference it.  When
+a vref object attaches itself to another object, it adds itself
+to this linked list.  Then, if an object with any vrefs on it
+is deallocated, it may walk this list and ensure that all of
+the vrefs on it point to some safe value, e.g. Nothing.</li>
+</ol>
+<p>This implementation should hopefully have a minimal impact on the
+current Python core – when no vrefs exist, it should only add one
+pointer to all objects, and a check for a <code class="docutils literal notranslate"><span class="pre">NULL</span></code> pointer every time
+an object is deallocated.</p>
+<p>Back at the Python language level, I have considered two possible
+semantics for the vref object –</p>
+</div>
+<div class="section" id="pointer-semantics">
+<h3><a class="toc-backref" href="#id14">Pointer semantics</a><a class="headerlink" href="#pointer-semantics" title="Permalink to this headline">¶</a></h3>
+<p>In this model, a vref behaves essentially like a Python-level
+pointer; the Python program must explicitly dereference the vref
+to manipulate the actual object it references.</p>
+<p>An example vref module using this model could include the
+function “new”; When used as ‘MyVref = vref.new(MyObject)’, it
+returns a new vref object such that <code class="docutils literal notranslate"><span class="pre">MyVref.object</span> <span class="pre">==</span> <span class="pre">MyObject</span></code>.
+<code class="docutils literal notranslate"><span class="pre">MyVref.object</span></code> would then change to Nothing if
+<code class="docutils literal notranslate"><span class="pre">MyObject</span></code> is ever deallocated.</p>
+<p>For a concrete example, we may introduce some new C-style syntax:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">&amp;</span></code> – unary operator, creates a vref on an object, same as <code class="docutils literal notranslate"><span class="pre">vref.new()</span></code>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">*</span></code> – unary operator, dereference a vref, same as <code class="docutils literal notranslate"><span class="pre">VrefObject.object</span></code>.</li>
+</ul>
+<p>We can then define:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mf">1.</span>     <span class="nb">type</span><span class="p">(</span><span class="o">&amp;</span><span class="n">MyObject</span><span class="p">)</span> <span class="o">==</span> <span class="n">vref</span><span class="o">.</span><span class="n">VrefType</span>
+<span class="mf">2.</span>        <span class="o">*</span><span class="p">(</span><span class="o">&amp;</span><span class="n">MyObject</span><span class="p">)</span> <span class="o">==</span> <span class="n">MyObject</span>
+<span class="mf">3.</span> <span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="o">&amp;</span><span class="n">MyObject</span><span class="p">))</span><span class="o">.</span><span class="n">attr</span> <span class="o">==</span> <span class="n">MyObject</span><span class="o">.</span><span class="n">attr</span>
+<span class="mf">4.</span>          <span class="o">&amp;&amp;</span><span class="n">MyObject</span> <span class="o">==</span> <span class="n">Nothing</span>
+<span class="mf">5.</span>           <span class="o">*</span><span class="n">MyObject</span> <span class="o">-&gt;</span> <span class="n">exception</span>
+</pre></div>
+</div>
+<p>Rule #4 is subtle, but comes about because we have made a vref
+to (a vref with no real references).  Thus the outer vref is
+cleared to Nothing when the inner one inevitably disappears.</p>
+</div>
+<div class="section" id="proxy-semantics">
+<h3><a class="toc-backref" href="#id15">Proxy semantics</a><a class="headerlink" href="#proxy-semantics" title="Permalink to this headline">¶</a></h3>
+<p>In this model, the Python programmer manipulates vref objects
+just as if she were manipulating the object it is a reference
+of.  This is accomplished by implementing the vref so that all
+operations on it are redirected to its referenced object.  With
+this model, the dereference operator (*) no longer makes sense;
+instead, we have only the reference operator (&amp;), and define:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mf">1.</span>  <span class="nb">type</span><span class="p">(</span><span class="o">&amp;</span><span class="n">MyObject</span><span class="p">)</span> <span class="o">==</span> <span class="nb">type</span><span class="p">(</span><span class="n">MyObject</span><span class="p">)</span>
+<span class="mf">2.</span>        <span class="o">&amp;</span><span class="n">MyObject</span> <span class="o">==</span> <span class="n">MyObject</span>
+<span class="mf">3.</span> <span class="p">(</span><span class="o">&amp;</span><span class="n">MyObject</span><span class="p">)</span><span class="o">.</span><span class="n">attr</span> <span class="o">==</span> <span class="n">MyObject</span><span class="o">.</span><span class="n">attr</span>
+<span class="mf">4.</span>       <span class="o">&amp;&amp;</span><span class="n">MyObject</span> <span class="o">==</span> <span class="n">MyObject</span>
+</pre></div>
+</div>
+<p>Again, rule #4 is important – here, the outer vref is in fact a
+reference to the original object, and -not- the inner vref.
+This is because all operations applied to a vref actually apply
+to its object, so that creating a vref of a vref actually
+results in creating a vref of the latter’s object.</p>
+<p>The first, pointer semantics, has the advantage that it would be
+very easy to implement; the vref type is extremely simple,
+requiring at minimum a single attribute, object, and a function to
+create a reference.</p>
+<p>However, I really like the proxy semantics.  Not only does it put
+less of a burden on the Python programmer, but it allows you to do
+nice things like use a vref anywhere you would use the actual
+object.  Unfortunately, it would probably an extreme pain, if not
+practically impossible, to implement in the current Python
+implementation.  I do have some thoughts, though, on how to do
+this, if it seems interesting; one possibility is to introduce new
+type-checking functions which handle the vref.  This would
+hopefully older C modules which don’t expect vrefs to simply
+return a type error, until they can be fixed.</p>
+<p>Finally, there are some other additional capabilities that this
+system could provide.  One that seems particularly interesting to
+me involves allowing the Python programmer to add “destructor”
+function to a vref – this Python function would be called
+immediately prior to the referenced object being deallocated,
+allowing a Python program to invisibly attach itself to another
+object and watch for it to disappear.  This seems neat, though I
+haven’t actually come up with any practical uses for it, yet… :)</p>
+<p>– Dianne</p>
+</div>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id16">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0205.txt">https://github.com/python/peps/blob/master/pep-0205.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0205.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0204.html">PEP 0204</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0206.html">PEP 0206</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 205 – Weak References</a><ul>
+<li><a class="reference internal" href="#motivation">Motivation</a><ul>
+<li><a class="reference internal" href="#caches-weak-dictionaries">Caches (weak dictionaries)</a></li>
+<li><a class="reference internal" href="#circular-references">Circular references</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#aspects-of-the-solution-space">Aspects of the Solution Space</a><ul>
+<li><a class="reference internal" href="#invalidation">Invalidation</a></li>
+<li><a class="reference internal" href="#presentation">Presentation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#proposed-solution">Proposed Solution</a></li>
+<li><a class="reference internal" href="#implementation-strategy">Implementation Strategy</a></li>
+<li><a class="reference internal" href="#possible-applications">Possible Applications</a></li>
+<li><a class="reference internal" href="#previous-weak-reference-work-in-python">Previous Weak Reference Work in Python</a></li>
+<li><a class="reference internal" href="#weak-references-in-java">Weak References in Java</a></li>
+<li><a class="reference internal" href="#appendix-dianne-hackborn-s-vref-proposal-1995">Appendix – Dianne Hackborn’s vref proposal (1995)</a><ul>
+<li><a class="reference internal" href="#proposal-virtual-references">Proposal: Virtual References</a></li>
+<li><a class="reference internal" href="#pointer-semantics">Pointer semantics</a></li>
+<li><a class="reference internal" href="#proxy-semantics">Proxy semantics</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

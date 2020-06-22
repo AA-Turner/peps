@@ -1,0 +1,431 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 431 – Time zone support improvements &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 432 – Restructuring the CPython startup sequence" href="pep-0432.html" />
+    <link rel="prev" title="PEP 430 – Migrating to Python 3 as the default online documentation" href="pep-0430.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 431 – Time zone support improvements</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-431-time-zone-support-improvements">
+<h1 class="page-title">PEP 431 – Time zone support improvements<a class="headerlink" href="#pep-431-time-zone-support-improvements" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">431</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Time zone support improvements</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Lennart Regebro &lt;regebro&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even">Barry Warsaw &lt;barry&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd">Withdrawn</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even">Standards Track</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">11-Dec-2012</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">11-Dec-2012, 28-Dec-2012, 28-Jan-2013</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id2">Abstract</a></li>
+<li><a class="reference internal" href="#withdrawal" id="id3">Withdrawal</a></li>
+<li><a class="reference internal" href="#proposal" id="id4">Proposal</a><ul>
+<li><a class="reference internal" href="#concrete-time-zone-support" id="id5">Concrete time zone support</a></li>
+<li><a class="reference internal" href="#getting-the-local-time-zone" id="id6">Getting the local time zone</a></li>
+<li><a class="reference internal" href="#ambiguous-times" id="id7">Ambiguous times</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation-api" id="id8">Implementation API</a><ul>
+<li><a class="reference internal" href="#the-zoneinfo-database" id="id9">The zoneinfo database</a></li>
+<li><a class="reference internal" href="#changes-in-the-datetime-module" id="id10">Changes in the <code class="docutils literal notranslate"><span class="pre">datetime</span></code>-module</a><ul>
+<li><a class="reference internal" href="#new-class-dsttimezone" id="id11">New class <code class="docutils literal notranslate"><span class="pre">dsttimezone</span></code></a></li>
+<li><a class="reference internal" href="#new-function-zoneinfo-name-none-db-path-none" id="id12">New function <code class="docutils literal notranslate"><span class="pre">zoneinfo(name=None,</span> <span class="pre">db_path=None)</span></code></a></li>
+<li><a class="reference internal" href="#new-parameter-is-dst" id="id13">New parameter <code class="docutils literal notranslate"><span class="pre">is_dst</span></code></a></li>
+<li><a class="reference internal" href="#new-exceptions" id="id14">New exceptions</a></li>
+<li><a class="reference internal" href="#new-collections" id="id15">New collections</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#the-tzdata-update-package" id="id16">The <code class="docutils literal notranslate"><span class="pre">tzdata-update</span></code>-package</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#differences-from-the-pytz-api" id="id17">Differences from the <code class="docutils literal notranslate"><span class="pre">pytz</span></code> API</a></li>
+<li><a class="reference internal" href="#resources" id="id18">Resources</a></li>
+<li><a class="reference internal" href="#copyright" id="id19">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id2">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes the implementation of concrete time zone support in the
+Python standard library, and also improvements to the time zone API to deal
+with ambiguous time specifications during DST changes.</p>
+</div>
+<div class="section" id="withdrawal">
+<h2><a class="toc-backref" href="#id3">Withdrawal</a><a class="headerlink" href="#withdrawal" title="Permalink to this headline">¶</a></h2>
+<p>After lengthy discussion it has turned out that the things I thought was
+problem in datetime’s implementation are intentional. Those include
+completely ignoring DST transitions when making date time arithmetic.
+That makes the is_dst flags part of this PEP pointless, as they would
+have no useful function. <code class="docutils literal notranslate"><span class="pre">datetime</span></code> by design does not separate between
+ambiguous datetimes and will never do so.</p>
+<p>I therefore withdraw this PEP.</p>
+</div>
+<div class="section" id="proposal">
+<h2><a class="toc-backref" href="#id4">Proposal</a><a class="headerlink" href="#proposal" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="concrete-time-zone-support">
+<h3><a class="toc-backref" href="#id5">Concrete time zone support</a><a class="headerlink" href="#concrete-time-zone-support" title="Permalink to this headline">¶</a></h3>
+<p>The time zone support in Python has no concrete implementation in the
+standard library outside of a tzinfo baseclass that supports fixed offsets.
+To properly support time zones you need to include a database over all time
+zones, both current and historical, including daylight saving changes.
+But such information changes frequently, so even if we include the last
+information in a Python release, that information would be outdated just a
+few months later.</p>
+<p>Time zone support has therefore only been available through two third-party
+modules, <code class="docutils literal notranslate"><span class="pre">pytz</span></code> and <code class="docutils literal notranslate"><span class="pre">dateutil</span></code>, both who include and wrap the “zoneinfo”
+database. This database, also called “tz” or “The Olsen database”, is the
+de facto standard time zone database over time zones, and it is included in
+most Unix and Unix-like operating systems, including OS X.</p>
+<p>This gives us the opportunity to include the code that supports the zoneinfo
+data in the standard library, but by default use the operating system’s copy
+of the data, which typically will be kept updated by the updating mechanism
+of the operating system or distribution.</p>
+<p>For those who have an operating system that does not include the zoneinfo
+database, for example Windows, the Python source distribution will include a
+copy of the zoneinfo database, and a distribution containing the latest
+zoneinfo database will also be available at the Python Package Index, so it
+can be easily installed with the Python packaging tools such as
+<code class="docutils literal notranslate"><span class="pre">easy_install</span></code> or <code class="docutils literal notranslate"><span class="pre">pip</span></code>. This could also be done on Unices that are no
+longer receiving updates and therefore have an outdated database.</p>
+<p>With such a mechanism Python would have full time zone support in the
+standard library on any platform, and a simple package installation would
+provide an updated time zone database on those platforms where the zoneinfo
+database isn’t included, such as Windows, or on platforms where OS updates
+are no longer provided.</p>
+<p>The time zone support will be implemented by making the <code class="docutils literal notranslate"><span class="pre">datetime</span></code> module
+into a package, and adding time zone support to <code class="docutils literal notranslate"><span class="pre">datetime</span></code> based on Stuart
+Bishop’s <code class="docutils literal notranslate"><span class="pre">pytz</span></code> module.</p>
+</div>
+<div class="section" id="getting-the-local-time-zone">
+<h3><a class="toc-backref" href="#id6">Getting the local time zone</a><a class="headerlink" href="#getting-the-local-time-zone" title="Permalink to this headline">¶</a></h3>
+<p>On Unix there is no standard way of finding the name of the time zone that is
+being used. All the information that is available is the time zone
+abbreviations, such as <code class="docutils literal notranslate"><span class="pre">EST</span></code> and <code class="docutils literal notranslate"><span class="pre">PDT</span></code>, but many of those abbreviations
+are ambiguous and therefore you can’t rely on them to figure out which time
+zone you are located in.</p>
+<p>There is however a standard for finding the compiled time zone information
+since it’s located in <code class="docutils literal notranslate"><span class="pre">/etc/localtime</span></code>. Therefore, it is possible to create
+a local time zone object with the correct time zone information even though
+you don’t know the name of the time zone. A function in <code class="docutils literal notranslate"><span class="pre">datetime</span></code> should
+be provided to return the local time zone.</p>
+<p>The support for this will be made by integrating Lennart Regebro’s
+<code class="docutils literal notranslate"><span class="pre">tzlocal</span></code> module into the new <code class="docutils literal notranslate"><span class="pre">datetime</span></code> module.</p>
+<p>For Windows it will look up the local Windows time zone name, and use a
+mapping between Windows time zone names and zoneinfo time zone names provided
+by the Unicode consortium to convert that to a zoneinfo time zone.</p>
+<p>The mapping should be updated before each major or bugfix release, scripts
+for doing so will be provided in the <code class="docutils literal notranslate"><span class="pre">Tools/</span></code> directory.</p>
+</div>
+<div class="section" id="ambiguous-times">
+<h3><a class="toc-backref" href="#id7">Ambiguous times</a><a class="headerlink" href="#ambiguous-times" title="Permalink to this headline">¶</a></h3>
+<p>When changing over from daylight savings time (DST) the clock is turned back
+one hour. This means that the times during that hour happens twice, once
+with DST and then once without DST. Similarly, when changing to daylight
+savings time, one hour goes missing.</p>
+<p>The current time zone API can not differentiate between the two ambiguous
+times during a change from DST. For example, in Stockholm the time of
+2012-11-28 02:00:00 happens twice, both at UTC 2012-11-28 00:00:00 and also
+at 2012-11-28 01:00:00.</p>
+<p>The current time zone API can not disambiguate this and therefore it’s
+unclear which time should be returned:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># This could be either 00:00 or 01:00 UTC:</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dt</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2012</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">28</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">zoneinfo</span><span class="p">(</span><span class="s1">&#39;Europe/Stockholm&#39;</span><span class="p">))</span>
+<span class="c1"># But we can not specify which:</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dt</span><span class="o">.</span><span class="n">astimezone</span><span class="p">(</span><span class="n">zoneinfo</span><span class="p">(</span><span class="s1">&#39;UTC&#39;</span><span class="p">))</span>
+<span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2012</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">28</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=&lt;</span><span class="n">UTC</span><span class="o">&gt;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">pytz</span></code> solved this problem by adding <code class="docutils literal notranslate"><span class="pre">is_dst</span></code> parameters to several
+methods of the tzinfo objects to make it possible to disambiguate times when
+this is desired.</p>
+<p>This PEP proposes to add these <code class="docutils literal notranslate"><span class="pre">is_dst</span></code> parameters to the relevant methods
+of the <code class="docutils literal notranslate"><span class="pre">datetime</span></code> API, and therefore add this functionality directly to
+<code class="docutils literal notranslate"><span class="pre">datetime</span></code>. This is likely the hardest part of this PEP as this involves
+updating the C version of the <code class="docutils literal notranslate"><span class="pre">datetime</span></code> library with this functionality,
+as this involved writing new code, and not just reorganizing existing
+external libraries.</p>
+</div>
+</div>
+<div class="section" id="implementation-api">
+<h2><a class="toc-backref" href="#id8">Implementation API</a><a class="headerlink" href="#implementation-api" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="the-zoneinfo-database">
+<h3><a class="toc-backref" href="#id9">The zoneinfo database</a><a class="headerlink" href="#the-zoneinfo-database" title="Permalink to this headline">¶</a></h3>
+<p>The latest version of the zoneinfo database should exist in the
+<code class="docutils literal notranslate"><span class="pre">Lib/tzdata</span></code> directory of the Python source control system. This copy of
+the database should be updated before every Python feature and bug-fix
+release, but not for releases of Python versions that are in
+security-fix-only-mode.</p>
+<p>Scripts to update the database will be provided in <code class="docutils literal notranslate"><span class="pre">Tools/</span></code>, and the
+release instructions will be updated to include this update.</p>
+<p>New configure options <code class="docutils literal notranslate"><span class="pre">--enable-internal-timezone-database</span></code> and
+<code class="docutils literal notranslate"><span class="pre">--disable-internal-timezone-database</span></code> will be implemented to enable and
+disable the installation of this database when installing from source. A
+source install will default to installing them.</p>
+<p>Binary installers for systems that have a system-provided zoneinfo database
+may skip installing the included database since it would never be used for
+these platforms. For other platforms, for example Windows, binary installers
+must install the included database.</p>
+</div>
+<div class="section" id="changes-in-the-datetime-module">
+<h3><a class="toc-backref" href="#id10">Changes in the <code class="docutils literal notranslate"><span class="pre">datetime</span></code>-module</a><a class="headerlink" href="#changes-in-the-datetime-module" title="Permalink to this headline">¶</a></h3>
+<p>The public API of the new time zone support contains one new class, one new
+function, one new exception and four new collections. In addition to this, several
+methods on the datetime object gets a new <code class="docutils literal notranslate"><span class="pre">is_dst</span></code> parameter.</p>
+<div class="section" id="new-class-dsttimezone">
+<h4><a class="toc-backref" href="#id11">New class <code class="docutils literal notranslate"><span class="pre">dsttimezone</span></code></a><a class="headerlink" href="#new-class-dsttimezone" title="Permalink to this headline">¶</a></h4>
+<p>This class provides a concrete implementation of the <code class="docutils literal notranslate"><span class="pre">tzinfo</span></code> base
+class that implements DST support.</p>
+</div>
+<div class="section" id="new-function-zoneinfo-name-none-db-path-none">
+<h4><a class="toc-backref" href="#id12">New function <code class="docutils literal notranslate"><span class="pre">zoneinfo(name=None,</span> <span class="pre">db_path=None)</span></code></a><a class="headerlink" href="#new-function-zoneinfo-name-none-db-path-none" title="Permalink to this headline">¶</a></h4>
+<p>This function takes a name string that must be a string specifying a
+valid zoneinfo time zone, i.e. “US/Eastern”, “Europe/Warsaw” or “Etc/GMT”.
+If not given, the local time zone will be looked up. If an invalid zone name
+is given, or the local time zone can not be retrieved, the function raises
+<cite>UnknownTimeZoneError</cite>.</p>
+<p>The function also takes an optional path to the location of the zoneinfo
+database which should be used. If not specified, the function will look for
+databases in the following order:</p>
+<ol class="arabic simple">
+<li>Check if the <cite>tzdata-update</cite> module is installed, and then use that
+database.</li>
+<li>Use the database in <code class="docutils literal notranslate"><span class="pre">/usr/share/zoneinfo</span></code>, if it exists.</li>
+<li>Use the Python-provided database in <code class="docutils literal notranslate"><span class="pre">Lib/tzdata</span></code>.</li>
+</ol>
+<p>If no database is found an <code class="docutils literal notranslate"><span class="pre">UnknownTimeZoneError</span></code> or subclass thereof will
+be raised with a message explaining that no zoneinfo database can be found,
+but that you can install one with the <code class="docutils literal notranslate"><span class="pre">tzdata-update</span></code> package.</p>
+</div>
+<div class="section" id="new-parameter-is-dst">
+<h4><a class="toc-backref" href="#id13">New parameter <code class="docutils literal notranslate"><span class="pre">is_dst</span></code></a><a class="headerlink" href="#new-parameter-is-dst" title="Permalink to this headline">¶</a></h4>
+<p>A new <code class="docutils literal notranslate"><span class="pre">is_dst</span></code> parameter is added to several methods to handle time
+ambiguity during DST changeovers.</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">tzinfo.utcoffset(dt,</span> <span class="pre">is_dst=False)</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">tzinfo.dst(dt,</span> <span class="pre">is_dst=False)</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">tzinfo.tzname(dt,</span> <span class="pre">is_dst=False)</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">datetime.astimezone(tz,</span> <span class="pre">is_dst=False)</span></code></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">is_dst</span></code> parameter can be <code class="docutils literal notranslate"><span class="pre">False</span></code> (default), <code class="docutils literal notranslate"><span class="pre">True</span></code>, or <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">False</span></code> will specify that the given datetime should be interpreted as not
+happening during daylight savings time, i.e. that the time specified is after
+the change from DST. This is default to preserve existing behavior.</p>
+<p><code class="docutils literal notranslate"><span class="pre">True</span></code> will specify that the given datetime should be interpreted as happening
+during daylight savings time, i.e. that the time specified is before the change
+from DST.</p>
+<p><code class="docutils literal notranslate"><span class="pre">None</span></code> will raise an <code class="docutils literal notranslate"><span class="pre">AmbiguousTimeError</span></code> exception if the time specified
+was during a DST change over. It will also raise a <code class="docutils literal notranslate"><span class="pre">NonExistentTimeError</span></code>
+if a time is specified during the “missing time” in a change to DST.</p>
+</div>
+<div class="section" id="new-exceptions">
+<h4><a class="toc-backref" href="#id14">New exceptions</a><a class="headerlink" href="#new-exceptions" title="Permalink to this headline">¶</a></h4>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">UnknownTimeZoneError</span></code></p>
+<p>This exception is a subclass of KeyError and raised when giving a time
+zone specification that can’t be found:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">datetime</span><span class="o">.</span><span class="n">zoneinfo</span><span class="p">(</span><span class="s1">&#39;Europe/New_York&#39;</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+<span class="c">...</span>
+<span class="gr">UnknownTimeZoneError</span>: <span class="n">There is no time zone called &#39;Europe/New_York&#39;</span>
+</pre></div>
+</div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">InvalidTimeError</span></code></p>
+<p>This exception serves as a base for <code class="docutils literal notranslate"><span class="pre">AmbiguousTimeError</span></code> and
+<code class="docutils literal notranslate"><span class="pre">NonExistentTimeError</span></code>, to enable you to trap these two separately. It
+will subclass from ValueError, so that you can catch these errors together
+with inputs like the 29th of February 2011.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">AmbiguousTimeError</span></code></p>
+<p>This exception is raised when giving a datetime specification that is ambiguous
+while setting <code class="docutils literal notranslate"><span class="pre">is_dst</span></code> to None:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">datetime</span><span class="p">(</span><span class="mi">2012</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">28</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">zoneinfo</span><span class="p">(</span><span class="s1">&#39;Europe/Stockholm&#39;</span><span class="p">),</span> <span class="n">is_dst</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gt">Traceback (most recent call last):</span>
+<span class="c">...</span>
+<span class="gr">AmbiguousTimeError</span>: <span class="n">2012-10-28 02:00:00 is ambiguous in time zone Europe/Stockholm</span>
+</pre></div>
+</div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">NonExistentTimeError</span></code></p>
+<p>This exception is raised when giving a datetime specification for a time that due to
+daylight saving does not exist, while setting <code class="docutils literal notranslate"><span class="pre">is_dst</span></code> to None:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">datetime</span><span class="p">(</span><span class="mi">2012</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">zoneinfo</span><span class="p">(</span><span class="s1">&#39;Europe/Stockholm&#39;</span><span class="p">),</span> <span class="n">is_dst</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gt">Traceback (most recent call last):</span>
+<span class="c">...</span>
+<span class="gr">NonExistentTimeError</span>: <span class="n">2012-03-25 02:00:00 does not exist in time zone Europe/Stockholm</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</div>
+<div class="section" id="new-collections">
+<h4><a class="toc-backref" href="#id15">New collections</a><a class="headerlink" href="#new-collections" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">all_timezones</span></code> is the exhaustive list of the time zone names that can
+be used, listed alphabetically.</li>
+<li><code class="docutils literal notranslate"><span class="pre">common_timezones</span></code> is a list of useful, current time zones, listed
+alphabetically.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="the-tzdata-update-package">
+<h3><a class="toc-backref" href="#id16">The <code class="docutils literal notranslate"><span class="pre">tzdata-update</span></code>-package</a><a class="headerlink" href="#the-tzdata-update-package" title="Permalink to this headline">¶</a></h3>
+<p>The zoneinfo database will be packaged for easy installation with
+<code class="docutils literal notranslate"><span class="pre">easy_install</span></code>/<code class="docutils literal notranslate"><span class="pre">pip</span></code>/<code class="docutils literal notranslate"><span class="pre">buildout</span></code>. This package will not install any
+Python code, and will not contain any Python code except that which is needed
+for installation.</p>
+<p>It will be kept updated with the same tools as the internal database, but
+released whenever the <code class="docutils literal notranslate"><span class="pre">zoneinfo</span></code>-database is updated, and use the same
+version schema.</p>
+</div>
+</div>
+<div class="section" id="differences-from-the-pytz-api">
+<h2><a class="toc-backref" href="#id17">Differences from the <code class="docutils literal notranslate"><span class="pre">pytz</span></code> API</a><a class="headerlink" href="#differences-from-the-pytz-api" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">pytz</span></code> has the functions <code class="docutils literal notranslate"><span class="pre">localize()</span></code> and <code class="docutils literal notranslate"><span class="pre">normalize()</span></code> to work
+around that <code class="docutils literal notranslate"><span class="pre">tzinfo</span></code> doesn’t have is_dst. When <code class="docutils literal notranslate"><span class="pre">is_dst</span></code> is
+implemented directly in <code class="docutils literal notranslate"><span class="pre">datetime.tzinfo</span></code> they are no longer needed.</li>
+<li>The <code class="docutils literal notranslate"><span class="pre">timezone()</span></code> function is called <code class="docutils literal notranslate"><span class="pre">zoneinfo()</span></code> to avoid clashing with
+the <code class="docutils literal notranslate"><span class="pre">timezone</span></code> class introduced in Python 3.2.</li>
+<li><code class="docutils literal notranslate"><span class="pre">zoneinfo()</span></code> will return the local time zone if called without arguments.</li>
+<li>The class <code class="docutils literal notranslate"><span class="pre">pytz.StaticTzInfo</span></code> is there to provide the <code class="docutils literal notranslate"><span class="pre">is_dst</span></code> support for static
+time zones. When <code class="docutils literal notranslate"><span class="pre">is_dst</span></code> support is included in <code class="docutils literal notranslate"><span class="pre">datetime.tzinfo</span></code> it is no longer needed.</li>
+<li><code class="docutils literal notranslate"><span class="pre">InvalidTimeError</span></code> subclasses from <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>.</li>
+</ul>
+</div>
+<div class="section" id="resources">
+<h2><a class="toc-backref" href="#id18">Resources</a><a class="headerlink" href="#resources" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference external" href="http://pytz.sourceforge.net/">http://pytz.sourceforge.net/</a></li>
+<li><a class="reference external" href="http://pypi.python.org/pypi/tzlocal">http://pypi.python.org/pypi/tzlocal</a></li>
+<li><a class="reference external" href="http://pypi.python.org/pypi/python-dateutil">http://pypi.python.org/pypi/python-dateutil</a></li>
+<li><a class="reference external" href="http://unicode.org/cldr/data/common/supplemental/windowsZones.xml">http://unicode.org/cldr/data/common/supplemental/windowsZones.xml</a></li>
+</ul>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id19">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0431.txt">https://github.com/python/peps/blob/master/pep-0431.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0431.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0430.html">PEP 0430</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0432.html">PEP 0432</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 431 – Time zone support improvements</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#withdrawal">Withdrawal</a></li>
+<li><a class="reference internal" href="#proposal">Proposal</a><ul>
+<li><a class="reference internal" href="#concrete-time-zone-support">Concrete time zone support</a></li>
+<li><a class="reference internal" href="#getting-the-local-time-zone">Getting the local time zone</a></li>
+<li><a class="reference internal" href="#ambiguous-times">Ambiguous times</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation-api">Implementation API</a><ul>
+<li><a class="reference internal" href="#the-zoneinfo-database">The zoneinfo database</a></li>
+<li><a class="reference internal" href="#changes-in-the-datetime-module">Changes in the <code class="docutils literal notranslate"><span class="pre">datetime</span></code>-module</a><ul>
+<li><a class="reference internal" href="#new-class-dsttimezone">New class <code class="docutils literal notranslate"><span class="pre">dsttimezone</span></code></a></li>
+<li><a class="reference internal" href="#new-function-zoneinfo-name-none-db-path-none">New function <code class="docutils literal notranslate"><span class="pre">zoneinfo(name=None,</span> <span class="pre">db_path=None)</span></code></a></li>
+<li><a class="reference internal" href="#new-parameter-is-dst">New parameter <code class="docutils literal notranslate"><span class="pre">is_dst</span></code></a></li>
+<li><a class="reference internal" href="#new-exceptions">New exceptions</a></li>
+<li><a class="reference internal" href="#new-collections">New collections</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#the-tzdata-update-package">The <code class="docutils literal notranslate"><span class="pre">tzdata-update</span></code>-package</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#differences-from-the-pytz-api">Differences from the <code class="docutils literal notranslate"><span class="pre">pytz</span></code> API</a></li>
+<li><a class="reference internal" href="#resources">Resources</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

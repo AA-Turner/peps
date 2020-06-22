@@ -1,0 +1,203 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 233 – Python Online Help &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 234 – Iterators" href="pep-0234.html" />
+    <link rel="prev" title="PEP 232 – Function Attributes" href="pep-0232.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 233 – Python Online Help</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-233-python-online-help">
+<h1 class="page-title">PEP 233 – Python Online Help<a class="headerlink" href="#pep-233-python-online-help" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">233</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Python Online Help</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">paul&#32;&#97;t&#32;prescod.net (Paul Prescod)</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Deferred</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">11-Dec-2000</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.1</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id2">Abstract</a></li>
+<li><a class="reference internal" href="#interactive-use" id="id3">Interactive use</a></li>
+<li><a class="reference internal" href="#implementation" id="id4">Implementation</a></li>
+<li><a class="reference internal" href="#built-in-topics" id="id5">Built-in Topics</a></li>
+<li><a class="reference internal" href="#security-issues" id="id6">Security Issues</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id2">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP describes a command-line driven online help facility for
+Python.  The facility should be able to build on existing
+documentation facilities such as the Python documentation and
+docstrings.  It should also be extensible for new types and
+modules.</p>
+</div>
+<div class="section" id="interactive-use">
+<h2><a class="toc-backref" href="#id3">Interactive use</a><a class="headerlink" href="#interactive-use" title="Permalink to this headline">¶</a></h2>
+<p>Simply typing <code class="docutils literal notranslate"><span class="pre">help</span></code> describes the help function (through <code class="docutils literal notranslate"><span class="pre">repr()</span></code>
+overloading).</p>
+<p><code class="docutils literal notranslate"><span class="pre">help</span></code> can also be used as a function.</p>
+<p>The function takes the following forms of input:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">help(</span> <span class="pre">&quot;string&quot;</span> <span class="pre">)</span></code> – built-in topic or global</li>
+<li><code class="docutils literal notranslate"><span class="pre">help(</span> <span class="pre">&lt;ob&gt;</span> <span class="pre">)</span></code> – docstring from object or type</li>
+<li><code class="docutils literal notranslate"><span class="pre">help(</span> <span class="pre">&quot;doc:filename&quot;</span> <span class="pre">)</span></code> – filename from Python documentation</li>
+</ul>
+<p>If you ask for a global, it can be a fully-qualified name, such as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">help</span><span class="p">(</span><span class="s2">&quot;xml.dom&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>You can also use the facility from a command-line:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">--</span><span class="n">help</span> <span class="k">if</span>
+</pre></div>
+</div>
+<p>In either situation, the output does paging similar to the <code class="docutils literal notranslate"><span class="pre">more</span></code>
+command.</p>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id4">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>The help function is implemented in an <code class="docutils literal notranslate"><span class="pre">onlinehelp</span></code> module which is
+demand-loaded.</p>
+<p>There should be options for fetching help information from
+environments other than the command line through the <code class="docutils literal notranslate"><span class="pre">onlinehelp</span></code>
+module:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">onlinehelp</span><span class="o">.</span><span class="n">gethelp</span><span class="p">(</span><span class="n">object_or_string</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">string</span>
+</pre></div>
+</div>
+<p>It should also be possible to override the help display function
+by assigning to <code class="docutils literal notranslate"><span class="pre">onlinehelp.displayhelp(object_or_string)</span></code>.</p>
+<p>The module should be able to extract module information from
+either the HTML or LaTeX versions of the Python documentation.
+Links should be accommodated in a “lynx-like” manner.</p>
+<p>Over time, it should also be able to recognize when docstrings are
+in “special” syntaxes like structured text, HTML and LaTeX and
+decode them appropriately.</p>
+<p>A prototype implementation is available with the Python source
+distribution as <code class="docutils literal notranslate"><span class="pre">nondist/sandbox/doctools/onlinehelp.py</span></code>.</p>
+</div>
+<div class="section" id="built-in-topics">
+<h2><a class="toc-backref" href="#id5">Built-in Topics</a><a class="headerlink" href="#built-in-topics" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">help(</span> <span class="pre">&quot;intro&quot;</span> <span class="pre">)</span></code> – What is Python? Read this first!</li>
+<li><code class="docutils literal notranslate"><span class="pre">help(</span> <span class="pre">&quot;keywords&quot;</span> <span class="pre">)</span></code> – What are the keywords?</li>
+<li><code class="docutils literal notranslate"><span class="pre">help(</span> <span class="pre">&quot;syntax&quot;</span> <span class="pre">)</span></code> – What is the overall syntax?</li>
+<li><code class="docutils literal notranslate"><span class="pre">help(</span> <span class="pre">&quot;operators&quot;</span> <span class="pre">)</span></code> – What operators are available?</li>
+<li><code class="docutils literal notranslate"><span class="pre">help(</span> <span class="pre">&quot;builtins&quot;</span> <span class="pre">)</span></code> – What functions, types, etc. are built-in?</li>
+<li><code class="docutils literal notranslate"><span class="pre">help(</span> <span class="pre">&quot;modules&quot;</span> <span class="pre">)</span></code> – What modules are in the standard library?</li>
+<li><code class="docutils literal notranslate"><span class="pre">help(</span> <span class="pre">&quot;copyright&quot;</span> <span class="pre">)</span></code> – Who owns Python?</li>
+<li><code class="docutils literal notranslate"><span class="pre">help(</span> <span class="pre">&quot;moreinfo&quot;</span> <span class="pre">)</span></code> – Where is there more information?</li>
+<li><code class="docutils literal notranslate"><span class="pre">help(</span> <span class="pre">&quot;changes&quot;</span> <span class="pre">)</span></code> – What changed in Python 2.0?</li>
+<li><code class="docutils literal notranslate"><span class="pre">help(</span> <span class="pre">&quot;extensions&quot;</span> <span class="pre">)</span></code> – What extensions are installed?</li>
+<li><code class="docutils literal notranslate"><span class="pre">help(</span> <span class="pre">&quot;faq&quot;</span> <span class="pre">)</span></code> – What questions are frequently asked?</li>
+<li><code class="docutils literal notranslate"><span class="pre">help(</span> <span class="pre">&quot;ack&quot;</span> <span class="pre">)</span></code> – Who has done work on Python lately?</li>
+</ul>
+</div>
+<div class="section" id="security-issues">
+<h2><a class="toc-backref" href="#id6">Security Issues</a><a class="headerlink" href="#security-issues" title="Permalink to this headline">¶</a></h2>
+<p>This module will attempt to import modules with the same names as
+requested topics.  Don’t use the modules if you are not confident
+that everything in your <code class="docutils literal notranslate"><span class="pre">PYTHONPATH</span></code> is from a trusted source.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0233.txt">https://github.com/python/peps/blob/master/pep-0233.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0233.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0232.html">PEP 0232</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0234.html">PEP 0234</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 233 – Python Online Help</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#interactive-use">Interactive use</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#built-in-topics">Built-in Topics</a></li>
+<li><a class="reference internal" href="#security-issues">Security Issues</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

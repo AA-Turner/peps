@@ -1,0 +1,633 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 255 – Simple Generators &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 256 – Docstring Processing System Framework" href="pep-0256.html" />
+    <link rel="prev" title="PEP 254 – Making Classes Look More Like Types" href="pep-0254.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 255 – Simple Generators</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-255-simple-generators">
+<h1 class="page-title">PEP 255 – Simple Generators<a class="headerlink" href="#pep-255-simple-generators" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">255</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Simple Generators</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">nas&#32;&#97;t&#32;arctrix.com (Neil Schemenauer),
+tim.peters&#32;&#97;t&#32;gmail.com (Tim Peters),
+magnus&#32;&#97;t&#32;hetland.org (Magnus Lie Hetland)</dd>
+<dt class="field-even">Discussions-To</dt>
+<dd class="field-even"><a class="reference external" href="mailto:python-iterators&#37;&#52;&#48;lists&#46;sourceforge&#46;net?subject=PEP%20255">python-iterators&#32;&#97;t&#32;lists.sourceforge.net</a></dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd">Final</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even">Standards Track</dd>
+<dt class="field-odd">Requires</dt>
+<dd class="field-odd"><a class="reference external" href="./pep-0234.html">234</a></dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">18-May-2001</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.2</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">14-Jun-2001, 23-Jun-2001</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id16">Abstract</a></li>
+<li><a class="reference internal" href="#motivation" id="id17">Motivation</a></li>
+<li><a class="reference internal" href="#specification-yield" id="id18">Specification:  Yield</a></li>
+<li><a class="reference internal" href="#specification-return" id="id19">Specification:  Return</a></li>
+<li><a class="reference internal" href="#specification-generators-and-exception-propagation" id="id20">Specification:  Generators and Exception Propagation</a></li>
+<li><a class="reference internal" href="#specification-try-except-finally" id="id21">Specification:  Try/Except/Finally</a></li>
+<li><a class="reference internal" href="#example" id="id22">Example</a></li>
+<li><a class="reference internal" href="#q-a" id="id23">Q &amp; A</a><ul>
+<li><a class="reference internal" href="#why-not-a-new-keyword-instead-of-reusing-def" id="id24">Why not a new keyword instead of reusing <code class="docutils literal notranslate"><span class="pre">def</span></code>?</a></li>
+<li><a class="reference internal" href="#why-a-new-keyword-for-yield-why-not-a-builtin-function-instead" id="id25">Why a new keyword for <code class="docutils literal notranslate"><span class="pre">yield</span></code>?  Why not a builtin function instead?</a></li>
+<li><a class="reference internal" href="#then-why-not-some-other-special-syntax-without-a-new-keyword" id="id26">Then why not some other special syntax without a new keyword?</a></li>
+<li><a class="reference internal" href="#why-allow-return-at-all-why-not-force-termination-to-be-spelled-raise-stopiteration" id="id27">Why allow <code class="docutils literal notranslate"><span class="pre">return</span></code> at all?  Why not force termination to be spelled <code class="docutils literal notranslate"><span class="pre">raise</span> <span class="pre">StopIteration</span></code>?</a></li>
+<li><a class="reference internal" href="#then-why-not-allow-an-expression-on-return-too" id="id28">Then why not allow an expression on <code class="docutils literal notranslate"><span class="pre">return</span></code> too?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#bdfl-pronouncements" id="id29">BDFL Pronouncements</a><ul>
+<li><a class="reference internal" href="#issue" id="id30">Issue</a></li>
+<li><a class="reference internal" href="#con" id="id31">Con</a></li>
+<li><a class="reference internal" href="#pro" id="id32">Pro</a></li>
+<li><a class="reference internal" href="#bdfl" id="id33">BDFL</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#reference-implementation" id="id34">Reference Implementation</a></li>
+<li><a class="reference internal" href="#footnotes-and-references" id="id35">Footnotes and References</a></li>
+<li><a class="reference internal" href="#copyright" id="id36">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id16">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP introduces the concept of generators to Python, as well as a new
+statement used in conjunction with them, the <code class="docutils literal notranslate"><span class="pre">yield</span></code> statement.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id17">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>When a producer function has a hard enough job that it requires maintaining
+state between values produced, most programming languages offer no pleasant and
+efficient solution beyond adding a callback function to the producer’s argument
+list, to be called with each value produced.</p>
+<p>For example, <code class="docutils literal notranslate"><span class="pre">tokenize.py</span></code> in the standard library takes this approach: the
+caller must pass a <em>tokeneater</em> function to <code class="docutils literal notranslate"><span class="pre">tokenize()</span></code>, called whenever
+<code class="docutils literal notranslate"><span class="pre">tokenize()</span></code> finds the next token.  This allows tokenize to be coded in a
+natural way, but programs calling tokenize are typically convoluted by the need
+to remember between callbacks which token(s) were seen last.  The <em>tokeneater</em>
+function in <code class="docutils literal notranslate"><span class="pre">tabnanny.py</span></code> is a good example of that, maintaining a state
+machine in global variables, to remember across callbacks what it has already
+seen and what it hopes to see next.  This was difficult to get working
+correctly, and is still difficult for people to understand.  Unfortunately,
+that’s typical of this approach.</p>
+<p>An alternative would have been for tokenize to produce an entire parse of the
+Python program at once, in a large list.  Then tokenize clients could be
+written in a natural way, using local variables and local control flow (such as
+loops and nested if statements) to keep track of their state.  But this isn’t
+practical:  programs can be very large, so no a priori bound can be placed on
+the memory needed to materialize the whole parse; and some tokenize clients
+only want to see whether something specific appears early in the program (e.g.,
+a future statement, or, as is done in IDLE, just the first indented statement),
+and then parsing the whole program first is a severe waste of time.</p>
+<p>Another alternative would be to make tokenize an iterator [1], delivering the
+next token whenever its <code class="docutils literal notranslate"><span class="pre">.next()</span></code> method is invoked.  This is pleasant for the
+caller in the same way a large list of results would be, but without the memory
+and “what if I want to get out early?” drawbacks.  However, this shifts the
+burden on tokenize to remember <em>its</em> state between <code class="docutils literal notranslate"><span class="pre">.next()</span></code> invocations, and
+the reader need only glance at <code class="docutils literal notranslate"><span class="pre">tokenize.tokenize_loop()</span></code> to realize what a
+horrid chore that would be.  Or picture a recursive algorithm for producing the
+nodes of a general tree structure:  to cast that into an iterator framework
+requires removing the recursion manually and maintaining the state of the
+traversal by hand.</p>
+<p>A fourth option is to run the producer and consumer in separate threads.  This
+allows both to maintain their states in natural ways, and so is pleasant for
+both.  Indeed, Demo/threads/Generator.py in the Python source distribution
+provides a usable synchronized-communication class for doing that in a general
+way.  This doesn’t work on platforms without threads, though, and is very slow
+on platforms that do (compared to what is achievable without threads).</p>
+<p>A final option is to use the Stackless [2] [3] variant implementation of Python
+instead, which supports lightweight coroutines.  This has much the same
+programmatic benefits as the thread option, but is much more efficient.
+However, Stackless is a controversial rethinking of the Python core, and it may
+not be possible for Jython to implement the same semantics.  This PEP isn’t the
+place to debate that, so suffice it to say here that generators provide a
+useful subset of Stackless functionality in a way that fits easily into the
+current CPython implementation, and is believed to be relatively
+straightforward for other Python implementations.</p>
+<p>That exhausts the current alternatives.  Some other high-level languages
+provide pleasant solutions, notably iterators in Sather [4], which were
+inspired by iterators in CLU; and generators in Icon [5], a novel language
+where every expression <em>is a generator</em>.  There are differences among these,
+but the basic idea is the same:  provide a kind of function that can return an
+intermediate result (“the next value”) to its caller, but maintaining the
+function’s local state so that the function can be resumed again right where it
+left off.  A very simple example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">fib</span><span class="p">():</span>
+    <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span>
+    <span class="k">while</span> <span class="mi">1</span><span class="p">:</span>
+       <span class="k">yield</span> <span class="n">b</span>
+       <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">b</span><span class="p">,</span> <span class="n">a</span><span class="o">+</span><span class="n">b</span>
+</pre></div>
+</div>
+<p>When <code class="docutils literal notranslate"><span class="pre">fib()</span></code> is first invoked, it sets <em>a</em> to 0 and <em>b</em> to 1, then yields <em>b</em>
+back to its caller.  The caller sees 1.  When <code class="docutils literal notranslate"><span class="pre">fib</span></code> is resumed, from its
+point of view the <code class="docutils literal notranslate"><span class="pre">yield</span></code> statement is really the same as, say, a <code class="docutils literal notranslate"><span class="pre">print</span></code>
+statement:  <code class="docutils literal notranslate"><span class="pre">fib</span></code> continues after the yield with all local state intact. <em>a</em>
+and <em>b</em> then become 1 and 1, and <code class="docutils literal notranslate"><span class="pre">fib</span></code> loops back to the <code class="docutils literal notranslate"><span class="pre">yield</span></code>, yielding
+1 to its invoker.  And so on.  From <code class="docutils literal notranslate"><span class="pre">fib</span></code>’s point of view it’s just
+delivering a sequence of results, as if via callback.  But from its caller’s
+point of view, the <code class="docutils literal notranslate"><span class="pre">fib</span></code> invocation is an iterable object that can be resumed
+at will.  As in the thread approach, this allows both sides to be coded in the
+most natural ways; but unlike the thread approach, this can be done efficiently
+and on all platforms.  Indeed, resuming a generator should be no more expensive
+than a function call.</p>
+<p>The same kind of approach applies to many producer/consumer functions. For
+example, <code class="docutils literal notranslate"><span class="pre">tokenize.py</span></code> could yield the next token instead of invoking a
+callback function with it as argument, and tokenize clients could iterate over
+the tokens in a natural way:  a Python generator is a kind of Python
+iterator <a class="footnote-reference brackets" href="#id7" id="id1">1</a>, but of an especially powerful kind.</p>
+</div>
+<div class="section" id="specification-yield">
+<h2><a class="toc-backref" href="#id18">Specification:  Yield</a><a class="headerlink" href="#specification-yield" title="Permalink to this headline">¶</a></h2>
+<p>A new statement is introduced:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">yield_stmt</span><span class="p">:</span>    <span class="s2">&quot;yield&quot;</span> <span class="n">expression_list</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">yield</span></code> is a new keyword, so a <code class="docutils literal notranslate"><span class="pre">future</span></code> statement <a class="footnote-reference brackets" href="#id14" id="id2">8</a> is needed to phase
+this in: in the initial release, a module desiring to use generators must
+include the line:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">generators</span>
+</pre></div>
+</div>
+<p>near the top (see PEP 236 <a class="footnote-reference brackets" href="#id14" id="id3">8</a>) for details).  Modules using the identifier
+<code class="docutils literal notranslate"><span class="pre">yield</span></code> without a <code class="docutils literal notranslate"><span class="pre">future</span></code> statement will trigger warnings. In the
+following release, <code class="docutils literal notranslate"><span class="pre">yield</span></code> will be a language keyword and the <code class="docutils literal notranslate"><span class="pre">future</span></code>
+statement will no longer be needed.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">yield</span></code> statement may only be used inside functions.  A function that
+contains a <code class="docutils literal notranslate"><span class="pre">yield</span></code> statement is called a generator function.  A generator
+function is an ordinary function object in all respects, but has the new
+<code class="docutils literal notranslate"><span class="pre">CO_GENERATOR</span></code> flag set in the code object’s co_flags member.</p>
+<p>When a generator function is called, the actual arguments are bound to
+function-local formal argument names in the usual way, but no code in the body
+of the function is executed.  Instead a generator-iterator object is returned;
+this conforms to the iterator protocol <a class="footnote-reference brackets" href="#id12" id="id4">6</a>, so in particular can be used in
+for-loops in a natural way.  Note that when the intent is clear from context,
+the unqualified name “generator” may be used to refer either to a
+generator-function or a generator-iterator.</p>
+<p>Each time the <code class="docutils literal notranslate"><span class="pre">.next()</span></code> method of a generator-iterator is invoked, the code
+in the body of the generator-function is executed until a <code class="docutils literal notranslate"><span class="pre">yield</span></code> or
+<code class="docutils literal notranslate"><span class="pre">return</span></code> statement (see below) is encountered, or until the end of the body
+is reached.</p>
+<p>If a <code class="docutils literal notranslate"><span class="pre">yield</span></code> statement is encountered, the state of the function is frozen,
+and the value of <em>expression_list</em> is returned to <code class="docutils literal notranslate"><span class="pre">.next()</span></code>’s caller.  By
+“frozen” we mean that all local state is retained, including the current
+bindings of local variables, the instruction pointer, and the internal
+evaluation stack:  enough information is saved so that the next time
+<code class="docutils literal notranslate"><span class="pre">.next()</span></code> is invoked, the function can proceed exactly as if the <code class="docutils literal notranslate"><span class="pre">yield</span></code>
+statement were just another external call.</p>
+<p>Restriction:  A <code class="docutils literal notranslate"><span class="pre">yield</span></code> statement is not allowed in the <code class="docutils literal notranslate"><span class="pre">try</span></code> clause of a
+<code class="docutils literal notranslate"><span class="pre">try/finally</span></code> construct.  The difficulty is that there’s no guarantee the
+generator will ever be resumed, hence no guarantee that the finally block will
+ever get executed; that’s too much a violation of finally’s purpose to bear.</p>
+<p>Restriction:  A generator cannot be resumed while it is actively running:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">g</span><span class="p">():</span>
+<span class="gp">... </span>    <span class="n">i</span> <span class="o">=</span> <span class="n">me</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+<span class="gp">... </span>    <span class="k">yield</span> <span class="n">i</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">me</span> <span class="o">=</span> <span class="n">g</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">me</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+<span class="gt">Traceback (most recent call last):</span>
+ <span class="c">...</span>
+<span class="gr"> File &quot;&lt;string&gt;&quot;, line 2, in g</span>
+<span class="gr">ValueError</span>: <span class="n">generator already executing</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="specification-return">
+<h2><a class="toc-backref" href="#id19">Specification:  Return</a><a class="headerlink" href="#specification-return" title="Permalink to this headline">¶</a></h2>
+<p>A generator function can also contain return statements of the form:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">return</span>
+</pre></div>
+</div>
+<p>Note that an <em>expression_list</em> is not allowed on return statements in the body
+of a generator (although, of course, they may appear in the bodies of
+non-generator functions nested within the generator).</p>
+<p>When a return statement is encountered, control proceeds as in any function
+return, executing the appropriate <code class="docutils literal notranslate"><span class="pre">finally</span></code> clauses (if any exist).  Then a
+<code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> exception is raised, signalling that the iterator is
+exhausted.  A <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> exception is also raised if control flows off
+the end of the generator without an explicit return.</p>
+<p>Note that return means “I’m done, and have nothing interesting to return”, for
+both generator functions and non-generator functions.</p>
+<p>Note that return isn’t always equivalent to raising <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code>:  the
+difference lies in how enclosing <code class="docutils literal notranslate"><span class="pre">try/except</span></code> constructs are treated. For
+example,:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">f1</span><span class="p">():</span>
+<span class="gp">... </span>    <span class="k">try</span><span class="p">:</span>
+<span class="gp">... </span>        <span class="k">return</span>
+<span class="gp">... </span>    <span class="k">except</span><span class="p">:</span>
+<span class="gp">... </span>       <span class="k">yield</span> <span class="mi">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span> <span class="nb">list</span><span class="p">(</span><span class="n">f1</span><span class="p">())</span>
+<span class="go">[]</span>
+</pre></div>
+</div>
+<p>because, as in any function, <code class="docutils literal notranslate"><span class="pre">return</span></code> simply exits, but:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">f2</span><span class="p">():</span>
+<span class="gp">... </span>    <span class="k">try</span><span class="p">:</span>
+<span class="gp">... </span>        <span class="k">raise</span> <span class="ne">StopIteration</span>
+<span class="gp">... </span>    <span class="k">except</span><span class="p">:</span>
+<span class="gp">... </span>        <span class="k">yield</span> <span class="mi">42</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span> <span class="nb">list</span><span class="p">(</span><span class="n">f2</span><span class="p">())</span>
+<span class="go">[42]</span>
+</pre></div>
+</div>
+<p>because <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> is captured by a bare <code class="docutils literal notranslate"><span class="pre">except</span></code>, as is any
+exception.</p>
+</div>
+<div class="section" id="specification-generators-and-exception-propagation">
+<h2><a class="toc-backref" href="#id20">Specification:  Generators and Exception Propagation</a><a class="headerlink" href="#specification-generators-and-exception-propagation" title="Permalink to this headline">¶</a></h2>
+<p>If an unhandled exception– including, but not limited to, <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code>
+–is raised by, or passes through, a generator function, then the exception is
+passed on to the caller in the usual way, and subsequent attempts to resume the
+generator function raise <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code>.  In other words, an unhandled
+exception terminates a generator’s useful life.</p>
+<p>Example (not idiomatic but to illustrate the point):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">f</span><span class="p">():</span>
+<span class="gp">... </span>    <span class="k">return</span> <span class="mi">1</span><span class="o">/</span><span class="mi">0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">g</span><span class="p">():</span>
+<span class="gp">... </span>    <span class="k">yield</span> <span class="n">f</span><span class="p">()</span>  <span class="c1"># the zero division exception propagates</span>
+<span class="gp">... </span>    <span class="k">yield</span> <span class="mi">42</span>   <span class="c1"># and we&#39;ll never get here</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">k</span> <span class="o">=</span> <span class="n">g</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">k</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">?</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">2</span>, in <span class="n">g</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">2</span>, in <span class="n">f</span>
+<span class="gr">ZeroDivisionError</span>: <span class="n">integer division or modulo by zero</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">k</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>  <span class="c1"># and the generator cannot be resumed</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">?</span>
+<span class="gr">StopIteration</span>
+<span class="go">&gt;&gt;&gt;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="specification-try-except-finally">
+<h2><a class="toc-backref" href="#id21">Specification:  Try/Except/Finally</a><a class="headerlink" href="#specification-try-except-finally" title="Permalink to this headline">¶</a></h2>
+<p>As noted earlier, <code class="docutils literal notranslate"><span class="pre">yield</span></code> is not allowed in the <code class="docutils literal notranslate"><span class="pre">try</span></code> clause of a
+<code class="docutils literal notranslate"><span class="pre">try/finally</span></code> construct.  A consequence is that generators should allocate
+critical resources with great care.  There is no restriction on <code class="docutils literal notranslate"><span class="pre">yield</span></code>
+otherwise appearing in <code class="docutils literal notranslate"><span class="pre">finally</span></code> clauses, <code class="docutils literal notranslate"><span class="pre">except</span></code> clauses, or in the
+<code class="docutils literal notranslate"><span class="pre">try</span></code> clause of a <code class="docutils literal notranslate"><span class="pre">try/except</span></code> construct:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">f</span><span class="p">():</span>
+<span class="gp">... </span>    <span class="k">try</span><span class="p">:</span>
+<span class="gp">... </span>        <span class="k">yield</span> <span class="mi">1</span>
+<span class="gp">... </span>        <span class="k">try</span><span class="p">:</span>
+<span class="gp">... </span>            <span class="k">yield</span> <span class="mi">2</span>
+<span class="gp">... </span>            <span class="mi">1</span><span class="o">/</span><span class="mi">0</span>
+<span class="gp">... </span>            <span class="k">yield</span> <span class="mi">3</span>  <span class="c1"># never get here</span>
+<span class="gp">... </span>        <span class="k">except</span> <span class="ne">ZeroDivisionError</span><span class="p">:</span>
+<span class="gp">... </span>            <span class="k">yield</span> <span class="mi">4</span>
+<span class="gp">... </span>            <span class="k">yield</span> <span class="mi">5</span>
+<span class="gp">... </span>            <span class="k">raise</span>
+<span class="gp">... </span>        <span class="k">except</span><span class="p">:</span>
+<span class="gp">... </span>            <span class="k">yield</span> <span class="mi">6</span>
+<span class="gp">... </span>        <span class="k">yield</span> <span class="mi">7</span>     <span class="c1"># the &quot;raise&quot; above stops this</span>
+<span class="gp">... </span>    <span class="k">except</span><span class="p">:</span>
+<span class="gp">... </span>        <span class="k">yield</span> <span class="mi">8</span>
+<span class="gp">... </span>    <span class="k">yield</span> <span class="mi">9</span>
+<span class="gp">... </span>    <span class="k">try</span><span class="p">:</span>
+<span class="gp">... </span>        <span class="n">x</span> <span class="o">=</span> <span class="mi">12</span>
+<span class="gp">... </span>    <span class="k">finally</span><span class="p">:</span>
+<span class="gp">... </span>       <span class="k">yield</span> <span class="mi">10</span>
+<span class="gp">... </span>    <span class="k">yield</span> <span class="mi">11</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span> <span class="nb">list</span><span class="p">(</span><span class="n">f</span><span class="p">())</span>
+<span class="go">[1, 2, 4, 5, 8, 9, 10, 11]</span>
+<span class="go">&gt;&gt;&gt;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="example">
+<h2><a class="toc-backref" href="#id22">Example</a><a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span># A binary tree class.
+class Tree:
+
+    def __init__(self, label, left=None, right=None):
+        self.label = label
+        self.left = left
+        self.right = right
+
+    def __repr__(self, level=0, indent=&quot;    &quot;):
+        s = level*indent + `self.label`
+        if self.left:
+            s = s + &quot;\n&quot; + self.left.__repr__(level+1, indent)
+        if self.right:
+            s = s + &quot;\n&quot; + self.right.__repr__(level+1, indent)
+        return s
+
+    def __iter__(self):
+        return inorder(self)
+
+# Create a Tree from a list.
+def tree(list):
+    n = len(list)
+    if n == 0:
+        return []
+    i = n / 2
+    return Tree(list[i], tree(list[:i]), tree(list[i+1:]))
+
+# A recursive generator that generates Tree labels in in-order.
+def inorder(t):
+    if t:
+        for x in inorder(t.left):
+            yield x
+        yield t.label
+        for x in inorder(t.right):
+            yield x
+
+# Show it off: create a tree.
+t = tree(&quot;ABCDEFGHIJKLMNOPQRSTUVWXYZ&quot;)
+# Print the nodes of the tree in in-order.
+for x in t:
+    print x,
+print
+
+# A non-recursive generator.
+def inorder(node):
+    stack = []
+    while node:
+        while node.left:
+            stack.append(node)
+            node = node.left
+        yield node.label
+        while not node.right:
+            try:
+                node = stack.pop()
+            except IndexError:
+                return
+            yield node.label
+        node = node.right
+
+# Exercise the non-recursive generator.
+for x in t:
+    print x,
+print
+</pre></div>
+</div>
+<p>Both output blocks display:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">A</span> <span class="n">B</span> <span class="n">C</span> <span class="n">D</span> <span class="n">E</span> <span class="n">F</span> <span class="n">G</span> <span class="n">H</span> <span class="n">I</span> <span class="n">J</span> <span class="n">K</span> <span class="n">L</span> <span class="n">M</span> <span class="n">N</span> <span class="n">O</span> <span class="n">P</span> <span class="n">Q</span> <span class="n">R</span> <span class="n">S</span> <span class="n">T</span> <span class="n">U</span> <span class="n">V</span> <span class="n">W</span> <span class="n">X</span> <span class="n">Y</span> <span class="n">Z</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="q-a">
+<h2><a class="toc-backref" href="#id23">Q &amp; A</a><a class="headerlink" href="#q-a" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="why-not-a-new-keyword-instead-of-reusing-def">
+<h3><a class="toc-backref" href="#id24">Why not a new keyword instead of reusing <code class="docutils literal notranslate"><span class="pre">def</span></code>?</a><a class="headerlink" href="#why-not-a-new-keyword-instead-of-reusing-def" title="Permalink to this headline">¶</a></h3>
+<p>See BDFL Pronouncements section below.</p>
+</div>
+<div class="section" id="why-a-new-keyword-for-yield-why-not-a-builtin-function-instead">
+<h3><a class="toc-backref" href="#id25">Why a new keyword for <code class="docutils literal notranslate"><span class="pre">yield</span></code>?  Why not a builtin function instead?</a><a class="headerlink" href="#why-a-new-keyword-for-yield-why-not-a-builtin-function-instead" title="Permalink to this headline">¶</a></h3>
+<p>Control flow is much better expressed via keyword in Python, and yield is a
+control construct.  It’s also believed that efficient implementation in Jython
+requires that the compiler be able to determine potential suspension points at
+compile-time, and a new keyword makes that easy.  The CPython reference
+implementation also exploits it heavily, to detect which functions <em>are</em>
+generator-functions (although a new keyword in place of <code class="docutils literal notranslate"><span class="pre">def</span></code> would solve
+that for CPython – but people asking the “why a new keyword?” question don’t
+want any new keyword).</p>
+</div>
+<div class="section" id="then-why-not-some-other-special-syntax-without-a-new-keyword">
+<h3><a class="toc-backref" href="#id26">Then why not some other special syntax without a new keyword?</a><a class="headerlink" href="#then-why-not-some-other-special-syntax-without-a-new-keyword" title="Permalink to this headline">¶</a></h3>
+<p>For example, one of these instead of <code class="docutils literal notranslate"><span class="pre">yield</span> <span class="pre">3</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">return</span> <span class="mi">3</span> <span class="ow">and</span> <span class="k">continue</span>
+<span class="k">return</span> <span class="ow">and</span> <span class="k">continue</span> <span class="mi">3</span>
+<span class="k">return</span> <span class="n">generating</span> <span class="mi">3</span>
+<span class="k">continue</span> <span class="k">return</span> <span class="mi">3</span>
+<span class="k">return</span> <span class="o">&gt;&gt;</span> <span class="p">,</span> <span class="mi">3</span>
+<span class="kn">from</span> <span class="nn">generator</span> <span class="k">return</span> <span class="mi">3</span>
+<span class="k">return</span> <span class="o">&gt;&gt;</span> <span class="mi">3</span>
+<span class="k">return</span> <span class="o">&lt;&lt;</span> <span class="mi">3</span>
+<span class="o">&gt;&gt;</span> <span class="mi">3</span>
+<span class="o">&lt;&lt;</span> <span class="mi">3</span>
+<span class="o">*</span> <span class="mi">3</span>
+</pre></div>
+</div>
+<p>Did I miss one &lt;wink&gt;?  Out of hundreds of messages, I counted three
+suggesting such an alternative, and extracted the above from them. It would be
+nice not to need a new keyword, but nicer to make <code class="docutils literal notranslate"><span class="pre">yield</span></code> very clear – I
+don’t want to have to <em>deduce</em> that a yield is occurring from making sense of a
+previously senseless sequence of keywords or operators.  Still, if this
+attracts enough interest, proponents should settle on a single consensus
+suggestion, and Guido will Pronounce on it.</p>
+</div>
+<div class="section" id="why-allow-return-at-all-why-not-force-termination-to-be-spelled-raise-stopiteration">
+<h3><a class="toc-backref" href="#id27">Why allow <code class="docutils literal notranslate"><span class="pre">return</span></code> at all?  Why not force termination to be spelled <code class="docutils literal notranslate"><span class="pre">raise</span> <span class="pre">StopIteration</span></code>?</a><a class="headerlink" href="#why-allow-return-at-all-why-not-force-termination-to-be-spelled-raise-stopiteration" title="Permalink to this headline">¶</a></h3>
+<p>The mechanics of <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> are low-level details, much like the
+mechanics of <code class="docutils literal notranslate"><span class="pre">IndexError</span></code> in Python 2.1:  the implementation needs to do
+<em>something</em> well-defined under the covers, and Python exposes these mechanisms
+for advanced users.  That’s not an argument for forcing everyone to work at
+that level, though.  <code class="docutils literal notranslate"><span class="pre">return</span></code> means “I’m done” in any kind of function, and
+that’s easy to explain and to use. Note that <code class="docutils literal notranslate"><span class="pre">return</span></code> isn’t always equivalent
+to <code class="docutils literal notranslate"><span class="pre">raise</span> <span class="pre">StopIteration</span></code> in try/except construct, either (see the
+“Specification: Return” section).</p>
+</div>
+<div class="section" id="then-why-not-allow-an-expression-on-return-too">
+<h3><a class="toc-backref" href="#id28">Then why not allow an expression on <code class="docutils literal notranslate"><span class="pre">return</span></code> too?</a><a class="headerlink" href="#then-why-not-allow-an-expression-on-return-too" title="Permalink to this headline">¶</a></h3>
+<p>Perhaps we will someday.  In Icon, <code class="docutils literal notranslate"><span class="pre">return</span> <span class="pre">expr</span></code> means both “I’m done”, and
+“but I have one final useful value to return too, and this is it”.  At the
+start, and in the absence of compelling uses for <code class="docutils literal notranslate"><span class="pre">return</span> <span class="pre">expr</span></code>, it’s simply
+cleaner to use <code class="docutils literal notranslate"><span class="pre">yield</span></code> exclusively for delivering values.</p>
+</div>
+</div>
+<div class="section" id="bdfl-pronouncements">
+<h2><a class="toc-backref" href="#id29">BDFL Pronouncements</a><a class="headerlink" href="#bdfl-pronouncements" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="issue">
+<h3><a class="toc-backref" href="#id30">Issue</a><a class="headerlink" href="#issue" title="Permalink to this headline">¶</a></h3>
+<p>Introduce another new keyword (say, <code class="docutils literal notranslate"><span class="pre">gen</span></code> or <code class="docutils literal notranslate"><span class="pre">generator</span></code>) in place
+of <code class="docutils literal notranslate"><span class="pre">def</span></code>, or otherwise alter the syntax, to distinguish generator-functions
+from non-generator functions.</p>
+</div>
+<div class="section" id="con">
+<h3><a class="toc-backref" href="#id31">Con</a><a class="headerlink" href="#con" title="Permalink to this headline">¶</a></h3>
+<p>In practice (how you think about them), generators <em>are</em> functions, but
+with the twist that they’re resumable.  The mechanics of how they’re set up
+is a comparatively minor technical issue, and introducing a new keyword would
+unhelpfully overemphasize the mechanics of how generators get started (a vital
+but tiny part of a generator’s life).</p>
+</div>
+<div class="section" id="pro">
+<h3><a class="toc-backref" href="#id32">Pro</a><a class="headerlink" href="#pro" title="Permalink to this headline">¶</a></h3>
+<p>In reality (how you think about them), generator-functions are actually
+factory functions that produce generator-iterators as if by magic.  In this
+respect they’re radically different from non-generator functions, acting more
+like a constructor than a function, so reusing <code class="docutils literal notranslate"><span class="pre">def</span></code> is at best confusing.
+A <code class="docutils literal notranslate"><span class="pre">yield</span></code> statement buried in the body is not enough warning that the
+semantics are so different.</p>
+</div>
+<div class="section" id="bdfl">
+<h3><a class="toc-backref" href="#id33">BDFL</a><a class="headerlink" href="#bdfl" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">def</span></code> it stays.  No argument on either side is totally convincing, so I
+have consulted my language designer’s intuition.  It tells me that the syntax
+proposed in the PEP is exactly right - not too hot, not too cold.  But, like
+the Oracle at Delphi in Greek mythology, it doesn’t tell me why, so I don’t
+have a rebuttal for the arguments against the PEP syntax.  The best I can come
+up with (apart from agreeing with the rebuttals … already made) is “FUD”.
+If this had been part of the language from day one, I very much doubt it would
+have made Andrew Kuchling’s “Python Warts” page.</p>
+</div>
+</div>
+<div class="section" id="reference-implementation">
+<h2><a class="toc-backref" href="#id34">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>The current implementation, in a preliminary state (no docs, but well tested
+and solid), is part of Python’s CVS development tree <a class="footnote-reference brackets" href="#id15" id="id5">9</a>.  Using this requires
+that you build Python from source.</p>
+<p>This was derived from an earlier patch by Neil Schemenauer <a class="footnote-reference brackets" href="#id13" id="id6">7</a>.</p>
+</div>
+<div class="section" id="footnotes-and-references">
+<h2><a class="toc-backref" href="#id35">Footnotes and References</a><a class="headerlink" href="#footnotes-and-references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id7"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>PEP 234, Iterators, Yee, Van Rossum
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0234/">http://www.python.org/dev/peps/pep-0234/</a></dd>
+<dt class="label" id="id8"><span class="brackets">2</span></dt>
+<dd><a class="reference external" href="http://www.stackless.com/">http://www.stackless.com/</a></dd>
+<dt class="label" id="id9"><span class="brackets">3</span></dt>
+<dd>PEP 219, Stackless Python, McMillan
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0219/">http://www.python.org/dev/peps/pep-0219/</a></dd>
+<dt class="label" id="id10"><span class="brackets">4</span></dt>
+<dd>“Iteration Abstraction in Sather”
+Murer, Omohundro, Stoutamire and Szyperski
+<a class="reference external" href="http://www.icsi.berkeley.edu/~sather/Publications/toplas.html">http://www.icsi.berkeley.edu/~sather/Publications/toplas.html</a></dd>
+<dt class="label" id="id11"><span class="brackets">5</span></dt>
+<dd><a class="reference external" href="http://www.cs.arizona.edu/icon/">http://www.cs.arizona.edu/icon/</a></dd>
+<dt class="label" id="id12"><span class="brackets"><a class="fn-backref" href="#id4">6</a></span></dt>
+<dd>The concept of iterators is described in PEP 234.  See [1] above.</dd>
+<dt class="label" id="id13"><span class="brackets"><a class="fn-backref" href="#id6">7</a></span></dt>
+<dd><a class="reference external" href="http://python.ca/nas/python/generator.diff">http://python.ca/nas/python/generator.diff</a></dd>
+<dt class="label" id="id14"><span class="brackets">8</span><span class='fn-backref'><em> (<a href="#id2">1</a>, <a href="#id3">2</a>) </em></span></dt>
+<dd>PEP 236, Back to the __future__, Peters
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0236/">http://www.python.org/dev/peps/pep-0236/</a></dd>
+<dt class="label" id="id15"><span class="brackets"><a class="fn-backref" href="#id5">9</a></span></dt>
+<dd>To experiment with this implementation, check out Python from CVS
+according to the instructions at <a class="reference external" href="http://sf.net/cvs/?group_id=5470">http://sf.net/cvs/?group_id=5470</a>
+Note that the std test <code class="docutils literal notranslate"><span class="pre">Lib/test/test_generators.py</span></code> contains many
+examples, including all those in this PEP.</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id36">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0255.txt">https://github.com/python/peps/blob/master/pep-0255.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0255.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0254.html">PEP 0254</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0256.html">PEP 0256</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 255 – Simple Generators</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#specification-yield">Specification:  Yield</a></li>
+<li><a class="reference internal" href="#specification-return">Specification:  Return</a></li>
+<li><a class="reference internal" href="#specification-generators-and-exception-propagation">Specification:  Generators and Exception Propagation</a></li>
+<li><a class="reference internal" href="#specification-try-except-finally">Specification:  Try/Except/Finally</a></li>
+<li><a class="reference internal" href="#example">Example</a></li>
+<li><a class="reference internal" href="#q-a">Q &amp; A</a><ul>
+<li><a class="reference internal" href="#why-not-a-new-keyword-instead-of-reusing-def">Why not a new keyword instead of reusing <code class="docutils literal notranslate"><span class="pre">def</span></code>?</a></li>
+<li><a class="reference internal" href="#why-a-new-keyword-for-yield-why-not-a-builtin-function-instead">Why a new keyword for <code class="docutils literal notranslate"><span class="pre">yield</span></code>?  Why not a builtin function instead?</a></li>
+<li><a class="reference internal" href="#then-why-not-some-other-special-syntax-without-a-new-keyword">Then why not some other special syntax without a new keyword?</a></li>
+<li><a class="reference internal" href="#why-allow-return-at-all-why-not-force-termination-to-be-spelled-raise-stopiteration">Why allow <code class="docutils literal notranslate"><span class="pre">return</span></code> at all?  Why not force termination to be spelled <code class="docutils literal notranslate"><span class="pre">raise</span> <span class="pre">StopIteration</span></code>?</a></li>
+<li><a class="reference internal" href="#then-why-not-allow-an-expression-on-return-too">Then why not allow an expression on <code class="docutils literal notranslate"><span class="pre">return</span></code> too?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#bdfl-pronouncements">BDFL Pronouncements</a><ul>
+<li><a class="reference internal" href="#issue">Issue</a></li>
+<li><a class="reference internal" href="#con">Con</a></li>
+<li><a class="reference internal" href="#pro">Pro</a></li>
+<li><a class="reference internal" href="#bdfl">BDFL</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#footnotes-and-references">Footnotes and References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

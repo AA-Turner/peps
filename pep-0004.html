@@ -1,0 +1,409 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 4 – Deprecation of Standard Modules &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 5 – Guidelines for Language Evolution" href="pep-0005.html" />
+    <link rel="prev" title="PEP 3 – Guidelines for Handling Bug Reports" href="pep-0003.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 4 – Deprecation of Standard Modules</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-4-deprecation-of-standard-modules">
+<h1 class="page-title">PEP 4 – Deprecation of Standard Modules<a class="headerlink" href="#pep-4-deprecation-of-standard-modules" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">4</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Deprecation of Standard Modules</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Brett Cannon &lt;brett&#32;&#97;t&#32;python.org&gt;, Martin von Löwis &lt;martin&#32;&#97;t&#32;v.loewis.de&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Active</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Process</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">1-Oct-2000</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#introduction" id="id2">Introduction</a></li>
+<li><a class="reference internal" href="#procedure-for-declaring-a-module-deprecated" id="id3">Procedure for declaring a module deprecated</a><ul>
+<li><a class="reference internal" href="#for-modules-existing-in-both-python-2-7-and-python-3-5" id="id4">For modules existing in both Python 2.7 and Python 3.5</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#procedure-for-declaring-a-module-undeprecated" id="id5">Procedure for declaring a module undeprecated</a></li>
+<li><a class="reference internal" href="#obsolete-modules" id="id6">Obsolete modules</a></li>
+<li><a class="reference internal" href="#deprecated-modules" id="id7">Deprecated modules</a></li>
+<li><a class="reference internal" href="#deprecation-of-modules-removed-in-python-3-0" id="id8">Deprecation of modules removed in Python 3.0</a></li>
+<li><a class="reference internal" href="#undeprecated-modules" id="id9">Undeprecated modules</a></li>
+<li><a class="reference internal" href="#copyright" id="id10">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="introduction">
+<h2><a class="toc-backref" href="#id2">Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>When new modules were added to the standard Python library in the
+past, it was not possible to foresee whether they would still be
+useful in the future.  Even though Python “Comes With Batteries
+Included”, batteries may discharge over time.  Carrying old modules
+around is a burden on the maintainer, especially when there is no
+interest in the module anymore.</p>
+<p>At the same time, removing a module from the distribution is
+difficult, as it is not known in general whether anybody is still
+using it.  This PEP defines a procedure for removing modules from the
+standard Python library.  Usage of a module may be ‘deprecated’, which
+means that it may be removed from a future Python release.  The
+rationale for deprecating a module is also collected in this PEP.  If
+the rationale turns out faulty, the module may become ‘undeprecated’.</p>
+</div>
+<div class="section" id="procedure-for-declaring-a-module-deprecated">
+<h2><a class="toc-backref" href="#id3">Procedure for declaring a module deprecated</a><a class="headerlink" href="#procedure-for-declaring-a-module-deprecated" title="Permalink to this headline">¶</a></h2>
+<p>Since the status of module deprecation is recorded in this PEP,
+proposals for deprecating modules MUST be made by providing a change
+to the text of this PEP.</p>
+<p>A proposal for deprecation of the module MUST include the date of the
+proposed deprecation and a rationale for deprecating it.  In addition,
+the proposal MUST include a change to the documentation of the module;
+deprecation is indicated by saying that the module is “obsolete” or
+“deprecated”.  The proposal SHOULD include a patch for the module’s
+source code to indicate deprecation there as well, by raising a
+DeprecationWarning.  The proposal MUST include patches to remove any
+use of the deprecated module from the standard library.</p>
+<p>It is expected that deprecated modules are included in the Python
+release that immediately follows the deprecation; later releases may
+ship without the deprecated modules.</p>
+<div class="section" id="for-modules-existing-in-both-python-2-7-and-python-3-5">
+<h3><a class="toc-backref" href="#id4">For modules existing in both Python 2.7 and Python 3.5</a><a class="headerlink" href="#for-modules-existing-in-both-python-2-7-and-python-3-5" title="Permalink to this headline">¶</a></h3>
+<p>In order to facilitate writing code that works in both Python 2 &amp; 3
+simultaneously, any module that exists in both Python 3.5 and
+Python 2.7 will not be removed from the standard library until
+Python 2.7 is no longer supported as specified by PEP 373. Exempted
+from this rule is any module in the idlelib package as well as any
+exceptions granted by the Python development team.</p>
+</div>
+</div>
+<div class="section" id="procedure-for-declaring-a-module-undeprecated">
+<h2><a class="toc-backref" href="#id5">Procedure for declaring a module undeprecated</a><a class="headerlink" href="#procedure-for-declaring-a-module-undeprecated" title="Permalink to this headline">¶</a></h2>
+<p>When a module becomes deprecated, a rationale is given for its
+deprecation.  In some cases, an alternative interface for the same
+functionality is provided, so the old interface is deprecated.  In
+other cases, the need for having the functionality of the module may
+not exist anymore.</p>
+<p>If the rationale is faulty, again a change to this PEP’s text MUST be
+submitted.  This change MUST include the date of undeprecation and a
+rationale for undeprecation.  Modules that are undeprecated under this
+procedure MUST be listed in this PEP for at least one major release of
+Python.</p>
+</div>
+<div class="section" id="obsolete-modules">
+<h2><a class="toc-backref" href="#id6">Obsolete modules</a><a class="headerlink" href="#obsolete-modules" title="Permalink to this headline">¶</a></h2>
+<p>A number of modules are already listed as obsolete in the library
+documentation.  These are listed here for completeness.</p>
+<blockquote>
+<div>cl, sv, timing</div></blockquote>
+<p>All these modules have been declared as obsolete in Python 2.0, some
+even earlier.</p>
+<p>The following obsolete modules were removed in Python 2.5:</p>
+<blockquote>
+<div>addpack, cmp, cmpcache, codehack, dircmp, dump, find, fmt,
+grep, lockfile, newdir, ni, packmail, Para, poly,
+rand, reconvert, regex, regsub, statcache, tb, tzparse,
+util, whatsound, whrandom, zmod</div></blockquote>
+<p>The following modules were removed in Python 2.6:</p>
+<blockquote>
+<div>gopherlib, rgbimg, macfs</div></blockquote>
+<p>The following modules currently lack a DeprecationWarning:</p>
+<blockquote>
+<div>rfc822, mimetools, multifile</div></blockquote>
+</div>
+<div class="section" id="deprecated-modules">
+<h2><a class="toc-backref" href="#id7">Deprecated modules</a><a class="headerlink" href="#deprecated-modules" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Module</span> <span class="n">name</span><span class="p">:</span>   <span class="n">posixfile</span>
+<span class="n">Rationale</span><span class="p">:</span>     <span class="n">Locking</span> <span class="ow">is</span> <span class="n">better</span> <span class="n">done</span> <span class="n">by</span> <span class="n">fcntl</span><span class="o">.</span><span class="n">lockf</span><span class="p">()</span><span class="o">.</span>
+<span class="n">Date</span><span class="p">:</span>          <span class="n">Before</span> <span class="mi">1</span><span class="o">-</span><span class="n">Oct</span><span class="o">-</span><span class="mf">2000.</span>
+<span class="n">Documentation</span><span class="p">:</span> <span class="n">Already</span> <span class="n">documented</span> <span class="k">as</span> <span class="n">obsolete</span><span class="o">.</span>  <span class="n">Deprecation</span>
+               <span class="n">warning</span> <span class="n">added</span> <span class="ow">in</span> <span class="n">Python</span> <span class="mf">2.6</span><span class="o">.</span>
+
+<span class="n">Module</span> <span class="n">name</span><span class="p">:</span>   <span class="n">gopherlib</span>
+<span class="n">Rationale</span><span class="p">:</span>     <span class="n">The</span> <span class="n">gopher</span> <span class="n">protocol</span> <span class="ow">is</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">active</span> <span class="n">use</span> <span class="n">anymore</span><span class="o">.</span>
+<span class="n">Date</span><span class="p">:</span>          <span class="mi">1</span><span class="o">-</span><span class="n">Oct</span><span class="o">-</span><span class="mf">2000.</span>
+<span class="n">Documentation</span><span class="p">:</span> <span class="n">Documented</span> <span class="k">as</span> <span class="n">deprecated</span> <span class="n">since</span> <span class="n">Python</span> <span class="mf">2.5</span><span class="o">.</span>  <span class="n">Removed</span>
+               <span class="ow">in</span> <span class="n">Python</span> <span class="mf">2.6</span><span class="o">.</span>
+
+<span class="n">Module</span> <span class="n">name</span><span class="p">:</span>   <span class="n">rgbimgmodule</span>
+<span class="n">Rationale</span><span class="p">:</span>     <span class="n">In</span> <span class="n">a</span> <span class="mi">2001</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">24</span> <span class="n">c</span><span class="o">.</span><span class="n">l</span><span class="o">.</span><span class="n">py</span> <span class="n">post</span><span class="p">,</span> <span class="n">Jason</span> <span class="n">Petrone</span> <span class="n">mentions</span>
+               <span class="n">that</span> <span class="n">he</span> <span class="n">occasionally</span> <span class="n">uses</span> <span class="n">it</span><span class="p">;</span> <span class="n">no</span> <span class="n">other</span> <span class="n">references</span> <span class="n">to</span>
+               <span class="n">its</span> <span class="n">use</span> <span class="n">can</span> <span class="n">be</span> <span class="n">found</span> <span class="k">as</span> <span class="n">of</span> <span class="mi">2003</span><span class="o">-</span><span class="mi">11</span><span class="o">-</span><span class="mf">19.</span>
+<span class="n">Date</span><span class="p">:</span>          <span class="mi">1</span><span class="o">-</span><span class="n">Oct</span><span class="o">-</span><span class="mi">2000</span>
+<span class="n">Documentation</span><span class="p">:</span> <span class="n">Documented</span> <span class="k">as</span> <span class="n">deprecated</span> <span class="n">since</span> <span class="n">Python</span> <span class="mf">2.5</span><span class="o">.</span>  <span class="n">Removed</span>
+               <span class="ow">in</span> <span class="n">Python</span> <span class="mf">2.6</span><span class="o">.</span>
+
+<span class="n">Module</span> <span class="n">name</span><span class="p">:</span>   <span class="n">pre</span>
+<span class="n">Rationale</span><span class="p">:</span>     <span class="n">The</span> <span class="n">underlying</span> <span class="n">PCRE</span> <span class="n">engine</span> <span class="n">doesn</span><span class="s1">&#39;t support Unicode, and</span>
+               <span class="n">has</span> <span class="n">been</span> <span class="n">unmaintained</span> <span class="n">since</span> <span class="n">Python</span> <span class="mf">1.5</span><span class="o">.</span><span class="mf">2.</span>
+<span class="n">Date</span><span class="p">:</span>          <span class="mi">10</span><span class="o">-</span><span class="n">Apr</span><span class="o">-</span><span class="mi">2002</span>
+<span class="n">Documentation</span><span class="p">:</span> <span class="n">It</span> <span class="n">was</span> <span class="n">only</span> <span class="n">mentioned</span> <span class="k">as</span> <span class="n">an</span> <span class="n">implementation</span> <span class="n">detail</span><span class="p">,</span>
+               <span class="ow">and</span> <span class="n">never</span> <span class="n">had</span> <span class="n">a</span> <span class="n">section</span> <span class="n">of</span> <span class="n">its</span> <span class="n">own</span><span class="o">.</span>   <span class="n">This</span> <span class="n">mention</span>
+               <span class="n">has</span> <span class="n">now</span> <span class="n">been</span> <span class="n">removed</span><span class="o">.</span>
+
+<span class="n">Module</span> <span class="n">name</span><span class="p">:</span>   <span class="n">whrandom</span>
+<span class="n">Rationale</span><span class="p">:</span>     <span class="n">The</span> <span class="n">module</span><span class="s1">&#39;s default seed computation was</span>
+               <span class="n">inherently</span> <span class="n">insecure</span><span class="p">;</span> <span class="n">the</span> <span class="n">random</span> <span class="n">module</span> <span class="n">should</span> <span class="n">be</span>
+               <span class="n">used</span> <span class="n">instead</span><span class="o">.</span>
+<span class="n">Date</span><span class="p">:</span>          <span class="mi">11</span><span class="o">-</span><span class="n">Apr</span><span class="o">-</span><span class="mi">2002</span>
+<span class="n">Documentation</span><span class="p">:</span> <span class="n">This</span> <span class="n">module</span> <span class="n">has</span> <span class="n">been</span> <span class="n">documented</span> <span class="k">as</span> <span class="n">obsolete</span> <span class="n">since</span>
+               <span class="n">Python</span> <span class="mf">2.1</span><span class="p">,</span> <span class="n">but</span> <span class="n">listing</span> <span class="ow">in</span> <span class="n">this</span> <span class="n">PEP</span> <span class="n">was</span> <span class="n">neglected</span><span class="o">.</span>
+               <span class="n">The</span> <span class="n">deprecation</span> <span class="n">warning</span> <span class="n">will</span> <span class="n">be</span> <span class="n">added</span> <span class="n">to</span> <span class="n">the</span> <span class="n">module</span>
+               <span class="n">one</span> <span class="n">year</span> <span class="n">after</span> <span class="n">Python</span> <span class="mf">2.3</span> <span class="ow">is</span> <span class="n">released</span><span class="p">,</span> <span class="ow">and</span> <span class="n">the</span>
+               <span class="n">module</span> <span class="n">will</span> <span class="n">be</span> <span class="n">removed</span> <span class="n">one</span> <span class="n">year</span> <span class="n">after</span> <span class="n">that</span><span class="o">.</span>
+
+<span class="n">Module</span> <span class="n">name</span><span class="p">:</span>   <span class="n">rfc822</span>
+<span class="n">Rationale</span><span class="p">:</span>     <span class="n">Supplanted</span> <span class="n">by</span> <span class="n">Python</span> <span class="mf">2.2</span><span class="s1">&#39;s email package.</span>
+<span class="n">Date</span><span class="p">:</span>          <span class="mi">18</span><span class="o">-</span><span class="n">Mar</span><span class="o">-</span><span class="mi">2002</span>
+<span class="n">Documentation</span><span class="p">:</span> <span class="n">Documented</span> <span class="k">as</span> <span class="s2">&quot;deprecated since release 2.3&quot;</span> <span class="n">since</span>
+               <span class="n">Python</span> <span class="mf">2.2</span><span class="o">.</span><span class="mf">2.</span>
+
+<span class="n">Module</span> <span class="n">name</span><span class="p">:</span>   <span class="n">mimetools</span>
+<span class="n">Rationale</span><span class="p">:</span>     <span class="n">Supplanted</span> <span class="n">by</span> <span class="n">Python</span> <span class="mf">2.2</span><span class="s1">&#39;s email package.</span>
+<span class="n">Date</span><span class="p">:</span>          <span class="mi">18</span><span class="o">-</span><span class="n">Mar</span><span class="o">-</span><span class="mi">2002</span>
+<span class="n">Documentation</span><span class="p">:</span> <span class="n">Documented</span> <span class="k">as</span> <span class="s2">&quot;deprecated since release 2.3&quot;</span> <span class="n">since</span>
+               <span class="n">Python</span> <span class="mf">2.2</span><span class="o">.</span><span class="mf">2.</span>
+
+<span class="n">Module</span> <span class="n">name</span><span class="p">:</span>   <span class="n">MimeWriter</span>
+<span class="n">Rationale</span><span class="p">:</span>     <span class="n">Supplanted</span> <span class="n">by</span> <span class="n">Python</span> <span class="mf">2.2</span><span class="s1">&#39;s email package.</span>
+<span class="n">Date</span><span class="p">:</span>          <span class="mi">18</span><span class="o">-</span><span class="n">Mar</span><span class="o">-</span><span class="mi">2002</span>
+<span class="n">Documentation</span><span class="p">:</span> <span class="n">Documented</span> <span class="k">as</span> <span class="s2">&quot;deprecated since release 2.3&quot;</span> <span class="n">since</span>
+               <span class="n">Python</span> <span class="mf">2.2</span><span class="o">.</span><span class="mf">2.</span>  <span class="n">Raises</span> <span class="n">a</span> <span class="ne">DeprecationWarning</span> <span class="k">as</span> <span class="n">of</span>
+               <span class="n">Python</span> <span class="mf">2.6</span><span class="o">.</span>
+
+<span class="n">Module</span> <span class="n">name</span><span class="p">:</span>   <span class="n">mimify</span>
+<span class="n">Rationale</span><span class="p">:</span>     <span class="n">Supplanted</span> <span class="n">by</span> <span class="n">Python</span> <span class="mf">2.2</span><span class="s1">&#39;s email package.</span>
+<span class="n">Date</span><span class="p">:</span>          <span class="mi">18</span><span class="o">-</span><span class="n">Mar</span><span class="o">-</span><span class="mi">2002</span>
+<span class="n">Documentation</span><span class="p">:</span> <span class="n">Documented</span> <span class="k">as</span> <span class="s2">&quot;deprecated since release 2.3&quot;</span> <span class="n">since</span>
+               <span class="n">Python</span> <span class="mf">2.2</span><span class="o">.</span><span class="mf">2.</span>  <span class="n">Raises</span> <span class="n">a</span> <span class="ne">DeprecationWarning</span> <span class="k">as</span> <span class="n">of</span>
+               <span class="n">Python</span> <span class="mf">2.6</span><span class="o">.</span>
+
+<span class="n">Module</span> <span class="n">name</span><span class="p">:</span>   <span class="n">rotor</span>
+<span class="n">Rationale</span><span class="p">:</span>     <span class="n">Uses</span> <span class="n">insecure</span> <span class="n">algorithm</span><span class="o">.</span>
+<span class="n">Date</span><span class="p">:</span>          <span class="mi">24</span><span class="o">-</span><span class="n">Apr</span><span class="o">-</span><span class="mi">2003</span>
+<span class="n">Documentation</span><span class="p">:</span> <span class="n">The</span> <span class="n">documentation</span> <span class="n">has</span> <span class="n">been</span> <span class="n">removed</span> <span class="kn">from</span> <span class="nn">the</span> <span class="n">library</span>
+               <span class="n">reference</span> <span class="ow">in</span> <span class="n">Python</span> <span class="mf">2.4</span><span class="o">.</span>
+
+<span class="n">Module</span> <span class="n">name</span><span class="p">:</span>   <span class="n">TERMIOS</span><span class="o">.</span><span class="n">py</span>
+<span class="n">Rationale</span><span class="p">:</span>     <span class="n">The</span> <span class="n">constants</span> <span class="ow">in</span> <span class="n">this</span> <span class="n">file</span> <span class="n">are</span> <span class="n">now</span> <span class="ow">in</span> <span class="n">the</span> <span class="s1">&#39;termios&#39;</span> <span class="n">module</span><span class="o">.</span>
+<span class="n">Date</span><span class="p">:</span>          <span class="mi">10</span><span class="o">-</span><span class="n">Aug</span><span class="o">-</span><span class="mi">2004</span>
+<span class="n">Documentation</span><span class="p">:</span> <span class="n">This</span> <span class="n">module</span> <span class="n">has</span> <span class="n">been</span> <span class="n">documented</span> <span class="k">as</span> <span class="n">obsolete</span> <span class="n">since</span>
+               <span class="n">Python</span> <span class="mf">2.1</span><span class="p">,</span> <span class="n">but</span> <span class="n">listing</span> <span class="ow">in</span> <span class="n">this</span> <span class="n">PEP</span> <span class="n">was</span> <span class="n">neglected</span><span class="o">.</span>
+               <span class="n">Removed</span> <span class="kn">from</span> <span class="nn">the</span> <span class="n">library</span> <span class="n">reference</span> <span class="ow">in</span> <span class="n">Python</span> <span class="mf">2.4</span><span class="o">.</span>
+
+<span class="n">Module</span> <span class="n">name</span><span class="p">:</span>   <span class="n">statcache</span>
+<span class="n">Rationale</span><span class="p">:</span>     <span class="n">Using</span> <span class="n">the</span> <span class="n">cache</span> <span class="n">can</span> <span class="n">be</span> <span class="n">fragile</span> <span class="ow">and</span> <span class="n">error</span><span class="o">-</span><span class="n">prone</span><span class="p">;</span>
+               <span class="n">applications</span> <span class="n">should</span> <span class="n">just</span> <span class="n">use</span> <span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span> <span class="n">directly</span><span class="o">.</span>
+<span class="n">Date</span><span class="p">:</span>          <span class="mi">10</span><span class="o">-</span><span class="n">Aug</span><span class="o">-</span><span class="mi">2004</span>
+<span class="n">Documentation</span><span class="p">:</span> <span class="n">This</span> <span class="n">module</span> <span class="n">has</span> <span class="n">been</span> <span class="n">documented</span> <span class="k">as</span> <span class="n">obsolete</span> <span class="n">since</span>
+               <span class="n">Python</span> <span class="mf">2.2</span><span class="p">,</span> <span class="n">but</span> <span class="n">listing</span> <span class="ow">in</span> <span class="n">this</span> <span class="n">PEP</span> <span class="n">was</span> <span class="n">neglected</span><span class="o">.</span>
+               <span class="n">Removed</span> <span class="kn">from</span> <span class="nn">the</span> <span class="n">library</span> <span class="n">reference</span> <span class="ow">in</span> <span class="n">Python</span> <span class="mf">2.5</span><span class="o">.</span>
+
+<span class="n">Module</span> <span class="n">name</span><span class="p">:</span>   <span class="n">mpz</span>
+<span class="n">Rationale</span><span class="p">:</span>     <span class="n">Third</span><span class="o">-</span><span class="n">party</span> <span class="n">packages</span> <span class="n">provide</span> <span class="n">similar</span> <span class="n">features</span>
+               <span class="ow">and</span> <span class="n">wrap</span> <span class="n">more</span> <span class="n">of</span> <span class="n">GMP</span><span class="s1">&#39;s API.</span>
+<span class="n">Date</span><span class="p">:</span>          <span class="mi">10</span><span class="o">-</span><span class="n">Aug</span><span class="o">-</span><span class="mi">2004</span>
+<span class="n">Documentation</span><span class="p">:</span> <span class="n">This</span> <span class="n">module</span> <span class="n">has</span> <span class="n">been</span> <span class="n">documented</span> <span class="k">as</span> <span class="n">obsolete</span> <span class="n">since</span>
+               <span class="n">Python</span> <span class="mf">2.2</span><span class="p">,</span> <span class="n">but</span> <span class="n">listing</span> <span class="ow">in</span> <span class="n">this</span> <span class="n">PEP</span> <span class="n">was</span> <span class="n">neglected</span><span class="o">.</span>
+               <span class="n">Removed</span> <span class="kn">from</span> <span class="nn">the</span> <span class="n">library</span> <span class="n">reference</span> <span class="ow">in</span> <span class="n">Python</span> <span class="mf">2.4</span><span class="o">.</span>
+
+<span class="n">Module</span> <span class="n">name</span><span class="p">:</span>   <span class="n">xreadlines</span>
+<span class="n">Rationale</span><span class="p">:</span>     <span class="n">Using</span> <span class="s1">&#39;for line in file&#39;</span><span class="p">,</span> <span class="n">introduced</span> <span class="ow">in</span> <span class="mf">2.3</span><span class="p">,</span> <span class="ow">is</span> <span class="n">preferable</span><span class="o">.</span>
+<span class="n">Date</span><span class="p">:</span>          <span class="mi">10</span><span class="o">-</span><span class="n">Aug</span><span class="o">-</span><span class="mi">2004</span>
+<span class="n">Documentation</span><span class="p">:</span> <span class="n">This</span> <span class="n">module</span> <span class="n">has</span> <span class="n">been</span> <span class="n">documented</span> <span class="k">as</span> <span class="n">obsolete</span> <span class="n">since</span>
+               <span class="n">Python</span> <span class="mf">2.3</span><span class="p">,</span> <span class="n">but</span> <span class="n">listing</span> <span class="ow">in</span> <span class="n">this</span> <span class="n">PEP</span> <span class="n">was</span> <span class="n">neglected</span><span class="o">.</span>
+               <span class="n">Removed</span> <span class="kn">from</span> <span class="nn">the</span> <span class="n">library</span> <span class="n">reference</span> <span class="ow">in</span> <span class="n">Python</span> <span class="mf">2.4</span><span class="o">.</span>
+
+<span class="n">Module</span> <span class="n">name</span><span class="p">:</span>   <span class="n">multifile</span>
+<span class="n">Rationale</span><span class="p">:</span>     <span class="n">Supplanted</span> <span class="n">by</span> <span class="n">the</span> <span class="n">email</span> <span class="n">package</span><span class="o">.</span>
+<span class="n">Date</span><span class="p">:</span>          <span class="mi">21</span><span class="o">-</span><span class="n">Feb</span><span class="o">-</span><span class="mi">2006</span>
+<span class="n">Documentation</span><span class="p">:</span> <span class="n">Documented</span> <span class="k">as</span> <span class="n">deprecated</span> <span class="k">as</span> <span class="n">of</span> <span class="n">Python</span> <span class="mf">2.5</span><span class="o">.</span>
+
+<span class="n">Module</span> <span class="n">name</span><span class="p">:</span>   <span class="n">sets</span>
+<span class="n">Rationale</span><span class="p">:</span>     <span class="n">The</span> <span class="n">built</span><span class="o">-</span><span class="ow">in</span> <span class="nb">set</span><span class="o">/</span><span class="nb">frozenset</span> <span class="n">types</span><span class="p">,</span> <span class="n">introduced</span> <span class="ow">in</span>
+               <span class="n">Python</span> <span class="mf">2.4</span><span class="p">,</span> <span class="n">supplant</span> <span class="n">the</span> <span class="n">module</span><span class="o">.</span>
+<span class="n">Date</span><span class="p">:</span>          <span class="mi">12</span><span class="o">-</span><span class="n">Jan</span><span class="o">-</span><span class="mi">2007</span>
+<span class="n">Documentation</span><span class="p">:</span> <span class="n">Documented</span> <span class="k">as</span> <span class="n">deprecated</span> <span class="k">as</span> <span class="n">of</span> <span class="n">Python</span> <span class="mf">2.6</span><span class="o">.</span>
+
+<span class="n">Module</span> <span class="n">name</span><span class="p">:</span>   <span class="n">buildtools</span>
+<span class="n">Rationale</span><span class="p">:</span>     <span class="n">Unknown</span><span class="o">.</span>
+<span class="n">Date</span><span class="p">:</span>          <span class="mi">15</span><span class="o">-</span><span class="n">May</span><span class="o">-</span><span class="mi">2007</span>
+<span class="n">Documentation</span><span class="p">:</span> <span class="n">Documented</span> <span class="k">as</span> <span class="n">deprecated</span> <span class="k">as</span> <span class="n">of</span> <span class="n">Python</span> <span class="mf">2.3</span><span class="p">,</span> <span class="n">but</span>
+               <span class="n">listing</span> <span class="ow">in</span> <span class="n">this</span> <span class="n">PEP</span> <span class="n">was</span> <span class="n">neglected</span><span class="o">.</span>  <span class="n">Raised</span> <span class="n">a</span>
+               <span class="ne">DeprecationWarning</span> <span class="k">as</span> <span class="n">of</span> <span class="n">Python</span> <span class="mf">2.6</span><span class="o">.</span>
+
+<span class="n">Module</span> <span class="n">name</span><span class="p">:</span>   <span class="n">cfmfile</span>
+<span class="n">Rationale</span><span class="p">:</span>     <span class="n">Unknown</span><span class="o">.</span>
+<span class="n">Date</span><span class="p">:</span>          <span class="mi">15</span><span class="o">-</span><span class="n">May</span><span class="o">-</span><span class="mi">2007</span>
+<span class="n">Documentation</span><span class="p">:</span> <span class="n">Documented</span> <span class="k">as</span> <span class="n">deprecated</span> <span class="k">as</span> <span class="n">of</span> <span class="n">Python</span> <span class="mf">2.4</span><span class="p">,</span> <span class="n">but</span>
+               <span class="n">listing</span> <span class="ow">in</span> <span class="n">this</span> <span class="n">PEP</span> <span class="n">was</span> <span class="n">neglected</span><span class="o">.</span>  <span class="n">A</span>
+               <span class="ne">DeprecationWarning</span> <span class="n">was</span> <span class="n">added</span> <span class="ow">in</span> <span class="n">Python</span> <span class="mf">2.6</span><span class="o">.</span>
+
+<span class="n">Module</span> <span class="n">name</span><span class="p">:</span>   <span class="n">macfs</span>
+<span class="n">Rationale</span><span class="p">:</span>     <span class="n">Unknown</span><span class="o">.</span>
+<span class="n">Date</span><span class="p">:</span>          <span class="mi">15</span><span class="o">-</span><span class="n">May</span><span class="o">-</span><span class="mi">2007</span>
+<span class="n">Documentation</span><span class="p">:</span> <span class="n">Documented</span> <span class="k">as</span> <span class="n">deprecated</span> <span class="k">as</span> <span class="n">of</span> <span class="n">Python</span> <span class="mf">2.3</span><span class="p">,</span> <span class="n">but</span>
+               <span class="n">listing</span> <span class="ow">in</span> <span class="n">this</span> <span class="n">PEP</span> <span class="n">was</span> <span class="n">neglected</span><span class="o">.</span>  <span class="n">Removed</span> <span class="ow">in</span>
+               <span class="n">Python</span> <span class="mf">2.6</span><span class="o">.</span>
+
+<span class="n">Module</span> <span class="n">name</span><span class="p">:</span>   <span class="n">md5</span>
+<span class="n">Rationale</span><span class="p">:</span>     <span class="n">Replaced</span> <span class="n">by</span> <span class="n">the</span> <span class="s1">&#39;hashlib&#39;</span> <span class="n">module</span><span class="o">.</span>
+<span class="n">Date</span><span class="p">:</span>          <span class="mi">15</span><span class="o">-</span><span class="n">May</span><span class="o">-</span><span class="mi">2007</span>
+<span class="n">Documentation</span><span class="p">:</span> <span class="n">Documented</span> <span class="k">as</span> <span class="n">deprecated</span> <span class="k">as</span> <span class="n">of</span> <span class="n">Python</span> <span class="mf">2.5</span><span class="p">,</span> <span class="n">but</span>
+               <span class="n">listing</span> <span class="ow">in</span> <span class="n">this</span> <span class="n">PEP</span> <span class="n">was</span> <span class="n">neglected</span><span class="o">.</span>
+               <span class="ne">DeprecationWarning</span> <span class="n">raised</span> <span class="k">as</span> <span class="n">of</span> <span class="n">Python</span> <span class="mf">2.6</span><span class="o">.</span>
+
+<span class="n">Module</span> <span class="n">name</span><span class="p">:</span>   <span class="n">sha</span>
+<span class="n">Rationale</span><span class="p">:</span>     <span class="n">Replaced</span> <span class="n">by</span> <span class="n">the</span> <span class="s1">&#39;hashlib&#39;</span> <span class="n">module</span><span class="o">.</span>
+<span class="n">Date</span><span class="p">:</span>          <span class="mi">15</span><span class="o">-</span><span class="n">May</span><span class="o">-</span><span class="mi">2007</span>
+<span class="n">Documentation</span><span class="p">:</span> <span class="n">Documented</span> <span class="k">as</span> <span class="n">deprecated</span> <span class="k">as</span> <span class="n">of</span> <span class="n">Python</span> <span class="mf">2.5</span><span class="p">,</span> <span class="n">but</span>
+               <span class="n">listing</span> <span class="ow">in</span> <span class="n">this</span> <span class="n">PEP</span> <span class="n">was</span> <span class="n">neglected</span><span class="o">.</span>
+               <span class="ne">DeprecationWarning</span> <span class="n">added</span> <span class="ow">in</span> <span class="n">Python</span> <span class="mf">2.6</span><span class="o">.</span>
+
+<span class="n">Module</span> <span class="n">name</span><span class="p">:</span>   <span class="n">plat</span><span class="o">-</span><span class="n">freebsd2</span><span class="o">/</span><span class="n">IN</span> <span class="ow">and</span> <span class="n">plat</span><span class="o">-</span><span class="n">freebsd3</span><span class="o">/</span><span class="n">IN</span>
+<span class="n">Rationale</span><span class="p">:</span>     <span class="n">Platforms</span> <span class="n">are</span> <span class="n">obsolete</span> <span class="p">(</span><span class="n">last</span> <span class="n">released</span> <span class="ow">in</span> <span class="mi">2000</span><span class="p">)</span>
+               <span class="n">Removed</span> <span class="kn">from</span> <span class="mf">2.6</span>
+<span class="n">Date</span><span class="p">:</span>          <span class="mi">15</span><span class="o">-</span><span class="n">May</span><span class="o">-</span><span class="mi">2007</span>
+<span class="n">Documentation</span><span class="p">:</span> <span class="kc">None</span>
+
+<span class="n">Module</span> <span class="n">name</span><span class="p">:</span>   <span class="n">plat</span><span class="o">-</span><span class="n">freebsd4</span><span class="o">/</span><span class="n">IN</span> <span class="ow">and</span> <span class="n">possibly</span> <span class="n">plat</span><span class="o">-</span><span class="n">freebsd5</span><span class="o">/</span><span class="n">IN</span>
+<span class="n">Rationale</span><span class="p">:</span>     <span class="n">Platforms</span> <span class="n">are</span> <span class="n">obsolete</span><span class="o">/</span><span class="n">unsupported</span>
+<span class="n">Date</span><span class="p">:</span>          <span class="mi">15</span><span class="o">-</span><span class="n">May</span><span class="o">-</span><span class="mi">2007</span>
+               <span class="n">Remove</span> <span class="kn">from</span> <span class="mf">2.7</span>
+<span class="n">Documentation</span><span class="p">:</span> <span class="kc">None</span>
+
+<span class="n">Module</span> <span class="n">name</span><span class="p">:</span>   <span class="n">imp</span>
+<span class="n">Rationale</span><span class="p">:</span>     <span class="n">Replaced</span> <span class="n">by</span> <span class="n">the</span> <span class="n">importlib</span> <span class="n">module</span><span class="o">.</span>
+<span class="n">Date</span><span class="p">:</span>          <span class="mi">2013</span><span class="o">-</span><span class="mi">02</span><span class="o">-</span><span class="mi">10</span>
+<span class="n">Documentation</span><span class="p">:</span> <span class="n">Deprecated</span> <span class="k">as</span> <span class="n">of</span> <span class="n">Python</span> <span class="mf">3.4</span><span class="o">.</span>
+
+<span class="n">Module</span> <span class="n">name</span><span class="p">:</span>   <span class="n">formatter</span>
+<span class="n">Rationale</span><span class="p">:</span>     <span class="n">Lack</span> <span class="n">of</span> <span class="n">use</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">community</span><span class="p">,</span> <span class="n">no</span> <span class="n">tests</span> <span class="n">to</span> <span class="n">keep</span>
+               <span class="n">code</span> <span class="n">working</span><span class="o">.</span>
+<span class="n">Date</span><span class="p">:</span>          <span class="mi">2013</span><span class="o">-</span><span class="mi">08</span><span class="o">-</span><span class="mi">12</span>
+<span class="n">Documentation</span><span class="p">:</span> <span class="n">Deprecated</span> <span class="k">as</span> <span class="n">of</span> <span class="n">Python</span> <span class="mf">3.4</span><span class="o">.</span>
+
+<span class="n">Module</span> <span class="n">name</span><span class="p">:</span>   <span class="n">macpath</span>
+<span class="n">Rationale</span><span class="p">:</span>     <span class="n">Obsolete</span> <span class="n">macpath</span> <span class="n">module</span> <span class="n">dangerously</span> <span class="n">broken</span>
+               <span class="ow">and</span> <span class="n">should</span> <span class="n">be</span> <span class="n">removed</span><span class="o">.</span>
+<span class="n">Date</span><span class="p">:</span>          <span class="mi">2017</span><span class="o">-</span><span class="mi">05</span><span class="o">-</span><span class="mi">15</span>
+<span class="n">Documentation</span><span class="p">:</span> <span class="n">Platform</span> <span class="ow">is</span> <span class="n">obsolete</span><span class="o">/</span><span class="n">unsupported</span><span class="o">.</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="deprecation-of-modules-removed-in-python-3-0">
+<h2><a class="toc-backref" href="#id8">Deprecation of modules removed in Python 3.0</a><a class="headerlink" href="#deprecation-of-modules-removed-in-python-3-0" title="Permalink to this headline">¶</a></h2>
+<p>PEP 3108 lists all modules that have been removed from Python 3.0.
+They all are documented as deprecated in Python 2.6, and raise a
+DeprecationWarning if the -3 flag is activated.</p>
+</div>
+<div class="section" id="undeprecated-modules">
+<h2><a class="toc-backref" href="#id9">Undeprecated modules</a><a class="headerlink" href="#undeprecated-modules" title="Permalink to this headline">¶</a></h2>
+<p>None.</p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id10">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0004.txt">https://github.com/python/peps/blob/master/pep-0004.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0004.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0003.html">PEP 0003</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0005.html">PEP 0005</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 4 – Deprecation of Standard Modules</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#procedure-for-declaring-a-module-deprecated">Procedure for declaring a module deprecated</a><ul>
+<li><a class="reference internal" href="#for-modules-existing-in-both-python-2-7-and-python-3-5">For modules existing in both Python 2.7 and Python 3.5</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#procedure-for-declaring-a-module-undeprecated">Procedure for declaring a module undeprecated</a></li>
+<li><a class="reference internal" href="#obsolete-modules">Obsolete modules</a></li>
+<li><a class="reference internal" href="#deprecated-modules">Deprecated modules</a></li>
+<li><a class="reference internal" href="#deprecation-of-modules-removed-in-python-3-0">Deprecation of modules removed in Python 3.0</a></li>
+<li><a class="reference internal" href="#undeprecated-modules">Undeprecated modules</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

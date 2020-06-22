@@ -1,0 +1,193 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 424 – A method for exposing a length hint &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 425 – Compatibility Tags for Built Distributions" href="pep-0425.html" />
+    <link rel="prev" title="PEP 423 – Naming conventions and recipes related to packaging" href="pep-0423.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 424 – A method for exposing a length hint</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-424-a-method-for-exposing-a-length-hint">
+<h1 class="page-title">PEP 424 – A method for exposing a length hint<a class="headerlink" href="#pep-424-a-method-for-exposing-a-length-hint" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">424</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">A method for exposing a length hint</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Alex Gaynor &lt;alex.gaynor&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">14-July-2012</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.4</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2012-July/120920.html">https://mail.python.org/pipermail/python-dev/2012-July/120920.html</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id2">Abstract</a></li>
+<li><a class="reference internal" href="#specification" id="id3">Specification</a></li>
+<li><a class="reference internal" href="#rationale" id="id4">Rationale</a></li>
+<li><a class="reference internal" href="#copyright" id="id5">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id2">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>CPython currently defines a <code class="docutils literal notranslate"><span class="pre">__length_hint__</span></code> method on several
+types, such as various iterators.  This method is then used by various
+other functions (such as <code class="docutils literal notranslate"><span class="pre">list</span></code>) to presize lists based on the
+estimate returned by <code class="docutils literal notranslate"><span class="pre">__length_hint__</span></code>.  Types which are not sized,
+and thus should not define <code class="docutils literal notranslate"><span class="pre">__len__</span></code>, can then define
+<code class="docutils literal notranslate"><span class="pre">__length_hint__</span></code>, to allow estimating or computing a size (such as
+many iterators).</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id3">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>This PEP formally documents <code class="docutils literal notranslate"><span class="pre">__length_hint__</span></code> for other interpreters
+and non-standard-library Python modules to implement.</p>
+<p><code class="docutils literal notranslate"><span class="pre">__length_hint__</span></code> must return an integer (else a <code class="docutils literal notranslate"><span class="pre">TypeError</span></code> is
+raised) or <code class="docutils literal notranslate"><span class="pre">NotImplemented</span></code>, and is not required to be accurate.  It
+may return a value that is either larger or smaller than the actual
+size of the container.  A return value of <code class="docutils literal notranslate"><span class="pre">NotImplemented</span></code> indicates
+that there is no finite length estimate.  It may not return a negative
+value (else a ValueError is raised).</p>
+<p>In addition, a new function <code class="docutils literal notranslate"><span class="pre">operator.length_hint</span></code> hint is added,
+with the following semantics (which define how <code class="docutils literal notranslate"><span class="pre">__length_hint__</span></code>
+should be used):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">length_hint</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return an estimate of the number of items in obj.</span>
+
+<span class="sd">    This is useful for presizing containers when building from an</span>
+<span class="sd">    iterable.</span>
+
+<span class="sd">    If the object supports len(), the result will be</span>
+<span class="sd">    exact. Otherwise, it may over- or under-estimate by an</span>
+<span class="sd">    arbitrary amount. The result will be an integer &gt;= 0.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">get_hint</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="fm">__length_hint__</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">default</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">hint</span> <span class="o">=</span> <span class="n">get_hint</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">default</span>
+        <span class="k">if</span> <span class="n">hint</span> <span class="ow">is</span> <span class="bp">NotImplemented</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">default</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hint</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Length hint must be an integer, not </span><span class="si">%r</span><span class="s2">&quot;</span> <span class="o">%</span>
+                            <span class="nb">type</span><span class="p">(</span><span class="n">hint</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">hint</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;__length_hint__() should return &gt;= 0&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">hint</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id4">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Being able to pre-allocate lists based on the expected size, as
+estimated by <code class="docutils literal notranslate"><span class="pre">__length_hint__</span></code>, can be a significant optimization.
+CPython has been observed to run some code faster than PyPy, purely
+because of this optimization being present.</p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id5">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed into the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0424.txt">https://github.com/python/peps/blob/master/pep-0424.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0424.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0423.html">PEP 0423</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0425.html">PEP 0425</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 424 – A method for exposing a length hint</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

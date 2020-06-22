@@ -1,0 +1,505 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 612 – Parameter Specification Variables &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 613 – Explicit Type Aliases" href="pep-0613.html" />
+    <link rel="prev" title="PEP 611 – The one million limit" href="pep-0611.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 612 – Parameter Specification Variables</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-612-parameter-specification-variables">
+<h1 class="page-title">PEP 612 – Parameter Specification Variables<a class="headerlink" href="#pep-612-parameter-specification-variables" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">612</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Parameter Specification Variables</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Mark Mendoza &lt;mendoza.mark.a&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">Sponsor</dt>
+<dd class="field-even">Guido van Rossum &lt;guido&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-odd">Discussions-To</dt>
+<dd class="field-odd">Typing-Sig &lt;<a class="reference external" href="mailto:typing-sig&#37;&#52;&#48;python&#46;org?subject=PEP%20612">typing-sig&#32;&#97;t&#32;python.org</a>&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Draft</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">18-Dec-2019</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.9</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">18-Dec-2019</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#parameter-specification-variables" id="id3">Parameter Specification Variables</a><ul>
+<li><a class="reference internal" href="#abstract" id="id4">Abstract</a></li>
+<li><a class="reference internal" href="#motivation" id="id5">Motivation</a></li>
+<li><a class="reference internal" href="#specification" id="id6">Specification</a><ul>
+<li><a class="reference internal" href="#declarations" id="id7">Declarations</a></li>
+<li><a class="reference internal" href="#valid-use-locations" id="id8">Valid use locations</a></li>
+<li><a class="reference internal" href="#semantics" id="id9">Semantics</a></li>
+<li><a class="reference internal" href="#use-in-generic-classes" id="id10">Use in <code class="docutils literal notranslate"><span class="pre">Generic</span></code> Classes</a></li>
+<li><a class="reference internal" href="#the-components-of-a-parameterspecification" id="id11">The components of a <code class="docutils literal notranslate"><span class="pre">ParameterSpecification</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#backwards-compatibility" id="id12">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#reference-implementation" id="id13">Reference Implementation</a></li>
+<li><a class="reference internal" href="#rejected-alternatives" id="id14">Rejected Alternatives</a><ul>
+<li><a class="reference internal" href="#using-list-variadics-and-map-variadics" id="id15">Using List Variadics and Map Variadics</a></li>
+<li><a class="reference internal" href="#mutations-on-parameterspecifications" id="id16">Mutations on ParameterSpecifications</a></li>
+<li><a class="reference internal" href="#naming-this-an-argspec" id="id17">Naming this an <code class="docutils literal notranslate"><span class="pre">ArgSpec</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#acknowledgements" id="id18">Acknowledgements</a></li>
+<li><a class="reference internal" href="#copyright" id="id19">Copyright</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="parameter-specification-variables">
+<h2><a class="toc-backref" href="#id3">Parameter Specification Variables</a><a class="headerlink" href="#parameter-specification-variables" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="abstract">
+<h3><a class="toc-backref" href="#id4">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h3>
+<p>There currently are two ways to specify the type of a callable, the
+<code class="docutils literal notranslate"><span class="pre">Callable[[T1,</span> <span class="pre">T2],</span> <span class="pre">TReturn]</span></code> syntax defined in  <a class="reference external" href="https://www.python.org/dev/peps/pep-0484">PEP 484</a>, and callback protocols from <a class="reference external" href="https://www.python.org/dev/peps/pep-0544/#callback-protocols">PEP
+544</a>. Neither of
+these support forwarding the parameter types of one callable over to another
+callable, making it difficult to annotate function decorators. This PEP proposes
+<code class="docutils literal notranslate"><span class="pre">typing.ParameterSpecification</span></code>, a new kind of type variable, to support
+expressing these kinds of relationships.</p>
+</div>
+<div class="section" id="motivation">
+<h3><a class="toc-backref" href="#id5">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h3>
+<p>The existing standards for annotating higher order functions don’t give us the
+tools to annotate the following common decorator pattern satisfactorily:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Awaitable</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">TypeVar</span>
+
+<span class="n">TReturn</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;TReturn&quot;</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">add_logging</span><span class="p">(</span>
+    <span class="n">f</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">TReturn</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Awaitable</span><span class="p">[</span><span class="n">TReturn</span><span class="p">]]:</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">inner</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TReturn</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">log_to_database</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">inner</span>
+
+<span class="nd">@add_logging</span>
+<span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">7</span>
+
+<span class="k">await</span> <span class="n">foo</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;A&quot;</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">foo</span><span class="p">(</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="c1"># fails at runtime</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">add_logging</span></code>, a decorator which logs before each entry into the decorated
+function, is an instance of the Python idiom of one function passing all
+arguments given to it over to another function through the combination of the
+<code class="docutils literal notranslate"><span class="pre">*args</span></code> and <code class="docutils literal notranslate"><span class="pre">**kwargs</span></code> features in both parameters and in arguments. When
+one defines a function (like <code class="docutils literal notranslate"><span class="pre">inner</span></code>) that takes <code class="docutils literal notranslate"><span class="pre">(*args,</span> <span class="pre">**kwargs)</span></code> and
+goes on to call another function with <code class="docutils literal notranslate"><span class="pre">(*args,</span> <span class="pre">**kwargs)</span></code>, the wrapping
+function can only be safely called in all of the ways that the wrapped function
+could be safely called. To type this decorator, we’d like to be able to place
+a dependency between the parameters of the callable <code class="docutils literal notranslate"><span class="pre">f</span></code> and the parameters of
+the returned function. <a class="reference external" href="https://www.python.org/dev/peps/pep-0484">PEP 484</a>
+supports dependencies between single types, as in <code class="docutils literal notranslate"><span class="pre">def</span> <span class="pre">append(l:</span>
+<span class="pre">typing.List[T],</span> <span class="pre">e:</span> <span class="pre">T)</span> <span class="pre">-&gt;</span> <span class="pre">typing.List[T]:</span> <span class="pre">...</span></code>, but there is no existing way
+to do so with a complicated entity like the parameters one could pass to
+a function.</p>
+<p>Due to the limitations of the status quo, the <code class="docutils literal notranslate"><span class="pre">add_logging</span></code> example will type
+check but will fail at runtime. <code class="docutils literal notranslate"><span class="pre">inner</span></code> will pass the string “B” into <code class="docutils literal notranslate"><span class="pre">foo</span></code>, which will try to add 7 to it, triggering a type error.  This was not caught
+by the type checker because the decorated <code class="docutils literal notranslate"><span class="pre">foo</span></code> was given the type
+<code class="docutils literal notranslate"><span class="pre">Callable[...,</span> <span class="pre">Awaitable[int]]</span></code> which is specified to do no validation on its
+arguments.</p>
+<p>Without the ability to define dependencies between the parameters of different
+callable types, there is no way, at present, to make <code class="docutils literal notranslate"><span class="pre">add_logging</span></code> compatible
+with all functions, while still preserving the enforcement of the parameters of
+the decorated function.</p>
+<p>With the addition of the <code class="docutils literal notranslate"><span class="pre">ParameterSpecification</span></code> variables proposed by this
+PEP, we can rewrite the previous example in a way that keeps the flexibility of
+the decorator and the parameter enforcement of the decorated function.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Awaitable</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">ParameterSpecification</span><span class="p">,</span> <span class="n">TypeVar</span>
+
+<span class="n">Ps</span> <span class="o">=</span> <span class="n">ParameterSpecification</span><span class="p">(</span><span class="s2">&quot;Ps&quot;</span><span class="p">)</span>
+<span class="n">R</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;R&quot;</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">add_logging</span><span class="p">(</span><span class="n">f</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="n">Ps</span><span class="p">,</span> <span class="n">R</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="n">Ps</span><span class="p">,</span> <span class="n">Awaitable</span><span class="p">[</span><span class="n">R</span><span class="p">]]:</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">inner</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Ps</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Ps</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">R</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">log_to_database</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">inner</span>
+
+<span class="nd">@add_logging</span>
+<span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">7</span>
+
+<span class="k">await</span> <span class="n">foo</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;A&quot;</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">foo</span><span class="p">(</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="c1"># Incompatible parameter type:</span>
+                  <span class="c1"># Expected `int` for 1st anonymous parameter to call `foo`</span>
+                  <span class="c1"># but got `str`</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="specification">
+<h3><a class="toc-backref" href="#id6">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="declarations">
+<h4><a class="toc-backref" href="#id7">Declarations</a><a class="headerlink" href="#declarations" title="Permalink to this headline">¶</a></h4>
+<p>A parameter specification variable is defined in a similar manner to a normal
+<code class="docutils literal notranslate"><span class="pre">typing.TypeVar</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">ParameterSpecification</span>
+<span class="n">TParams</span> <span class="o">=</span> <span class="n">ParameterSpecification</span><span class="p">(</span><span class="s2">&quot;TParams&quot;</span><span class="p">)</span> <span class="c1"># Accepted</span>
+<span class="n">TParams</span> <span class="o">=</span> <span class="n">ParameterSpecification</span><span class="p">(</span><span class="s2">&quot;WrongName&quot;</span><span class="p">)</span> <span class="c1"># Rejected</span>
+</pre></div>
+</div>
+<p>The runtime should accept <code class="docutils literal notranslate"><span class="pre">bound</span></code>s and <code class="docutils literal notranslate"><span class="pre">covariant</span></code> and <code class="docutils literal notranslate"><span class="pre">contravariant</span></code>
+arguments in the declaration just as <code class="docutils literal notranslate"><span class="pre">typing.TypeVar</span></code> does, but for now we
+will defer the standardization of the semantics of those options to a later PEP.</p>
+</div>
+<div class="section" id="valid-use-locations">
+<h4><a class="toc-backref" href="#id8">Valid use locations</a><a class="headerlink" href="#valid-use-locations" title="Permalink to this headline">¶</a></h4>
+<p>A declared <code class="docutils literal notranslate"><span class="pre">ParameterSpecification</span></code> can only be used in the place of the list
+of types in the declaration of a <code class="docutils literal notranslate"><span class="pre">Callable</span></code> type, or a user defined class
+which is generic in a <code class="docutils literal notranslate"><span class="pre">ParameterSpecification</span></code> variable (i.e., <code class="docutils literal notranslate"><span class="pre">MyClass</span></code> in
+the following example).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">foo</span><span class="p">(</span>
+    <span class="n">x</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Callable</span><span class="p">[</span><span class="n">TParams</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">typing</span><span class="o">.</span><span class="n">Callable</span><span class="p">[</span><span class="n">TParams</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>  <span class="c1"># Accepted</span>
+    <span class="o">...</span>
+<span class="k">def</span> <span class="nf">foo</span><span class="p">(</span>
+    <span class="n">x</span><span class="p">:</span> <span class="n">MyClass</span><span class="p">[</span><span class="n">TParams</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">typing</span><span class="o">.</span><span class="n">Callable</span><span class="p">[</span><span class="n">TParams</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>  <span class="c1"># Accepted</span>
+    <span class="o">...</span>
+<span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">TParams</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TParams</span><span class="p">:</span> <span class="o">...</span>  <span class="c1"># Rejected</span>
+<span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">TParams</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span> <span class="c1"># Rejected</span>
+<span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">TParams</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span> <span class="c1"># Rejected</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="semantics">
+<h4><a class="toc-backref" href="#id9">Semantics</a><a class="headerlink" href="#semantics" title="Permalink to this headline">¶</a></h4>
+<p>The inference rules for the return type of a function invocation whose signature
+contains a <code class="docutils literal notranslate"><span class="pre">ParameterSpecification</span></code> variable are analogous to those around
+evaluating ones with <code class="docutils literal notranslate"><span class="pre">TypeVar</span></code>s.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">foo</span><span class="p">(</span>
+    <span class="n">x</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Callable</span><span class="p">[</span><span class="n">TParams</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">typing</span><span class="o">.</span><span class="n">Callable</span><span class="p">[</span><span class="n">TParams</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span> <span class="o">...</span>
+<span class="k">def</span> <span class="nf">bar</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span> <span class="o">...</span>
+<span class="n">f</span> <span class="o">=</span> <span class="n">foo</span><span class="p">(</span><span class="n">bar</span><span class="p">)</span> <span class="c1"># f should be inferred to have the same signature as bar,</span>
+             <span class="c1"># but returning str</span>
+<span class="n">f</span><span class="p">(</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span> <span class="c1"># Accepted</span>
+<span class="n">f</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="c1"># Accepted</span>
+<span class="n">f</span><span class="p">(</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;A&quot;</span><span class="p">)</span> <span class="c1"># Rejected</span>
+</pre></div>
+</div>
+<p>Just as with traditional <code class="docutils literal notranslate"><span class="pre">TypeVars</span></code>, a user may include the same
+<code class="docutils literal notranslate"><span class="pre">ParameterSpecification</span></code> multiple times in the arguments of the same function,
+to indicate a dependency between multiple arguments.  In these cases a type
+checker may choose to solve to a common behavioral supertype (i.e. a set of
+parameters for which all of the valid calls are valid in both of the subtypes),
+but is not obligated to do so.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">foo</span><span class="p">(</span>
+    <span class="n">x</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Callable</span><span class="p">[</span><span class="n">TParams</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">y</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Callable</span><span class="p">[</span><span class="n">TParams</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">typing</span><span class="o">.</span><span class="n">Callable</span><span class="p">[</span><span class="n">TParams</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]:</span> <span class="o">...</span>
+
+<span class="k">def</span> <span class="nf">x_int_y_str</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span> <span class="o">...</span>
+<span class="k">def</span> <span class="nf">y_int_x_str</span><span class="p">(</span><span class="n">y</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span> <span class="o">...</span>
+<span class="n">foo</span><span class="p">(</span><span class="n">x_int_y_str</span><span class="p">,</span> <span class="n">x_int_y_str</span><span class="p">)</span> <span class="c1"># Must return (x: int, y: str) -&gt; int</span>
+<span class="n">foo</span><span class="p">(</span><span class="n">x_int_y_str</span><span class="p">,</span> <span class="n">y_int_x_str</span><span class="p">)</span> <span class="c1"># Could return (__a: int, __b: str) -&gt; int</span>
+                              <span class="c1"># This works because both callables have types</span>
+                              <span class="c1"># that are behavioral subtypes of</span>
+                              <span class="c1"># Callable[[int, str], int]</span>
+
+<span class="k">def</span> <span class="nf">keyword_only_x</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span> <span class="o">...</span>
+<span class="k">def</span> <span class="nf">keyword_only_y</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span> <span class="o">...</span>
+<span class="n">foo</span><span class="p">(</span><span class="n">keyword_only_x</span><span class="p">,</span> <span class="n">keyword_only_y</span><span class="p">)</span> <span class="c1"># Must be rejected</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="use-in-generic-classes">
+<h4><a class="toc-backref" href="#id10">Use in <code class="docutils literal notranslate"><span class="pre">Generic</span></code> Classes</a><a class="headerlink" href="#use-in-generic-classes" title="Permalink to this headline">¶</a></h4>
+<p>Just as with normal <code class="docutils literal notranslate"><span class="pre">TypeVar</span></code>s, <code class="docutils literal notranslate"><span class="pre">ParameterSpecification</span></code>s can be used to
+make generic classes as well as generic functions. These are able to be
+mixed with normal <code class="docutils literal notranslate"><span class="pre">TypeVar</span></code>s. This also work with
+protocols in the same manner.</p>
+</div>
+<div class="section" id="the-components-of-a-parameterspecification">
+<h4><a class="toc-backref" href="#id11">The components of a <code class="docutils literal notranslate"><span class="pre">ParameterSpecification</span></code></a><a class="headerlink" href="#the-components-of-a-parameterspecification" title="Permalink to this headline">¶</a></h4>
+<p>A <code class="docutils literal notranslate"><span class="pre">ParameterSpecification</span></code> captures both positional and keyword accessible
+parameters, but there unfortunately is no object in the runtime that captures
+both of these together. Instead, we are forced to separate them into <code class="docutils literal notranslate"><span class="pre">*args</span></code>
+and <code class="docutils literal notranslate"><span class="pre">**kwargs</span></code>, respectively. This means we need to be able to split apart
+a single <code class="docutils literal notranslate"><span class="pre">ParameterSpecification</span></code> into these two components, and then bring
+them back together into a call.  To do this, we introduce <code class="docutils literal notranslate"><span class="pre">TParams.args</span></code> to
+represent the tuple of positional arguments in a given call and
+<code class="docutils literal notranslate"><span class="pre">TParams.kwargs</span></code> to represent the corresponding <code class="docutils literal notranslate"><span class="pre">Mapping</span></code> of keywords to
+values. These operators can only be used together, as the annotated types for
+<code class="docutils literal notranslate"><span class="pre">*args</span></code> and <code class="docutils literal notranslate"><span class="pre">**kwargs</span></code> .</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">G</span><span class="p">(</span><span class="n">Generic</span><span class="p">[</span><span class="n">TParams</span><span class="p">]):</span>
+    <span class="k">def</span> <span class="nf">foo</span><span class="p">(</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">TParams</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">TParams</span><span class="o">.</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>                                <span class="c1"># Accepted</span>
+        <span class="o">...</span>
+    <span class="k">def</span> <span class="nf">bar</span><span class="p">(</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">TParams</span><span class="o">.</span><span class="n">kwargs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">TParams</span><span class="o">.</span><span class="n">args</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>                                <span class="c1"># Rejected</span>
+        <span class="o">...</span>
+    <span class="k">def</span> <span class="nf">baz</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">TParams</span><span class="o">.</span><span class="n">args</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span> <span class="o">...</span> <span class="c1"># Rejected</span>
+    <span class="n">stored_arguments</span><span class="p">:</span> <span class="n">TParams</span><span class="o">.</span><span class="n">args</span>           <span class="c1"># Rejected</span>
+    <span class="k">def</span> <span class="nf">bap</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">TParams</span><span class="o">.</span><span class="n">args</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span> <span class="o">...</span>     <span class="c1"># Rejected</span>
+    <span class="k">def</span> <span class="nf">bop</span><span class="p">(</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TParams</span><span class="o">.</span><span class="n">args</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">TParams</span><span class="o">.</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>                                <span class="c1"># Rejected</span>
+        <span class="o">...</span>
+</pre></div>
+</div>
+<p>Because the default kind of parameter in Python (<code class="docutils literal notranslate"><span class="pre">(x:</span> <span class="pre">int)</span></code>) may be
+addressed both positionally and through its name, two valid invocations of
+a <code class="docutils literal notranslate"><span class="pre">(*args:</span> <span class="pre">TParams.args,</span> <span class="pre">**kwargs:</span> <span class="pre">TParams.kwargs)</span></code> function may give
+different partitions of the same set of parameters. Therefore we need to make
+sure that these special types are only brought into the world together, and are
+used together, so that our usage is valid for all possible partitions.</p>
+<p>With those requirements met, we can now take advantage of the unique properties
+afforded to us by this set up:</p>
+<ul class="simple">
+<li>Inside the function, <code class="docutils literal notranslate"><span class="pre">args</span></code> has the type <code class="docutils literal notranslate"><span class="pre">TParams.args</span></code>, not
+<code class="docutils literal notranslate"><span class="pre">Tuple[TParams.args,</span> <span class="pre">...]</span></code> as would be with a normal annotation
+(and likewise with the <code class="docutils literal notranslate"><span class="pre">**kwargs</span></code>)</li>
+<li>A function of type <code class="docutils literal notranslate"><span class="pre">Callable[TParams,</span> <span class="pre">TReturn]</span></code> can be called with
+<code class="docutils literal notranslate"><span class="pre">(*args,</span> <span class="pre">**kwargs)</span></code> if and only if <code class="docutils literal notranslate"><span class="pre">args</span></code> has the type <code class="docutils literal notranslate"><span class="pre">TParams.args</span></code>
+and <code class="docutils literal notranslate"><span class="pre">kwargs</span></code> has the type <code class="docutils literal notranslate"><span class="pre">TParams.kwargs</span></code>, and that those types both
+originated from the same function declaration.</li>
+<li>A function declared as
+<code class="docutils literal notranslate"><span class="pre">def</span> <span class="pre">inner(*args:</span> <span class="pre">TParams.args,</span> <span class="pre">**kwargs:</span> <span class="pre">TParams.kwargs)</span> <span class="pre">-&gt;</span> <span class="pre">X</span></code>
+has type <code class="docutils literal notranslate"><span class="pre">Callable[TParams,</span> <span class="pre">X]</span></code>.</li>
+</ul>
+<p>With these three properties, we now have the ability to fully type check
+parameter preserving decorators.</p>
+<p>One additional form that we want to support is functions that pass only a subset
+of their arguments on to another function. To avoid shadowing a named or keyword
+only argument in the <code class="docutils literal notranslate"><span class="pre">ParameterSpecification</span></code> we require that the additional
+arguments be anonymous arguments that precede the <code class="docutils literal notranslate"><span class="pre">*args</span></code> and <code class="docutils literal notranslate"><span class="pre">*kwargs</span></code></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">call_n_times</span><span class="p">(</span>
+    <span class="n">__f</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="n">TParams</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span>
+    <span class="n">__n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">TParams</span><span class="o">.</span><span class="n">args</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">TParams</span><span class="o">.</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">__n</span><span class="p">);</span>
+        <span class="n">__f</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="backwards-compatibility">
+<h3><a class="toc-backref" href="#id12">Backwards Compatibility</a><a class="headerlink" href="#backwards-compatibility" title="Permalink to this headline">¶</a></h3>
+<p>The only changes necessary to existing features in <code class="docutils literal notranslate"><span class="pre">typing</span></code> is allowing these
+<code class="docutils literal notranslate"><span class="pre">ParameterSpecification</span></code> objects to be the first parameter to <code class="docutils literal notranslate"><span class="pre">Callable</span></code> and
+to be a parameter to <code class="docutils literal notranslate"><span class="pre">Generic</span></code>. Currently <code class="docutils literal notranslate"><span class="pre">Callable</span></code> expects a list of types
+there and <code class="docutils literal notranslate"><span class="pre">Generic</span></code> expects single types, so they are currently mutually
+exclusive. Otherwise, existing code that doesn’t reference the new interfaces
+will be unaffected.</p>
+</div>
+<div class="section" id="reference-implementation">
+<h3><a class="toc-backref" href="#id13">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h3>
+<p>The <a class="reference external" href="https://pyre-check.org/">Pyre</a> type checker supports
+<code class="docutils literal notranslate"><span class="pre">ParameterSpecification</span></code>s, <code class="docutils literal notranslate"><span class="pre">.args</span></code> and <code class="docutils literal notranslate"><span class="pre">.kwargs</span></code> in the context of
+functions. Support for use with <code class="docutils literal notranslate"><span class="pre">Generic</span></code> is not yet implemented. A reference
+implementation of the runtime components needed for those uses is provided in
+the <code class="docutils literal notranslate"><span class="pre">pyre_extensions</span></code> module.</p>
+</div>
+<div class="section" id="rejected-alternatives">
+<h3><a class="toc-backref" href="#id14">Rejected Alternatives</a><a class="headerlink" href="#rejected-alternatives" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="using-list-variadics-and-map-variadics">
+<h4><a class="toc-backref" href="#id15">Using List Variadics and Map Variadics</a><a class="headerlink" href="#using-list-variadics-and-map-variadics" title="Permalink to this headline">¶</a></h4>
+<p>We considered just trying to make something like this with a callback protocol
+which was parameterized on a list-type variadic, and a map-type variadic like
+so:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>Treturn = typing.TypeVar(“Treturn”)
+Tpositionals = ....
+Tkeywords = ...
+class BetterCallable(typing.Protocol[Tpositionals, Tkeywords, Treturn]):
+  def __call__(*args: Tpositionals, **kwargs: Tkeywords) -&gt; Treturn: ...
+</pre></div>
+</div>
+<p>However there are some problems with trying to come up with a consistent
+solution for those type variables for a given callable. This problem comes up
+with even the simplest of callables:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>def simple(x: int) -&gt; None: ...
+simple &lt;: BetterCallable[[int], [], None]
+simple &lt;: BetterCallable[[], {“x”: int}, None]
+BetterCallable[[int], [], None] &lt;/: BetterCallable[[], {“x”: int}, None]
+</pre></div>
+</div>
+<p>Any time where a type can implement a protocol in more than one way that aren’t
+mutually compatible, we can run into situations where we lose information. If we
+were to make a decorator using this protocol, we have to pick one calling
+convention to prefer.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">decorator</span><span class="p">(</span>
+  <span class="n">f</span><span class="p">:</span> <span class="n">BetterCallable</span><span class="p">[[</span><span class="n">Ts</span><span class="p">],</span> <span class="p">[</span><span class="n">Tmap</span><span class="p">],</span> <span class="nb">int</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BetterCallable</span><span class="p">[[</span><span class="n">Ts</span><span class="p">],</span> <span class="p">[</span><span class="n">Tmap</span><span class="p">],</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span> <span class="nf">decorated</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Ts</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Tmap</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+       <span class="n">x</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+       <span class="k">return</span> <span class="n">int_to_str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">decorated</span>
+<span class="nd">@decorator</span>
+<span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">x</span>
+<span class="n">reveal_type</span><span class="p">(</span><span class="n">foo</span><span class="p">)</span> <span class="c1"># Option A: BetterCallable[[int], {}, str]</span>
+                 <span class="c1"># Option B: BetterCallable[[], {x: int}, str]</span>
+<span class="n">foo</span><span class="p">(</span><span class="mi">7</span><span class="p">)</span>   <span class="c1"># fails under option B</span>
+<span class="n">foo</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span> <span class="c1"># fails under option A</span>
+</pre></div>
+</div>
+<p>The core problem here is that, by default, parameters in Python can either be
+passed in positionally or as a keyword parameter. This means we really have
+three categories (positional-only, positional-or-keyword, keyword-only) we’re
+trying to jam into two categories. This is the same problem that we briefly
+mentioned when discussing <code class="docutils literal notranslate"><span class="pre">.args</span></code> and <code class="docutils literal notranslate"><span class="pre">.kwargs</span></code>. Fundamentally, in order to
+capture two categories when there are some things that can be in either
+category, we need a higher level primitive (<code class="docutils literal notranslate"><span class="pre">ParameterSpecification</span></code>) to
+capture all three, and then split them out afterward.</p>
+</div>
+<div class="section" id="mutations-on-parameterspecifications">
+<h4><a class="toc-backref" href="#id16">Mutations on ParameterSpecifications</a><a class="headerlink" href="#mutations-on-parameterspecifications" title="Permalink to this headline">¶</a></h4>
+<p>There are still a class of decorators still not supported with these features:
+those that mutate (add/remove/change) the parameters of the given function.
+Defining operators that do these mutations becomes very complicated very
+quickly, as you have to deal with name collision issues much more prominently.
+We will defer that work until there is significant demand, and then we would be
+open to revisiting it.</p>
+</div>
+<div class="section" id="naming-this-an-argspec">
+<h4><a class="toc-backref" href="#id17">Naming this an <code class="docutils literal notranslate"><span class="pre">ArgSpec</span></code></a><a class="headerlink" href="#naming-this-an-argspec" title="Permalink to this headline">¶</a></h4>
+<p>We think that calling this a ParameterSpecification is more correct than
+referring to it as an Argument Specification, since callables have parameters,
+which are distinct from the arguments which are passed to them in a given call
+site.  A given binding for a ParameterSpecification is a set of function
+parameters, not a call-site’s arguments.</p>
+</div>
+</div>
+<div class="section" id="acknowledgements">
+<h3><a class="toc-backref" href="#id18">Acknowledgements</a><a class="headerlink" href="#acknowledgements" title="Permalink to this headline">¶</a></h3>
+<p>Thanks to all of the members of the Pyre team for their comments on early drafts
+of this PEP, and for their help with the reference implementation.</p>
+<p>Thanks are also due to the whole Python typing community for their early
+feedback on this idea at a Python typing meetup, leading directly to the much
+more compact <code class="docutils literal notranslate"><span class="pre">.args</span></code>/<code class="docutils literal notranslate"><span class="pre">.kwargs</span></code> syntax.</p>
+</div>
+<div class="section" id="copyright">
+<h3><a class="toc-backref" href="#id19">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h3>
+<p>This document is placed in the public domain or under the CC0-1.0-Universal
+license, whichever is more permissive.</p>
+</div>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0612.rst">https://github.com/python/peps/blob/master/pep-0612.rst</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0612.rst.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0611.html">PEP 0611</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0613.html">PEP 0613</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 612 – Parameter Specification Variables</a><ul>
+<li><a class="reference internal" href="#parameter-specification-variables">Parameter Specification Variables</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#declarations">Declarations</a></li>
+<li><a class="reference internal" href="#valid-use-locations">Valid use locations</a></li>
+<li><a class="reference internal" href="#semantics">Semantics</a></li>
+<li><a class="reference internal" href="#use-in-generic-classes">Use in <code class="docutils literal notranslate"><span class="pre">Generic</span></code> Classes</a></li>
+<li><a class="reference internal" href="#the-components-of-a-parameterspecification">The components of a <code class="docutils literal notranslate"><span class="pre">ParameterSpecification</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#rejected-alternatives">Rejected Alternatives</a><ul>
+<li><a class="reference internal" href="#using-list-variadics-and-map-variadics">Using List Variadics and Map Variadics</a></li>
+<li><a class="reference internal" href="#mutations-on-parameterspecifications">Mutations on ParameterSpecifications</a></li>
+<li><a class="reference internal" href="#naming-this-an-argspec">Naming this an <code class="docutils literal notranslate"><span class="pre">ArgSpec</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#acknowledgements">Acknowledgements</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

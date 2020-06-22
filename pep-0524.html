@@ -1,0 +1,675 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 524 – Make os.urandom() blocking on Linux &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 525 – Asynchronous Generators" href="pep-0525.html" />
+    <link rel="prev" title="PEP 523 – Adding a frame evaluation API to CPython" href="pep-0523.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 524 – Make os.urandom() blocking on Linux</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-524-make-os-urandom-blocking-on-linux">
+<h1 class="page-title">PEP 524 – Make os.urandom() blocking on Linux<a class="headerlink" href="#pep-524-make-os-urandom-blocking-on-linux" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">524</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Make os.urandom() blocking on Linux</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Victor Stinner &lt;vstinner&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">20-June-2016</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.6</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id4">Abstract</a></li>
+<li><a class="reference internal" href="#the-bug" id="id5">The bug</a><ul>
+<li><a class="reference internal" href="#original-bug" id="id6">Original bug</a></li>
+<li><a class="reference internal" href="#status-in-python-3-5-2" id="id7">Status in Python 3.5.2</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#use-cases" id="id8">Use Cases</a><ul>
+<li><a class="reference internal" href="#use-case-1-init-script" id="id9">Use Case 1: init script</a><ul>
+<li><a class="reference internal" href="#use-case-1-1-no-secret-needed" id="id10">Use case 1.1: No secret needed</a></li>
+<li><a class="reference internal" href="#use-case-1-2-secure-secret-required" id="id11">Use case 1.2: Secure secret required</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#use-case-2-web-server" id="id12">Use Case 2: Web server</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#fix-system-urandom" id="id13">Fix system urandom</a><ul>
+<li><a class="reference internal" href="#load-entropy-from-disk-at-boot" id="id14">Load entropy from disk at boot</a></li>
+<li><a class="reference internal" href="#virtual-machines" id="id15">Virtual machines</a></li>
+<li><a class="reference internal" href="#embedded-devices" id="id16">Embedded devices</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#denial-of-service-when-reading-random" id="id17">Denial-of-service when reading random</a><ul>
+<li><a class="reference internal" href="#don-t-use-dev-random-but-dev-urandom" id="id18">Don’t use /dev/random but /dev/urandom</a></li>
+<li><a class="reference internal" href="#getrandom-size-0-can-block-forever-on-linux" id="id19">getrandom(size, 0) can block forever on Linux</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rationale" id="id20">Rationale</a></li>
+<li><a class="reference internal" href="#changes" id="id21">Changes</a><ul>
+<li><a class="reference internal" href="#make-os-urandom-blocking-on-linux" id="id22">Make os.urandom() blocking on Linux</a></li>
+<li><a class="reference internal" href="#add-a-new-os-getrandom-function" id="id23">Add a new os.getrandom() function</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#examples-using-os-getrandom" id="id24">Examples using os.getrandom()</a><ul>
+<li><a class="reference internal" href="#best-effort-rng" id="id25">Best-effort RNG</a></li>
+<li><a class="reference internal" href="#wait-for-system-rng" id="id26">wait_for_system_rng()</a></li>
+<li><a class="reference internal" href="#create-a-best-effort-rng" id="id27">Create a best-effort RNG</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#alternative" id="id28">Alternative</a><ul>
+<li><a class="reference internal" href="#leave-os-urandom-unchanged-add-os-getrandom" id="id29">Leave os.urandom() unchanged, add os.getrandom()</a></li>
+<li><a class="reference internal" href="#raise-blockingioerror-in-os-urandom" id="id30">Raise BlockingIOError in os.urandom()</a><ul>
+<li><a class="reference internal" href="#proposition" id="id31">Proposition</a></li>
+<li><a class="reference internal" href="#criticism" id="id32">Criticism</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#add-an-optional-block-parameter-to-os-urandom" id="id33">Add an optional block parameter to os.urandom()</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#acceptance" id="id34">Acceptance</a></li>
+<li><a class="reference internal" href="#annexes" id="id35">Annexes</a><ul>
+<li><a class="reference internal" href="#operating-system-random-functions" id="id36">Operating system random functions</a></li>
+<li><a class="reference internal" href="#why-using-os-urandom" id="id37">Why using os.urandom()?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#copyright" id="id38">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id4">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Modify <code class="docutils literal notranslate"><span class="pre">os.urandom()</span></code> to block on Linux 3.17 and newer until the OS
+urandom is initialized to increase the security.</p>
+<p>Add also a new <code class="docutils literal notranslate"><span class="pre">os.getrandom()</span></code> function (for Linux and Solaris) to be
+able to choose how to handle when <code class="docutils literal notranslate"><span class="pre">os.urandom()</span></code> is going to block on
+Linux.</p>
+</div>
+<div class="section" id="the-bug">
+<h2><a class="toc-backref" href="#id5">The bug</a><a class="headerlink" href="#the-bug" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="original-bug">
+<h3><a class="toc-backref" href="#id6">Original bug</a><a class="headerlink" href="#original-bug" title="Permalink to this headline">¶</a></h3>
+<p>Python 3.5.0 was enhanced to use the new <code class="docutils literal notranslate"><span class="pre">getrandom()</span></code> syscall
+introduced in Linux 3.17 and Solaris 11.3. The problem is that users
+started to complain that Python 3.5 blocks at startup on Linux in
+virtual machines and embedded devices: see issues <a class="reference external" href="http://bugs.python.org/issue25420">#25420</a> and <a class="reference external" href="http://bugs.python.org/issue26839">#26839</a>.</p>
+<p>On Linux, <code class="docutils literal notranslate"><span class="pre">getrandom(0)</span></code> blocks until the kernel initialized urandom
+with 128 bits of entropy. The issue #25420 describes a Linux build
+platform blocking at <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">random</span></code>. The issue #26839 describes a
+short Python script used to compute a MD5 hash, systemd-cron, script
+called very early in the init process. The system initialization blocks
+on this script which blocks on <code class="docutils literal notranslate"><span class="pre">getrandom(0)</span></code> to initialize Python.</p>
+<p>The Python initialization requires random bytes to implement a
+counter-measure against the hash denial-of-service (hash DoS), see:</p>
+<ul class="simple">
+<li><a class="reference external" href="http://bugs.python.org/issue13703">Issue #13703: Hash collision security issue</a></li>
+<li><a class="reference external" href="https://www.python.org/dev/peps/pep-0456/">PEP 456: Secure and interchangeable hash algorithm</a></li>
+</ul>
+<p>Importing the <code class="docutils literal notranslate"><span class="pre">random</span></code> module creates an instance of
+<code class="docutils literal notranslate"><span class="pre">random.Random</span></code>: <code class="docutils literal notranslate"><span class="pre">random._inst</span></code>. On Python 3.5, random.Random
+constructor reads 2500 bytes from <code class="docutils literal notranslate"><span class="pre">os.urandom()</span></code> to seed a Mersenne
+Twister RNG (random number generator).</p>
+<p>Other platforms may be affected by this bug, but in practice, only Linux
+systems use Python scripts to initialize the system.</p>
+</div>
+<div class="section" id="status-in-python-3-5-2">
+<h3><a class="toc-backref" href="#id7">Status in Python 3.5.2</a><a class="headerlink" href="#status-in-python-3-5-2" title="Permalink to this headline">¶</a></h3>
+<p>Python 3.5.2 behaves like Python 2.7 and Python 3.4. If the system
+urandom is not initialized, the startup does not block, but
+<code class="docutils literal notranslate"><span class="pre">os.urandom()</span></code> can return low-quality entropy (even it is not easily
+guessable).</p>
+</div>
+</div>
+<div class="section" id="use-cases">
+<h2><a class="toc-backref" href="#id8">Use Cases</a><a class="headerlink" href="#use-cases" title="Permalink to this headline">¶</a></h2>
+<p>The following use cases are used to help to choose the right compromise
+between security and practicability.</p>
+<div class="section" id="use-case-1-init-script">
+<h3><a class="toc-backref" href="#id9">Use Case 1: init script</a><a class="headerlink" href="#use-case-1-init-script" title="Permalink to this headline">¶</a></h3>
+<p>Use a Python 3 script to initialize the system, like systemd-cron. If
+the script blocks, the system initialize is stuck too. The issue #26839
+is a good example of this use case.</p>
+<div class="section" id="use-case-1-1-no-secret-needed">
+<h4><a class="toc-backref" href="#id10">Use case 1.1: No secret needed</a><a class="headerlink" href="#use-case-1-1-no-secret-needed" title="Permalink to this headline">¶</a></h4>
+<p>If the init script doesn’t have to generate any secure secret, this use
+case is already handled correctly in Python 3.5.2: Python startup
+doesn’t block on system urandom anymore.</p>
+</div>
+<div class="section" id="use-case-1-2-secure-secret-required">
+<h4><a class="toc-backref" href="#id11">Use case 1.2: Secure secret required</a><a class="headerlink" href="#use-case-1-2-secure-secret-required" title="Permalink to this headline">¶</a></h4>
+<p>If the init script has to generate a secure secret, there is no safe
+solution.</p>
+<p>Falling back to weak entropy is not acceptable, it would
+reduce the security of the program.</p>
+<p>Python cannot produce itself secure entropy, it can only wait until
+system urandom is initialized. But in this use case, the whole system
+initialization is blocked by this script, so the system fails to boot.</p>
+<p>The real answer is that the system initialization must not be blocked by
+such script. It is ok to start the script very early at system
+initialization, but the script may blocked a few seconds until it is
+able to generate the secret.</p>
+<p>Reminder: in some cases, the initialization of the system urandom never
+occurs and so programs waiting for system urandom blocks forever.</p>
+</div>
+</div>
+<div class="section" id="use-case-2-web-server">
+<h3><a class="toc-backref" href="#id12">Use Case 2: Web server</a><a class="headerlink" href="#use-case-2-web-server" title="Permalink to this headline">¶</a></h3>
+<p>Run a Python 3 web server serving web pages using HTTP and HTTPS
+protocols. The server is started as soon as possible.</p>
+<p>The first target of the hash DoS attack was web server: it’s important
+that the hash secret cannot be easily guessed by an attacker.</p>
+<p>If serving a web page needs a secret to create a cookie, create an
+encryption key, …, the secret must be created with good entropy:
+again, it must be hard to guess the secret.</p>
+<p>A web server requires security. If a choice must be made between
+security and running the server with weak entropy, security is more
+important. If there is no good entropy: the server must block or fail
+with an error.</p>
+<p>The question is if it makes sense to start a web server on a host before
+system urandom is initialized.</p>
+<p>The issues #25420 and #26839 are restricted to the Python startup, not
+to generate a secret before the system urandom is initialized.</p>
+</div>
+</div>
+<div class="section" id="fix-system-urandom">
+<h2><a class="toc-backref" href="#id13">Fix system urandom</a><a class="headerlink" href="#fix-system-urandom" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="load-entropy-from-disk-at-boot">
+<h3><a class="toc-backref" href="#id14">Load entropy from disk at boot</a><a class="headerlink" href="#load-entropy-from-disk-at-boot" title="Permalink to this headline">¶</a></h3>
+<p>Collecting entropy can take up to several minutes. To accelerate the
+system initialization, operating systems store entropy on disk at
+shutdown, and then reload entropy from disk at the boot.</p>
+<p>If a system collects enough entropy at least once, the system urandom
+will be initialized quickly, as soon as the entropy is reloaded from
+disk.</p>
+</div>
+<div class="section" id="virtual-machines">
+<h3><a class="toc-backref" href="#id15">Virtual machines</a><a class="headerlink" href="#virtual-machines" title="Permalink to this headline">¶</a></h3>
+<p>Virtual machines don’t have a direct access to the hardware and so have
+less sources of entropy than bare metal. A solution is to add a
+<a class="reference external" href="https://fedoraproject.org/wiki/Features/Virtio_RNG">virtio-rng device</a> to pass entropy
+from the host to the virtual machine.</p>
+</div>
+<div class="section" id="embedded-devices">
+<h3><a class="toc-backref" href="#id16">Embedded devices</a><a class="headerlink" href="#embedded-devices" title="Permalink to this headline">¶</a></h3>
+<p>A solution for embedded devices is to plug an hardware RNG.</p>
+<p>For example, Raspberry Pi have an hardware RNG but it’s not used by
+default. See: <a class="reference external" href="http://fios.sector16.net/hardware-rng-on-raspberry-pi/">Hardware RNG on Raspberry Pi</a>.</p>
+</div>
+</div>
+<div class="section" id="denial-of-service-when-reading-random">
+<h2><a class="toc-backref" href="#id17">Denial-of-service when reading random</a><a class="headerlink" href="#denial-of-service-when-reading-random" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="don-t-use-dev-random-but-dev-urandom">
+<h3><a class="toc-backref" href="#id18">Don’t use /dev/random but /dev/urandom</a><a class="headerlink" href="#don-t-use-dev-random-but-dev-urandom" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">/dev/random</span></code> device should only used for very specific use cases.
+Reading from <code class="docutils literal notranslate"><span class="pre">/dev/random</span></code> on Linux is likely to block. Users don’t
+like when an application blocks longer than 5 seconds to generate a
+secret. It is only expected for specific cases like generating
+explicitly an encryption key.</p>
+<p>When the system has no available entropy, choosing between blocking
+until entropy is available or falling back on lower quality entropy is a
+matter of compromise between security and practicability. The choice
+depends on the use case.</p>
+<p>On Linux, <code class="docutils literal notranslate"><span class="pre">/dev/urandom</span></code> is secure, it should be used instead of
+<code class="docutils literal notranslate"><span class="pre">/dev/random</span></code>. See <a class="reference external" href="http://www.2uo.de/myths-about-urandom/">Myths about /dev/urandom</a> by Thomas Hühn: “Fact:
+/dev/urandom is the preferred source of cryptographic randomness on
+UNIX-like systems”</p>
+</div>
+<div class="section" id="getrandom-size-0-can-block-forever-on-linux">
+<h3><a class="toc-backref" href="#id19">getrandom(size, 0) can block forever on Linux</a><a class="headerlink" href="#getrandom-size-0-can-block-forever-on-linux" title="Permalink to this headline">¶</a></h3>
+<p>The origin of the Python issue #26839 is the <a class="reference external" href="https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=822431">Debian bug
+report #822431</a>: in fact,
+<code class="docutils literal notranslate"><span class="pre">getrandom(size,</span> <span class="pre">0)</span></code> blocks forever on the virtual machine. The system
+succeeded to boot because systemd killed the blocked process after 90
+seconds.</p>
+<p>Solutions like <a class="reference internal" href="#load-entropy-from-disk-at-boot">Load entropy from disk at boot</a> reduces the risk of
+this bug.</p>
+</div>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id20">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>On Linux, reading the <code class="docutils literal notranslate"><span class="pre">/dev/urandom</span></code> can return “weak” entropy before
+urandom is fully initialized, before the kernel collected 128 bits of
+entropy. Linux 3.17 adds a new <code class="docutils literal notranslate"><span class="pre">getrandom()</span></code> syscall which allows to
+block until urandom is initialized.</p>
+<p>On Python 3.5.2, os.urandom() uses the
+<code class="docutils literal notranslate"><span class="pre">getrandom(size,</span> <span class="pre">GRND_NONBLOCK)</span></code>, but falls back on reading the
+non-blocking <code class="docutils literal notranslate"><span class="pre">/dev/urandom</span></code> if <code class="docutils literal notranslate"><span class="pre">getrandom(size,</span> <span class="pre">GRND_NONBLOCK)</span></code>
+fails with <code class="docutils literal notranslate"><span class="pre">EAGAIN</span></code>.</p>
+<p>Security experts promotes <code class="docutils literal notranslate"><span class="pre">os.urandom()</span></code> to generate cryptographic
+keys because it is implemented with a <a class="reference external" href="https://en.wikipedia.org/wiki/Cryptographically_secure_pseudorandom_number_generator">Cryptographically secure
+pseudo-random number generator (CSPRNG)</a>.
+By the way, <code class="docutils literal notranslate"><span class="pre">os.urandom()</span></code> is preferred over <code class="docutils literal notranslate"><span class="pre">ssl.RAND_bytes()</span></code> for
+different reasons.</p>
+<p>This PEP proposes to modify os.urandom() to use <code class="docutils literal notranslate"><span class="pre">getrandom()</span></code> in
+blocking mode to not return weak entropy, but also ensure that Python
+will not block at startup.</p>
+</div>
+<div class="section" id="changes">
+<h2><a class="toc-backref" href="#id21">Changes</a><a class="headerlink" href="#changes" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="make-os-urandom-blocking-on-linux">
+<h3><a class="toc-backref" href="#id22">Make os.urandom() blocking on Linux</a><a class="headerlink" href="#make-os-urandom-blocking-on-linux" title="Permalink to this headline">¶</a></h3>
+<p>All changes described in this section are specific to the Linux
+platform.</p>
+<p>Changes:</p>
+<ul class="simple">
+<li>Modify os.urandom() to block until system urandom is initialized:
+<code class="docutils literal notranslate"><span class="pre">os.urandom()</span></code> (C function <code class="docutils literal notranslate"><span class="pre">_PyOS_URandom()</span></code>) is modified to
+always call <code class="docutils literal notranslate"><span class="pre">getrandom(size,</span> <span class="pre">0)</span></code> (blocking mode) on Linux and
+Solaris.</li>
+<li>Add a new private <code class="docutils literal notranslate"><span class="pre">_PyOS_URandom_Nonblocking()</span></code> function: try to
+call <code class="docutils literal notranslate"><span class="pre">getrandom(size,</span> <span class="pre">GRND_NONBLOCK)</span></code> on Linux and Solaris, but
+falls back on reading <code class="docutils literal notranslate"><span class="pre">/dev/urandom</span></code> if it fails with <code class="docutils literal notranslate"><span class="pre">EAGAIN</span></code>.</li>
+<li>Initialize hash secret from non-blocking system urandom:
+<code class="docutils literal notranslate"><span class="pre">_PyRandom_Init()</span></code> is modified to call
+<code class="docutils literal notranslate"><span class="pre">_PyOS_URandom_Nonblocking()</span></code>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">random.Random</span></code> constructor now uses non-blocking system urandom: it
+is modified to use internally the new <code class="docutils literal notranslate"><span class="pre">_PyOS_URandom_Nonblocking()</span></code>
+function to seed the RNG.</li>
+</ul>
+</div>
+<div class="section" id="add-a-new-os-getrandom-function">
+<h3><a class="toc-backref" href="#id23">Add a new os.getrandom() function</a><a class="headerlink" href="#add-a-new-os-getrandom-function" title="Permalink to this headline">¶</a></h3>
+<p>A new <code class="docutils literal notranslate"><span class="pre">os.getrandom(size,</span> <span class="pre">flags=0)</span></code> function is added: use
+<code class="docutils literal notranslate"><span class="pre">getrandom()</span></code> syscall on Linux and <code class="docutils literal notranslate"><span class="pre">getrandom()</span></code> C function on
+Solaris.</p>
+<p>The function comes with 2 new flags:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">os.GRND_RANDOM</span></code>: read bytes from <code class="docutils literal notranslate"><span class="pre">/dev/random</span></code> rather than
+reading <code class="docutils literal notranslate"><span class="pre">/dev/urandom</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">os.GRND_NONBLOCK</span></code>: raise a BlockingIOError if <code class="docutils literal notranslate"><span class="pre">os.getrandom()</span></code>
+would block</li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">os.getrandom()</span></code> is a thin wrapper on the <code class="docutils literal notranslate"><span class="pre">getrandom()</span></code>
+syscall/C function and so inherit of its behaviour. For example, on
+Linux, it can return less bytes than requested if the syscall is
+interrupted by a signal.</p>
+</div>
+</div>
+<div class="section" id="examples-using-os-getrandom">
+<h2><a class="toc-backref" href="#id24">Examples using os.getrandom()</a><a class="headerlink" href="#examples-using-os-getrandom" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="best-effort-rng">
+<h3><a class="toc-backref" href="#id25">Best-effort RNG</a><a class="headerlink" href="#best-effort-rng" title="Permalink to this headline">¶</a></h3>
+<p>Example of a portable non-blocking RNG function: try to get random bytes
+from the OS urandom, or fallback on the random module.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">best_effort_rng</span><span class="p">(</span><span class="n">size</span><span class="p">):</span>
+    <span class="c1"># getrandom() is only available on Linux and Solaris</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">os</span><span class="p">,</span> <span class="s1">&#39;getrandom&#39;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">urandom</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="nb">bytearray</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># need a loop because getrandom() can return less bytes than</span>
+        <span class="c1"># requested for different reasons</span>
+        <span class="k">while</span> <span class="n">size</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getrandom</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">GRND_NONBLOCK</span><span class="p">)</span>
+            <span class="n">result</span> <span class="o">+=</span> <span class="n">data</span>
+            <span class="n">size</span> <span class="o">-=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">BlockingIOError</span><span class="p">:</span>
+        <span class="c1"># OS urandom is not initialized yet:</span>
+        <span class="c1"># fallback on the Python random module</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">randrange</span><span class="p">(</span><span class="mi">256</span><span class="p">)</span> <span class="k">for</span> <span class="n">byte</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">size</span><span class="p">))</span>
+        <span class="n">result</span> <span class="o">+=</span> <span class="n">data</span>
+    <span class="k">return</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This function <em>can</em> block in theory on a platform where
+<code class="docutils literal notranslate"><span class="pre">os.getrandom()</span></code> is not available but <code class="docutils literal notranslate"><span class="pre">os.urandom()</span></code> can block.</p>
+</div>
+<div class="section" id="wait-for-system-rng">
+<h3><a class="toc-backref" href="#id26">wait_for_system_rng()</a><a class="headerlink" href="#wait-for-system-rng" title="Permalink to this headline">¶</a></h3>
+<p>Example of function waiting <em>timeout</em> seconds until the OS urandom is
+initialized on Linux or Solaris:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">wait_for_system_rng</span><span class="p">(</span><span class="n">timeout</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">os</span><span class="p">,</span> <span class="s1">&#39;getrandom&#39;</span><span class="p">):</span>
+        <span class="k">return</span>
+
+    <span class="n">deadline</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">monotonic</span><span class="p">()</span> <span class="o">+</span> <span class="n">timeout</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">getrandom</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">GRND_NONBLOCK</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">BlockingIOError</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="n">time</span><span class="o">.</span><span class="n">monotonic</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">deadline</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;OS urandom not initialized after </span><span class="si">%s</span><span class="s1"> seconds&#39;</span>
+                            <span class="o">%</span> <span class="n">timeout</span><span class="p">)</span>
+
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">interval</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This function is <em>not</em> portable. For example, <code class="docutils literal notranslate"><span class="pre">os.urandom()</span></code> can block
+on FreeBSD in theory, at the early stage of the system initialization.</p>
+</div>
+<div class="section" id="create-a-best-effort-rng">
+<h3><a class="toc-backref" href="#id27">Create a best-effort RNG</a><a class="headerlink" href="#create-a-best-effort-rng" title="Permalink to this headline">¶</a></h3>
+<p>Simpler example to create a non-blocking RNG on Linux: choose between
+<code class="docutils literal notranslate"><span class="pre">Random.SystemRandom</span></code> and <code class="docutils literal notranslate"><span class="pre">Random.Random</span></code> depending if
+<code class="docutils literal notranslate"><span class="pre">getrandom(size)</span></code> would block.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">create_nonblocking_random</span><span class="p">():</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">os</span><span class="p">,</span> <span class="s1">&#39;getrandom&#39;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">random</span><span class="o">.</span><span class="n">Random</span><span class="p">()</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">getrandom</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">GRND_NONBLOCK</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">BlockingIOError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">random</span><span class="o">.</span><span class="n">Random</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">random</span><span class="o">.</span><span class="n">SystemRandom</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>This function is <em>not</em> portable. For example, <code class="docutils literal notranslate"><span class="pre">random.SystemRandom</span></code>
+can block on FreeBSD in theory, at the early stage of the system
+initialization.</p>
+</div>
+</div>
+<div class="section" id="alternative">
+<h2><a class="toc-backref" href="#id28">Alternative</a><a class="headerlink" href="#alternative" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="leave-os-urandom-unchanged-add-os-getrandom">
+<h3><a class="toc-backref" href="#id29">Leave os.urandom() unchanged, add os.getrandom()</a><a class="headerlink" href="#leave-os-urandom-unchanged-add-os-getrandom" title="Permalink to this headline">¶</a></h3>
+<p>os.urandom() remains unchanged: never block, but it can return weak
+entropy if system urandom is not initialized yet.</p>
+<p>Only add the new <code class="docutils literal notranslate"><span class="pre">os.getrandom()</span></code> function (wrapper to the
+<code class="docutils literal notranslate"><span class="pre">getrandom()</span></code> syscall/C function).</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">secrets.token_bytes()</span></code> function should be used to write portable
+code.</p>
+<p>The problem with this change is that it expects that users understand
+well security and know well each platforms. Python has the tradition of
+hiding “implementation details”. For example, <code class="docutils literal notranslate"><span class="pre">os.urandom()</span></code> is not a
+thin wrapper to the <code class="docutils literal notranslate"><span class="pre">/dev/urandom</span></code> device: it uses
+<code class="docutils literal notranslate"><span class="pre">CryptGenRandom()</span></code> on Windows, it uses <code class="docutils literal notranslate"><span class="pre">getentropy()</span></code> on OpenBSD, it
+tries <code class="docutils literal notranslate"><span class="pre">getrandom()</span></code> on Linux and Solaris or falls back on reading
+<code class="docutils literal notranslate"><span class="pre">/dev/urandom</span></code>. Python already uses the best available system RNG
+depending on the platform.</p>
+<p>This PEP does not change the API:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">os.urandom()</span></code>, <code class="docutils literal notranslate"><span class="pre">random.SystemRandom</span></code> and <code class="docutils literal notranslate"><span class="pre">secrets</span></code> for security</li>
+<li><code class="docutils literal notranslate"><span class="pre">random</span></code> module (except <code class="docutils literal notranslate"><span class="pre">random.SystemRandom</span></code>) for all other usages</li>
+</ul>
+</div>
+<div class="section" id="raise-blockingioerror-in-os-urandom">
+<h3><a class="toc-backref" href="#id30">Raise BlockingIOError in os.urandom()</a><a class="headerlink" href="#raise-blockingioerror-in-os-urandom" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="proposition">
+<h4><a class="toc-backref" href="#id31">Proposition</a><a class="headerlink" href="#proposition" title="Permalink to this headline">¶</a></h4>
+<p><a class="reference external" href="https://www.python.org/dev/peps/pep-0522/">PEP 522: Allow BlockingIOError in security sensitive APIs on Linux</a>.</p>
+<p>Python should not decide for the developer how to handle <a class="reference internal" href="#the-bug">The bug</a>:
+raising immediately a <code class="docutils literal notranslate"><span class="pre">BlockingIOError</span></code> if <code class="docutils literal notranslate"><span class="pre">os.urandom()</span></code> is going to
+block allows developers to choose how to handle this case:</p>
+<ul class="simple">
+<li>catch the exception and falls back to a non-secure entropy source:
+read <code class="docutils literal notranslate"><span class="pre">/dev/urandom</span></code> on Linux, use the Python <code class="docutils literal notranslate"><span class="pre">random</span></code> module
+(which is not secure at all), use time, use process identifier, etc.</li>
+<li>don’t catch the error, the whole program fails with this fatal
+exception</li>
+</ul>
+<p>More generally, the exception helps to notify when sometimes goes wrong.
+The application can emit a warning when it starts to wait for
+<code class="docutils literal notranslate"><span class="pre">os.urandom()</span></code>.</p>
+</div>
+<div class="section" id="criticism">
+<h4><a class="toc-backref" href="#id32">Criticism</a><a class="headerlink" href="#criticism" title="Permalink to this headline">¶</a></h4>
+<p>For the use case 2 (web server), falling back on non-secure entropy is
+not acceptable. The application must handle <code class="docutils literal notranslate"><span class="pre">BlockingIOError</span></code>: poll
+<code class="docutils literal notranslate"><span class="pre">os.urandom()</span></code> until it completes. Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">secret</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">16</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">urandom</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">BlockingIOError</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Wait for system urandom initialization: move your &quot;</span>
+          <span class="s2">&quot;mouse, use your keyboard, use your disk, ...&quot;</span><span class="p">)</span>
+    <span class="k">while</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="c1"># Avoid busy-loop: sleep 1 ms</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.001</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">urandom</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">BlockingIOError</span><span class="p">:</span>
+            <span class="k">pass</span>
+</pre></div>
+</div>
+<p>For correctness, all applications which must generate a secure secret
+must be modified to handle <code class="docutils literal notranslate"><span class="pre">BlockingIOError</span></code> even if <a class="reference internal" href="#the-bug">The bug</a> is
+unlikely.</p>
+<p>The case of applications using <code class="docutils literal notranslate"><span class="pre">os.urandom()</span></code> but don’t really require
+security is not well defined. Maybe these applications should not use
+<code class="docutils literal notranslate"><span class="pre">os.urandom()</span></code> at the first place, but always the non-blocking
+<code class="docutils literal notranslate"><span class="pre">random</span></code> module. If <code class="docutils literal notranslate"><span class="pre">os.urandom()</span></code> is used for security, we are back
+to the use case 2 described above: <a class="reference internal" href="#use-case-2-web-server">Use Case 2: Web server</a>. If a
+developer doesn’t want to drop <code class="docutils literal notranslate"><span class="pre">os.urandom()</span></code>, the code should be
+modified. Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">almost_secret</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">16</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">urandom</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">BlockingIOError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">randrange</span><span class="p">(</span><span class="mi">256</span><span class="p">)</span> <span class="k">for</span> <span class="n">byte</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>The question is if <a class="reference internal" href="#the-bug">The bug</a> is common enough to require that so many
+applications have to be modified.</p>
+<p>Another simpler choice is to refuse to start before the system urandom
+is initialized:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">secret</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">16</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">urandom</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">BlockingIOError</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Fatal error: the system urandom is not initialized&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Wait a bit, and rerun the program later.&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Compared to Python 2.7, Python 3.4 and Python 3.5.2 where os.urandom()
+never blocks nor raise an exception on Linux, such behaviour change can
+be seen as a major regression.</p>
+</div>
+</div>
+<div class="section" id="add-an-optional-block-parameter-to-os-urandom">
+<h3><a class="toc-backref" href="#id33">Add an optional block parameter to os.urandom()</a><a class="headerlink" href="#add-an-optional-block-parameter-to-os-urandom" title="Permalink to this headline">¶</a></h3>
+<p>See the <a class="reference external" href="http://bugs.python.org/issue27250">issue #27250: Add os.urandom_block()</a>.</p>
+<p>Add an optional block parameter to os.urandom(). The default value may
+be <code class="docutils literal notranslate"><span class="pre">True</span></code> (block by default) or <code class="docutils literal notranslate"><span class="pre">False</span></code> (non-blocking).</p>
+<p>The first technical issue is to implement <code class="docutils literal notranslate"><span class="pre">os.urandom(block=False)</span></code> on
+all platforms. Only Linux 3.17 (and newer) and Solaris 11.3 (and newer)
+have a well defined non-blocking API (<code class="docutils literal notranslate"><span class="pre">getrandom(size,</span>
+<span class="pre">GRND_NONBLOCK)</span></code>).</p>
+<p>As <a class="reference internal" href="#raise-blockingioerror-in-os-urandom">Raise BlockingIOError in os.urandom()</a>, it doesn’t seem worth it to
+make the API more complex for a theoretical (or at least very rare) use
+case.</p>
+<p>As <a class="reference internal" href="#leave-os-urandom-unchanged-add-os-getrandom">Leave os.urandom() unchanged, add os.getrandom()</a>, the problem is
+that it makes the API more complex and so more error-prone.</p>
+</div>
+</div>
+<div class="section" id="acceptance">
+<h2><a class="toc-backref" href="#id34">Acceptance</a><a class="headerlink" href="#acceptance" title="Permalink to this headline">¶</a></h2>
+<p>The PEP was <a class="reference external" href="https://mail.python.org/pipermail/security-sig/2016-August/000101.html">accepted on 2016-08-08 by Guido van Rossum</a>.</p>
+</div>
+<div class="section" id="annexes">
+<h2><a class="toc-backref" href="#id35">Annexes</a><a class="headerlink" href="#annexes" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="operating-system-random-functions">
+<h3><a class="toc-backref" href="#id36">Operating system random functions</a><a class="headerlink" href="#operating-system-random-functions" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">os.urandom()</span></code> uses the following functions:</p>
+<ul class="simple">
+<li><a class="reference external" href="http://man.openbsd.org/OpenBSD-current/man2/getentropy.2">OpenBSD: getentropy()</a>
+(OpenBSD 5.6)</li>
+<li><a class="reference external" href="http://man7.org/linux/man-pages/man2/getrandom.2.html">Linux: getrandom()</a> (Linux 3.17)
+– see also <a class="reference external" href="https://lwn.net/Articles/606141/">A system call for random numbers: getrandom()</a></li>
+<li>Solaris: <a class="reference external" href="https://docs.oracle.com/cd/E53394_01/html/E54765/getentropy-2.html#scrolltoc">getentropy()</a>,
+<a class="reference external" href="https://docs.oracle.com/cd/E53394_01/html/E54765/getrandom-2.html">getrandom()</a>
+(both need Solaris 11.3)</li>
+<li>UNIX, BSD: /dev/urandom, /dev/random</li>
+<li>Windows: <a class="reference external" href="https://msdn.microsoft.com/en-us/library/windows/desktop/aa379942%28v=vs.85%29.aspx">CryptGenRandom()</a>
+(Windows XP)</li>
+</ul>
+<p>On Linux, commands to get the status of <code class="docutils literal notranslate"><span class="pre">/dev/random</span></code> (results are
+number of bytes):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cat /proc/sys/kernel/random/entropy_avail
+2850
+$ cat /proc/sys/kernel/random/poolsize
+4096
+</pre></div>
+</div>
+</div>
+<div class="section" id="why-using-os-urandom">
+<h3><a class="toc-backref" href="#id37">Why using os.urandom()?</a><a class="headerlink" href="#why-using-os-urandom" title="Permalink to this headline">¶</a></h3>
+<p>Since <code class="docutils literal notranslate"><span class="pre">os.urandom()</span></code> is implemented in the kernel, it doesn’t have
+issues of user-space RNG. For example, it is much harder to get its
+state. It is usually built on a CSPRNG, so even if its state is
+“stolen”, it is hard to compute previously generated numbers. The kernel
+has a good knowledge of entropy sources and feed regularly the entropy
+pool.</p>
+<p>That’s also why <code class="docutils literal notranslate"><span class="pre">os.urandom()</span></code> is preferred over <code class="docutils literal notranslate"><span class="pre">ssl.RAND_bytes()</span></code>.</p>
+</div>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id38">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0524.txt">https://github.com/python/peps/blob/master/pep-0524.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0524.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0523.html">PEP 0523</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0525.html">PEP 0525</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 524 – Make os.urandom() blocking on Linux</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#the-bug">The bug</a><ul>
+<li><a class="reference internal" href="#original-bug">Original bug</a></li>
+<li><a class="reference internal" href="#status-in-python-3-5-2">Status in Python 3.5.2</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#use-cases">Use Cases</a><ul>
+<li><a class="reference internal" href="#use-case-1-init-script">Use Case 1: init script</a><ul>
+<li><a class="reference internal" href="#use-case-1-1-no-secret-needed">Use case 1.1: No secret needed</a></li>
+<li><a class="reference internal" href="#use-case-1-2-secure-secret-required">Use case 1.2: Secure secret required</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#use-case-2-web-server">Use Case 2: Web server</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#fix-system-urandom">Fix system urandom</a><ul>
+<li><a class="reference internal" href="#load-entropy-from-disk-at-boot">Load entropy from disk at boot</a></li>
+<li><a class="reference internal" href="#virtual-machines">Virtual machines</a></li>
+<li><a class="reference internal" href="#embedded-devices">Embedded devices</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#denial-of-service-when-reading-random">Denial-of-service when reading random</a><ul>
+<li><a class="reference internal" href="#don-t-use-dev-random-but-dev-urandom">Don’t use /dev/random but /dev/urandom</a></li>
+<li><a class="reference internal" href="#getrandom-size-0-can-block-forever-on-linux">getrandom(size, 0) can block forever on Linux</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#changes">Changes</a><ul>
+<li><a class="reference internal" href="#make-os-urandom-blocking-on-linux">Make os.urandom() blocking on Linux</a></li>
+<li><a class="reference internal" href="#add-a-new-os-getrandom-function">Add a new os.getrandom() function</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#examples-using-os-getrandom">Examples using os.getrandom()</a><ul>
+<li><a class="reference internal" href="#best-effort-rng">Best-effort RNG</a></li>
+<li><a class="reference internal" href="#wait-for-system-rng">wait_for_system_rng()</a></li>
+<li><a class="reference internal" href="#create-a-best-effort-rng">Create a best-effort RNG</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#alternative">Alternative</a><ul>
+<li><a class="reference internal" href="#leave-os-urandom-unchanged-add-os-getrandom">Leave os.urandom() unchanged, add os.getrandom()</a></li>
+<li><a class="reference internal" href="#raise-blockingioerror-in-os-urandom">Raise BlockingIOError in os.urandom()</a><ul>
+<li><a class="reference internal" href="#proposition">Proposition</a></li>
+<li><a class="reference internal" href="#criticism">Criticism</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#add-an-optional-block-parameter-to-os-urandom">Add an optional block parameter to os.urandom()</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#acceptance">Acceptance</a></li>
+<li><a class="reference internal" href="#annexes">Annexes</a><ul>
+<li><a class="reference internal" href="#operating-system-random-functions">Operating system random functions</a></li>
+<li><a class="reference internal" href="#why-using-os-urandom">Why using os.urandom()?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

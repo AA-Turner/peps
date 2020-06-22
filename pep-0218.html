@@ -1,0 +1,355 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 218 – Adding a Built-In Set Object Type &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 219 – Stackless Python" href="pep-0219.html" />
+    <link rel="prev" title="PEP 217 – Display Hook for Interactive Use" href="pep-0217.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 218 – Adding a Built-In Set Object Type</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-218-adding-a-built-in-set-object-type">
+<h1 class="page-title">PEP 218 – Adding a Built-In Set Object Type<a class="headerlink" href="#pep-218-adding-a-built-in-set-object-type" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">218</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Adding a Built-In Set Object Type</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">gvwilson&#32;&#97;t&#32;ddj.com (Greg Wilson), python&#32;&#97;t&#32;rcn.com (Raymond Hettinger)</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">31-Jul-2000</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.2</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#introduction" id="id2">Introduction</a></li>
+<li><a class="reference internal" href="#rationale" id="id3">Rationale</a></li>
+<li><a class="reference internal" href="#proposal" id="id4">Proposal</a></li>
+<li><a class="reference internal" href="#set-notation" id="id5">Set Notation</a></li>
+<li><a class="reference internal" href="#history" id="id6">History</a></li>
+<li><a class="reference internal" href="#mutability" id="id7">Mutability</a></li>
+<li><a class="reference internal" href="#copyright" id="id8">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="introduction">
+<h2><a class="toc-backref" href="#id2">Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes adding a Set module to the standard Python
+library, and to then make sets a built-in Python type if that
+module is widely used.  After explaining why sets are desirable,
+and why the common idiom of using dictionaries in their place is
+inadequate, we describe how we intend built-in sets to work, and
+then how the preliminary Set module will behave.  The last
+section discusses the mutability (or otherwise) of sets and set
+elements, and the solution which the Set module will implement.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id3">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Sets are a fundamental mathematical structure, and are very
+commonly used in algorithm specifications.  They are much less
+frequently used in implementations, even when they are the “right”
+structure.  Programmers frequently use lists instead, even when
+the ordering information in lists is irrelevant, and by-value
+lookups are frequent.  (Most medium-sized C programs contain a
+depressing number of start-to-end searches through malloc’d
+vectors to determine whether particular items are present or
+not…)</p>
+<p>Programmers are often told that they can implement sets as
+dictionaries with “don’t care” values.  Items can be added to
+these “sets” by assigning the “don’t care” value to them;
+membership can be tested using <code class="docutils literal notranslate"><span class="pre">dict.has_key</span></code>; and items can be
+deleted using <code class="docutils literal notranslate"><span class="pre">del</span></code>.  However, the other main operations on sets
+(union, intersection, and difference) are not directly supported
+by this representation, since their meaning is ambiguous for
+dictionaries containing key/value pairs.</p>
+</div>
+<div class="section" id="proposal">
+<h2><a class="toc-backref" href="#id4">Proposal</a><a class="headerlink" href="#proposal" title="Permalink to this headline">¶</a></h2>
+<p>The long-term goal of this PEP is to add a built-in set type to
+Python.  This type will be an unordered collection of unique
+values, just as a dictionary is an unordered collection of
+key/value pairs.</p>
+<p>Iteration and comprehension will be implemented in the obvious
+ways, so that:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">S</span><span class="p">:</span>
+</pre></div>
+</div>
+<p>will step through the elements of S in arbitrary order, while:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">set</span><span class="p">(</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">S</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>will produce a set containing the squares of all elements in S,
+Membership will be tested using <code class="docutils literal notranslate"><span class="pre">in</span></code> and <code class="docutils literal notranslate"><span class="pre">not</span> <span class="pre">in</span></code>, and basic set
+operations will be implemented by a mixture of overloaded
+operators:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 31%" />
+<col style="width: 69%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">|</span></code></td>
+<td>union</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">&amp;</span></code></td>
+<td>intersection</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">^</span></code></td>
+<td>symmetric difference</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">-</span></code></td>
+<td>asymmetric difference</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">==</span> <span class="pre">!=</span></code></td>
+<td>equality and inequality tests</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">&lt;</span> <span class="pre">&lt;=</span> <span class="pre">&gt;=</span> <span class="pre">&gt;</span></code></td>
+<td>subset and superset tests</td>
+</tr>
+</tbody>
+</table>
+<p>and methods:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 71%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">S.add(x)</span></code></td>
+<td>Add “x” to the set.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">S.update(s)</span></code></td>
+<td>Add all elements of sequence “s” to the set.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">S.remove(x)</span></code></td>
+<td>Remove “x” from the set.  If “x” is not
+present, this method raises a <code class="docutils literal notranslate"><span class="pre">LookupError</span></code>
+exception.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">S.discard(x)</span></code></td>
+<td>Remove “x” from the set if it is present, or
+do nothing if it is not.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">S.pop()</span></code></td>
+<td>Remove and return an arbitrary element,
+raising a <code class="docutils literal notranslate"><span class="pre">LookupError</span></code> if the element is
+not present.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">S.clear()</span></code></td>
+<td>Remove all elements from this set.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">S.copy()</span></code></td>
+<td>Make a new set.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">s.issuperset()</span></code></td>
+<td>Check for a superset relationship.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">s.issubset()</span></code></td>
+<td>Check for a subset relationship.</td>
+</tr>
+</tbody>
+</table>
+<p>and two new built-in conversion functions:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 75%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">set(x)</span></code></td>
+<td>Create a set containing the elements of the
+collection “x”.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">frozenset(x)</span></code></td>
+<td>Create an immutable set containing the elements
+of the collection “x”.</td>
+</tr>
+</tbody>
+</table>
+<p>Notes:</p>
+<ol class="arabic simple">
+<li>We propose using the bitwise operators “<code class="docutils literal notranslate"><span class="pre">|&amp;</span></code>” for intersection
+and union.  While “<code class="docutils literal notranslate"><span class="pre">+</span></code>” for union would be intuitive, “<code class="docutils literal notranslate"><span class="pre">*</span></code>” for
+intersection is not (very few of the people asked guessed what
+it did correctly).</li>
+<li>We considered using “<code class="docutils literal notranslate"><span class="pre">+</span></code>” to add elements to a set, rather than
+“add”.  However, Guido van Rossum pointed out that “<code class="docutils literal notranslate"><span class="pre">+</span></code>” is
+symmetric for other built-in types (although “<code class="docutils literal notranslate"><span class="pre">*</span></code>” is not).  Use
+of “add” will also avoid confusion between that operation and
+set union.</li>
+</ol>
+</div>
+<div class="section" id="set-notation">
+<h2><a class="toc-backref" href="#id5">Set Notation</a><a class="headerlink" href="#set-notation" title="Permalink to this headline">¶</a></h2>
+<p>The PEP originally proposed <code class="docutils literal notranslate"><span class="pre">{1,2,3}</span></code> as the set notation and <code class="docutils literal notranslate"><span class="pre">{-}</span></code> for
+the empty set.  Experience with Python 2.3’s <code class="docutils literal notranslate"><span class="pre">sets.py</span></code> showed that
+the notation was not necessary.  Also, there was some risk of making
+dictionaries less instantly recognizable.</p>
+<p>It was also contemplated that the braced notation would support set
+comprehensions; however, Python 2.4 provided generator expressions
+which fully met that need and did so it a more general way.
+(See PEP 289 for details on generator expressions).</p>
+<p>So, Guido ruled that there would not be a set syntax; however, the
+issue could be revisited for Python 3000 (see PEP 3000).</p>
+</div>
+<div class="section" id="history">
+<h2><a class="toc-backref" href="#id6">History</a><a class="headerlink" href="#history" title="Permalink to this headline">¶</a></h2>
+<p>To gain experience with sets, a pure python module was introduced
+in Python 2.3.  Based on that implementation, the set and frozenset
+types were introduced in Python 2.4.  The improvements are:</p>
+<ul class="simple">
+<li>Better hash algorithm for frozensets</li>
+<li>More compact pickle format (storing only an element list
+instead of a dictionary of key:value pairs where the value
+is always <code class="docutils literal notranslate"><span class="pre">True</span></code>).</li>
+<li>Use a <code class="docutils literal notranslate"><span class="pre">__reduce__</span></code> function so that deep copying is automatic.</li>
+<li>The BaseSet concept was eliminated.</li>
+<li>The <code class="docutils literal notranslate"><span class="pre">union_update()</span></code> method became just <code class="docutils literal notranslate"><span class="pre">update()</span></code>.</li>
+<li>Auto-conversion between mutable and immutable sets was dropped.</li>
+<li>The <code class="docutils literal notranslate"><span class="pre">_repr</span></code> method was dropped (the need is met by the new
+<code class="docutils literal notranslate"><span class="pre">sorted()</span></code> built-in function).</li>
+</ul>
+<p>Tim Peters believes that the class’s constructor should take a
+single sequence as an argument, and populate the set with that
+sequence’s elements.  His argument is that in most cases,
+programmers will be creating sets from pre-existing sequences, so
+that this case should be the common one.  However, this would
+require users to remember an extra set of parentheses when
+initializing a set with known values:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Set</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>       <span class="c1"># case 1</span>
+</pre></div>
+</div>
+<p>On the other hand, feedback from a small number of novice Python
+users (all of whom were very experienced with other languages)
+indicates that people will find a “parenthesis-free” syntax more
+natural:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Set</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>         <span class="c1"># case 2</span>
+</pre></div>
+</div>
+<p>Ultimately, we adopted the first strategy in which the initializer
+takes a single iterable argument.</p>
+</div>
+<div class="section" id="mutability">
+<h2><a class="toc-backref" href="#id7">Mutability</a><a class="headerlink" href="#mutability" title="Permalink to this headline">¶</a></h2>
+<p>The most difficult question to resolve in this proposal was
+whether sets ought to be able to contain mutable elements.  A
+dictionary’s keys must be immutable in order to support fast,
+reliable lookup.  While it would be easy to require set elements
+to be immutable, this would preclude sets of sets (which are
+widely used in graph algorithms and other applications).</p>
+<p>Earlier drafts of PEP 218 had only a single set type, but the
+<code class="docutils literal notranslate"><span class="pre">sets.py</span></code> implementation in Python 2.3 has two, Set and
+ImmutableSet.  For Python 2.4, the new built-in types were named
+<code class="docutils literal notranslate"><span class="pre">set</span></code> and <code class="docutils literal notranslate"><span class="pre">frozenset</span></code> which are slightly less cumbersome.</p>
+<p>There are two classes implemented in the “sets” module.  Instances
+of the Set class can be modified by the addition or removal of
+elements, and the ImmutableSet class is “frozen”, with an
+unchangeable collection of elements.  Therefore, an ImmutableSet
+may be used as a dictionary key or as a set element, but cannot be
+updated.  Both types of set require that their elements are
+immutable, hashable objects.  Parallel comments apply to the “set”
+and “frozenset” built-in types.</p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id8">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the Public Domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0218.txt">https://github.com/python/peps/blob/master/pep-0218.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0218.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0217.html">PEP 0217</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0219.html">PEP 0219</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 218 – Adding a Built-In Set Object Type</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#proposal">Proposal</a></li>
+<li><a class="reference internal" href="#set-notation">Set Notation</a></li>
+<li><a class="reference internal" href="#history">History</a></li>
+<li><a class="reference internal" href="#mutability">Mutability</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

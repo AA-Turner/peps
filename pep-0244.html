@@ -1,0 +1,276 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 244 – The ``directive`` statement &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 245 – Python Interface Syntax" href="pep-0245.html" />
+    <link rel="prev" title="PEP 243 – Module Repository Upload Mechanism" href="pep-0243.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 244 – The ``directive`` statement</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-244-the-directive-statement">
+<h1 class="page-title">PEP 244 – The ``directive`` statement<a class="headerlink" href="#pep-244-the-directive-statement" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">244</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">The <code class="docutils literal notranslate"><span class="pre">directive</span></code> statement</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">martin&#32;&#97;t&#32;v.loewis.de (Martin von Löwis)</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Rejected</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">20-Mar-2001</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.1</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#motivation" id="id11">Motivation</a></li>
+<li><a class="reference internal" href="#syntax" id="id12">Syntax</a></li>
+<li><a class="reference internal" href="#semantics" id="id13">Semantics</a></li>
+<li><a class="reference internal" href="#specific-directives-transitional" id="id14">Specific Directives: transitional</a></li>
+<li><a class="reference internal" href="#backwards-compatibility" id="id15">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#unresolved-problems-directive-as-the-first-identifier" id="id16">Unresolved Problems:  directive as the first identifier</a></li>
+<li><a class="reference internal" href="#questions-and-answers" id="id17">Questions and Answers</a></li>
+<li><a class="reference internal" href="#references-and-footnotes" id="id18">References and Footnotes</a></li>
+<li><a class="reference internal" href="#copyright" id="id19">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id11">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>From time to time, Python makes an incompatible change to the
+advertised semantics of core language constructs, or changes their
+accidental (implementation-dependent) behavior in some way.  While
+this is never done capriciously, and is always done with the aim
+of improving the language over the long term, over the short term
+it’s contentious and disrupting.</p>
+<p>PEP 1, Guidelines for Language Evolution <a class="footnote-reference brackets" href="#id8" id="id1">1</a> suggests ways to ease
+the pain, and this PEP introduces some machinery in support of
+that.</p>
+<p>PEP 2, Statically Nested Scopes <a class="footnote-reference brackets" href="#id9" id="id2">2</a> is the first application, and
+will be used as an example here.</p>
+<p>When a new, potentially incompatible language feature is added,
+some modules and libraries may chose to use it, while others may
+not.  This specification introduces a syntax where a module author
+can denote whether a certain language feature is used in the
+module or not.</p>
+<p>In discussion of this PEP, readers commented that there are two
+kinds of “settable” language features:</p>
+<ul class="simple">
+<li>those that are designed to eventually become the only option, at
+which time specifying use of them is not necessary anymore.  The
+features for which the syntax of the “Back to the <code class="docutils literal notranslate"><span class="pre">__future__</span></code>”
+PEP 236, Back to the <code class="docutils literal notranslate"><span class="pre">__future__</span></code> <a class="footnote-reference brackets" href="#id10" id="id3">3</a> was proposed fall into this
+category.  This PEP supports declaring such features, and
+supports phasing out the “old” meaning of constructs whose
+semantics has changed under the new feature.  However, it
+defines no policy as to what features must be phased out
+eventually.</li>
+<li>those which are designed to stay optional forever, e.g. if they
+change some default setting in the interpreter.  An example for
+such settings might be the request to always emit line-number
+instructions for a certain module; no specific flags of that
+kind are proposed in this specification.</li>
+</ul>
+<p>Since a primary goal of this PEP is to support new language
+constructs without immediately breaking old libraries, special
+care was taken not to break old libraries by introducing the new
+syntax.</p>
+</div>
+<div class="section" id="syntax">
+<h2><a class="toc-backref" href="#id12">Syntax</a><a class="headerlink" href="#syntax" title="Permalink to this headline">¶</a></h2>
+<p>A directive_statement is a statement of the form:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>directive_statement: &#39;directive&#39; ``NAME`` [atom] [&#39;;&#39;] NEWLINE
+</pre></div>
+</div>
+<p>The name in the directive indicates the kind of the directive; it
+defines whether the optional atom can be present, and whether
+there are further syntactical or semantical restrictions to the
+atom.  In addition, depending on the name of the directive,
+certain additional syntactical or semantical restrictions may be
+placed on the directive (e.g. placement of the directive in the
+module may be restricted to the top of the module).</p>
+<p>In the directive_statement, <code class="docutils literal notranslate"><span class="pre">directive</span></code> is a new
+keyword. According to <a class="footnote-reference brackets" href="#id8" id="id4">1</a>, this keyword is initially considered as
+a keyword only when used in a directive statement, see “Backwards
+Compatibility” below.</p>
+</div>
+<div class="section" id="semantics">
+<h2><a class="toc-backref" href="#id13">Semantics</a><a class="headerlink" href="#semantics" title="Permalink to this headline">¶</a></h2>
+<p>A directive statement instructs the Python interpreter to process
+a source file in a different way; the specific details of that
+processing depend on the directive name.  The optional atom is
+typically interpreted when the source code is processed; details
+of that interpretation depend on the directive.</p>
+</div>
+<div class="section" id="specific-directives-transitional">
+<h2><a class="toc-backref" href="#id14">Specific Directives: transitional</a><a class="headerlink" href="#specific-directives-transitional" title="Permalink to this headline">¶</a></h2>
+<p>If a syntactical or semantical change is added to Python which is
+incompatible, <a class="footnote-reference brackets" href="#id8" id="id5">1</a> mandates a transitional evolution of the
+language, where the new feature is initially available alongside
+with the old one.  Such a transition is possible by means of the
+transitional directive.</p>
+<p>In a transitional directive, the <code class="docutils literal notranslate"><span class="pre">NAME</span></code> is ‘transitional’. The atom
+MUST be present, and it MUST be a <code class="docutils literal notranslate"><span class="pre">NAME</span></code>.  The possible values for
+that name are defined when the language change is defined.  One
+example for such a directive is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">directive</span> <span class="n">transitional</span> <span class="n">nested_scopes</span>
+</pre></div>
+</div>
+<p>The transitional directive MUST occur at before any other
+statement in a module, except for the documentation string
+(i.e. it may appear as the second statement of a module only if
+the first statement is a <code class="docutils literal notranslate"><span class="pre">STRING+</span></code>).</p>
+</div>
+<div class="section" id="backwards-compatibility">
+<h2><a class="toc-backref" href="#id15">Backwards Compatibility</a><a class="headerlink" href="#backwards-compatibility" title="Permalink to this headline">¶</a></h2>
+<p>Introducing <code class="docutils literal notranslate"><span class="pre">directive</span></code> as a new keyword might cause
+incompatibilities with existing code.  Following the guideline in
+<a class="footnote-reference brackets" href="#id8" id="id6">1</a>, in the initial implementation of this specification,
+directive is a new keyword only if it was used in a valid
+directive_statement (i.e. if it appeared as the first non-string
+token in a module).</p>
+</div>
+<div class="section" id="unresolved-problems-directive-as-the-first-identifier">
+<h2><a class="toc-backref" href="#id16">Unresolved Problems:  directive as the first identifier</a><a class="headerlink" href="#unresolved-problems-directive-as-the-first-identifier" title="Permalink to this headline">¶</a></h2>
+<p>Using directive in a module as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">directive</span> <span class="o">=</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<p>(i.e. the name directive appears as the first thing in a module)
+will treat it as keyword, not as identifier. It would be possible
+to classify it as a <code class="docutils literal notranslate"><span class="pre">NAME</span></code> with an additional look-ahead token, but
+such look-ahead is not available in the Python tokenizer.</p>
+</div>
+<div class="section" id="questions-and-answers">
+<h2><a class="toc-backref" href="#id17">Questions and Answers</a><a class="headerlink" href="#questions-and-answers" title="Permalink to this headline">¶</a></h2>
+<p><strong>Q:</strong> It looks like this PEP was written to allow definition of source
+code character sets.  Is that true?</p>
+<p><strong>A:</strong> No.  Even though the directive facility can be extended to
+allow source code encodings, no specific directive is proposed.</p>
+<p><strong>Q:</strong> Then why was this PEP written at all?</p>
+<p><strong>A:</strong> It acts as a counter-proposal to <a class="footnote-reference brackets" href="#id10" id="id7">3</a>, which proposes to
+overload the import statement with a new meaning.  This PEP
+allows to solve the problem in a more general way.</p>
+<p><strong>Q:</strong> But isn’t mixing source encodings and language changes like
+mixing apples and oranges?</p>
+<p><strong>A:</strong> Perhaps.  To address the difference, the predefined
+“transitional” directive has been defined.</p>
+</div>
+<div class="section" id="references-and-footnotes">
+<h2><a class="toc-backref" href="#id18">References and Footnotes</a><a class="headerlink" href="#references-and-footnotes" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id8"><span class="brackets">1</span><span class='fn-backref'><em> (<a href="#id1">1</a>, <a href="#id4">2</a>, <a href="#id5">3</a>, <a href="#id6">4</a>) </em></span></dt>
+<dd>PEP 5, Guidelines for Language Evolution, Prescod
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0005/">http://www.python.org/dev/peps/pep-0005/</a></dd>
+<dt class="label" id="id9"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>PEP 227, Statically Nested Scopes, Hylton
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0227/">http://www.python.org/dev/peps/pep-0227/</a></dd>
+<dt class="label" id="id10"><span class="brackets">3</span><span class='fn-backref'><em> (<a href="#id3">1</a>, <a href="#id7">2</a>) </em></span></dt>
+<dd>PEP 236, Back to the <code class="docutils literal notranslate"><span class="pre">__future__</span></code>, Peters
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0236/">http://www.python.org/dev/peps/pep-0236/</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id19">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0244.txt">https://github.com/python/peps/blob/master/pep-0244.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0244.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0243.html">PEP 0243</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0245.html">PEP 0245</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 244 – The ``directive`` statement</a><ul>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#syntax">Syntax</a></li>
+<li><a class="reference internal" href="#semantics">Semantics</a></li>
+<li><a class="reference internal" href="#specific-directives-transitional">Specific Directives: transitional</a></li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#unresolved-problems-directive-as-the-first-identifier">Unresolved Problems:  directive as the first identifier</a></li>
+<li><a class="reference internal" href="#questions-and-answers">Questions and Answers</a></li>
+<li><a class="reference internal" href="#references-and-footnotes">References and Footnotes</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

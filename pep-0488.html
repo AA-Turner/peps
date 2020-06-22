@@ -1,0 +1,454 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 488 – Elimination of PYO files &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 489 – Multi-phase extension module initialization" href="pep-0489.html" />
+    <link rel="prev" title="PEP 487 – Simpler customisation of class creation" href="pep-0487.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 488 – Elimination of PYO files</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-488-elimination-of-pyo-files">
+<h1 class="page-title">PEP 488 – Elimination of PYO files<a class="headerlink" href="#pep-488-elimination-of-pyo-files" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">488</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Elimination of PYO files</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Brett Cannon &lt;brett&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">20-Feb-2015</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.5</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">2015-03-06
+2015-03-13
+2015-03-20</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id23">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id24">Rationale</a></li>
+<li><a class="reference internal" href="#proposal" id="id25">Proposal</a></li>
+<li><a class="reference internal" href="#implementation" id="id26">Implementation</a><ul>
+<li><a class="reference internal" href="#importlib" id="id27">importlib</a></li>
+<li><a class="reference internal" href="#rest-of-the-standard-library" id="id28">Rest of the standard library</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#compatibility-considerations" id="id29">Compatibility Considerations</a></li>
+<li><a class="reference internal" href="#rejected-ideas" id="id30">Rejected Ideas</a><ul>
+<li><a class="reference internal" href="#completely-dropping-optimization-levels-from-cpython" id="id31">Completely dropping optimization levels from CPython</a></li>
+<li><a class="reference internal" href="#alternative-formatting-of-the-optimization-level-in-the-file-name" id="id32">Alternative formatting of the optimization level in the file name</a></li>
+<li><a class="reference internal" href="#embedding-the-optimization-level-in-the-bytecode-metadata" id="id33">Embedding the optimization level in the bytecode metadata</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references" id="id34">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id35">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id23">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes eliminating the concept of PYO files from Python.
+To continue the support of the separation of bytecode files based on
+their optimization level, this PEP proposes extending the PYC file
+name to include the optimization level in the bytecode repository
+directory when there are optimizations applied.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id24">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>As of today, bytecode files come in two flavours: PYC and PYO. A PYC
+file is the bytecode file generated and read from when no
+optimization level is specified at interpreter startup (i.e., <code class="docutils literal notranslate"><span class="pre">-O</span></code>
+is not specified). A PYO file represents the bytecode file that is
+read/written when <strong>any</strong> optimization level is specified (i.e., when
+<code class="docutils literal notranslate"><span class="pre">-O</span></code> <strong>or</strong> <code class="docutils literal notranslate"><span class="pre">-OO</span></code> is specified). This means that while PYC
+files clearly delineate the optimization level used when they were
+generated – namely no optimizations beyond the peepholer – the same
+is not true for PYO files. To put this in terms of optimization
+levels and the file extension:</p>
+<ul class="simple">
+<li>0: <code class="docutils literal notranslate"><span class="pre">.pyc</span></code></li>
+<li>1 (<code class="docutils literal notranslate"><span class="pre">-O</span></code>): <code class="docutils literal notranslate"><span class="pre">.pyo</span></code></li>
+<li>2 (<code class="docutils literal notranslate"><span class="pre">-OO</span></code>): <code class="docutils literal notranslate"><span class="pre">.pyo</span></code></li>
+</ul>
+<p>The reuse of the <code class="docutils literal notranslate"><span class="pre">.pyo</span></code> file extension for both level 1 and 2
+optimizations means that there is no clear way to tell what
+optimization level was used to generate the bytecode file. In terms
+of reading PYO files, this can lead to an interpreter using a mixture
+of optimization levels with its code if the user was not careful to
+make sure all PYO files were generated using the same optimization
+level (typically done by blindly deleting all PYO files and then
+using the <cite>compileall</cite> module to compile all-new PYO files <a class="footnote-reference brackets" href="#id12" id="id1">1</a>).
+This issue is only compounded when people optimize Python code beyond
+what the interpreter natively supports, e.g., using the astoptimizer
+project <a class="footnote-reference brackets" href="#id13" id="id2">2</a>.</p>
+<p>In terms of writing PYO files, the need to delete all PYO files
+every time one either changes the optimization level they want to use
+or are unsure of what optimization was used the last time PYO files
+were generated leads to unnecessary file churn. The change proposed
+by this PEP also allows for <strong>all</strong> optimization levels to be
+pre-compiled for bytecode files ahead of time, something that is
+currently impossible thanks to the reuse of the <code class="docutils literal notranslate"><span class="pre">.pyo</span></code> file
+extension for multiple optimization levels.</p>
+<p>As for distributing bytecode-only modules, having to distribute both
+<code class="docutils literal notranslate"><span class="pre">.pyc</span></code> and <code class="docutils literal notranslate"><span class="pre">.pyo</span></code> files is unnecessary for the common use-case
+of code obfuscation and smaller file deployments. This means that
+bytecode-only modules will only load from their non-optimized
+<code class="docutils literal notranslate"><span class="pre">.pyc</span></code> file name.</p>
+</div>
+<div class="section" id="proposal">
+<h2><a class="toc-backref" href="#id25">Proposal</a><a class="headerlink" href="#proposal" title="Permalink to this headline">¶</a></h2>
+<p>To eliminate the ambiguity that PYO files present, this PEP proposes
+eliminating the concept of PYO files and their accompanying <code class="docutils literal notranslate"><span class="pre">.pyo</span></code>
+file extension. To allow for the optimization level to be unambiguous
+as well as to avoid having to regenerate optimized bytecode files
+needlessly in the <cite>__pycache__</cite> directory, the optimization level
+used to generate the bytecode file will be incorporated into the
+bytecode file name. When no optimization level is specified, the
+pre-PEP <code class="docutils literal notranslate"><span class="pre">.pyc</span></code> file name will be used (i.e., no optimization level
+will be specified in the file name). For example, a source file named
+<code class="docutils literal notranslate"><span class="pre">foo.py</span></code> in CPython 3.5 could have the following bytecode files
+based on the interpreter’s optimization level (none, <code class="docutils literal notranslate"><span class="pre">-O</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">-OO</span></code>):</p>
+<ul class="simple">
+<li>0: <code class="docutils literal notranslate"><span class="pre">foo.cpython-35.pyc</span></code> (i.e., no change)</li>
+<li>1: <code class="docutils literal notranslate"><span class="pre">foo.cpython-35.opt-1.pyc</span></code></li>
+<li>2: <code class="docutils literal notranslate"><span class="pre">foo.cpython-35.opt-2.pyc</span></code></li>
+</ul>
+<p>Currently bytecode file names are created by
+<code class="docutils literal notranslate"><span class="pre">importlib.util.cache_from_source()</span></code>, approximately using the
+following expression defined by PEP 3147 <a class="footnote-reference brackets" href="#id14" id="id3">3</a>, <a class="footnote-reference brackets" href="#id15" id="id4">4</a>, <a class="footnote-reference brackets" href="#id16" id="id5">5</a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;</span><span class="si">{name}</span><span class="s1">.</span><span class="si">{cache_tag}</span><span class="s1">.pyc&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">module_name</span><span class="p">,</span>
+                                <span class="n">cache_tag</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">implementation</span><span class="o">.</span><span class="n">cache_tag</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This PEP proposes to change the expression when an optimization
+level is specified to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;</span><span class="si">{name}</span><span class="s1">.</span><span class="si">{cache_tag}</span><span class="s1">.opt-</span><span class="si">{optimization}</span><span class="s1">.pyc&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="n">module_name</span><span class="p">,</span>
+        <span class="n">cache_tag</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">implementation</span><span class="o">.</span><span class="n">cache_tag</span><span class="p">,</span>
+        <span class="n">optimization</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">flags</span><span class="o">.</span><span class="n">optimize</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>The “opt-” prefix was chosen so as to provide a visual separator
+from the cache tag. The placement of the optimization level after
+the cache tag was chosen to preserve lexicographic sort order of
+bytecode file names based on module name and cache tag which will
+not vary for a single interpreter. The “opt-” prefix was chosen over
+“o” so as to be somewhat self-documenting. The “opt-” prefix was
+chosen over “O” so as to not have any confusion in case “0” was the
+leading prefix of the optimization level.</p>
+<p>A period was chosen over a hyphen as a separator so as to distinguish
+clearly that the optimization level is not part of the interpreter
+version as specified by the cache tag. It also lends to the use of
+the period in the file name to delineate semantically different
+concepts.</p>
+<p>For example, if <code class="docutils literal notranslate"><span class="pre">-OO</span></code> had been passed to the interpreter then
+instead of <code class="docutils literal notranslate"><span class="pre">importlib.cpython-35.pyo</span></code> the file name would be
+<code class="docutils literal notranslate"><span class="pre">importlib.cpython-35.opt-2.pyc</span></code>.</p>
+<p>Leaving out the new <code class="docutils literal notranslate"><span class="pre">opt-</span></code> tag when no optimization level is
+applied should increase backwards-compatibility. This is also more
+understanding of Python implementations which have no use for
+optimization levels (e.g., PyPy[10]_).</p>
+<p>It should be noted that this change in no way affects the performance
+of import. Since the import system looks for a single bytecode file
+based on the optimization level of the interpreter already and
+generates a new bytecode file if it doesn’t exist, the introduction
+of potentially more bytecode files in the <code class="docutils literal notranslate"><span class="pre">__pycache__</span></code> directory
+has no effect in terms of stat calls. The interpreter will continue
+to look for only a single bytecode file based on the optimization
+level and thus no increase in stat calls will occur.</p>
+<p>The only potentially negative result of this PEP is the probable
+increase in the number of <code class="docutils literal notranslate"><span class="pre">.pyc</span></code> files and thus increase in storage
+use. But for platforms where this is an issue,
+<code class="docutils literal notranslate"><span class="pre">sys.dont_write_bytecode</span></code> exists to turn off bytecode generation so
+that it can be controlled offline.</p>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id26">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>An implementation of this PEP is available <a class="footnote-reference brackets" href="#id22" id="id6">11</a>.</p>
+<div class="section" id="importlib">
+<h3><a class="toc-backref" href="#id27">importlib</a><a class="headerlink" href="#importlib" title="Permalink to this headline">¶</a></h3>
+<p>As <code class="docutils literal notranslate"><span class="pre">importlib.util.cache_from_source()</span></code> is the API that exposes
+bytecode file paths as well as being directly used by importlib, it
+requires the most critical change. As of Python 3.4, the function’s
+signature is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">cache_from_source</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">debug_override</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This PEP proposes changing the signature in Python 3.5 to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">cache_from_source</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">debug_override</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">optimization</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The introduced <code class="docutils literal notranslate"><span class="pre">optimization</span></code> keyword-only parameter will control
+what optimization level is specified in the file name. If the
+argument is <code class="docutils literal notranslate"><span class="pre">None</span></code> then the current optimization level of the
+interpreter will be assumed (including no optimization). Any argument
+given for <code class="docutils literal notranslate"><span class="pre">optimization</span></code> will be passed to <code class="docutils literal notranslate"><span class="pre">str()</span></code> and must have
+<code class="docutils literal notranslate"><span class="pre">str.isalnum()</span></code> be true, else <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> will be raised (this
+prevents invalid characters being used in the file name). If the
+empty string is passed in for <code class="docutils literal notranslate"><span class="pre">optimization</span></code> then the addition of
+the optimization will be suppressed, reverting to the file name
+format which predates this PEP.</p>
+<p>It is expected that beyond Python’s own two optimization levels,
+third-party code will use a hash of optimization names to specify the
+optimization level, e.g.
+<code class="docutils literal notranslate"><span class="pre">hashlib.sha256(','.join(['no</span> <span class="pre">dead</span> <span class="pre">code',</span> <span class="pre">'const</span> <span class="pre">folding'])).hexdigest()</span></code>.
+While this might lead to long file names, it is assumed that most
+users never look at the contents of the __pycache__ directory and so
+this won’t be an issue.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">debug_override</span></code> parameter will be deprecated. A <code class="docutils literal notranslate"><span class="pre">False</span></code>
+value will be equivalent to <code class="docutils literal notranslate"><span class="pre">optimization=1</span></code> while a <code class="docutils literal notranslate"><span class="pre">True</span></code>
+value will represent <code class="docutils literal notranslate"><span class="pre">optimization=''</span></code> (a <code class="docutils literal notranslate"><span class="pre">None</span></code> argument will
+continue to mean the same as for <code class="docutils literal notranslate"><span class="pre">optimization</span></code>). A
+deprecation warning will be raised when <code class="docutils literal notranslate"><span class="pre">debug_override</span></code> is given a
+value other than <code class="docutils literal notranslate"><span class="pre">None</span></code>, but there are no plans for the complete
+removal of the parameter at this time (but removal will be no later
+than Python 4).</p>
+<p>The various module attributes for importlib.machinery which relate to
+bytecode file suffixes will be updated <a class="footnote-reference brackets" href="#id18" id="id7">7</a>. The
+<code class="docutils literal notranslate"><span class="pre">DEBUG_BYTECODE_SUFFIXES</span></code> and <code class="docutils literal notranslate"><span class="pre">OPTIMIZED_BYTECODE_SUFFIXES</span></code> will
+both be documented as deprecated and set to the same value as
+<code class="docutils literal notranslate"><span class="pre">BYTECODE_SUFFIXES</span></code> (removal of <code class="docutils literal notranslate"><span class="pre">DEBUG_BYTECODE_SUFFIXES</span></code> and
+<code class="docutils literal notranslate"><span class="pre">OPTIMIZED_BYTECODE_SUFFIXES</span></code> is not currently planned, but will be
+not later than Python 4).</p>
+<p>All various finders and loaders will also be updated as necessary,
+but updating the previous mentioned parts of importlib should be all
+that is required.</p>
+</div>
+<div class="section" id="rest-of-the-standard-library">
+<h3><a class="toc-backref" href="#id28">Rest of the standard library</a><a class="headerlink" href="#rest-of-the-standard-library" title="Permalink to this headline">¶</a></h3>
+<p>The various functions exposed by the <code class="docutils literal notranslate"><span class="pre">py_compile</span></code> and
+<code class="docutils literal notranslate"><span class="pre">compileall</span></code> functions will be updated as necessary to make sure
+they follow the new bytecode file name semantics <a class="footnote-reference brackets" href="#id17" id="id8">6</a>, <a class="footnote-reference brackets" href="#id12" id="id9">1</a>. The CLI
+for the <code class="docutils literal notranslate"><span class="pre">compileall</span></code> module will not be directly affected (the
+<code class="docutils literal notranslate"><span class="pre">-b</span></code> flag will be implicit as it will no longer generate <code class="docutils literal notranslate"><span class="pre">.pyo</span></code>
+files when <code class="docutils literal notranslate"><span class="pre">-O</span></code> is specified).</p>
+</div>
+</div>
+<div class="section" id="compatibility-considerations">
+<h2><a class="toc-backref" href="#id29">Compatibility Considerations</a><a class="headerlink" href="#compatibility-considerations" title="Permalink to this headline">¶</a></h2>
+<p>Any code directly manipulating bytecode files from Python 3.2 on
+will need to consider the impact of this change on their code (prior
+to Python 3.2 – including all of Python 2 – there was no
+__pycache__ which already necessitates bifurcating bytecode file
+handling support). If code was setting the <code class="docutils literal notranslate"><span class="pre">debug_override</span></code>
+argument to <code class="docutils literal notranslate"><span class="pre">importlib.util.cache_from_source()</span></code> then care will be
+needed if they want the path to a bytecode file with an optimization
+level of 2. Otherwise only code <strong>not</strong> using
+<code class="docutils literal notranslate"><span class="pre">importlib.util.cache_from_source()</span></code> will need updating.</p>
+<p>As for people who distribute bytecode-only modules (i.e., use a
+bytecode file instead of a source file), they will have to choose
+which optimization level they want their bytecode files to be since
+distributing a <code class="docutils literal notranslate"><span class="pre">.pyo</span></code> file with a <code class="docutils literal notranslate"><span class="pre">.pyc</span></code> file will no longer be
+of any use. Since people typically only distribute bytecode files for
+code obfuscation purposes or smaller distribution size then only
+having to distribute a single <code class="docutils literal notranslate"><span class="pre">.pyc</span></code> should actually be beneficial
+to these use-cases. And since the magic number for bytecode files
+changed in Python 3.5 to support PEP 465 there is no need to support
+pre-existing <code class="docutils literal notranslate"><span class="pre">.pyo</span></code> files <a class="footnote-reference brackets" href="#id19" id="id10">8</a>.</p>
+</div>
+<div class="section" id="rejected-ideas">
+<h2><a class="toc-backref" href="#id30">Rejected Ideas</a><a class="headerlink" href="#rejected-ideas" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="completely-dropping-optimization-levels-from-cpython">
+<h3><a class="toc-backref" href="#id31">Completely dropping optimization levels from CPython</a><a class="headerlink" href="#completely-dropping-optimization-levels-from-cpython" title="Permalink to this headline">¶</a></h3>
+<p>Some have suggested that instead of accommodating the various
+optimization levels in CPython, we should instead drop them
+entirely. The argument is that significant performance gains would
+occur from runtime optimizations through something like a JIT and not
+through pre-execution bytecode optimizations.</p>
+<p>This idea is rejected for this PEP as that ignores the fact that
+there are people who do find the pre-existing optimization levels for
+CPython useful. It also assumes that no other Python interpreter
+would find what this PEP proposes useful.</p>
+</div>
+<div class="section" id="alternative-formatting-of-the-optimization-level-in-the-file-name">
+<h3><a class="toc-backref" href="#id32">Alternative formatting of the optimization level in the file name</a><a class="headerlink" href="#alternative-formatting-of-the-optimization-level-in-the-file-name" title="Permalink to this headline">¶</a></h3>
+<p>Using the “opt-” prefix and placing the optimization level between
+the cache tag and file extension is not critical. All options which
+have been considered are:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">importlib.cpython-35.opt-1.pyc</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">importlib.cpython-35.opt1.pyc</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">importlib.cpython-35.o1.pyc</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">importlib.cpython-35.O1.pyc</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">importlib.cpython-35.1.pyc</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">importlib.cpython-35-O1.pyc</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">importlib.O1.cpython-35.pyc</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">importlib.o1.cpython-35.pyc</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">importlib.1.cpython-35.pyc</span></code></li>
+</ul>
+<p>These were initially rejected either because they would change the
+sort order of bytecode files, possible ambiguity with the cache tag,
+or were not self-documenting enough. An informal poll was taken and
+people clearly preferred the formatting proposed by the PEP <a class="footnote-reference brackets" href="#id20" id="id11">9</a>.
+Since this topic is non-technical and of personal choice, the issue
+is considered solved.</p>
+</div>
+<div class="section" id="embedding-the-optimization-level-in-the-bytecode-metadata">
+<h3><a class="toc-backref" href="#id33">Embedding the optimization level in the bytecode metadata</a><a class="headerlink" href="#embedding-the-optimization-level-in-the-bytecode-metadata" title="Permalink to this headline">¶</a></h3>
+<p>Some have suggested that rather than embedding the optimization level
+of bytecode in the file name that it be included in the file’s
+metadata instead. This would mean every interpreter had a single copy
+of bytecode at any time. Changing the optimization level would thus
+require rewriting the bytecode, but there would also only be a single
+file to care about.</p>
+<p>This has been rejected due to the fact that Python is often installed
+as a root-level application and thus modifying the bytecode file for
+modules in the standard library are always possible. In this
+situation integrators would need to guess at what a reasonable
+optimization level was for users for any/all situations. By
+allowing multiple optimization levels to co-exist simultaneously it
+frees integrators from having to guess what users want and allows
+users to utilize the optimization level they want.</p>
+</div>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id34">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id12"><span class="brackets">1</span><span class='fn-backref'><em> (<a href="#id1">1</a>, <a href="#id9">2</a>) </em></span></dt>
+<dd>The compileall module
+(<a class="reference external" href="https://docs.python.org/3/library/compileall.html#module-compileall">https://docs.python.org/3/library/compileall.html#module-compileall</a>)</dd>
+<dt class="label" id="id13"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>The astoptimizer project
+(<a class="reference external" href="https://pypi.python.org/pypi/astoptimizer">https://pypi.python.org/pypi/astoptimizer</a>)</dd>
+<dt class="label" id="id14"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd><code class="docutils literal notranslate"><span class="pre">importlib.util.cache_from_source()</span></code>
+(<a class="reference external" href="https://docs.python.org/3.5/library/importlib.html#importlib.util.cache_from_source">https://docs.python.org/3.5/library/importlib.html#importlib.util.cache_from_source</a>)</dd>
+<dt class="label" id="id15"><span class="brackets"><a class="fn-backref" href="#id4">4</a></span></dt>
+<dd>Implementation of <code class="docutils literal notranslate"><span class="pre">importlib.util.cache_from_source()</span></code> from CPython 3.4.3rc1
+(<a class="reference external" href="https://hg.python.org/cpython/file/038297948389/Lib/importlib/_bootstrap.py#l437">https://hg.python.org/cpython/file/038297948389/Lib/importlib/_bootstrap.py#l437</a>)</dd>
+<dt class="label" id="id16"><span class="brackets"><a class="fn-backref" href="#id5">5</a></span></dt>
+<dd>PEP 3147, PYC Repository Directories, Warsaw
+(<a class="reference external" href="http://www.python.org/dev/peps/pep-3147">http://www.python.org/dev/peps/pep-3147</a>)</dd>
+<dt class="label" id="id17"><span class="brackets"><a class="fn-backref" href="#id8">6</a></span></dt>
+<dd>The py_compile module
+(<a class="reference external" href="https://docs.python.org/3/library/compileall.html#module-compileall">https://docs.python.org/3/library/compileall.html#module-compileall</a>)</dd>
+<dt class="label" id="id18"><span class="brackets"><a class="fn-backref" href="#id7">7</a></span></dt>
+<dd>The importlib.machinery module
+(<a class="reference external" href="https://docs.python.org/3/library/importlib.html#module-importlib.machinery">https://docs.python.org/3/library/importlib.html#module-importlib.machinery</a>)</dd>
+<dt class="label" id="id19"><span class="brackets"><a class="fn-backref" href="#id10">8</a></span></dt>
+<dd><code class="docutils literal notranslate"><span class="pre">importlib.util.MAGIC_NUMBER</span></code>
+(<a class="reference external" href="https://docs.python.org/3/library/importlib.html#importlib.util.MAGIC_NUMBER">https://docs.python.org/3/library/importlib.html#importlib.util.MAGIC_NUMBER</a>)</dd>
+<dt class="label" id="id20"><span class="brackets"><a class="fn-backref" href="#id11">9</a></span></dt>
+<dd>Informal poll of file name format options on Google+
+(<a class="reference external" href="https://plus.google.com/u/0/+BrettCannon/posts/fZynLNwHWGm">https://plus.google.com/u/0/+BrettCannon/posts/fZynLNwHWGm</a>)</dd>
+<dt class="label" id="id21"><span class="brackets">10</span></dt>
+<dd>The PyPy Project
+(<a class="reference external" href="http://pypy.org/">http://pypy.org/</a>)</dd>
+<dt class="label" id="id22"><span class="brackets"><a class="fn-backref" href="#id6">11</a></span></dt>
+<dd>Implementation of PEP 488
+(<a class="reference external" href="http://bugs.python.org/issue23731">http://bugs.python.org/issue23731</a>)</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id35">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0488.txt">https://github.com/python/peps/blob/master/pep-0488.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0488.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0487.html">PEP 0487</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0489.html">PEP 0489</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 488 – Elimination of PYO files</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#proposal">Proposal</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a><ul>
+<li><a class="reference internal" href="#importlib">importlib</a></li>
+<li><a class="reference internal" href="#rest-of-the-standard-library">Rest of the standard library</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#compatibility-considerations">Compatibility Considerations</a></li>
+<li><a class="reference internal" href="#rejected-ideas">Rejected Ideas</a><ul>
+<li><a class="reference internal" href="#completely-dropping-optimization-levels-from-cpython">Completely dropping optimization levels from CPython</a></li>
+<li><a class="reference internal" href="#alternative-formatting-of-the-optimization-level-in-the-file-name">Alternative formatting of the optimization level in the file name</a></li>
+<li><a class="reference internal" href="#embedding-the-optimization-level-in-the-bytecode-metadata">Embedding the optimization level in the bytecode metadata</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

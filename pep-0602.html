@@ -1,0 +1,461 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 602 – Annual Release Cycle for Python &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 603 – Adding a frozenmap type to collections" href="pep-0603.html" />
+    <link rel="prev" title="PEP 601 – Forbid return/break/continue breaking out of finally" href="pep-0601.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 602 – Annual Release Cycle for Python</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-602-annual-release-cycle-for-python">
+<h1 class="page-title">PEP 602 – Annual Release Cycle for Python<a class="headerlink" href="#pep-602-annual-release-cycle-for-python" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">602</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Annual Release Cycle for Python</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Łukasz Langa &lt;lukasz&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even">Brett Cannon (on behalf of the steering council)</dd>
+<dt class="field-odd">Discussions-To</dt>
+<dd class="field-odd"><a class="reference external" href="https://discuss.python.org/t/pep-602-annual-release-cycle-for-python/2296/">https://discuss.python.org/t/pep-602-annual-release-cycle-for-python/2296/</a></dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Accepted</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Informational</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">04-Jun-2019</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.9</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id4">Abstract</a></li>
+<li><a class="reference internal" href="#implementation" id="id5">Implementation</a><ul>
+<li><a class="reference internal" href="#seventeen-months-to-develop-a-major-version" id="id6">Seventeen months to develop a major version</a></li>
+<li><a class="reference internal" href="#year-of-full-support-312-more-years-of-security-fixes" id="id7">1½ year of full support, 3½ more years of security fixes</a></li>
+<li><a class="reference internal" href="#annual-release-cadence" id="id8">Annual release cadence</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#example" id="id9">Example</a></li>
+<li><a class="reference internal" href="#dependent-policies" id="id10">Dependent Policies</a><ul>
+<li><a class="reference internal" href="#deprecations" id="id11">Deprecations</a></li>
+<li><a class="reference internal" href="#the-term-of-the-steering-council" id="id12">The term of the Steering Council</a></li>
+<li><a class="reference internal" href="#the-term-of-the-release-manager" id="id13">The term of the Release Manager</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rationale-and-goals" id="id14">Rationale and Goals</a><ul>
+<li><a class="reference internal" href="#non-goals" id="id15">Non-goals</a></li>
+<li><a class="reference internal" href="#non-risks" id="id16">Non-risks</a></li>
+<li><a class="reference internal" href="#risks" id="id17">Risks</a><ul>
+<li><a class="reference internal" href="#python-redistribution" id="id18">Python redistribution</a></li>
+<li><a class="reference internal" href="#the-testing-matrix" id="id19">The testing matrix</a></li>
+<li><a class="reference internal" href="#other-policies-may-depend-on-the-release-cadence" id="id20">Other policies may depend on the release cadence</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rejected-ideas" id="id21">Rejected Ideas</a><ul>
+<li><a class="reference internal" href="#keep-the-current-18-month-release-cadence" id="id22">Keep the current 18 month release cadence</a></li>
+<li><a class="reference internal" href="#double-the-release-cadence-to-achieve-9-months-between-major-versions" id="id23">Double the release cadence to achieve 9 months between major versions</a></li>
+<li><a class="reference internal" href="#keep-4-betas-over-4-months-and-a-final-month-for-the-release-candidate" id="id24">Keep “4 betas over 4 months and a final month for the release candidate”</a></li>
+<li><a class="reference internal" href="#slow-down-releases-but-don-t-freeze-feature-development-with-beta-1" id="id25">Slow down releases but don’t freeze feature development with Beta 1</a></li>
+<li><a class="reference internal" href="#long-term-support-releases" id="id26">Long-Term Support Releases</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#copyright" id="id27">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id4">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This document describes a change in the release calendar for Python
+starting with Python 3.9.  This change accelerates the release cadence
+such that major versions are released predictably every twelve months,
+in October every year.</p>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id5">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="seventeen-months-to-develop-a-major-version">
+<h3><a class="toc-backref" href="#id6">Seventeen months to develop a major version</a><a class="headerlink" href="#seventeen-months-to-develop-a-major-version" title="Permalink to this headline">¶</a></h3>
+<p>This PEP proposes that Python 3.X.0 will be developed for around
+17 months:</p>
+<ul class="simple">
+<li>The first <em>five months</em> overlap with Python 3.(X-1).0’s beta
+and release candidate stages and are thus unversioned.</li>
+<li>The next <em>seven months</em> are spent on versioned alpha releases where
+both new features are incrementally added and bug fixes are included.</li>
+<li>The following <em>three months</em> are spent on four versioned beta releases
+where <strong>no new features</strong> can be added but bug fixes are still
+included.</li>
+<li>The final <em>two months</em> are spent on two release candidates (or more,
+if necessary) and conclude with the release of the final release of
+Python 3.X.0.</li>
+</ul>
+</div>
+<div class="section" id="year-of-full-support-312-more-years-of-security-fixes">
+<h3><a class="toc-backref" href="#id7">1½ year of full support, 3½ more years of security fixes</a><a class="headerlink" href="#year-of-full-support-312-more-years-of-security-fixes" title="Permalink to this headline">¶</a></h3>
+<p>After the release of Python 3.X.0, the 3.X series is maintained for
+five years:</p>
+<ul class="simple">
+<li>During the <em>first eighteen months</em> (1½ year) it receives bugfix
+updates and full releases (sources and installers for Windows and
+macOS) are made approximately every other month.</li>
+<li>For the next <em>forty two months</em> (3½ years) it receives security
+updates and source-only releases are made on an as-needed basis
+(no fixed cadence).</li>
+<li>The final source-only release is made <em>five years</em> after 3.X.0.</li>
+</ul>
+</div>
+<div class="section" id="annual-release-cadence">
+<h3><a class="toc-backref" href="#id8">Annual release cadence</a><a class="headerlink" href="#annual-release-cadence" title="Permalink to this headline">¶</a></h3>
+<p>Feature development of Python 3.(X+1).0 starts as soon as
+Python 3.X.0 Beta 1 is released.  This creates a twelve month delta
+between major Python versions.</p>
+</div>
+</div>
+<div class="section" id="example">
+<h2><a class="toc-backref" href="#id9">Example</a><a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>3.9 development begins: Tuesday, 2019-06-04</li>
+<li>3.9.0 alpha 1: Monday, 2019-10-14</li>
+<li>3.9.0 alpha 2: Monday, 2019-11-18</li>
+<li>3.9.0 alpha 3: Monday, 2019-12-16</li>
+<li>3.9.0 alpha 4: Monday, 2020-01-13</li>
+<li>3.9.0 alpha 5: Monday, 2020-02-17</li>
+<li>3.9.0 alpha 6: Monday, 2020-03-16</li>
+<li>3.9.0 alpha 7: Monday, 2020-04-13</li>
+<li>3.9.0 beta 1: Monday, 2020-05-18
+(No new features beyond this point.)</li>
+<li>3.9.0 beta 2: Monday, 2020-06-08</li>
+<li>3.9.0 beta 3: Monday, 2020-06-29</li>
+<li>3.9.0 beta 4: Monday, 2020-07-20</li>
+<li>3.9.0 candidate 1: Monday, 2020-08-10</li>
+<li>3.9.0 candidate 2: Monday, 2020-09-14</li>
+<li>3.9.0 final: Monday, 2020-10-05</li>
+</ul>
+<div class="figure align-center" id="id1">
+<a class="reference internal image-reference" href="_images/pep-0602-example-release-calendar.png"><img alt="_images/pep-0602-example-release-calendar.png" src="_images/pep-0602-example-release-calendar.png" style="width: 100%;" /></a>
+<p class="caption"><span class="caption-text">Figure 1. Consequences of the annual release cycle on the calendar.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+</div>
+<p>In comparison, if this PEP is rejected and Python keeps the current
+release schedule:</p>
+<ul class="simple">
+<li>3.9 development begins: Tuesday, 2019-06-04</li>
+<li>3.9.0 alpha 1: Monday, 2020-08-03  (10 months later)</li>
+<li>3.9.0 alpha 2: Monday, 2020-09-07</li>
+<li>3.9.0 alpha 3: Monday, 2020-10-05</li>
+<li>3.9.0 alpha 4: Monday, 2020-11-02</li>
+<li>3.9.0 beta 1: Monday, 2020-11-30  (6 months later)</li>
+<li>3.9.0 beta 2: Monday, 2021-01-04</li>
+<li>3.9.0 beta 3: Monday, 2021-02-01</li>
+<li>3.9.0 beta 4: Monday, 2021-03-01</li>
+<li>3.9.0 candidate 1: Monday, 2021-03-29</li>
+<li>3.9.0 candidate 2: Monday, 2021-04-05 (if necessary)</li>
+<li>3.9.0 final: Monday, 2021-04-19  (6 months later)</li>
+</ul>
+</div>
+<div class="section" id="dependent-policies">
+<h2><a class="toc-backref" href="#id10">Dependent Policies</a><a class="headerlink" href="#dependent-policies" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="deprecations">
+<h3><a class="toc-backref" href="#id11">Deprecations</a><a class="headerlink" href="#deprecations" title="Permalink to this headline">¶</a></h3>
+<p>The current policy around breaking changes assumes at least two releases
+before a deprecated feature is removed from Python or a <code class="docutils literal notranslate"><span class="pre">__future__</span></code>
+behavior is enabled by default.  This is documented in PEP 387.</p>
+<p>This PEP proposes to keep this policy of <strong>at least</strong> two releases
+before making a breaking change.</p>
+</div>
+<div class="section" id="the-term-of-the-steering-council">
+<h3><a class="toc-backref" href="#id12">The term of the Steering Council</a><a class="headerlink" href="#the-term-of-the-steering-council" title="Permalink to this headline">¶</a></h3>
+<p>The current wording of PEP 13 states that “a new council is elected
+after each feature release”.  This PEP proposes to keep this policy
+as it will lead to a consistent election schedule.</p>
+</div>
+<div class="section" id="the-term-of-the-release-manager">
+<h3><a class="toc-backref" href="#id13">The term of the Release Manager</a><a class="headerlink" href="#the-term-of-the-release-manager" title="Permalink to this headline">¶</a></h3>
+<p>The current undocumented convention is for a single Release Manager to
+handle two feature releases of Python.  This PEP proposes to keep this
+policy, allowing for the term to be extended to more releases with
+approval from the Steering Council and the Cabal of Release Managers.</p>
+<p>In particular, since this PEP is authored by the active Release Manager
+and its effect would shorten the term of the Release Manager, the author
+is open to managing the release of a third feature release to compensate
+for the disruption.</p>
+</div>
+</div>
+<div class="section" id="rationale-and-goals">
+<h2><a class="toc-backref" href="#id14">Rationale and Goals</a><a class="headerlink" href="#rationale-and-goals" title="Permalink to this headline">¶</a></h2>
+<p>This change provides the following advantages:</p>
+<ul class="simple">
+<li>makes releases smaller: since doubling the cadence doesn’t double our
+available development resources, consecutive releases are going to be
+smaller in terms of features;</li>
+<li>puts features and bug fixes in hands of users sooner;</li>
+<li>creates a more gradual upgrade path for users, by decreasing the
+surface of change in any single release;</li>
+<li>creates a predictable calendar for releases where the final release is
+always in October (so after the annual core sprint), and the beta
+phase starts in late May (so after PyCon US sprints), which is
+especially important for core developers who need to plan to include
+Python involvement in their calendar;</li>
+<li>decreases the urge to rush features shortly before “Beta 1” due to
+the risk of them “slipping for 18 months”;</li>
+<li>allows for synchronizing the schedule of Python release management
+with external distributors like Fedora who’ve been historically very
+helpful in finding regressions early not only in core Python but also
+in third-party libraries, helping moving the community forward to
+support the latest version of Python from Day 1;</li>
+<li>increases the explicit alpha release phase, which provides meaningful
+snapshots of progress on new features;</li>
+<li>significantly cuts the implicit “alpha 0” release phase which provides
+limited use for new development anyway (it overlaps with the beta of
+the <em>currently developed</em>, still unreleased, version).</li>
+</ul>
+<div class="section" id="non-goals">
+<h3><a class="toc-backref" href="#id15">Non-goals</a><a class="headerlink" href="#non-goals" title="Permalink to this headline">¶</a></h3>
+<p>Adopting an annual release calendar allows for natural switching to
+calendar versioning, for example by calling Python 3.9 “Python 3.20”
+since it’s released in October ‘20 and so on (“Python 3.23” would be the
+one released in October ‘23).</p>
+<p>While the ease of switching to calendar versioning can be treated as
+an advantage of an annual release cycle, this PEP does not advocate for
+or against a change in how Python is versioned.  Should the annual
+release cycle be adopted, the versioning question will be dealt with in
+a separate PEP.</p>
+</div>
+<div class="section" id="non-risks">
+<h3><a class="toc-backref" href="#id16">Non-risks</a><a class="headerlink" href="#non-risks" title="Permalink to this headline">¶</a></h3>
+<p>This change does not shorten the currently documented support calendar
+for a Python release, both in terms of bugfix releases and security
+fixes.</p>
+<p>This change does not accelerate the velocity of development.  Python is
+not going to become incompatible faster or accrue new features faster.
+It’s just that features are going to be released more gradually as they
+are developed.</p>
+<p>Consequently, while this change introduces the ability for users to
+upgrade much faster, it does not require them to do so.  Say, if they
+upgrade every second release, their experience with Python is going to
+be similar to the current situation.</p>
+</div>
+<div class="section" id="risks">
+<h3><a class="toc-backref" href="#id17">Risks</a><a class="headerlink" href="#risks" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="python-redistribution">
+<h4><a class="toc-backref" href="#id18">Python redistribution</a><a class="headerlink" href="#python-redistribution" title="Permalink to this headline">¶</a></h4>
+<p>This requires changes to how integrators, like Linux distributions,
+release Python within their systems.</p>
+</div>
+<div class="section" id="the-testing-matrix">
+<h4><a class="toc-backref" href="#id19">The testing matrix</a><a class="headerlink" href="#the-testing-matrix" title="Permalink to this headline">¶</a></h4>
+<p>This eventually increases the testing matrix for library and application
+maintainers that want to support all actively supported Python versions
+by one or two:</p>
+<div class="figure align-center" id="id2">
+<a class="reference internal image-reference" href="_images/pep-0602-overlapping-support-matrix.png"><img alt="_images/pep-0602-overlapping-support-matrix.png" src="_images/pep-0602-overlapping-support-matrix.png" style="width: 50%;" /></a>
+<p class="caption"><span class="caption-text">Figure 2. Testing matrix in the 18-month cadence vs. the 12-month</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+</div>
+<p>The “extended bugfix support at the discretion of the Release Manager”
+stage of the current release cycle is not codified.  If fact, PEP 101
+currently states that after the release of Python 3.(X+1).0 only one
+last bugfix release is made for Python 3.X.0.  However, in practice at
+least the last four versions of Python 3 overlapped with stable releases
+of the next version for around six months.  Figure 2 is including
+this information to demonstrate that overlap between stable version
+releases with the 12-month release cadence will be nothing new.</p>
+</div>
+<div class="section" id="other-policies-may-depend-on-the-release-cadence">
+<h4><a class="toc-backref" href="#id20">Other policies may depend on the release cadence</a><a class="headerlink" href="#other-policies-may-depend-on-the-release-cadence" title="Permalink to this headline">¶</a></h4>
+<p>Although identified dependent policies were addressed in a previous
+section, it is entirely possible there are some other areas which
+implicitly rely on the timing of Python releases.</p>
+</div>
+</div>
+<div class="section" id="rejected-ideas">
+<h3><a class="toc-backref" href="#id21">Rejected Ideas</a><a class="headerlink" href="#rejected-ideas" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="keep-the-current-18-month-release-cadence">
+<h4><a class="toc-backref" href="#id22">Keep the current 18 month release cadence</a><a class="headerlink" href="#keep-the-current-18-month-release-cadence" title="Permalink to this headline">¶</a></h4>
+<p>This is undesirable both for core developers and end users. From the
+perspective of the core developer:</p>
+<ul class="simple">
+<li>it makes contribution scheduling harder due to irregular release
+dates every year;</li>
+<li>it creates a surge of rushed commits before (and even after!) Beta 1
+due to the stress involved with “missing a release”;</li>
+<li>ironically, after Beta 1 it creates a false sense of having “plenty of
+time” before the next release, time that passes quickly regardless;</li>
+<li>it causes certain elements of the workflow to be executed so rarely
+that they are not explicitly documented, let alone automated.</li>
+</ul>
+<p>More importantly, from the perspective of the user:</p>
+<ul class="simple">
+<li>it creates releases with many new features, some being explicitly
+incompatible and some being accidentally incompatible, which makes
+the upgrade cost relatively high every time;</li>
+<li>it sits on features and incompatible bug fixes for over a year before
+becoming available to the user; and more specifically</li>
+<li>it causes every “point zero” release to be extra risky for users.
+While we provide and recommend testing with alphas and betas,
+“point zero” is the first release of a given Python version for many
+users.  The bigger a release is feature-wise, the more potential
+problems are hiding in “point zero releases”.</li>
+</ul>
+</div>
+<div class="section" id="double-the-release-cadence-to-achieve-9-months-between-major-versions">
+<h4><a class="toc-backref" href="#id23">Double the release cadence to achieve 9 months between major versions</a><a class="headerlink" href="#double-the-release-cadence-to-achieve-9-months-between-major-versions" title="Permalink to this headline">¶</a></h4>
+<p>This was originally proposed in PEP 596 and rejected as both too
+irregular and too short.  This would not give any of the benefits of
+a regular release calendar but it would shorten all development phases,
+especially the beta + RC phases.  This was considered dangerous.</p>
+</div>
+<div class="section" id="keep-4-betas-over-4-months-and-a-final-month-for-the-release-candidate">
+<h4><a class="toc-backref" href="#id24">Keep “4 betas over 4 months and a final month for the release candidate”</a><a class="headerlink" href="#keep-4-betas-over-4-months-and-a-final-month-for-the-release-candidate" title="Permalink to this headline">¶</a></h4>
+<p>While this would make the release calendar a bit cleaner, <a class="reference external" href="https://discuss.python.org/t/pep-602-annual-release-cycle-for-python/2296/79?u=ambv">it would make
+it very hard for external distributors like Fedora</a>
+to release the newest version of Python as soon as possible.  We are
+adjusting Python’s calendar here in the hope that this will enable
+Fedora to integrate the newest version of Python with the newest version
+of Fedora <em>as both are being developed</em> which makes both projects
+better.</p>
+</div>
+<div class="section" id="slow-down-releases-but-don-t-freeze-feature-development-with-beta-1">
+<h4><a class="toc-backref" href="#id25">Slow down releases but don’t freeze feature development with Beta 1</a><a class="headerlink" href="#slow-down-releases-but-don-t-freeze-feature-development-with-beta-1" title="Permalink to this headline">¶</a></h4>
+<p>This is described in PEP 598.  This proposal includes non-standard
+concepts like the “incremental feature release” which makes it hard
+to understand.  The presented advantages are unclear while the
+unfamiliarity of the scheme poses a real risk of user and integrator
+confusion.</p>
+</div>
+<div class="section" id="long-term-support-releases">
+<h4><a class="toc-backref" href="#id26">Long-Term Support Releases</a><a class="headerlink" href="#long-term-support-releases" title="Permalink to this headline">¶</a></h4>
+<p>Each version of Python is effectively long-term support: it’s supported
+for five years, with the first eighteen months allowing regular bug
+fixes and security updates.  For the remaining time security updates are
+accepted and promptly released.</p>
+<p>No extended support in the vein of Python 2.7 is planned going forward.</p>
+</div>
+</div>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id27">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document is placed in the public domain or under the
+CC0-1.0-Universal license, whichever is more permissive.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0602.rst">https://github.com/python/peps/blob/master/pep-0602.rst</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0602.rst.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0601.html">PEP 0601</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0603.html">PEP 0603</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 602 – Annual Release Cycle for Python</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a><ul>
+<li><a class="reference internal" href="#seventeen-months-to-develop-a-major-version">Seventeen months to develop a major version</a></li>
+<li><a class="reference internal" href="#year-of-full-support-312-more-years-of-security-fixes">1½ year of full support, 3½ more years of security fixes</a></li>
+<li><a class="reference internal" href="#annual-release-cadence">Annual release cadence</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#example">Example</a></li>
+<li><a class="reference internal" href="#dependent-policies">Dependent Policies</a><ul>
+<li><a class="reference internal" href="#deprecations">Deprecations</a></li>
+<li><a class="reference internal" href="#the-term-of-the-steering-council">The term of the Steering Council</a></li>
+<li><a class="reference internal" href="#the-term-of-the-release-manager">The term of the Release Manager</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rationale-and-goals">Rationale and Goals</a><ul>
+<li><a class="reference internal" href="#non-goals">Non-goals</a></li>
+<li><a class="reference internal" href="#non-risks">Non-risks</a></li>
+<li><a class="reference internal" href="#risks">Risks</a><ul>
+<li><a class="reference internal" href="#python-redistribution">Python redistribution</a></li>
+<li><a class="reference internal" href="#the-testing-matrix">The testing matrix</a></li>
+<li><a class="reference internal" href="#other-policies-may-depend-on-the-release-cadence">Other policies may depend on the release cadence</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rejected-ideas">Rejected Ideas</a><ul>
+<li><a class="reference internal" href="#keep-the-current-18-month-release-cadence">Keep the current 18 month release cadence</a></li>
+<li><a class="reference internal" href="#double-the-release-cadence-to-achieve-9-months-between-major-versions">Double the release cadence to achieve 9 months between major versions</a></li>
+<li><a class="reference internal" href="#keep-4-betas-over-4-months-and-a-final-month-for-the-release-candidate">Keep “4 betas over 4 months and a final month for the release candidate”</a></li>
+<li><a class="reference internal" href="#slow-down-releases-but-don-t-freeze-feature-development-with-beta-1">Slow down releases but don’t freeze feature development with Beta 1</a></li>
+<li><a class="reference internal" href="#long-term-support-releases">Long-Term Support Releases</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

@@ -1,0 +1,387 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 309 – Partial Function Application &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 310 – Reliable Acquisition/Release Pairs" href="pep-0310.html" />
+    <link rel="prev" title="PEP 308 – Conditional Expressions" href="pep-0308.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 309 – Partial Function Application</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-309-partial-function-application">
+<h1 class="page-title">PEP 309 – Partial Function Application<a class="headerlink" href="#pep-309-partial-function-application" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">309</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Partial Function Application</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Peter Harris &lt;scav&#32;&#97;t&#32;blueyonder.co.uk&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">08-Feb-2003</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.5</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">10-Feb-2003, 27-Feb-2003, 22-Feb-2004, 28-Apr-2006</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#note" id="id19">Note</a></li>
+<li><a class="reference internal" href="#abstract" id="id20">Abstract</a></li>
+<li><a class="reference internal" href="#acceptance" id="id21">Acceptance</a></li>
+<li><a class="reference internal" href="#motivation" id="id22">Motivation</a></li>
+<li><a class="reference internal" href="#example-implementation" id="id23">Example Implementation</a></li>
+<li><a class="reference internal" href="#examples-of-use" id="id24">Examples of Use</a></li>
+<li><a class="reference internal" href="#abandoned-syntax-proposal" id="id25">Abandoned Syntax Proposal</a></li>
+<li><a class="reference internal" href="#feedback-from-comp-lang-python-and-python-dev" id="id26">Feedback from comp.lang.python and python-dev</a></li>
+<li><a class="reference internal" href="#summary" id="id27">Summary</a></li>
+<li><a class="reference internal" href="#references" id="id28">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id29">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="note">
+<h2><a class="toc-backref" href="#id19">Note</a><a class="headerlink" href="#note" title="Permalink to this headline">¶</a></h2>
+<p>Following the acceptance of this PEP, further discussion on python-dev and
+comp.lang.python revealed a desire for several tools that operated on
+function objects, but were not related to functional programming.  Rather
+than create a new module for these tools, it was agreed <a class="footnote-reference brackets" href="#id4" id="id1">1</a> that the
+“functional” module be renamed to “functools” to reflect its newly-widened
+focus.</p>
+<p>References in this PEP to a “functional” module have been left in for
+historical reasons.</p>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id20">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This proposal is for a function or callable class that allows a new
+callable to be constructed from a callable and a partial argument list
+(including positional and keyword arguments).</p>
+<p>I propose a standard library module called “functional”, to hold
+useful higher-order functions, including the implementation of
+partial().</p>
+<p>An implementation has been submitted to SourceForge <a class="footnote-reference brackets" href="#id5" id="id2">2</a>.</p>
+</div>
+<div class="section" id="acceptance">
+<h2><a class="toc-backref" href="#id21">Acceptance</a><a class="headerlink" href="#acceptance" title="Permalink to this headline">¶</a></h2>
+<p>Patch #941881 was accepted and applied in 2005 for Py2.5.  It is
+essentially as outlined here, a partial() type constructor binding
+leftmost positional arguments and any keywords.  The partial object has
+three read-only attributes func, args, and keywords.  Calls to the partial
+object can specify keywords that override those in the object itself.</p>
+<p>There is a separate and continuing discussion of whether to modify the
+partial implementation with a __get__ method to more closely emulate
+the behavior of an equivalent function.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id22">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>In functional programming, function currying is a way of implementing
+multi-argument functions in terms of single-argument functions.  A
+function with N arguments is really a function with 1 argument that
+returns another function taking (N-1) arguments.  Function application
+in languages like Haskell and ML works such that a function call:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">f</span> <span class="n">x</span> <span class="n">y</span> <span class="n">z</span>
+</pre></div>
+</div>
+<p>actually means:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">(((</span><span class="n">f</span> <span class="n">x</span><span class="p">)</span> <span class="n">y</span><span class="p">)</span> <span class="n">z</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This would be only an obscure theoretical issue except that in actual
+programming it turns out to be very useful.  Expressing a function in
+terms of partial application of arguments to another function can be
+both elegant and powerful, and in functional languages it is heavily
+used.</p>
+<p>In some functional languages, (e.g. Miranda) you can use an expression
+such as <code class="docutils literal notranslate"><span class="pre">(+1)</span></code> to mean the equivalent of Python’s
+<code class="docutils literal notranslate"><span class="pre">(lambda</span> <span class="pre">x:</span> <span class="pre">x</span> <span class="pre">+</span> <span class="pre">1)</span></code>.</p>
+<p>In general, languages like that are strongly typed, so the compiler
+always knows the number of arguments expected and can do the right
+thing when presented with a functor and less arguments than expected.</p>
+<p>Python does not implement multi-argument functions by currying, so if
+you want a function with partially-applied arguments you would
+probably use a lambda as above, or define a named function for each
+instance.</p>
+<p>However, lambda syntax is not to everyone’s taste, so say the least.
+Furthermore, Python’s flexible parameter passing using both positional
+and keyword presents an opportunity to generalise the idea of partial
+application and do things that lambda cannot.</p>
+</div>
+<div class="section" id="example-implementation">
+<h2><a class="toc-backref" href="#id23">Example Implementation</a><a class="headerlink" href="#example-implementation" title="Permalink to this headline">¶</a></h2>
+<p>Here is one way to do a create a callable with partially-applied
+arguments in Python.  The implementation below is based on improvements
+provided by Scott David Daniels:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">partial</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="bp">self</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fn</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">kw</span> <span class="o">=</span> <span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">args</span><span class="p">[</span><span class="mi">2</span><span class="p">:],</span> <span class="n">kw</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">kw</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">kw</span><span class="p">:</span>
+            <span class="n">d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kw</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">d</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kw</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">d</span> <span class="o">=</span> <span class="n">kw</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">kw</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fn</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">+</span> <span class="n">args</span><span class="p">),</span> <span class="o">**</span><span class="n">d</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>(A recipe similar to this has been in the Python Cookbook for some
+time <a class="footnote-reference brackets" href="#id6" id="id3">3</a>.)</p>
+<p>Note that when the object is called as though it were a function,
+positional arguments are appended to those provided to the
+constructor, and keyword arguments override and augment those provided
+to the constructor.</p>
+<p>Positional arguments, keyword arguments or both can be supplied at
+when creating the object and when calling it.</p>
+</div>
+<div class="section" id="examples-of-use">
+<h2><a class="toc-backref" href="#id24">Examples of Use</a><a class="headerlink" href="#examples-of-use" title="Permalink to this headline">¶</a></h2>
+<p>So <code class="docutils literal notranslate"><span class="pre">partial(operator.add,</span> <span class="pre">1)</span></code> is a bit like <code class="docutils literal notranslate"><span class="pre">(lambda</span> <span class="pre">x:</span> <span class="pre">1</span> <span class="pre">+</span> <span class="pre">x)</span></code>.
+Not an example where you see the benefits, of course.</p>
+<p>Note too, that you could wrap a class in the same way, since classes
+themselves are callable factories for objects.  So in some cases,
+rather than defining a subclass, you can specialise classes by partial
+application of the arguments to the constructor.</p>
+<p>For example, <code class="docutils literal notranslate"><span class="pre">partial(Tkinter.Label,</span> <span class="pre">fg='blue')</span></code> makes Tkinter
+Labels that have a blue foreground by default.</p>
+<p>Here’s a simple example that uses partial application to construct
+callbacks for Tkinter widgets on the fly:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">Tkinter</span> <span class="kn">import</span> <span class="n">Tk</span><span class="p">,</span> <span class="n">Canvas</span><span class="p">,</span> <span class="n">Button</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">functional</span> <span class="kn">import</span> <span class="n">partial</span>
+
+<span class="n">win</span> <span class="o">=</span> <span class="n">Tk</span><span class="p">()</span>
+<span class="n">c</span> <span class="o">=</span> <span class="n">Canvas</span><span class="p">(</span><span class="n">win</span><span class="p">,</span><span class="n">width</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span><span class="n">height</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+<span class="n">c</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
+
+<span class="k">for</span> <span class="n">colour</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">Button</span><span class="p">(</span><span class="n">win</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="n">colour</span><span class="p">,</span>
+               <span class="n">command</span><span class="o">=</span><span class="n">partial</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">bg</span><span class="o">=</span><span class="n">colour</span><span class="p">))</span>
+    <span class="n">b</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">side</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">)</span>
+
+<span class="n">win</span><span class="o">.</span><span class="n">mainloop</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="abandoned-syntax-proposal">
+<h2><a class="toc-backref" href="#id25">Abandoned Syntax Proposal</a><a class="headerlink" href="#abandoned-syntax-proposal" title="Permalink to this headline">¶</a></h2>
+<p>I originally suggested the syntax <code class="docutils literal notranslate"><span class="pre">fn&#64;(*args,</span> <span class="pre">**kw)</span></code>, meaning the
+same as <code class="docutils literal notranslate"><span class="pre">partial(fn,</span> <span class="pre">*args,</span> <span class="pre">**kw)</span></code>.</p>
+<p>The &#64; sign is used in some assembly languages to imply register
+indirection, and the use here is also a kind of indirection.
+<code class="docutils literal notranslate"><span class="pre">f&#64;(x)</span></code> is not <code class="docutils literal notranslate"><span class="pre">f(x)</span></code>, but a thing that becomes <code class="docutils literal notranslate"><span class="pre">f(x)</span></code> when you
+call it.</p>
+<p>It was not well-received, so I have withdrawn this part of the
+proposal.  In any case, &#64; has been taken for the new decorator syntax.</p>
+</div>
+<div class="section" id="feedback-from-comp-lang-python-and-python-dev">
+<h2><a class="toc-backref" href="#id26">Feedback from comp.lang.python and python-dev</a><a class="headerlink" href="#feedback-from-comp-lang-python-and-python-dev" title="Permalink to this headline">¶</a></h2>
+<p>Among the opinions voiced were the following (which I summarise):</p>
+<ul class="simple">
+<li>Lambda is good enough.</li>
+<li>The &#64; syntax is ugly (unanimous).</li>
+<li>It’s really a curry rather than a closure.  There is an almost
+identical implementation of a curry class on ActiveState’s Python
+Cookbook.</li>
+<li>A curry class would indeed be a useful addition to the standard
+library.</li>
+<li>It isn’t function currying, but partial application.  Hence the
+name is now proposed to be partial().</li>
+<li>It maybe isn’t useful enough to be in the built-ins.</li>
+<li>The idea of a module called <code class="docutils literal notranslate"><span class="pre">functional</span></code> was well received, and
+there are other things that belong there (for example function
+composition).</li>
+<li>For completeness, another object that appends partial arguments
+after those supplied in the function call (maybe called
+<code class="docutils literal notranslate"><span class="pre">rightcurry</span></code>) has been suggested.</li>
+</ul>
+<p>I agree that lambda is usually good enough, just not always.  And I
+want the possibility of useful introspection and subclassing.</p>
+<p>I disagree that &#64; is particularly ugly, but it may be that I’m just
+weird.  We have dictionary, list and tuple literals neatly
+differentiated by special punctuation – a way of directly expressing
+partially-applied function literals is not such a stretch.  However,
+not one single person has said they like it, so as far as I’m
+concerned it’s a dead parrot.</p>
+<p>I concur with calling the class partial rather than curry or closure,
+so I have amended the proposal in this PEP accordingly.  But not
+throughout: some incorrect references to ‘curry’ have been left in
+since that’s where the discussion was at the time.</p>
+<p>Partially applying arguments from the right, or inserting arguments at
+arbitrary positions creates its own problems, but pending discovery of
+a good implementation and non-confusing semantics, I don’t think it
+should be ruled out.</p>
+<p>Carl Banks posted an implementation as a real functional closure:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">curry</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="o">*</span><span class="n">cargs</span><span class="p">,</span> <span class="o">**</span><span class="n">ckwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">call_fn</span><span class="p">(</span><span class="o">*</span><span class="n">fargs</span><span class="p">,</span> <span class="o">**</span><span class="n">fkwargs</span><span class="p">):</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">ckwargs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">d</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">fkwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">fn</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="n">cargs</span> <span class="o">+</span> <span class="n">fargs</span><span class="p">),</span> <span class="o">**</span><span class="n">d</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">call_fn</span>
+</pre></div>
+</div>
+<p>which he assures me is more efficient.</p>
+<p>I also coded the class in Pyrex, to estimate how the performance
+might be improved by coding it in C:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cdef</span> <span class="k">class</span> <span class="nc">curry</span><span class="p">:</span>
+
+    <span class="n">cdef</span> <span class="nb">object</span> <span class="n">fn</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kw</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fn</span><span class="o">=</span><span class="n">fn</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">=</span><span class="n">args</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kw</span> <span class="o">=</span> <span class="n">kw</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">kw</span><span class="p">:</span>        <span class="c1"># from Python Cookbook version</span>
+            <span class="n">d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kw</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">d</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kw</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">d</span><span class="o">=</span><span class="n">kw</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fn</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">+</span> <span class="n">args</span><span class="p">),</span> <span class="o">**</span><span class="n">d</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The performance gain in Pyrex is less than 100% over the nested
+function implementation, since to be fully general it has to operate
+by Python API calls.  For the same reason, a C implementation will be
+unlikely to be much faster, so the case for a built-in coded in C is
+not very strong.</p>
+</div>
+<div class="section" id="summary">
+<h2><a class="toc-backref" href="#id27">Summary</a><a class="headerlink" href="#summary" title="Permalink to this headline">¶</a></h2>
+<p>I prefer that some means to partially-apply functions and other
+callables should be present in the standard library.</p>
+<p>A standard library module <code class="docutils literal notranslate"><span class="pre">functional</span></code> should contain an
+implementation of <code class="docutils literal notranslate"><span class="pre">partial</span></code>, and any other higher-order functions
+the community want.  Other functions that might belong there fall
+outside the scope of this PEP though.</p>
+<p>Patches for the implementation, documentation and unit tests (SF
+patches <a class="reference external" href="https://bugs.python.org/issue931005">931005</a> <a class="footnote-reference brackets" href="#id10" id="id11">4</a>, <a class="reference external" href="https://bugs.python.org/issue931007">931007</a> <a class="footnote-reference brackets" href="#id13" id="id14">5</a>, and <a class="reference external" href="https://bugs.python.org/issue931010">931010</a> <a class="footnote-reference brackets" href="#id16" id="id17">6</a> respectively) have been
+submitted but not yet checked in.</p>
+<p>A C implementation by Hye-Shik Chang has also been submitted, although
+it is not expected to be included until after the Python
+implementation has proven itself useful enough to be worth optimising.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id28">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id4"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2006-March/062290.html">https://mail.python.org/pipermail/python-dev/2006-March/062290.html</a></dd>
+<dt class="label" id="id5"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>Patches <a class="reference external" href="https://bugs.python.org/issue931005">931005</a> <a class="footnote-reference brackets" href="#id10" id="id12">4</a>, <a class="reference external" href="https://bugs.python.org/issue931007">931007</a> <a class="footnote-reference brackets" href="#id13" id="id15">5</a>, and <a class="reference external" href="https://bugs.python.org/issue931010">931010</a> <a class="footnote-reference brackets" href="#id16" id="id18">6</a>.</dd>
+<dt class="label" id="id6"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd><a class="reference external" href="http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/52549">http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/52549</a></dd>
+</dl>
+<dl class="footnote brackets">
+<dt class="label" id="id10"><span class="brackets">4</span><span class='fn-backref'><em> (<a href="#id11">1</a>, <a href="#id12">2</a>) </em></span></dt>
+<dd><a class="reference external" href="https://bugs.python.org/issue931005">https://bugs.python.org/issue931005</a></dd>
+<dt class="label" id="id13"><span class="brackets">5</span><span class='fn-backref'><em> (<a href="#id14">1</a>, <a href="#id15">2</a>) </em></span></dt>
+<dd><a class="reference external" href="https://bugs.python.org/issue931007">https://bugs.python.org/issue931007</a></dd>
+<dt class="label" id="id16"><span class="brackets">6</span><span class='fn-backref'><em> (<a href="#id17">1</a>, <a href="#id18">2</a>) </em></span></dt>
+<dd><a class="reference external" href="https://bugs.python.org/issue931010">https://bugs.python.org/issue931010</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id29">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0309.txt">https://github.com/python/peps/blob/master/pep-0309.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0309.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0308.html">PEP 0308</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0310.html">PEP 0310</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 309 – Partial Function Application</a><ul>
+<li><a class="reference internal" href="#note">Note</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#acceptance">Acceptance</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#example-implementation">Example Implementation</a></li>
+<li><a class="reference internal" href="#examples-of-use">Examples of Use</a></li>
+<li><a class="reference internal" href="#abandoned-syntax-proposal">Abandoned Syntax Proposal</a></li>
+<li><a class="reference internal" href="#feedback-from-comp-lang-python-and-python-dev">Feedback from comp.lang.python and python-dev</a></li>
+<li><a class="reference internal" href="#summary">Summary</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

@@ -1,0 +1,430 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 237 – Unifying Long Integers and Integers &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 238 – Changing the Division Operator" href="pep-0238.html" />
+    <link rel="prev" title="PEP 236 – Back to the __future__" href="pep-0236.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 237 – Unifying Long Integers and Integers</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-237-unifying-long-integers-and-integers">
+<h1 class="page-title">PEP 237 – Unifying Long Integers and Integers<a class="headerlink" href="#pep-237-unifying-long-integers-and-integers" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">237</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Unifying Long Integers and Integers</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Moshe Zadka, Guido van Rossum</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">11-Mar-2001</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.2</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">16-Mar-2001, 14-Aug-2001, 23-Aug-2001</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id3">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id4">Rationale</a></li>
+<li><a class="reference internal" href="#implementation" id="id5">Implementation</a></li>
+<li><a class="reference internal" href="#incompatibilities" id="id6">Incompatibilities</a></li>
+<li><a class="reference internal" href="#literals" id="id7">Literals</a></li>
+<li><a class="reference internal" href="#built-in-functions" id="id8">Built-in Functions</a></li>
+<li><a class="reference internal" href="#c-api" id="id9">C API</a></li>
+<li><a class="reference internal" href="#transition" id="id10">Transition</a></li>
+<li><a class="reference internal" href="#overflowwarning" id="id11">OverflowWarning</a></li>
+<li><a class="reference internal" href="#example" id="id12">Example</a></li>
+<li><a class="reference internal" href="#resolved-issues" id="id13">Resolved Issues</a></li>
+<li><a class="reference internal" href="#id1" id="id14">Implementation</a></li>
+<li><a class="reference internal" href="#copyright" id="id15">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id3">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Python currently distinguishes between two kinds of integers (ints): regular
+or short ints, limited by the size of a C long (typically 32 or 64 bits), and
+long ints, which are limited only by available memory.  When operations on
+short ints yield results that don’t fit in a C long, they raise an error.
+There are some other distinctions too.  This PEP proposes to do away with most
+of the differences in semantics, unifying the two types from the perspective
+of the Python user.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id4">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Many programs find a need to deal with larger numbers after the fact, and
+changing the algorithms later is bothersome.  It can hinder performance in the
+normal case, when all arithmetic is performed using long ints whether or not
+they are needed.</p>
+<p>Having the machine word size exposed to the language hinders portability.  For
+examples Python source files and .pyc’s are not portable between 32-bit and
+64-bit machines because of this.</p>
+<p>There is also the general desire to hide unnecessary details from the Python
+user when they are irrelevant for most applications. An example is memory
+allocation, which is explicit in C but automatic in Python, giving us the
+convenience of unlimited sizes on strings, lists, etc.  It makes sense to
+extend this convenience to numbers.</p>
+<p>It will give new Python programmers (whether they are new to programming in
+general or not) one less thing to learn before they can start using the
+language.</p>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id5">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>Initially, two alternative implementations were proposed (one by each author):</p>
+<ol class="arabic">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">PyInt</span></code> type’s slot for a C long will be turned into a:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">union</span> <span class="p">{</span>
+    <span class="n">long</span> <span class="n">i</span><span class="p">;</span>
+    <span class="n">struct</span> <span class="p">{</span>
+        <span class="n">unsigned</span> <span class="n">long</span> <span class="n">length</span><span class="p">;</span>
+        <span class="n">digit</span> <span class="n">digits</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span>
+    <span class="p">}</span> <span class="n">bignum</span><span class="p">;</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p>Only the <code class="docutils literal notranslate"><span class="pre">n-1</span></code> lower bits of the <code class="docutils literal notranslate"><span class="pre">long</span></code> have any meaning; the top bit
+is always set.  This distinguishes the <code class="docutils literal notranslate"><span class="pre">union</span></code>.  All <code class="docutils literal notranslate"><span class="pre">PyInt</span></code> functions
+will check this bit before deciding which types of operations to use.</p>
+</li>
+<li><p>The existing short and long int types remain, but operations return
+a long int instead of raising <code class="docutils literal notranslate"><span class="pre">OverflowError</span></code> when a result cannot be
+represented as a short int.  A new type, <code class="docutils literal notranslate"><span class="pre">integer</span></code>, may be introduced
+that is an abstract base type of which both the <code class="docutils literal notranslate"><span class="pre">int</span></code> and <code class="docutils literal notranslate"><span class="pre">long</span></code>
+implementation types are subclassed.  This is useful so that programs can
+check integer-ness with a single test:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">integer</span><span class="p">):</span> <span class="o">...</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p>After some consideration, the second implementation plan was selected, since
+it is far easier to implement, is backwards compatible at the C API level, and
+in addition can be implemented partially as a transitional measure.</p>
+</div>
+<div class="section" id="incompatibilities">
+<h2><a class="toc-backref" href="#id6">Incompatibilities</a><a class="headerlink" href="#incompatibilities" title="Permalink to this headline">¶</a></h2>
+<p>The following operations have (usually subtly) different semantics for short
+and for long integers, and one or the other will have to be changed somehow.
+This is intended to be an exhaustive list. If you know of any other operation
+that differ in outcome depending on whether a short or a long int with the same
+value is passed, please write the second author.</p>
+<ul class="simple">
+<li>Currently, all arithmetic operators on short ints except <code class="docutils literal notranslate"><span class="pre">&lt;&lt;</span></code> raise
+<code class="docutils literal notranslate"><span class="pre">OverflowError</span></code> if the result cannot be represented as a short int.  This
+will be changed to return a long int instead. The following operators can
+currently raise <code class="docutils literal notranslate"><span class="pre">OverflowError</span></code>: <code class="docutils literal notranslate"><span class="pre">x+y</span></code>, <code class="docutils literal notranslate"><span class="pre">x-y</span></code>, <code class="docutils literal notranslate"><span class="pre">x*y</span></code>, <code class="docutils literal notranslate"><span class="pre">x**y</span></code>,
+<code class="docutils literal notranslate"><span class="pre">divmod(x,</span> <span class="pre">y)</span></code>, <code class="docutils literal notranslate"><span class="pre">x/y</span></code>, <code class="docutils literal notranslate"><span class="pre">x%y</span></code>, and <code class="docutils literal notranslate"><span class="pre">-x</span></code>.  (The last four can only
+overflow when the value <code class="docutils literal notranslate"><span class="pre">-sys.maxint-1</span></code> is involved.)</li>
+<li>Currently, <code class="docutils literal notranslate"><span class="pre">x&lt;&lt;n</span></code> can lose bits for short ints.  This will be changed to
+return a long int containing all the shifted-out bits, if returning a short
+int would lose bits (where changing sign is considered a special case of
+losing bits).</li>
+<li>Currently, hex and oct literals for short ints may specify negative values;
+for example <code class="docutils literal notranslate"><span class="pre">0xffffffff</span> <span class="pre">==</span> <span class="pre">-1</span></code> on a 32-bit machine.  This will be changed
+to equal <code class="docutils literal notranslate"><span class="pre">0xffffffffL</span></code> (<code class="docutils literal notranslate"><span class="pre">2**32-1</span></code>).</li>
+<li>Currently, the <code class="docutils literal notranslate"><span class="pre">%u</span></code>, <code class="docutils literal notranslate"><span class="pre">%x</span></code>, <code class="docutils literal notranslate"><span class="pre">%X</span></code> and <code class="docutils literal notranslate"><span class="pre">%o</span></code> string formatting operators
+and the <code class="docutils literal notranslate"><span class="pre">hex()</span></code> and <code class="docutils literal notranslate"><span class="pre">oct()</span></code> built-in functions behave differently for
+negative numbers: negative short ints are formatted as unsigned C long,
+while negative long ints are formatted with a minus sign.  This will be
+changed to use the long int semantics in all cases (but without the trailing
+<em>L</em> that currently distinguishes the output of <code class="docutils literal notranslate"><span class="pre">hex()</span></code> and <code class="docutils literal notranslate"><span class="pre">oct()</span></code> for
+long ints).  Note that this means that <code class="docutils literal notranslate"><span class="pre">%u</span></code> becomes an alias for <code class="docutils literal notranslate"><span class="pre">%d</span></code>.
+It will eventually be removed.</li>
+<li>Currently, <code class="docutils literal notranslate"><span class="pre">repr()</span></code> of a long int returns a string ending in <em>L</em> while
+<code class="docutils literal notranslate"><span class="pre">repr()</span></code> of a short int doesn’t.  The <em>L</em> will be dropped; but not before
+Python 3.0.</li>
+<li>Currently, an operation with long operands will never return a short int.
+This <em>may</em> change, since it allows some optimization.  (No changes have been
+made in this area yet, and none are planned.)</li>
+<li>The expression <code class="docutils literal notranslate"><span class="pre">type(x).__name__</span></code> depends on whether <em>x</em> is a short or a
+long int.  Since implementation alternative 2 is chosen, this difference
+will remain.  (In Python 3.0, we <em>may</em> be able to deploy a trick to hide the
+difference, because it <em>is</em> annoying to reveal the difference to user code,
+and more so as the difference between the two types is less visible.)</li>
+<li>Long and short ints are handled different by the <code class="docutils literal notranslate"><span class="pre">marshal</span></code> module, and by
+the <code class="docutils literal notranslate"><span class="pre">pickle</span></code> and <code class="docutils literal notranslate"><span class="pre">cPickle</span></code> modules.  This difference will remain (at
+least until Python 3.0).</li>
+<li>Short ints with small values (typically between -1 and 99 inclusive) are
+<em>interned</em> – whenever a result has such a value, an existing short int with
+the same value is returned.  This is not done for long ints with the same
+values.  This difference will remain.  (Since there is no guarantee of this
+interning, it is debatable whether this is a semantic difference – but code
+may exist that uses <code class="docutils literal notranslate"><span class="pre">is</span></code> for comparisons of short ints and happens to work
+because of this interning.  Such code may fail if used with long ints.)</li>
+</ul>
+</div>
+<div class="section" id="literals">
+<h2><a class="toc-backref" href="#id7">Literals</a><a class="headerlink" href="#literals" title="Permalink to this headline">¶</a></h2>
+<p>A trailing <em>L</em> at the end of an integer literal will stop having any
+meaning, and will be eventually become illegal.  The compiler will choose the
+appropriate type solely based on the value. (Until Python 3.0, it will force
+the literal to be a long; but literals without a trailing <em>L</em> may also be
+long, if they are not representable as short ints.)</p>
+</div>
+<div class="section" id="built-in-functions">
+<h2><a class="toc-backref" href="#id8">Built-in Functions</a><a class="headerlink" href="#built-in-functions" title="Permalink to this headline">¶</a></h2>
+<p>The function <code class="docutils literal notranslate"><span class="pre">int()</span></code> will return a short or a long int depending on the
+argument value.  In Python 3.0, the function <code class="docutils literal notranslate"><span class="pre">long()</span></code> will call the function
+<code class="docutils literal notranslate"><span class="pre">int()</span></code>; before then, it will continue to force the result to be a long int,
+but otherwise work the same way as <code class="docutils literal notranslate"><span class="pre">int()</span></code>. The built-in name <code class="docutils literal notranslate"><span class="pre">long</span></code> will
+remain in the language to represent the long implementation type (unless it is
+completely eradicated in Python 3.0), but using the <code class="docutils literal notranslate"><span class="pre">int()</span></code> function is
+still recommended, since it will automatically return a long when needed.</p>
+</div>
+<div class="section" id="c-api">
+<h2><a class="toc-backref" href="#id9">C API</a><a class="headerlink" href="#c-api" title="Permalink to this headline">¶</a></h2>
+<p>The C API remains unchanged; C code will still need to be aware of the
+difference between short and long ints.  (The Python 3.0 C API will probably
+be completely incompatible.)</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">PyArg_Parse*()</span></code> APIs already accept long ints, as long as they are
+within the range representable by C ints or longs, so that functions taking C
+int or long argument won’t have to worry about dealing with Python longs.</p>
+</div>
+<div class="section" id="transition">
+<h2><a class="toc-backref" href="#id10">Transition</a><a class="headerlink" href="#transition" title="Permalink to this headline">¶</a></h2>
+<p>There are three major phases to the transition:</p>
+<ol class="arabic simple">
+<li>Short int operations that currently raise <code class="docutils literal notranslate"><span class="pre">OverflowError</span></code> return a long
+int value instead.  This is the only change in this phase.  Literals will
+still distinguish between short and long ints.  The other semantic
+differences listed above (including the behavior of <code class="docutils literal notranslate"><span class="pre">&lt;&lt;</span></code>) will remain.
+Because this phase only changes situations that currently raise
+<code class="docutils literal notranslate"><span class="pre">OverflowError</span></code>, it is assumed that this won’t break existing code.
+(Code that depends on this exception would have to be too convoluted to be
+concerned about it.)  For those concerned about extreme backwards
+compatibility, a command line option (or a call to the warnings module)
+will allow a warning or an error to be issued at this point, but this is
+off by default.</li>
+<li>The remaining semantic differences are addressed.  In all cases the long
+int semantics will prevail.  Since this will introduce backwards
+incompatibilities which will break some old code, this phase may require a
+future statement and/or warnings, and a prolonged transition phase.  The
+trailing <em>L</em> will continue to be used for longs as input and by
+<code class="docutils literal notranslate"><span class="pre">repr()</span></code>.<ol class="upperalpha simple">
+<li>Warnings are enabled about operations that will change their numeric
+outcome in stage 2B, in particular <code class="docutils literal notranslate"><span class="pre">hex()</span></code> and <code class="docutils literal notranslate"><span class="pre">oct()</span></code>, <code class="docutils literal notranslate"><span class="pre">%u</span></code>,
+<code class="docutils literal notranslate"><span class="pre">%x</span></code>, <code class="docutils literal notranslate"><span class="pre">%X</span></code> and <code class="docutils literal notranslate"><span class="pre">%o</span></code>, <code class="docutils literal notranslate"><span class="pre">hex</span></code> and <code class="docutils literal notranslate"><span class="pre">oct</span></code> literals in the
+(inclusive) range <code class="docutils literal notranslate"><span class="pre">[sys.maxint+1,</span> <span class="pre">sys.maxint*2+1]</span></code>, and left shifts
+losing bits.</li>
+<li>The new semantic for these operations are implemented. Operations that
+give different results than before will <em>not</em> issue a warning.</li>
+</ol>
+</li>
+<li>The trailing <em>L</em> is dropped from <code class="docutils literal notranslate"><span class="pre">repr()</span></code>, and made illegal on input.
+(If possible, the <code class="docutils literal notranslate"><span class="pre">long</span></code> type completely disappears.) The trailing <em>L</em>
+is also dropped from <code class="docutils literal notranslate"><span class="pre">hex()</span></code> and <code class="docutils literal notranslate"><span class="pre">oct()</span></code>.</li>
+</ol>
+<p>Phase 1 will be implemented in Python 2.2.</p>
+<p>Phase 2 will be implemented gradually, with 2A in Python 2.3 and 2B in
+Python 2.4.</p>
+<p>Phase 3 will be implemented in Python 3.0 (at least two years after Python 2.4
+is released).</p>
+</div>
+<div class="section" id="overflowwarning">
+<h2><a class="toc-backref" href="#id11">OverflowWarning</a><a class="headerlink" href="#overflowwarning" title="Permalink to this headline">¶</a></h2>
+<p>Here are the rules that guide warnings generated in situations that currently
+raise <code class="docutils literal notranslate"><span class="pre">OverflowError</span></code>.  This applies to transition phase 1.  Historical
+note: despite that phase 1 was completed in Python 2.2, and phase 2A in Python
+2.3, nobody noticed that OverflowWarning was still generated in Python 2.3.
+It was finally disabled in Python 2.4.  The Python builtin
+<code class="docutils literal notranslate"><span class="pre">OverflowWarning</span></code>, and the corresponding C API <code class="docutils literal notranslate"><span class="pre">PyExc_OverflowWarning</span></code>,
+are no longer generated or used in Python 2.4, but will remain for the
+(unlikely) case of user code until Python 2.5.</p>
+<ul>
+<li><p>A new warning category is introduced, <code class="docutils literal notranslate"><span class="pre">OverflowWarning</span></code>.  This is a
+built-in name.</p>
+</li>
+<li><p>If an int result overflows, an <code class="docutils literal notranslate"><span class="pre">OverflowWarning</span></code> warning is issued, with a
+message argument indicating the operation, e.g. “integer addition”.  This
+may or may not cause a warning message to be displayed on <code class="docutils literal notranslate"><span class="pre">sys.stderr</span></code>, or
+may cause an exception to be raised, all under control of the <code class="docutils literal notranslate"><span class="pre">-W</span></code> command
+line and the warnings module.</p>
+</li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">OverflowWarning</span></code> warning is ignored by default.</p>
+</li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">OverflowWarning</span></code> warning can be controlled like all warnings, via the
+<code class="docutils literal notranslate"><span class="pre">-W</span></code> command line option or via the <code class="docutils literal notranslate"><span class="pre">warnings.filterwarnings()</span></code> call.
+For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">Wdefault</span><span class="p">::</span><span class="n">OverflowWarning</span>
+</pre></div>
+</div>
+<p>cause the <code class="docutils literal notranslate"><span class="pre">OverflowWarning</span></code> to be displayed the first time it occurs at a
+particular source line, and:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">Werror</span><span class="p">::</span><span class="n">OverflowWarning</span>
+</pre></div>
+</div>
+<p>cause the <code class="docutils literal notranslate"><span class="pre">OverflowWarning</span></code> to be turned into an exception whenever it
+happens.  The following code enables the warning from inside the program:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">warnings</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;default&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">OverflowWarning</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>See the python <code class="docutils literal notranslate"><span class="pre">man</span></code> page for the <code class="docutils literal notranslate"><span class="pre">-W</span></code> option and the <code class="docutils literal notranslate"><span class="pre">warnings</span></code>
+module documentation for <code class="docutils literal notranslate"><span class="pre">filterwarnings()</span></code>.</p>
+</li>
+<li><p>If the <code class="docutils literal notranslate"><span class="pre">OverflowWarning</span></code> warning is turned into an error,
+<code class="docutils literal notranslate"><span class="pre">OverflowError</span></code> is substituted.  This is needed for backwards
+compatibility.</p>
+</li>
+<li><p>Unless the warning is turned into an exceptions, the result of the operation
+(e.g., <code class="docutils literal notranslate"><span class="pre">x+y</span></code>) is recomputed after converting the arguments to long ints.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="example">
+<h2><a class="toc-backref" href="#id12">Example</a><a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
+<p>If you pass a long int to a C function or built-in operation that takes an
+integer, it will be treated the same as a short int as long as the value fits
+(by virtue of how <code class="docutils literal notranslate"><span class="pre">PyArg_ParseTuple()</span></code> is implemented).  If the long value
+doesn’t fit, it will still raise an <code class="docutils literal notranslate"><span class="pre">OverflowError</span></code>.  For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">fact</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">n</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+    <span class="k">return</span> <span class="mi">1</span>
+<span class="k">return</span> <span class="n">n</span><span class="o">*</span><span class="n">fact</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">A</span> <span class="o">=</span> <span class="s2">&quot;ABCDEFGHIJKLMNOPQ&quot;</span>
+<span class="n">n</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Gimme an int: &quot;</span><span class="p">)</span>
+<span class="nb">print</span> <span class="n">A</span><span class="p">[</span><span class="n">fact</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="o">%</span><span class="mi">17</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>For <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&gt;=</span> <span class="pre">13</span></code>, this currently raises <code class="docutils literal notranslate"><span class="pre">OverflowError</span></code> (unless the user
+enters a trailing <em>L</em> as part of their input), even though the calculated
+index would always be in <code class="docutils literal notranslate"><span class="pre">range(17)</span></code>.  With the new approach this code will
+do the right thing: the index will be calculated as a long int, but its value
+will be in range.</p>
+</div>
+<div class="section" id="resolved-issues">
+<h2><a class="toc-backref" href="#id13">Resolved Issues</a><a class="headerlink" href="#resolved-issues" title="Permalink to this headline">¶</a></h2>
+<p>These issues, previously open, have been resolved.</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">hex()</span></code> and <code class="docutils literal notranslate"><span class="pre">oct()</span></code> applied to longs will continue to produce a trailing
+<em>L</em> until Python 3000.  The original text above wasn’t clear about this,
+but since it didn’t happen in Python 2.4 it was thought better to leave it
+alone.  BDFL pronouncement here:</p>
+<p><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2006-June/065918.html">https://mail.python.org/pipermail/python-dev/2006-June/065918.html</a></p>
+</li>
+<li><p>What to do about <code class="docutils literal notranslate"><span class="pre">sys.maxint</span></code>?  Leave it in, since it is still relevant
+whenever the distinction between short and long ints is still relevant (e.g.
+when inspecting the type of a value).</p>
+</li>
+<li><p>Should we remove <code class="docutils literal notranslate"><span class="pre">%u</span></code> completely?  Remove it.</p>
+</li>
+<li><p>Should we warn about <code class="docutils literal notranslate"><span class="pre">&lt;&lt;</span></code> not truncating integers?  Yes.</p>
+</li>
+<li><p>Should the overflow warning be on a portable maximum size?  No.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="id1">
+<h2><a class="toc-backref" href="#id14">Implementation</a><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<p>The implementation work for the Python 2.x line is completed; phase 1 was
+released with Python 2.2, phase 2A with Python 2.3, and phase 2B will be
+released with Python 2.4 (and is already in CVS).</p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id15">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0237.txt">https://github.com/python/peps/blob/master/pep-0237.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0237.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0236.html">PEP 0236</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0238.html">PEP 0238</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 237 – Unifying Long Integers and Integers</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#incompatibilities">Incompatibilities</a></li>
+<li><a class="reference internal" href="#literals">Literals</a></li>
+<li><a class="reference internal" href="#built-in-functions">Built-in Functions</a></li>
+<li><a class="reference internal" href="#c-api">C API</a></li>
+<li><a class="reference internal" href="#transition">Transition</a></li>
+<li><a class="reference internal" href="#overflowwarning">OverflowWarning</a></li>
+<li><a class="reference internal" href="#example">Example</a></li>
+<li><a class="reference internal" href="#resolved-issues">Resolved Issues</a></li>
+<li><a class="reference internal" href="#id1">Implementation</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

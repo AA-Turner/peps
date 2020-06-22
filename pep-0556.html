@@ -1,0 +1,560 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 556 – Threaded garbage collection &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 557 – Data Classes" href="pep-0557.html" />
+    <link rel="prev" title="PEP 555 – Context-local variables (contextvars)" href="pep-0555.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 556 – Threaded garbage collection</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-556-threaded-garbage-collection">
+<h1 class="page-title">PEP 556 – Threaded garbage collection<a class="headerlink" href="#pep-556-threaded-garbage-collection" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">556</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Threaded garbage collection</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Antoine Pitrou &lt;solipsis&#32;&#97;t&#32;pitrou.net&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Deferred</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">2017-09-08</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.7</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">2017-09-08</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#deferral-notice" id="id4">Deferral Notice</a></li>
+<li><a class="reference internal" href="#abstract" id="id5">Abstract</a></li>
+<li><a class="reference internal" href="#terminology" id="id6">Terminology</a></li>
+<li><a class="reference internal" href="#rationale" id="id7">Rationale</a></li>
+<li><a class="reference internal" href="#proposal" id="id8">Proposal</a><ul>
+<li><a class="reference internal" href="#new-public-apis" id="id9">New public APIs</a></li>
+<li><a class="reference internal" href="#intended-use" id="id10">Intended use</a></li>
+<li><a class="reference internal" href="#non-goals" id="id11">Non-goals</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#internal-details" id="id12">Internal details</a><ul>
+<li><a class="reference internal" href="#gc-module" id="id13"><code class="docutils literal notranslate"><span class="pre">gc</span></code> module</a></li>
+<li><a class="reference internal" href="#threading-module" id="id14"><code class="docutils literal notranslate"><span class="pre">threading</span></code> module</a></li>
+<li><a class="reference internal" href="#pseudo-code" id="id15">Pseudo-code</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#discussion" id="id16">Discussion</a><ul>
+<li><a class="reference internal" href="#default-mode" id="id17">Default mode</a></li>
+<li><a class="reference internal" href="#explicit-collections" id="id18">Explicit collections</a></li>
+<li><a class="reference internal" href="#impact-on-memory-use" id="id19">Impact on memory use</a></li>
+<li><a class="reference internal" href="#impact-on-cpu-consumption" id="id20">Impact on CPU consumption</a></li>
+<li><a class="reference internal" href="#impact-on-gc-pauses" id="id21">Impact on GC pauses</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#open-issues" id="id22">Open issues</a></li>
+<li><a class="reference internal" href="#implementation" id="id23">Implementation</a></li>
+<li><a class="reference internal" href="#references" id="id24">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id25">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="deferral-notice">
+<h2><a class="toc-backref" href="#id4">Deferral Notice</a><a class="headerlink" href="#deferral-notice" title="Permalink to this headline">¶</a></h2>
+<p>This PEP is currently not being actively worked on.  It may be revived
+in the future.  The main missing steps are:</p>
+<ul class="simple">
+<li>polish the implementation, adapting the test suite where necessary;</li>
+<li>ensure setting threaded garbage collection does not disrupt existing
+code in unexpected ways (expected impact includes lengthening the
+lifetime of objects in reference cycles).</li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id5">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes a new optional mode of operation for CPython’s cyclic
+garbage collector (GC) where implicit (i.e. opportunistic) collections
+happen in a dedicated thread rather than synchronously.</p>
+</div>
+<div class="section" id="terminology">
+<h2><a class="toc-backref" href="#id6">Terminology</a><a class="headerlink" href="#terminology" title="Permalink to this headline">¶</a></h2>
+<p>An “implicit” GC run (or “implicit” collection) is one that is triggered
+opportunistically based on a certain heuristic computed over allocation
+statistics, whenever a new allocation is requested.  Details of the
+heuristic are not relevant to this PEP, as it does not propose to change it.</p>
+<p>An “explicit” GC run (or “explicit” collection) is one that is requested
+programmatically by an API call such as <code class="docutils literal notranslate"><span class="pre">gc.collect</span></code>.</p>
+<p>“Threaded” refers to the fact that GC runs happen in a dedicated thread
+separate from sequential execution of application code.  It does not mean
+“concurrent” (the Global Interpreter Lock, or GIL, still serializes
+execution among Python threads <em>including</em> the dedicated GC thread)
+nor “parallel” (the GC is not able to distribute its work onto several
+threads at once to lower wall-clock latencies of GC runs).</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id7">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>The mode of operation for the GC has always been to perform implicit
+collections synchronously.  That is, whenever the aforementioned heuristic
+is activated, execution of application code in the current thread is
+suspended and the GC is launched in order to reclaim dead reference
+cycles.</p>
+<p>There is a catch, though.  Over the course of reclaiming dead reference
+cycles (and any ancillary objects hanging at those cycles), the GC can
+execute arbitrary finalization code in the form of <code class="docutils literal notranslate"><span class="pre">__del__</span></code> methods
+and <code class="docutils literal notranslate"><span class="pre">weakref</span></code> callbacks.  Over the years, Python has been used for more
+and more sophisticated purposes, and it is increasingly common for
+finalization code to perform complex tasks, for example in distributed
+systems where loss of an object may require notifying other (logical
+or physical) nodes.</p>
+<p>Interrupting application code at arbitrary points to execute finalization
+code that may rely on a consistent internal state and/or on acquiring
+synchronization primitives gives rise to reentrancy issues that even the
+most seasoned experts have trouble fixing properly <a class="footnote-reference brackets" href="#queue-reentrancy-bug" id="id1">1</a>.</p>
+<p>This PEP bases itself on the observation that, despite the apparent
+similarities, same-thread reentrancy is a fundamentally harder
+problem than multi-thread synchronization.  Instead of letting each
+developer or library author struggle with extremely hard reentrancy
+issues, one by one, this PEP proposes to allow the GC to run in a
+separate thread where well-known multi-thread synchronization practices
+are sufficient.</p>
+</div>
+<div class="section" id="proposal">
+<h2><a class="toc-backref" href="#id8">Proposal</a><a class="headerlink" href="#proposal" title="Permalink to this headline">¶</a></h2>
+<p>Under this PEP, the GC has two modes of operation:</p>
+<ul class="simple">
+<li>“serial”, which is the default and legacy mode, where an implicit GC
+run is performed immediately in the thread that detects such an implicit
+run is desired (based on the aforementioned allocation heuristic).</li>
+<li>“threaded”, which can be explicitly enabled at runtime on a per-process
+basis, where implicit GC runs are <em>scheduled</em> whenever the allocation
+heuristic is triggered, but run in a dedicated background thread.</li>
+</ul>
+<p>Hard reentrancy problems which plague sophisticated uses of finalization
+callbacks in the “serial” mode become relatively easy multi-thread
+synchronization problems in the “threaded” mode of operation.</p>
+<p>The GC also traditionally allows for explicit GC runs, using the Python
+API <code class="docutils literal notranslate"><span class="pre">gc.collect</span></code> and the C API <code class="docutils literal notranslate"><span class="pre">PyGC_Collect</span></code>.  The visible semantics
+of these two APIs are left unchanged: they perform a GC run immediately
+when called, and only return when the GC run is finished.</p>
+<div class="section" id="new-public-apis">
+<h3><a class="toc-backref" href="#id9">New public APIs</a><a class="headerlink" href="#new-public-apis" title="Permalink to this headline">¶</a></h3>
+<p>Two new Python APIs are added to the <code class="docutils literal notranslate"><span class="pre">gc</span></code> module:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">gc.set_mode(mode)</span></code> sets the current mode of operation (either “serial”
+or “threaded”).  If setting to “serial” and the current mode is
+“threaded”, then the function also waits for the GC thread to end.</li>
+<li><code class="docutils literal notranslate"><span class="pre">gc.get_mode()</span></code> returns the current mode of operation.</li>
+</ul>
+<p>It is allowed to switch back and forth between modes of operation.</p>
+</div>
+<div class="section" id="intended-use">
+<h3><a class="toc-backref" href="#id10">Intended use</a><a class="headerlink" href="#intended-use" title="Permalink to this headline">¶</a></h3>
+<p>Given the per-process nature of the switch and its repercussions on
+semantics of all finalization callbacks, it is recommended that it is
+set at the beginning of an application’s code (and/or in initializers
+for child processes e.g. when using <code class="docutils literal notranslate"><span class="pre">multiprocessing</span></code>).  Library functions
+should probably not mess with this setting, just as they shouldn’t call
+<code class="docutils literal notranslate"><span class="pre">gc.enable</span></code> or <code class="docutils literal notranslate"><span class="pre">gc.disable</span></code>, but there’s nothing to prevent them from
+doing so.</p>
+</div>
+<div class="section" id="non-goals">
+<h3><a class="toc-backref" href="#id11">Non-goals</a><a class="headerlink" href="#non-goals" title="Permalink to this headline">¶</a></h3>
+<p>This PEP does not address reentrancy issues with other kinds of
+asynchronous code execution (for example signal handlers registered
+with the <code class="docutils literal notranslate"><span class="pre">signal</span></code> module).  The author believes that the overwhelming
+majority of painful reentrancy issues occur with finalizers.  Most of the
+time, signal handlers are able to set a single flag and/or wake up a
+file descriptor for the main program to notice.  As for those signal
+handlers which raise an exception, they <em>have</em> to execute in-thread.</p>
+<p>This PEP also does not change the execution of finalization callbacks
+when they are called as part of regular reference counting, i.e. when
+releasing a visible reference drops an object’s reference count to zero.
+Since such execution happens at deterministic points in code, it is usually
+not a problem.</p>
+</div>
+</div>
+<div class="section" id="internal-details">
+<h2><a class="toc-backref" href="#id12">Internal details</a><a class="headerlink" href="#internal-details" title="Permalink to this headline">¶</a></h2>
+<p>TODO: Update this section to conform to the current implementation.</p>
+<div class="section" id="gc-module">
+<h3><a class="toc-backref" href="#id13"><code class="docutils literal notranslate"><span class="pre">gc</span></code> module</a><a class="headerlink" href="#gc-module" title="Permalink to this headline">¶</a></h3>
+<p>An internal flag <code class="docutils literal notranslate"><span class="pre">gc_is_threaded</span></code> is added, telling whether GC is serial
+or threaded.</p>
+<p>An internal structure <code class="docutils literal notranslate"><span class="pre">gc_mutex</span></code> is added to avoid two GC runs at once:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">static</span> <span class="n">struct</span> <span class="p">{</span>
+    <span class="n">PyThread_type_lock</span> <span class="n">lock</span><span class="p">;</span>  <span class="o">/*</span> <span class="n">taken</span> <span class="n">when</span> <span class="n">collecting</span> <span class="o">*/</span>
+    <span class="n">PyThreadState</span> <span class="o">*</span><span class="n">owner</span><span class="p">;</span>  <span class="o">/*</span> <span class="n">whichever</span> <span class="n">thread</span> <span class="ow">is</span> <span class="n">currently</span> <span class="n">collecting</span>
+                              <span class="p">(</span><span class="n">NULL</span> <span class="k">if</span> <span class="n">no</span> <span class="n">collection</span> <span class="ow">is</span> <span class="n">taking</span> <span class="n">place</span><span class="p">)</span> <span class="o">*/</span>
+<span class="p">}</span> <span class="n">gc_mutex</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>An internal structure <code class="docutils literal notranslate"><span class="pre">gc_thread</span></code> is added to handle synchronization with
+the GC thread:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">static</span> <span class="n">struct</span> <span class="p">{</span>
+   <span class="n">PyThread_type_lock</span> <span class="n">wakeup</span><span class="p">;</span> <span class="o">/*</span> <span class="n">acts</span> <span class="k">as</span> <span class="n">an</span> <span class="n">event</span>
+                                 <span class="n">to</span> <span class="n">wake</span> <span class="n">up</span> <span class="n">the</span> <span class="n">GC</span> <span class="n">thread</span> <span class="o">*/</span>
+   <span class="nb">int</span> <span class="n">collection_requested</span><span class="p">;</span> <span class="o">/*</span> <span class="n">non</span><span class="o">-</span><span class="n">zero</span> <span class="k">if</span> <span class="n">collection</span> <span class="n">requested</span> <span class="o">*/</span>
+   <span class="n">PyThread_type_lock</span> <span class="n">done</span><span class="p">;</span> <span class="o">/*</span> <span class="n">acts</span> <span class="k">as</span> <span class="n">an</span> <span class="n">event</span> <span class="n">signaling</span>
+                               <span class="n">the</span> <span class="n">GC</span> <span class="n">thread</span> <span class="n">has</span> <span class="n">exited</span> <span class="o">*/</span>
+<span class="p">}</span> <span class="n">gc_thread</span><span class="p">;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="threading-module">
+<h3><a class="toc-backref" href="#id14"><code class="docutils literal notranslate"><span class="pre">threading</span></code> module</a><a class="headerlink" href="#threading-module" title="Permalink to this headline">¶</a></h3>
+<p>Two private functions are added to the <code class="docutils literal notranslate"><span class="pre">threading</span></code> module:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">threading._ensure_dummy_thread(name)</span></code> creates and registers a <code class="docutils literal notranslate"><span class="pre">Thread</span></code>
+instance for the current thread with the given <em>name</em>, and returns it.</li>
+<li><code class="docutils literal notranslate"><span class="pre">threading._remove_dummy_thread(thread)</span></code> removes the given <em>thread</em>
+(as returned by <code class="docutils literal notranslate"><span class="pre">_ensure_dummy_thread</span></code>) from the threading module’s
+internal state.</li>
+</ul>
+<p>The purpose of these two functions is to improve debugging and introspection
+by letting <code class="docutils literal notranslate"><span class="pre">threading.current_thread()</span></code> return a more meaningfully-named
+object when called inside a finalization callback in the GC thread.</p>
+</div>
+<div class="section" id="pseudo-code">
+<h3><a class="toc-backref" href="#id15">Pseudo-code</a><a class="headerlink" href="#pseudo-code" title="Permalink to this headline">¶</a></h3>
+<p>Here is a proposed pseudo-code for the main primitives, public and internal,
+required for implementing this PEP.  All of them will be implemented in C
+and live inside the <code class="docutils literal notranslate"><span class="pre">gc</span></code> module, unless otherwise noted:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">collect_with_callback</span><span class="p">(</span><span class="n">generation</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Collect up to the given *generation*.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Same code as currently (see collect_with_callback() in gcmodule.c)</span>
+
+
+<span class="k">def</span> <span class="nf">collect_generations</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Collect as many generations as desired by the heuristic.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Same code as currently (see collect_generations() in gcmodule.c)</span>
+
+
+<span class="k">def</span> <span class="nf">lock_and_collect</span><span class="p">(</span><span class="n">generation</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Perform a collection with thread safety.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">me</span> <span class="o">=</span> <span class="n">PyThreadState_GET</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">gc_mutex</span><span class="o">.</span><span class="n">owner</span> <span class="o">==</span> <span class="n">me</span><span class="p">:</span>
+        <span class="c1"># reentrant GC collection request, bail out</span>
+        <span class="k">return</span>
+    <span class="n">Py_BEGIN_ALLOW_THREADS</span>
+    <span class="n">gc_mutex</span><span class="o">.</span><span class="n">lock</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>
+    <span class="n">Py_END_ALLOW_THREADS</span>
+    <span class="n">gc_mutex</span><span class="o">.</span><span class="n">owner</span> <span class="o">=</span> <span class="n">me</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">generation</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">collect_with_callback</span><span class="p">(</span><span class="n">generation</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">collect_generations</span><span class="p">()</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">gc_mutex</span><span class="o">.</span><span class="n">owner</span> <span class="o">=</span> <span class="n">NULL</span>
+        <span class="n">gc_mutex</span><span class="o">.</span><span class="n">lock</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">schedule_gc_request</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Ask the GC thread to run an implicit collection.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">gc_is_threaded</span> <span class="o">==</span> <span class="kc">True</span>
+    <span class="c1"># Note this is extremely fast if a collection is already requested</span>
+    <span class="k">if</span> <span class="n">gc_thread</span><span class="o">.</span><span class="n">collection_requested</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
+        <span class="n">gc_thread</span><span class="o">.</span><span class="n">collection_requested</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">gc_thread</span><span class="o">.</span><span class="n">wakeup</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">is_implicit_gc_desired</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Whether an implicit GC run is currently desired based on allocation</span>
+<span class="sd">    stats.  Return a generation number, or -1 if none desired.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Same heuristic as currently (see _PyObject_GC_Alloc in gcmodule.c)</span>
+
+
+<span class="k">def</span> <span class="nf">PyGC_Malloc</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Allocate a GC-enabled object.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Update allocation statistics (same code as currently, omitted for brevity)</span>
+    <span class="k">if</span> <span class="n">is_implicit_gc_desired</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">gc_is_threaded</span><span class="p">:</span>
+            <span class="n">schedule_gc_request</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">lock_and_collect</span><span class="p">()</span>
+    <span class="c1"># Go ahead with allocation (same code as currently, omitted for brevity)</span>
+
+
+<span class="k">def</span> <span class="nf">gc_thread</span><span class="p">(</span><span class="n">interp_state</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Dedicated loop for threaded GC.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Init Python thread state (omitted, see t_bootstrap in _threadmodule.c)</span>
+    <span class="c1"># Optional: init thread in Python threading module, for better introspection</span>
+    <span class="n">me</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">_ensure_dummy_thread</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;GC thread&quot;</span><span class="p">)</span>
+
+    <span class="k">while</span> <span class="n">gc_is_threaded</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">Py_BEGIN_ALLOW_THREADS</span>
+        <span class="n">gc_thread</span><span class="o">.</span><span class="n">wakeup</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>
+        <span class="n">Py_END_ALLOW_THREADS</span>
+        <span class="k">if</span> <span class="n">gc_thread</span><span class="o">.</span><span class="n">collection_requested</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">gc_thread</span><span class="o">.</span><span class="n">collection_requested</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">lock_and_collect</span><span class="p">(</span><span class="n">generation</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">threading</span><span class="o">.</span><span class="n">_remove_dummy_thread</span><span class="p">(</span><span class="n">me</span><span class="p">)</span>
+    <span class="c1"># Signal we&#39;re exiting</span>
+    <span class="n">gc_thread</span><span class="o">.</span><span class="n">done</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+    <span class="c1"># Free Python thread state (omitted)</span>
+
+
+<span class="k">def</span> <span class="nf">gc</span><span class="o">.</span><span class="n">set_mode</span><span class="p">(</span><span class="n">mode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Set current GC mode.  This is a process-global setting.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;threaded&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">gc_is_threaded</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="c1"># Launch thread</span>
+            <span class="n">gc_thread</span><span class="o">.</span><span class="n">done</span><span class="o">.</span><span class="n">acquire</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>  <span class="c1"># should not fail</span>
+            <span class="n">gc_is_threaded</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">PyThread_start_new_thread</span><span class="p">(</span><span class="n">gc_thread</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;serial&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">gc_is_threaded</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="c1"># Wake up thread, asking it to end</span>
+            <span class="n">gc_is_threaded</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">gc_thread</span><span class="o">.</span><span class="n">wakeup</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+            <span class="c1"># Wait for thread exit</span>
+            <span class="n">Py_BEGIN_ALLOW_THREADS</span>
+            <span class="n">gc_thread</span><span class="o">.</span><span class="n">done</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>
+            <span class="n">Py_END_ALLOW_THREADS</span>
+            <span class="n">gc_thread</span><span class="o">.</span><span class="n">done</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;unsupported mode </span><span class="si">%r</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">mode</span><span class="p">,))</span>
+
+
+<span class="k">def</span> <span class="nf">gc</span><span class="o">.</span><span class="n">get_mode</span><span class="p">(</span><span class="n">mode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get current GC mode.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="s2">&quot;threaded&quot;</span> <span class="k">if</span> <span class="n">gc_is_threaded</span> <span class="k">else</span> <span class="s2">&quot;serial&quot;</span>
+
+
+<span class="k">def</span> <span class="nf">gc</span><span class="o">.</span><span class="n">collect</span><span class="p">(</span><span class="n">generation</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Schedule collection of the given generation and wait for it to</span>
+<span class="sd">    finish.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">lock_and_collect</span><span class="p">(</span><span class="n">generation</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="discussion">
+<h2><a class="toc-backref" href="#id16">Discussion</a><a class="headerlink" href="#discussion" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="default-mode">
+<h3><a class="toc-backref" href="#id17">Default mode</a><a class="headerlink" href="#default-mode" title="Permalink to this headline">¶</a></h3>
+<p>One may wonder whether the default mode should simply be changed to “threaded”.
+For multi-threaded applications, it would probably not be a problem:
+those applications must already be prepared for finalization handlers to
+be run in arbitrary threads.  In single-thread applications, however, it
+is currently guaranteed that finalizers will always be called in the main
+thread.  Breaking this property may induce subtle behaviour changes or bugs,
+for example if finalizers rely on some thread-local values.</p>
+<p>Another problem is when a program uses <code class="docutils literal notranslate"><span class="pre">fork()</span></code> for concurrency.
+Calling <code class="docutils literal notranslate"><span class="pre">fork()</span></code> from a single-threaded program is safe,
+but it’s fragile (to say the least) if the program is multi-threaded.</p>
+</div>
+<div class="section" id="explicit-collections">
+<h3><a class="toc-backref" href="#id18">Explicit collections</a><a class="headerlink" href="#explicit-collections" title="Permalink to this headline">¶</a></h3>
+<p>One may ask whether explicit collections should also be delegated to the
+background thread.  The answer is it doesn’t really matter: since
+<code class="docutils literal notranslate"><span class="pre">gc.collect</span></code> and <code class="docutils literal notranslate"><span class="pre">PyGC_Collect</span></code> actually <em>wait</em> for the collection to
+end (breaking this property would break compatibility), delegating the
+actual work to a background thread wouldn’t ease synchronization with the
+thread requesting an explicit collection.</p>
+<p>In the end, this PEP choses the behaviour that seems simpler to implement
+based on the pseudo-code above.</p>
+</div>
+<div class="section" id="impact-on-memory-use">
+<h3><a class="toc-backref" href="#id19">Impact on memory use</a><a class="headerlink" href="#impact-on-memory-use" title="Permalink to this headline">¶</a></h3>
+<p>The “threaded” mode incurs a slight delay in implicit collections compared
+to the default “serial” mode.  This obviously may change the memory profile
+of certain applications.  By how much remains to be measured in real-world
+use, but we expect the impact to remain minor and bearable.  First because
+implicit collections are based on a <em>heuristic</em> whose effect does not result
+in deterministic visible behaviour anyway.  Second because the GC deals
+with reference cycles while many objects are reclaimed immediately when their
+last visible reference disappears.</p>
+</div>
+<div class="section" id="impact-on-cpu-consumption">
+<h3><a class="toc-backref" href="#id20">Impact on CPU consumption</a><a class="headerlink" href="#impact-on-cpu-consumption" title="Permalink to this headline">¶</a></h3>
+<p>The pseudo-code above adds two lock operations for each implicit collection
+request in “threaded” mode: one in the thread making the request (a
+<code class="docutils literal notranslate"><span class="pre">release</span></code> call) and one in the GC thread (an <code class="docutils literal notranslate"><span class="pre">acquire</span></code> call).
+It also adds two other lock operations, regardless of the current mode,
+around each actual collection.</p>
+<p>We expect the cost of those lock operations to be very small, on modern
+systems, compared to the actual cost of crawling through the chains of
+pointers during the collection itself (“pointer chasing” being one of
+the hardest workloads on modern CPUs, as it lends itself poorly to
+speculation and superscalar execution).</p>
+<p>Actual measurements on worst-case mini-benchmarks may help provide
+reassuring upper bounds.</p>
+</div>
+<div class="section" id="impact-on-gc-pauses">
+<h3><a class="toc-backref" href="#id21">Impact on GC pauses</a><a class="headerlink" href="#impact-on-gc-pauses" title="Permalink to this headline">¶</a></h3>
+<p>While this PEP does not concern itself with GC pauses, there is a
+practical chance that releasing the GIL at some point during an implicit
+collection (for example by virtue of executing a pure Python finalizer)
+will allow application code to run in-between, lowering the <em>visible</em> GC
+pause time for some applications.</p>
+<p>If this PEP is accepted, future work may try to better realize this potential
+by speculatively releasing the GIL during collections, though it is unclear
+how doable that is.</p>
+</div>
+</div>
+<div class="section" id="open-issues">
+<h2><a class="toc-backref" href="#id22">Open issues</a><a class="headerlink" href="#open-issues" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">gc.set_mode</span></code> should probably be protected against multiple concurrent
+invocations.  Also, it should raise when called from <em>inside</em> a GC run
+(i.e. from a finalizer).</li>
+<li>What happens at shutdown?  Does the GC thread run until <code class="docutils literal notranslate"><span class="pre">_PyGC_Fini()</span></code>
+is called?</li>
+</ul>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id23">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>A draft implementation is available in the <code class="docutils literal notranslate"><span class="pre">threaded_gc</span></code> branch
+<a class="footnote-reference brackets" href="#implementation-branch" id="id2">2</a> of the author’s Github fork <a class="footnote-reference brackets" href="#cpython-pitrou-fork" id="id3">3</a>.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id24">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="queue-reentrancy-bug"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><a class="reference external" href="https://bugs.python.org/issue14976">https://bugs.python.org/issue14976</a></dd>
+<dt class="label" id="implementation-branch"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd><a class="reference external" href="https://github.com/pitrou/cpython/tree/threaded_gc">https://github.com/pitrou/cpython/tree/threaded_gc</a></dd>
+<dt class="label" id="cpython-pitrou-fork"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd><a class="reference external" href="https://github.com/pitrou/cpython/">https://github.com/pitrou/cpython/</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id25">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0556.rst">https://github.com/python/peps/blob/master/pep-0556.rst</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0556.rst.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0555.html">PEP 0555</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0557.html">PEP 0557</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 556 – Threaded garbage collection</a><ul>
+<li><a class="reference internal" href="#deferral-notice">Deferral Notice</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#terminology">Terminology</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#proposal">Proposal</a><ul>
+<li><a class="reference internal" href="#new-public-apis">New public APIs</a></li>
+<li><a class="reference internal" href="#intended-use">Intended use</a></li>
+<li><a class="reference internal" href="#non-goals">Non-goals</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#internal-details">Internal details</a><ul>
+<li><a class="reference internal" href="#gc-module"><code class="docutils literal notranslate"><span class="pre">gc</span></code> module</a></li>
+<li><a class="reference internal" href="#threading-module"><code class="docutils literal notranslate"><span class="pre">threading</span></code> module</a></li>
+<li><a class="reference internal" href="#pseudo-code">Pseudo-code</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#discussion">Discussion</a><ul>
+<li><a class="reference internal" href="#default-mode">Default mode</a></li>
+<li><a class="reference internal" href="#explicit-collections">Explicit collections</a></li>
+<li><a class="reference internal" href="#impact-on-memory-use">Impact on memory use</a></li>
+<li><a class="reference internal" href="#impact-on-cpu-consumption">Impact on CPU consumption</a></li>
+<li><a class="reference internal" href="#impact-on-gc-pauses">Impact on GC pauses</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#open-issues">Open issues</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

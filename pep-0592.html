@@ -1,0 +1,313 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 592 – Adding “Yank” Support to the Simple API &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 593 – Flexible function and variable annotations" href="pep-0593.html" />
+    <link rel="prev" title="PEP 591 – Adding a final qualifier to typing" href="pep-0591.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 592 – Adding “Yank” Support to the Simple API</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-592-adding-yank-support-to-the-simple-api">
+<h1 class="page-title">PEP 592 – Adding “Yank” Support to the Simple API<a class="headerlink" href="#pep-592-adding-yank-support-to-the-simple-api" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">592</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Adding “Yank” Support to the Simple API</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Donald Stufft &lt;donald&#32;&#97;t&#32;stufft.io&gt;</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even">Paul Moore &lt;p.f.moore&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-odd">Discussions-To</dt>
+<dd class="field-odd"><a class="reference external" href="https://discuss.python.org/c/packaging">https://discuss.python.org/c/packaging</a></dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">07-May-2019</dd>
+<dt class="field-odd">Resolution</dt>
+<dd class="field-odd"><a class="reference external" href="https://discuss.python.org/t/pep-592-support-for-yanked-files-in-the-simple-repository-api/1629/30">https://discuss.python.org/t/pep-592-support-for-yanked-files-in-the-simple-repository-api/1629/30</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id4">Abstract</a></li>
+<li><a class="reference internal" href="#motivation" id="id5">Motivation</a></li>
+<li><a class="reference internal" href="#specification" id="id6">Specification</a><ul>
+<li><a class="reference internal" href="#installers" id="id7">Installers</a></li>
+<li><a class="reference internal" href="#mirrors" id="id8">Mirrors</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rejected-ideas" id="id9">Rejected Ideas</a></li>
+<li><a class="reference internal" href="#warehouse-pypi-implementation-notes" id="id10">Warehouse/PyPI Implementation Notes</a><ul>
+<li><a class="reference internal" href="#journal-handling" id="id11">Journal Handling</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id1" id="id12">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id13">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id4">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes adding the ability to mark a particular file download
+on a simple repository as “yanked”. Yanking a file allows authors to
+effectively delete a file, without breaking things for people who have
+pinned to exactly a specific version.</p>
+<p>It also changes to the canonical source for the simple repository API to
+the <a class="reference external" href="https://packaging.python.org/specifications/simple-repository-api/">Simple Repository API</a> <a class="footnote-reference brackets" href="#id2" id="id3">1</a> reference document.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id5">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>Whenever a project detects that a particular release on PyPI might be
+broken, they often times will want to prevent further users from
+inadvertently using that version. However, the obvious solution of
+deleting the existing file from a repository will break users who have
+followed best practices and pinned to a specific version of the project.</p>
+<p>This leaves projects in a catch-22 situation where new projects may be
+pulling down this known broken version, but if they do anything to
+prevent that they’ll break projects that are already using it.</p>
+<p>By allowing the ability to “yank” a file, but still make it available
+for users who are explicitly asking for it, this allows projects to
+mitigate the worst of the breakage while still keeping things working
+for projects who have otherwise worked around or didn’t hit the
+underlying issues.</p>
+<p>One of the main scenarios where this may happen, is when dropping
+support for a particular version of Python. The <code class="docutils literal notranslate"><span class="pre">python-requires</span></code>
+metadata allows for dropping support for a version of Python in
+a way that is not disruptive to users who are still using that
+Python. However, a common mistake is to either omit or forget to
+update that bit of metadata. When that mistake has been made, a
+project really only has three options:</p>
+<ul class="simple">
+<li>Prevent that version from being installed through some mechanism
+(currently, the only mechanism is by deleting the release entirely).</li>
+<li>Re-release the version that worked as a higher version number, and
+then re-release the version that dropped support as an even higher
+version number with the correct metadata.</li>
+<li>Do nothing, and document that people using that older Python have
+to manually exclude that release.</li>
+</ul>
+<p>With this PEP, projects can choose the first option, but with a
+mechanism that is less likely to break the world for people who
+are <em>currently</em> successfully using said project.</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id6">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>Links in the simple repository <strong>MAY</strong> have a <code class="docutils literal notranslate"><span class="pre">data-yanked</span></code> attribute
+which may have no value, or may have an arbitrary string as a value. The
+presence of a <code class="docutils literal notranslate"><span class="pre">data-yanked</span></code> attribute <strong>SHOULD</strong> be interpreted as
+indicating that the file pointed to by this particular link has been
+“Yanked”, and should not generally be selected by an installer, except
+under specific scenarios.</p>
+<p>The value of the <code class="docutils literal notranslate"><span class="pre">data-yanked</span></code> attribute, if present, is an arbitrary
+string that represents the reason for why the file has been yanked. Tools
+that process the simple repository API <strong>MAY</strong> surface this string to
+end users.</p>
+<p>The yanked attribute is not immutable once set, and may be rescinded in
+the future (and once rescinded, may be reset as well). Thus API users
+<strong>MUST</strong> be able to cope with a yanked file being “unyanked” (and even
+yanked again).</p>
+<div class="section" id="installers">
+<h3><a class="toc-backref" href="#id7">Installers</a><a class="headerlink" href="#installers" title="Permalink to this headline">¶</a></h3>
+<p>The desirable experience for users is that once a file is yanked, when
+a human being is currently trying to directly install a yanked file, that
+it fails as if that file had been deleted. However, when a human did that
+awhile ago, and now a computer is just continuing to mechanically follow
+the original order to install the now yanked file, then it acts as if it
+had not been yanked.</p>
+<p>An installer <strong>MUST</strong> ignore yanked releases, if the selection constraints
+can be satisfied with a non-yanked version, and <strong>MAY</strong> refuse to use a
+yanked release even if it means that the request cannot be satisfied at all.
+An implementation <strong>SHOULD</strong> choose a policy that follows the spirit of the
+intention above, and that prevents “new” dependencies on yanked
+releases/files.</p>
+<p>What this means is left up to the specific installer, to decide how to best
+fit into the overall usage of their installer. However, there are two
+suggested approaches to take:</p>
+<ol class="arabic simple">
+<li>Yanked files are always ignored, unless they are the only file that
+matches a version specifier that “pins” to an exact version using
+either <code class="docutils literal notranslate"><span class="pre">==</span></code> (without any modifiers that make it a range, such as
+<code class="docutils literal notranslate"><span class="pre">.*</span></code>) or <code class="docutils literal notranslate"><span class="pre">===</span></code>. Matching this version specifier should otherwise
+be done as per PEP 440 for things like local versions, zero padding,
+etc.</li>
+<li>Yanked files are always ignored, unless they are the only file that
+matches what a lock file (such as <code class="docutils literal notranslate"><span class="pre">Pipfile.lock</span></code> or <code class="docutils literal notranslate"><span class="pre">poetry.lock</span></code>)
+specifies to be installed. In this case, a yanked file <strong>SHOULD</strong> not
+be used when creating or updating a lock file from some input file or
+command.</li>
+</ol>
+<p>Regardless of the specific strategy that an installer chooses for deciding
+when to install yanked files, an installer <strong>SHOULD</strong> emit a warning when
+it does decide to install a yanked file. That warning <strong>MAY</strong> utilize the
+value of the <code class="docutils literal notranslate"><span class="pre">data-yanked</span></code> attribute (if it has a value) to provide more
+specific feedback to the user about why that file had been yanked.</p>
+</div>
+<div class="section" id="mirrors">
+<h3><a class="toc-backref" href="#id8">Mirrors</a><a class="headerlink" href="#mirrors" title="Permalink to this headline">¶</a></h3>
+<p>Mirrors can generally treat yanked files one of two ways:</p>
+<ol class="arabic simple">
+<li>They may choose to omit them from their simple repository API completely,
+providing a view over the repository that shows only “active”, unyanked
+files.</li>
+<li>They may choose to include yanked files, and additionally mirror the
+<code class="docutils literal notranslate"><span class="pre">data-yanked</span></code> attribute as well.</li>
+</ol>
+<p>Mirrors <strong>MUST NOT</strong> mirror a yanked file without also mirroring the
+<code class="docutils literal notranslate"><span class="pre">data-yanked</span></code> attribute for it.</p>
+</div>
+</div>
+<div class="section" id="rejected-ideas">
+<h2><a class="toc-backref" href="#id9">Rejected Ideas</a><a class="headerlink" href="#rejected-ideas" title="Permalink to this headline">¶</a></h2>
+<p>A previous, undocumented, version of the simple repository API had
+version specific pages, like <code class="docutils literal notranslate"><span class="pre">/simple/&lt;project&gt;/&lt;version&gt;/</span></code>. If
+we were to add those back, the yanked files could only appear on
+those pages and not on the version-less page at all. However this
+would drastically reduce the cache-ability of the simple API and
+would directly impact our ability to scale it out to handle all of
+the incoming traffic.</p>
+<p>A previous iteration of this PEP had the <code class="docutils literal notranslate"><span class="pre">data-yanked</span></code> attribute
+act as a boolean value. However it was decided that allowing a
+string both simplified the implementation, and provided additional
+generalized functionality to allow projects to provide a mechanism
+to indicate <em>why</em> they were yanking a release.</p>
+<p>Another suggestion was to reserve some syntax in the arbitrary string
+to allow us to evolve the standard in the future if we ever need to.
+However, given we can add additional attributes in the future, this
+idea has been rejected, favoring instead to use additional attributes
+if the need ever arose.</p>
+</div>
+<div class="section" id="warehouse-pypi-implementation-notes">
+<h2><a class="toc-backref" href="#id10">Warehouse/PyPI Implementation Notes</a><a class="headerlink" href="#warehouse-pypi-implementation-notes" title="Permalink to this headline">¶</a></h2>
+<p>While this PEP implements yanking at the file level, that is largely
+due to the shape the simple repository API takes, not a specific
+decision made by this PEP.</p>
+<p>In Warehouse, the user experience will be implemented in terms of
+yanking or unyanking an entire release, rather than as an operation on
+individual files, which will then be exposed via the API as individual
+files being yanked.</p>
+<p>Other repository implementations may choose to to expose this capability
+in a different way, or not expose it at all.</p>
+<div class="section" id="journal-handling">
+<h3><a class="toc-backref" href="#id11">Journal Handling</a><a class="headerlink" href="#journal-handling" title="Permalink to this headline">¶</a></h3>
+<p>Whenever a release has been yanked, an entry will be recorded in the
+journal using one of the following string patterns:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">yank</span> <span class="pre">release</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">unyank</span> <span class="pre">release</span></code></li>
+</ul>
+<p>In both cases, the standard journal structure will indicate which release
+of which project has been yanked or unyanked.</p>
+</div>
+</div>
+<div class="section" id="id1">
+<h2><a class="toc-backref" href="#id12">References</a><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id3">1</a></span></dt>
+<dd><a class="reference external" href="https://packaging.python.org/specifications/simple-repository-api/">https://packaging.python.org/specifications/simple-repository-api/</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id13">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0592.rst">https://github.com/python/peps/blob/master/pep-0592.rst</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0592.rst.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0591.html">PEP 0591</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0593.html">PEP 0593</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 592 – Adding “Yank” Support to the Simple API</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#installers">Installers</a></li>
+<li><a class="reference internal" href="#mirrors">Mirrors</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rejected-ideas">Rejected Ideas</a></li>
+<li><a class="reference internal" href="#warehouse-pypi-implementation-notes">Warehouse/PyPI Implementation Notes</a><ul>
+<li><a class="reference internal" href="#journal-handling">Journal Handling</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id1">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

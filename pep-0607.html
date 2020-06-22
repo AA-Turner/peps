@@ -1,0 +1,311 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 607 – Reducing CPython’s Feature Delivery Latency &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 608 – Coordinated Python release" href="pep-0608.html" />
+    <link rel="prev" title="PEP 606 – Python Compatibility Version" href="pep-0606.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 607 – Reducing CPython’s Feature Delivery Latency</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-607-reducing-cpython-s-feature-delivery-latency">
+<h1 class="page-title">PEP 607 – Reducing CPython’s Feature Delivery Latency<a class="headerlink" href="#pep-607-reducing-cpython-s-feature-delivery-latency" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">607</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Reducing CPython’s Feature Delivery Latency</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Łukasz Langa &lt;lukasz&#32;&#97;t&#32;python.org&gt;,
+Steve Dower &lt;steve.dower&#32;&#97;t&#32;python.org&gt;,
+Nick Coghlan &lt;ncoghlan&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">Discussions-To</dt>
+<dd class="field-even"><a class="reference external" href="https://discuss.python.org/t/pep-607-shared-background-for-the-release-cadence-peps/2528">https://discuss.python.org/t/pep-607-shared-background-for-the-release-cadence-peps/2528</a></dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd">Final</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even">Informational</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">11-Oct-2019</dd>
+<dt class="field-even">Python-Version</dt>
+<dd class="field-even">3.9</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd">20-Oct-2019</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id2">Abstract</a></li>
+<li><a class="reference internal" href="#rationale-for-change" id="id3">Rationale for change</a><ul>
+<li><a class="reference internal" href="#reducing-the-size-of-feature-delivery-batches" id="id4">Reducing the size of feature delivery batches</a></li>
+<li><a class="reference internal" href="#reducing-the-latency-of-feature-delivery" id="id5">Reducing the latency of feature delivery</a></li>
+<li><a class="reference internal" href="#aligning-the-release-cadence-with-the-calendar-year" id="id6">Aligning the release cadence with the calendar year</a></li>
+<li><a class="reference internal" href="#improving-the-pre-release-design-feedback-cycle" id="id7">Improving the pre-release design feedback cycle</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#risks-to-be-mitigated" id="id8">Risks to be mitigated</a><ul>
+<li><a class="reference internal" href="#impact-on-users-and-redistributors-that-already-skip-some-releases" id="id9">Impact on users and redistributors that already skip some releases</a></li>
+<li><a class="reference internal" href="#impact-on-users-and-redistributors-that-update-to-every-release" id="id10">Impact on users and redistributors that update to every release</a></li>
+<li><a class="reference internal" href="#impact-on-users-and-redistributors-of-cpython-nightly-builds" id="id11">Impact on users and redistributors of CPython nightly builds</a></li>
+<li><a class="reference internal" href="#impact-on-maintainers-of-third-party-libraries" id="id12">Impact on maintainers of third party libraries</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#copyright" id="id13">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id2">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>PEP 602 and PEP 605 describe two alternative approaches to delivering smaller
+collections of features to Python’s users more frequently (as compared to the
+current approach of offering new feature releases every 18-24 months, with
+the first binary alpha release taking place 6-8 months before the final release).</p>
+<p>Both PEPs also propose moving to a release cadence that results in full releases
+occuring at a consistent time of year (every year for PEP 602, every other
+year for PEP 605).</p>
+<p>This PEP (from the authors of both competing proposals) provides common
+background on <em>why</em> a change in the release cadence is considered desirable,
+as well as the perceived risks that both PEPs attempt to mitigate.</p>
+</div>
+<div class="section" id="rationale-for-change">
+<h2><a class="toc-backref" href="#id3">Rationale for change</a><a class="headerlink" href="#rationale-for-change" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="reducing-the-size-of-feature-delivery-batches">
+<h3><a class="toc-backref" href="#id4">Reducing the size of feature delivery batches</a><a class="headerlink" href="#reducing-the-size-of-feature-delivery-batches" title="Permalink to this headline">¶</a></h3>
+<p>When multiple large changes are delivered together, a complex investigation
+may be required to determine the root cause of any new issues that arise.
+Large batch sizes also make it more likely that problems <em>will</em> be encountered,
+given that they include larger pieces of relatively untested code.</p>
+<p>The easiest way to simplify those investigations and reduce the likelihood of
+users encountering problems is to reduce the size of the batches being shipped.</p>
+<p>PEP 602 proposes to address this problem via the straightforward approach of
+reducing CPython’s typical batch size by 50%, shipping 12 months of changes
+each time, rather than accumulating 18+ months of changes.</p>
+<p>PEP 605 proposes to address it by regularly delivering 2 months worth of changes
+to a subset of Python’s user base that opts in to running a rolling stream of
+beta releases (similar to running Windows Insider builds instead of the Windows
+retail release, or running Debian testing instead of Debian stable).</p>
+</div>
+<div class="section" id="reducing-the-latency-of-feature-delivery">
+<h3><a class="toc-backref" href="#id5">Reducing the latency of feature delivery</a><a class="headerlink" href="#reducing-the-latency-of-feature-delivery" title="Permalink to this headline">¶</a></h3>
+<p>When only stable releases are seeing significant user adoption, and there’s a
+long period of time between stable releases, it creates an incredibly strong
+temptation for developers to push changes into stable releases before they’re
+really ready for general use.</p>
+<p>PEP 602 proposes to address this problem by reducing the period of time
+between stable releases to 12 months rather than 18 months.</p>
+<p>PEP 605 proposes to address it by actively creating a community of
+Python users that regularly install and use CPython beta releases, providing an
+incentive for core developers to start shipping changes earlier in the
+pre-release cycle, in order to obtain feedback before the feature gets locked
+down in a stable release.</p>
+</div>
+<div class="section" id="aligning-the-release-cadence-with-the-calendar-year">
+<h3><a class="toc-backref" href="#id6">Aligning the release cadence with the calendar year</a><a class="headerlink" href="#aligning-the-release-cadence-with-the-calendar-year" title="Permalink to this headline">¶</a></h3>
+<p>While the current release cadence is nominally 18-24 months, in practice it has
+consistently been towards the 18 month end of that range. This means that the
+target dates for pre-releases and final releases move around from release to
+release, and the only way to remember them is to either look at the release PEP,
+or else to add those dates to your calendar. This is annoying for both
+individual volunteers and for corporate contributors, and also complicates
+alignment with events like PyCon US (typically April/May) and the now-annual
+core development sprints (typically in September).</p>
+<p>PEP 602 proposes to address this problem by publishing a new release in October
+every year, and basing the pre-release calendar for each year off that.</p>
+<p>PEP 605 proposes to address this problem by alternating between release years
+(where a new stable release is published in August), and non-release years
+(where only maintenance releases and new rolling beta releases are published).</p>
+</div>
+<div class="section" id="improving-the-pre-release-design-feedback-cycle">
+<h3><a class="toc-backref" href="#id7">Improving the pre-release design feedback cycle</a><a class="headerlink" href="#improving-the-pre-release-design-feedback-cycle" title="Permalink to this headline">¶</a></h3>
+<p>One of the challenges of designing changes to the core interpreter and standard
+library APIs is that the user base in a position to provide feedback on
+nightly builds and the current pre-releases is relatively limited. This means
+that much user feedback isn’t received until after an API design has already
+shipped in a full X.Y.0 release.</p>
+<p>If the API is a regular API, then deprecation cycles mean that it may take
+literally years to correct any design mistakes identified at that point.
+Marking APIs as provisional nominally offers a way to avoid that constraint,
+but actually taking advantage of that freedom causes other problems.</p>
+<p>PEP 602 proposes to address this problem by starting the alpha period
+immediately after the previous stable release.</p>
+<p>PEP 605 proposes to address this problem by actively promoting adoption of
+CPython pre-releases for running production workloads (not just for library and
+application compatibility testing), and adjusting the pre-release management
+process as necessary to make that a reasonable thing to do.</p>
+<p>(Note: some standard library APIs are amenable to initially being shipped as
+part of separately versioned packages via PyPI, and only later incorporated
+into the standard library. This section is more about the lower level APIs
+and non-library features where that approach to obtaining early design
+feedback doesn’t apply)</p>
+</div>
+</div>
+<div class="section" id="risks-to-be-mitigated">
+<h2><a class="toc-backref" href="#id8">Risks to be mitigated</a><a class="headerlink" href="#risks-to-be-mitigated" title="Permalink to this headline">¶</a></h2>
+<p>While the status quo could stand to be improved in some respects, Python’s
+popularity indicates that a lot of users and other participants in the wider
+Python ecosystem are happy enough with the current release management process.</p>
+<p>Python’s user base is too large and
+<a class="reference external" href="https://www.curiousefficiency.org/posts/2017/10/considering-pythons-target-audience.html">too varied</a>
+to cover all the potential downsides of changing our release cadence here, so
+instead this section just covers some of the points that have been specifically
+taken into account in the design of the PEPs.</p>
+<div class="section" id="impact-on-users-and-redistributors-that-already-skip-some-releases">
+<h3><a class="toc-backref" href="#id9">Impact on users and redistributors that already skip some releases</a><a class="headerlink" href="#impact-on-users-and-redistributors-that-already-skip-some-releases" title="Permalink to this headline">¶</a></h3>
+<p>It is already the case that not all users and redistributors update to every
+published CPython release series (for example, Debian stable and Ubuntu LTS
+sometimes skip releases due to the mismatch between their 24 month release
+cycles and CPython’s typically 18-month cycle).</p>
+<p>The faster 12-month full release cadence in PEP 602 means that users in this
+category may end up skipping two releases where they would previously have only
+skipped one. However, the extended notice period for deprecations means that
+skipping a single release should no longer result in missed deprecation warnings.</p>
+<p>The slower 24-month full release cadence in PEP 605 may move some of the users
+that have historically been in this category into the “update to every stable
+release” category.</p>
+</div>
+<div class="section" id="impact-on-users-and-redistributors-that-update-to-every-release">
+<h3><a class="toc-backref" href="#id10">Impact on users and redistributors that update to every release</a><a class="headerlink" href="#impact-on-users-and-redistributors-that-update-to-every-release" title="Permalink to this headline">¶</a></h3>
+<p>Many of Python’s users never install a pre-release, but do update to every
+stable release series at some point after it is published.</p>
+<p>PEP 602 aims to mitigate the potential negative impact on members of this group
+by keeping the minimum gap between releases to 12 months, and retaining the
+18 month full support period for each release.</p>
+<p>Keeping the 18-month full support period for each release branch means that the
+branches will spend roughly the same amount of time in full support and
+security-fix-only mode as they do now (~18 months and ~42 months, respectively).</p>
+<p>PEP 605 aims to mitigate the potential negative impact on members of this group
+by increasing use during the pre-release period to achieve more stable final
+releases with wider ecosystem support at launch.</p>
+<p>With a 24-month release cadence each release branch will spend proportionally
+more time in full support mode and less time in security-fix-only mode
+(~24 months and ~36 months, respectively).</p>
+<p>Full discussion of the impact on this group is left to the individual PEPs.</p>
+</div>
+<div class="section" id="impact-on-users-and-redistributors-of-cpython-nightly-builds">
+<h3><a class="toc-backref" href="#id11">Impact on users and redistributors of CPython nightly builds</a><a class="headerlink" href="#impact-on-users-and-redistributors-of-cpython-nightly-builds" title="Permalink to this headline">¶</a></h3>
+<p>Despite the difficulties of doing so, there are already some users and
+redistributors that take on the challenge of using or publishing the CPython
+master branch directly.</p>
+<p>Neither PEP 602 nor PEP 605 should directly affect this group, but the rolling
+release stream proposal in PEP 605 aims to lower the barriers to more users
+adopting this style of usage, by allowing them to adopt the tested rolling
+beta stream, rather than needing to use the master branch directly.</p>
+</div>
+<div class="section" id="impact-on-maintainers-of-third-party-libraries">
+<h3><a class="toc-backref" href="#id12">Impact on maintainers of third party libraries</a><a class="headerlink" href="#impact-on-maintainers-of-third-party-libraries" title="Permalink to this headline">¶</a></h3>
+<p>For maintainers of third party libraries, the key source of support complexity
+is the <em>number</em> of different Python versions in widespread use.</p>
+<p>PEP 602 aims to mitigate the potential negative impact on members of this group
+by keeping the minimum gap between full releases to 12 months.</p>
+<p>PEP 605 aims to mitigate the potential negative impact on members of this group
+by increasing the gap between full releases to 24 months, retaining the current
+policy of moving each release branch to security-fix-only mode not long after
+its successor is released, and retaining the “beta” naming scheme for the new
+rolling release stream (at least for the Python 3.9 release cycle).</p>
+<p>Full discussion of the impact on this group is left to the individual PEPs.</p>
+</div>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id13">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document is placed in the public domain or under the
+CC0-1.0-Universal license, whichever is more permissive.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0607.rst">https://github.com/python/peps/blob/master/pep-0607.rst</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0607.rst.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0606.html">PEP 0606</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0608.html">PEP 0608</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 607 – Reducing CPython’s Feature Delivery Latency</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale-for-change">Rationale for change</a><ul>
+<li><a class="reference internal" href="#reducing-the-size-of-feature-delivery-batches">Reducing the size of feature delivery batches</a></li>
+<li><a class="reference internal" href="#reducing-the-latency-of-feature-delivery">Reducing the latency of feature delivery</a></li>
+<li><a class="reference internal" href="#aligning-the-release-cadence-with-the-calendar-year">Aligning the release cadence with the calendar year</a></li>
+<li><a class="reference internal" href="#improving-the-pre-release-design-feedback-cycle">Improving the pre-release design feedback cycle</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#risks-to-be-mitigated">Risks to be mitigated</a><ul>
+<li><a class="reference internal" href="#impact-on-users-and-redistributors-that-already-skip-some-releases">Impact on users and redistributors that already skip some releases</a></li>
+<li><a class="reference internal" href="#impact-on-users-and-redistributors-that-update-to-every-release">Impact on users and redistributors that update to every release</a></li>
+<li><a class="reference internal" href="#impact-on-users-and-redistributors-of-cpython-nightly-builds">Impact on users and redistributors of CPython nightly builds</a></li>
+<li><a class="reference internal" href="#impact-on-maintainers-of-third-party-libraries">Impact on maintainers of third party libraries</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

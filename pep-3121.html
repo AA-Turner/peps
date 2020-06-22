@@ -1,0 +1,330 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 3121 – Extension Module Initialization and Finalization &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 3122 – Delineation of the main module" href="pep-3122.html" />
+    <link rel="prev" title="PEP 3120 – Using UTF-8 as the default source encoding" href="pep-3120.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 3121 – Extension Module Initialization and Finalization</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-3121-extension-module-initialization-and-finalization">
+<h1 class="page-title">PEP 3121 – Extension Module Initialization and Finalization<a class="headerlink" href="#pep-3121-extension-module-initialization-and-finalization" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">3121</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Extension Module Initialization and Finalization</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Martin von Löwis &lt;martin&#32;&#97;t&#32;v.loewis.de&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Accepted</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">27-Apr-2007</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.0</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id3">Abstract</a></li>
+<li><a class="reference internal" href="#problems" id="id4">Problems</a><ul>
+<li><a class="reference internal" href="#module-finalization" id="id5">Module Finalization</a></li>
+<li><a class="reference internal" href="#entry-point-name-conflicts" id="id6">Entry point name conflicts</a></li>
+<li><a class="reference internal" href="#entry-point-signature" id="id7">Entry point signature</a></li>
+<li><a class="reference internal" href="#multiple-interpreters" id="id8">Multiple Interpreters</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#specification" id="id9">Specification</a></li>
+<li><a class="reference internal" href="#example" id="id10">Example</a></li>
+<li><a class="reference internal" href="#discussion" id="id11">Discussion</a></li>
+<li><a class="reference internal" href="#references" id="id12">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id13">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id3">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Extension module initialization currently has a few deficiencies.
+There is no cleanup for modules, the entry point name might give
+naming conflicts, the entry functions don’t follow the usual calling
+convention, and multiple interpreters are not supported well. This PEP
+addresses these issues.</p>
+</div>
+<div class="section" id="problems">
+<h2><a class="toc-backref" href="#id4">Problems</a><a class="headerlink" href="#problems" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-finalization">
+<h3><a class="toc-backref" href="#id5">Module Finalization</a><a class="headerlink" href="#module-finalization" title="Permalink to this headline">¶</a></h3>
+<p>Currently, extension modules are initialized usually once and then
+“live” forever. The only exception is when Py_Finalize() is called:
+then the initialization routine is invoked a second time. This is bad
+from a resource management point of view: memory and other resources
+might get allocated each time initialization is called, but there is
+no way to reclaim them. As a result, there is currently no way to
+completely release all resources Python has allocated.</p>
+</div>
+<div class="section" id="entry-point-name-conflicts">
+<h3><a class="toc-backref" href="#id6">Entry point name conflicts</a><a class="headerlink" href="#entry-point-name-conflicts" title="Permalink to this headline">¶</a></h3>
+<p>The entry point is currently called init&lt;module&gt;. This might conflict
+with other symbols also called init&lt;something&gt;. In particular,
+initsocket is known to have conflicted in the past (this specific
+problem got resolved as a side effect of renaming the module to
+_socket).</p>
+</div>
+<div class="section" id="entry-point-signature">
+<h3><a class="toc-backref" href="#id7">Entry point signature</a><a class="headerlink" href="#entry-point-signature" title="Permalink to this headline">¶</a></h3>
+<p>The entry point is currently a procedure (returning void).  This
+deviates from the usual calling conventions; callers can find out
+whether there was an error during initialization only by checking
+PyErr_Occurred. The entry point should return a PyObject*, which will
+be the module created, or NULL in case of an exception.</p>
+</div>
+<div class="section" id="multiple-interpreters">
+<h3><a class="toc-backref" href="#id8">Multiple Interpreters</a><a class="headerlink" href="#multiple-interpreters" title="Permalink to this headline">¶</a></h3>
+<p>Currently, extension modules share their state across all
+interpreters. This allows for undesirable information leakage across
+interpreters: one script could permanently corrupt objects in an
+extension module, possibly breaking all scripts in other interpreters.</p>
+</div>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id9">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>The module initialization routines change their signature
+to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyObject</span> <span class="o">*</span><span class="n">PyInit_</span><span class="o">&lt;</span><span class="n">modulename</span><span class="o">&gt;</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The initialization routine will be invoked once per
+interpreter, when the module is imported. It should
+return a new module object each time.</p>
+<p>In order to store per-module state in C variables,
+each module object will contain a block of memory
+that is interpreted only by the module. The amount
+of memory used for the module is specified at
+the point of creation of the module.</p>
+<p>In addition to the initialization function, a module
+may implement a number of additional callback
+functions, which are invoked when the module’s
+tp_traverse, tp_clear, and tp_free functions are
+invoked, and when the module is reloaded.</p>
+<p>The entire module definition is combined in a struct
+PyModuleDef:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">struct</span> <span class="n">PyModuleDef</span><span class="p">{</span>
+  <span class="n">PyModuleDef_Base</span> <span class="n">m_base</span><span class="p">;</span>  <span class="o">/*</span> <span class="n">To</span> <span class="n">be</span> <span class="n">filled</span> <span class="n">out</span> <span class="n">by</span> <span class="n">the</span> <span class="n">interpreter</span> <span class="o">*/</span>
+  <span class="n">Py_ssize_t</span> <span class="n">m_size</span><span class="p">;</span> <span class="o">/*</span> <span class="n">Size</span> <span class="n">of</span> <span class="n">per</span><span class="o">-</span><span class="n">module</span> <span class="n">data</span> <span class="o">*/</span>
+  <span class="n">PyMethodDef</span> <span class="o">*</span><span class="n">m_methods</span><span class="p">;</span>
+  <span class="n">inquiry</span> <span class="n">m_reload</span><span class="p">;</span>
+  <span class="n">traverseproc</span> <span class="n">m_traverse</span><span class="p">;</span>
+  <span class="n">inquiry</span> <span class="n">m_clear</span><span class="p">;</span>
+  <span class="n">freefunc</span> <span class="n">m_free</span><span class="p">;</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p>Creation of a module is changed to expect an optional
+PyModuleDef*. The module state will be
+null-initialized.</p>
+<p>Each module method will be passed the module object
+as the first parameter. To access the module data,
+a function:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">void</span><span class="o">*</span> <span class="n">PyModule_GetState</span><span class="p">(</span><span class="n">PyObject</span><span class="o">*</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>will be provided. In addition, to lookup a module
+more efficiently than going through sys.modules,
+a function:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyObject</span><span class="o">*</span> <span class="n">PyState_FindModule</span><span class="p">(</span><span class="n">struct</span> <span class="n">PyModuleDef</span><span class="o">*</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>will be provided. This lookup function will use an
+index located in the m_base field, to find the
+module by index, not by name.</p>
+<p>As all Python objects should be controlled through
+the Python memory management, usage of “static”
+type objects is discouraged, unless the type object
+itself has no memory-managed state. To simplify
+definition of heap types, a new method:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyTypeObject</span><span class="o">*</span> <span class="n">PyType_Copy</span><span class="p">(</span><span class="n">PyTypeObject</span><span class="o">*</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>is added.</p>
+</div>
+<div class="section" id="example">
+<h2><a class="toc-backref" href="#id10">Example</a><a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
+<p>xxmodule.c would be changed to remove the initxx
+function, and add the following code instead:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>struct xxstate{
+  PyObject *ErrorObject;
+  PyObject *Xxo_Type;
+};
+
+#define xxstate(o) ((struct xxstate*)PyModule_GetState(o))
+
+static int xx_traverse(PyObject *m, visitproc v,
+                       void *arg)
+{
+  Py_VISIT(xxstate(m)-&gt;ErrorObject);
+  Py_VISIT(xxstate(m)-&gt;Xxo_Type);
+  return 0;
+}
+
+static int xx_clear(PyObject *m)
+{
+  Py_CLEAR(xxstate(m)-&gt;ErrorObject);
+  Py_CLEAR(xxstate(m)-&gt;Xxo_Type);
+  return 0;
+}
+
+static struct PyModuleDef xxmodule = {
+  {}, /* m_base */
+  sizeof(struct xxstate),
+  &amp;xx_methods,
+  0,  /* m_reload */
+  xx_traverse,
+  xx_clear,
+  0,  /* m_free - not needed, since all is done in m_clear */
+}
+
+PyObject*
+PyInit_xx()
+{
+  PyObject *res = PyModule_New(&quot;xx&quot;, &amp;xxmodule);
+  if (!res) return NULL;
+  xxstate(res)-&gt;ErrorObject = PyErr_NewException(&quot;xx.error&quot;, NULL, NULL);
+  if (!xxstate(res)-&gt;ErrorObject) {
+    Py_DECREF(res);
+    return NULL;
+  }
+  xxstate(res)-&gt;XxoType = PyType_Copy(&amp;Xxo_Type);
+  if (!xxstate(res)-&gt;Xxo_Type) {
+    Py_DECREF(res);
+    return NULL;
+  }
+  return res;
+}
+</pre></div>
+</div>
+</div>
+<div class="section" id="discussion">
+<h2><a class="toc-backref" href="#id11">Discussion</a><a class="headerlink" href="#discussion" title="Permalink to this headline">¶</a></h2>
+<p>Tim Peters reports in <a class="footnote-reference brackets" href="#id2" id="id1">1</a> that PythonLabs considered such a feature
+at one point, and lists the following additional hooks which aren’t
+currently supported in this PEP:</p>
+<ul class="simple">
+<li>when the module object is deleted from sys.modules</li>
+<li>when Py_Finalize is called</li>
+<li>when Python exits</li>
+<li>when the Python DLL is unloaded (Windows only)</li>
+</ul>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id12">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>Tim Peters, reporting earlier conversation about such a feature
+<a class="reference external" href="https://mail.python.org/pipermail/python-3000/2006-April/000726.html">https://mail.python.org/pipermail/python-3000/2006-April/000726.html</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id13">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-3121.txt">https://github.com/python/peps/blob/master/pep-3121.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-3121.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-3120.html">PEP 3120</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-3122.html">PEP 3122</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 3121 – Extension Module Initialization and Finalization</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#problems">Problems</a><ul>
+<li><a class="reference internal" href="#module-finalization">Module Finalization</a></li>
+<li><a class="reference internal" href="#entry-point-name-conflicts">Entry point name conflicts</a></li>
+<li><a class="reference internal" href="#entry-point-signature">Entry point signature</a></li>
+<li><a class="reference internal" href="#multiple-interpreters">Multiple Interpreters</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#example">Example</a></li>
+<li><a class="reference internal" href="#discussion">Discussion</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

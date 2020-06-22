@@ -1,0 +1,556 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 539 – A New C-API for Thread-Local Storage in CPython &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 540 – Add a new UTF-8 Mode" href="pep-0540.html" />
+    <link rel="prev" title="PEP 538 – Coercing the legacy C locale to a UTF-8 based locale" href="pep-0538.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 539 – A New C-API for Thread-Local Storage in CPython</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-539-a-new-c-api-for-thread-local-storage-in-cpython">
+<h1 class="page-title">PEP 539 – A New C-API for Thread-Local Storage in CPython<a class="headerlink" href="#pep-539-a-new-c-api-for-thread-local-storage-in-cpython" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">539</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">A New C-API for Thread-Local Storage in CPython</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Erik M. Bray, Masayuki Yamamoto</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even">Nick Coghlan</dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd">Final</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even">Standards Track</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">20-Dec-2016</dd>
+<dt class="field-even">Python-Version</dt>
+<dd class="field-even">3.7</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd">16-Dec-2016, 31-Aug-2017, 08-Sep-2017</dd>
+<dt class="field-even">Resolution</dt>
+<dd class="field-even"><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2017-September/149358.html">https://mail.python.org/pipermail/python-dev/2017-September/149358.html</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id36">Abstract</a></li>
+<li><a class="reference internal" href="#specification" id="id37">Specification</a><ul>
+<li><a class="reference internal" href="#comparison-of-api-specification" id="id38">Comparison of API Specification</a></li>
+<li><a class="reference internal" href="#example" id="id39">Example</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#platform-support-changes" id="id40">Platform Support Changes</a></li>
+<li><a class="reference internal" href="#motivation" id="id41">Motivation</a></li>
+<li><a class="reference internal" href="#rationale-for-proposed-solution" id="id42">Rationale for Proposed Solution</a></li>
+<li><a class="reference internal" href="#rejected-ideas" id="id43">Rejected Ideas</a></li>
+<li><a class="reference internal" href="#implementation" id="id44">Implementation</a></li>
+<li><a class="reference internal" href="#copyright" id="id45">Copyright</a></li>
+<li><a class="reference internal" href="#references-and-footnotes" id="id46">References and Footnotes</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id36">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>The proposal is to add a new Thread Local Storage (TLS) API to CPython which
+would supersede use of the existing TLS API within the CPython interpreter,
+while deprecating the existing API.  The new API is named the “Thread
+Specific Storage (TSS) API” (see <a class="reference internal" href="#rationale-for-proposed-solution">Rationale for Proposed Solution</a> for the
+origin of the name).</p>
+<p>Because the existing TLS API is only used internally (it is not mentioned in
+the documentation, and the header that defines it, <code class="docutils literal notranslate"><span class="pre">pythread.h</span></code>, is not
+included in <code class="docutils literal notranslate"><span class="pre">Python.h</span></code> either directly or indirectly), this proposal
+probably only affects CPython, but might also affect other interpreter
+implementations (PyPy?) that implement parts of the CPython API.</p>
+<p>This is motivated primarily by the fact that the old API uses <code class="docutils literal notranslate"><span class="pre">int</span></code> to
+represent TLS keys across all platforms, which is neither POSIX-compliant,
+nor portable in any practical sense <a class="footnote-reference brackets" href="#id20" id="id1">1</a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Throughout this document the acronym “TLS” refers to Thread Local
+Storage and should not be confused with “Transportation Layer Security”
+protocols.</p>
+</div>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id37">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>The current API for TLS used inside the CPython interpreter consists of 6
+functions:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyAPI_FUNC</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span> <span class="n">PyThread_create_key</span><span class="p">(</span><span class="n">void</span><span class="p">)</span>
+<span class="n">PyAPI_FUNC</span><span class="p">(</span><span class="n">void</span><span class="p">)</span> <span class="n">PyThread_delete_key</span><span class="p">(</span><span class="nb">int</span> <span class="n">key</span><span class="p">)</span>
+<span class="n">PyAPI_FUNC</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span> <span class="n">PyThread_set_key_value</span><span class="p">(</span><span class="nb">int</span> <span class="n">key</span><span class="p">,</span> <span class="n">void</span> <span class="o">*</span><span class="n">value</span><span class="p">)</span>
+<span class="n">PyAPI_FUNC</span><span class="p">(</span><span class="n">void</span> <span class="o">*</span><span class="p">)</span> <span class="n">PyThread_get_key_value</span><span class="p">(</span><span class="nb">int</span> <span class="n">key</span><span class="p">)</span>
+<span class="n">PyAPI_FUNC</span><span class="p">(</span><span class="n">void</span><span class="p">)</span> <span class="n">PyThread_delete_key_value</span><span class="p">(</span><span class="nb">int</span> <span class="n">key</span><span class="p">)</span>
+<span class="n">PyAPI_FUNC</span><span class="p">(</span><span class="n">void</span><span class="p">)</span> <span class="n">PyThread_ReInitTLS</span><span class="p">(</span><span class="n">void</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>These would be superseded by a new set of analogous functions:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyAPI_FUNC</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span> <span class="n">PyThread_tss_create</span><span class="p">(</span><span class="n">Py_tss_t</span> <span class="o">*</span><span class="n">key</span><span class="p">)</span>
+<span class="n">PyAPI_FUNC</span><span class="p">(</span><span class="n">void</span><span class="p">)</span> <span class="n">PyThread_tss_delete</span><span class="p">(</span><span class="n">Py_tss_t</span> <span class="o">*</span><span class="n">key</span><span class="p">)</span>
+<span class="n">PyAPI_FUNC</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span> <span class="n">PyThread_tss_set</span><span class="p">(</span><span class="n">Py_tss_t</span> <span class="o">*</span><span class="n">key</span><span class="p">,</span> <span class="n">void</span> <span class="o">*</span><span class="n">value</span><span class="p">)</span>
+<span class="n">PyAPI_FUNC</span><span class="p">(</span><span class="n">void</span> <span class="o">*</span><span class="p">)</span> <span class="n">PyThread_tss_get</span><span class="p">(</span><span class="n">Py_tss_t</span> <span class="o">*</span><span class="n">key</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The specification also adds a few new features:</p>
+<ul>
+<li><p>A new type <code class="docutils literal notranslate"><span class="pre">Py_tss_t</span></code>–an opaque type the definition of which may
+depend on the underlying TLS implementation.  It is defined:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">typedef</span> <span class="n">struct</span> <span class="p">{</span>
+    <span class="nb">int</span> <span class="n">_is_initialized</span><span class="p">;</span>
+    <span class="n">NATIVE_TSS_KEY_T</span> <span class="n">_key</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">Py_tss_t</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">NATIVE_TSS_KEY_T</span></code> is a macro whose value depends on the
+underlying native TLS implementation (e.g. <code class="docutils literal notranslate"><span class="pre">pthread_key_t</span></code>).</p>
+</li>
+<li><p>An initializer for <code class="docutils literal notranslate"><span class="pre">Py_tss_t</span></code> variables, <code class="docutils literal notranslate"><span class="pre">Py_tss_NEEDS_INIT</span></code>.</p>
+</li>
+<li><p>Three new functions:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyAPI_FUNC</span><span class="p">(</span><span class="n">Py_tss_t</span> <span class="o">*</span><span class="p">)</span> <span class="n">PyThread_tss_alloc</span><span class="p">(</span><span class="n">void</span><span class="p">)</span>
+<span class="n">PyAPI_FUNC</span><span class="p">(</span><span class="n">void</span><span class="p">)</span> <span class="n">PyThread_tss_free</span><span class="p">(</span><span class="n">Py_tss_t</span> <span class="o">*</span><span class="n">key</span><span class="p">)</span>
+<span class="n">PyAPI_FUNC</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span> <span class="n">PyThread_tss_is_created</span><span class="p">(</span><span class="n">Py_tss_t</span> <span class="o">*</span><span class="n">key</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The first two are needed for dynamic (de-)allocation of a <code class="docutils literal notranslate"><span class="pre">Py_tss_t</span></code>,
+particularly in extension modules built with <code class="docutils literal notranslate"><span class="pre">Py_LIMITED_API</span></code>, where
+static allocation of this type is not possible due to its implementation
+being opaque at build time.  A value returned by <code class="docutils literal notranslate"><span class="pre">PyThread_tss_alloc</span></code> is
+in the same state as a value initialized with <code class="docutils literal notranslate"><span class="pre">Py_tss_NEEDS_INIT</span></code>, or
+<code class="docutils literal notranslate"><span class="pre">NULL</span></code> in the case of dynamic allocation failure.  The behavior of
+<code class="docutils literal notranslate"><span class="pre">PyThread_tss_free</span></code> involves calling <code class="docutils literal notranslate"><span class="pre">PyThread_tss_delete</span></code>
+preventively, or is a no-op if the value pointed to by the <code class="docutils literal notranslate"><span class="pre">key</span></code>
+argument is <code class="docutils literal notranslate"><span class="pre">NULL</span></code>.  <code class="docutils literal notranslate"><span class="pre">PyThread_tss_is_created</span></code> returns non-zero if the
+given <code class="docutils literal notranslate"><span class="pre">Py_tss_t</span></code> has been initialized (i.e. by <code class="docutils literal notranslate"><span class="pre">PyThread_tss_create</span></code>).</p>
+</li>
+</ul>
+<p>The new TSS API does not provide functions which correspond to
+<code class="docutils literal notranslate"><span class="pre">PyThread_delete_key_value</span></code> and <code class="docutils literal notranslate"><span class="pre">PyThread_ReInitTLS</span></code>, because these
+functions were needed only for CPython’s now defunct built-in TLS
+implementation; that is the existing behavior of these functions is treated
+as follows: <code class="docutils literal notranslate"><span class="pre">PyThread_delete_key_value(key)</span></code> is equivalent to
+<code class="docutils literal notranslate"><span class="pre">PyThread_set_key_value(key,</span> <span class="pre">NULL)</span></code>, and <code class="docutils literal notranslate"><span class="pre">PyThread_ReInitTLS()</span></code> is a
+no-op <a class="footnote-reference brackets" href="#id27" id="id2">8</a>.</p>
+<p>The new <code class="docutils literal notranslate"><span class="pre">PyThread_tss_</span></code> functions are almost exactly analogous to their
+original counterparts with a few minor differences:  Whereas
+<code class="docutils literal notranslate"><span class="pre">PyThread_create_key</span></code> takes no arguments and returns a TLS key as an
+<code class="docutils literal notranslate"><span class="pre">int</span></code>, <code class="docutils literal notranslate"><span class="pre">PyThread_tss_create</span></code> takes a <code class="docutils literal notranslate"><span class="pre">Py_tss_t*</span></code> as an argument and
+returns an <code class="docutils literal notranslate"><span class="pre">int</span></code> status code. The behavior of <code class="docutils literal notranslate"><span class="pre">PyThread_tss_create</span></code> is
+undefined if the value pointed to by the <code class="docutils literal notranslate"><span class="pre">key</span></code> argument is not initialized
+by <code class="docutils literal notranslate"><span class="pre">Py_tss_NEEDS_INIT</span></code>. The returned status code is zero on success
+and non-zero on failure.  The meanings of non-zero status codes are not
+otherwise defined by this specification.</p>
+<p>Similarly the other <code class="docutils literal notranslate"><span class="pre">PyThread_tss_</span></code> functions are passed a <code class="docutils literal notranslate"><span class="pre">Py_tss_t*</span></code>
+whereas previously the key was passed by value.  This change is necessary, as
+being an opaque type, the <code class="docutils literal notranslate"><span class="pre">Py_tss_t</span></code> type could hypothetically be almost
+any size.  This is especially necessary for extension modules built with
+<code class="docutils literal notranslate"><span class="pre">Py_LIMITED_API</span></code>, where the size of the type is not known.  Except for
+<code class="docutils literal notranslate"><span class="pre">PyThread_tss_free</span></code>, the behaviors of <code class="docutils literal notranslate"><span class="pre">PyThread_tss_</span></code> are undefined if the
+value pointed to by the <code class="docutils literal notranslate"><span class="pre">key</span></code> argument is <code class="docutils literal notranslate"><span class="pre">NULL</span></code>.</p>
+<p>Moreover, because of the use of <code class="docutils literal notranslate"><span class="pre">Py_tss_t</span></code> instead of <code class="docutils literal notranslate"><span class="pre">int</span></code>, there are
+behaviors in the new API which differ from the existing API with regard to
+key creation and deletion.  <code class="docutils literal notranslate"><span class="pre">PyThread_tss_create</span></code> can be called repeatedly
+on the same key–calling it on an already initialized key is a no-op and
+immediately returns success. Similarly for calling <code class="docutils literal notranslate"><span class="pre">PyThread_tss_delete</span></code>
+with an uninitialized key.</p>
+<p>The behavior of <code class="docutils literal notranslate"><span class="pre">PyThread_tss_delete</span></code> is defined to change the key’s
+initialization state to “uninitialized”–this allows, for example,
+statically allocated keys to be reset to a sensible state when restarting
+the CPython interpreter without terminating the process (e.g. embedding
+Python in an application) <a class="footnote-reference brackets" href="#id31" id="id3">12</a>.</p>
+<p>The old <code class="docutils literal notranslate"><span class="pre">PyThread_*_key*</span></code> functions will be marked as deprecated in the
+documentation, but will not generate runtime deprecation warnings.</p>
+<p>Additionally, on platforms where <code class="docutils literal notranslate"><span class="pre">sizeof(pthread_key_t)</span> <span class="pre">!=</span> <span class="pre">sizeof(int)</span></code>,
+<code class="docutils literal notranslate"><span class="pre">PyThread_create_key</span></code> will return immediately with a failure status, and
+the other TLS functions will all be no-ops on such platforms.</p>
+<div class="section" id="comparison-of-api-specification">
+<h3><a class="toc-backref" href="#id38">Comparison of API Specification</a><a class="headerlink" href="#comparison-of-api-specification" title="Permalink to this headline">¶</a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 23%" />
+<col style="width: 39%" />
+<col style="width: 39%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head">API</th>
+<th class="head">Thread Local Storage (TLS)</th>
+<th class="head">Thread Specific Storage (TSS)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td>Version</td>
+<td>Existing</td>
+<td>New</td>
+</tr>
+<tr class="row-odd"><td>Key Type</td>
+<td><code class="docutils literal notranslate"><span class="pre">int</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">Py_tss_t</span></code> (opaque type)</td>
+</tr>
+<tr class="row-even"><td>Handle Native Key</td>
+<td>cast to <code class="docutils literal notranslate"><span class="pre">int</span></code></td>
+<td>conceal into internal field</td>
+</tr>
+<tr class="row-odd"><td>Function Argument</td>
+<td><code class="docutils literal notranslate"><span class="pre">int</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">Py_tss_t</span> <span class="pre">*</span></code></td>
+</tr>
+<tr class="row-even"><td>Features</td>
+<td><ul class="simple">
+<li>create key</li>
+<li>delete key</li>
+<li>set value</li>
+<li>get value</li>
+<li>delete value</li>
+<li>reinitialize keys (after
+fork)</li>
+</ul>
+</td>
+<td><ul class="simple">
+<li>create key</li>
+<li>delete key</li>
+<li>set value</li>
+<li>get value</li>
+<li>(set <code class="docutils literal notranslate"><span class="pre">NULL</span></code> instead) <a class="footnote-reference brackets" href="#id27" id="id4">8</a></li>
+<li>(unnecessary) <a class="footnote-reference brackets" href="#id27" id="id5">8</a></li>
+<li>dynamically (de-)allocate
+key</li>
+<li>check key’s initialization
+state</li>
+</ul>
+</td>
+</tr>
+<tr class="row-odd"><td>Key Initializer</td>
+<td>(<code class="docutils literal notranslate"><span class="pre">-1</span></code> as key creation
+failure)</td>
+<td><code class="docutils literal notranslate"><span class="pre">Py_tss_NEEDS_INIT</span></code></td>
+</tr>
+<tr class="row-even"><td>Requirement</td>
+<td>native threads
+(since CPython 3.7 <a class="footnote-reference brackets" href="#id28" id="id6">9</a>)</td>
+<td>native threads</td>
+</tr>
+<tr class="row-odd"><td>Restriction</td>
+<td>No support for platforms
+where native TLS key is
+defined in a way that cannot
+be safely cast to <code class="docutils literal notranslate"><span class="pre">int</span></code>.</td>
+<td>Unable to statically allocate
+keys when <code class="docutils literal notranslate"><span class="pre">Py_LIMITED_API</span></code>
+is defined.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="example">
+<h3><a class="toc-backref" href="#id39">Example</a><a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h3>
+<p>With the proposed changes, a TSS key is initialized like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">static</span> <span class="n">Py_tss_t</span> <span class="n">tss_key</span> <span class="o">=</span> <span class="n">Py_tss_NEEDS_INIT</span><span class="p">;</span>
+<span class="k">if</span> <span class="p">(</span><span class="n">PyThread_tss_create</span><span class="p">(</span><span class="o">&amp;</span><span class="n">tss_key</span><span class="p">))</span> <span class="p">{</span>
+    <span class="o">/*</span> <span class="o">...</span> <span class="n">handle</span> <span class="n">key</span> <span class="n">creation</span> <span class="n">failure</span> <span class="o">...</span> <span class="o">*/</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The initialization state of the key can then be checked like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">assert</span><span class="p">(</span><span class="n">PyThread_tss_is_created</span><span class="p">(</span><span class="o">&amp;</span><span class="n">tss_key</span><span class="p">));</span>
+</pre></div>
+</div>
+<p>The rest of the API is used analogously to the old API:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>int the_value = 1;
+if (PyThread_tss_get(&amp;tss_key) == NULL) {
+    PyThread_tss_set(&amp;tss_key, (void *)&amp;the_value);
+    assert(PyThread_tss_get(&amp;tss_key) != NULL);
+}
+/* ... once done with the key ... */
+PyThread_tss_delete(&amp;tss_key);
+assert(!PyThread_tss_is_created(&amp;tss_key));
+</pre></div>
+</div>
+<p>When <code class="docutils literal notranslate"><span class="pre">Py_LIMITED_API</span></code> is defined, a TSS key must be dynamically allocated:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>static Py_tss_t *ptr_key = PyThread_tss_alloc();
+if (ptr_key == NULL) {
+    /* ... handle key allocation failure ... */
+}
+assert(!PyThread_tss_is_created(ptr_key));
+/* ... once done with the key ... */
+PyThread_tss_free(ptr_key);
+ptr_key = NULL;
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="platform-support-changes">
+<h2><a class="toc-backref" href="#id40">Platform Support Changes</a><a class="headerlink" href="#platform-support-changes" title="Permalink to this headline">¶</a></h2>
+<p>A new “Native Thread Implementation” section will be added to PEP 11 that
+states:</p>
+<ul class="simple">
+<li>As of CPython 3.7, all platforms are required to provide a native thread
+implementation (such as pthreads or Windows) to implement the TSS
+API.  Any TSS API problems that occur in an implementation without native
+threads will be closed as “won’t fix”.</li>
+</ul>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id41">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>The primary problem at issue here is the type of the keys (<code class="docutils literal notranslate"><span class="pre">int</span></code>) used for
+TLS values, as defined by the original PyThread TLS API.</p>
+<p>The original TLS API was added to Python by GvR back in 1997, and at the
+time the key used to represent a TLS value was an <code class="docutils literal notranslate"><span class="pre">int</span></code>, and so it has
+been to the time of writing.  This used CPython’s own TLS implementation
+which long remained unused, largely unchanged, in Python/thread.c.  Support
+for implementation of the API on top of native thread implementations
+(pthreads and Windows) was added much later, and the built-in implementation
+has been deemed no longer necessary and has since been removed <a class="footnote-reference brackets" href="#id28" id="id7">9</a>.</p>
+<p>The problem with the choice of <code class="docutils literal notranslate"><span class="pre">int</span></code> to represent a TLS key, is that while
+it was fine for CPython’s own TLS implementation, and happens to be
+compatible with Windows (which uses <code class="docutils literal notranslate"><span class="pre">DWORD</span></code> for the analogous data), it is
+not compatible with the POSIX standard for the pthreads API, which defines
+<code class="docutils literal notranslate"><span class="pre">pthread_key_t</span></code> as an opaque type not further defined by the standard (as
+with <code class="docutils literal notranslate"><span class="pre">Py_tss_t</span></code> described above) <a class="footnote-reference brackets" href="#id33" id="id8">14</a>.  This leaves it up to the underlying
+implementation how a <code class="docutils literal notranslate"><span class="pre">pthread_key_t</span></code> value is used to look up
+thread-specific data.</p>
+<p>This has not generally been a problem for Python’s API, as it just happens
+that on Linux <code class="docutils literal notranslate"><span class="pre">pthread_key_t</span></code> is defined as an <code class="docutils literal notranslate"><span class="pre">unsigned</span> <span class="pre">int</span></code>, and so is
+fully compatible with Python’s TLS API–<code class="docutils literal notranslate"><span class="pre">pthread_key_t</span></code>’s created by
+<code class="docutils literal notranslate"><span class="pre">pthread_create_key</span></code> can be freely cast to <code class="docutils literal notranslate"><span class="pre">int</span></code> and back (well, not
+exactly, even this has some limitations as pointed out by issue #22206).</p>
+<p>However, as issue #25658 points out, there are at least some platforms
+(namely Cygwin, CloudABI, but likely others as well) which have otherwise
+modern and POSIX-compliant pthreads implementations, but are not compatible
+with Python’s API because their <code class="docutils literal notranslate"><span class="pre">pthread_key_t</span></code> is defined in a way that
+cannot be safely cast to <code class="docutils literal notranslate"><span class="pre">int</span></code>.  In fact, the possibility of running into
+this problem was raised by MvL at the time pthreads TLS was added <a class="footnote-reference brackets" href="#id21" id="id9">2</a>.</p>
+<p>It could be argued that PEP-11 makes specific requirements for supporting a
+new, not otherwise officially-support platform (such as CloudABI), and that
+the status of Cygwin support is currently dubious.  However, this creates a
+very high barrier to supporting platforms that are otherwise Linux- and/or
+POSIX-compatible and where CPython might otherwise “just work” except for
+this one hurdle.  CPython itself imposes this implementation barrier by way
+of an API that is not compatible with POSIX (and in fact makes invalid
+assumptions about pthreads).</p>
+</div>
+<div class="section" id="rationale-for-proposed-solution">
+<h2><a class="toc-backref" href="#id42">Rationale for Proposed Solution</a><a class="headerlink" href="#rationale-for-proposed-solution" title="Permalink to this headline">¶</a></h2>
+<p>The use of an opaque type (<code class="docutils literal notranslate"><span class="pre">Py_tss_t</span></code>) to key TLS values allows the API to
+be compatible with all present (POSIX and Windows) and future (C11?) native
+TLS implementations supported by CPython, as it allows the definition of
+<code class="docutils literal notranslate"><span class="pre">Py_tss_t</span></code> to depend on the underlying implementation.</p>
+<p>Since the existing TLS API has been available in <em>the limited API</em> <a class="footnote-reference brackets" href="#id32" id="id10">13</a> for
+some platforms (e.g. Linux), CPython makes an effort to provide the new TSS
+API at that level likewise.  Note, however, that the <code class="docutils literal notranslate"><span class="pre">Py_tss_t</span></code> definition
+becomes to be an opaque struct when <code class="docutils literal notranslate"><span class="pre">Py_LIMITED_API</span></code> is defined, because
+exposing <code class="docutils literal notranslate"><span class="pre">NATIVE_TSS_KEY_T</span></code> as part of the limited API would prevent us
+from switching native thread implementation without rebuilding extension
+modules.</p>
+<p>A new API must be introduced, rather than changing the function signatures of
+the current API, in order to maintain backwards compatibility.  The new API
+also more clearly groups together these related functions under a single name
+prefix, <code class="docutils literal notranslate"><span class="pre">PyThread_tss_</span></code>.  The “tss” in the name stands for “thread-specific
+storage”, and was influenced by the naming and design of the “tss” API that is
+part of the C11 threads API <a class="footnote-reference brackets" href="#id34" id="id11">15</a>.  However, this is in no way meant to imply
+compatibility with or support for the C11 threads API, or signal any future
+intention of supporting C11–it’s just the influence for the naming and design.</p>
+<p>The inclusion of the special initializer <code class="docutils literal notranslate"><span class="pre">Py_tss_NEEDS_INIT</span></code> is required
+by the fact that not all native TLS implementations define a sentinel value
+for uninitialized TLS keys.  For example, on Windows a TLS key is
+represented by a <code class="docutils literal notranslate"><span class="pre">DWORD</span></code> (<code class="docutils literal notranslate"><span class="pre">unsigned</span> <span class="pre">int</span></code>) and its value must be treated
+as opaque <a class="footnote-reference brackets" href="#id22" id="id12">3</a>.  So there is no unsigned integer value that can be safely
+used to represent an uninitialized TLS key on Windows.  Likewise, POSIX
+does not specify a sentinel for an uninitialized <code class="docutils literal notranslate"><span class="pre">pthread_key_t</span></code>, instead
+relying on the <code class="docutils literal notranslate"><span class="pre">pthread_once</span></code> interface to ensure that a given TLS key is
+initialized only once per-process.  Therefore, the <code class="docutils literal notranslate"><span class="pre">Py_tss_t</span></code> type
+contains an explicit <code class="docutils literal notranslate"><span class="pre">._is_initialized</span></code> that can indicate the key’s
+initialization state independent of the underlying implementation.</p>
+<p>Changing <code class="docutils literal notranslate"><span class="pre">PyThread_create_key</span></code> to immediately return a failure status on
+systems using pthreads where <code class="docutils literal notranslate"><span class="pre">sizeof(int)</span> <span class="pre">!=</span> <span class="pre">sizeof(pthread_key_t)</span></code> is
+intended as a sanity check:  Currently, <code class="docutils literal notranslate"><span class="pre">PyThread_create_key</span></code> may report
+initial success on such systems, but attempts to use the returned key are
+likely to fail.  Although in practice this failure occurs earlier in the
+interpreter initialization, it’s better to fail immediately at the source of
+problem (<code class="docutils literal notranslate"><span class="pre">PyThread_create_key</span></code>) rather than sometime later when use of an
+invalid key is attempted.  In other words, this indicates clearly that the
+old API is not supported on platforms where it cannot be used reliably, and
+that no effort will be made to add such support.</p>
+</div>
+<div class="section" id="rejected-ideas">
+<h2><a class="toc-backref" href="#id43">Rejected Ideas</a><a class="headerlink" href="#rejected-ideas" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Do nothing: The status quo is fine because it works on Linux, and platforms
+wishing to be supported by CPython should follow the requirements of
+PEP-11.  As explained above, while this would be a fair argument if
+CPython were being to asked to make changes to support particular quirks
+or features of a specific platform, in this case it is a quirk of CPython
+that prevents it from being used to its full potential on otherwise
+POSIX-compliant platforms.  The fact that the current implementation
+happens to work on Linux is a happy accident, and there’s no guarantee
+that this will never change.</li>
+<li>Affected platforms should just configure Python <code class="docutils literal notranslate"><span class="pre">--without-threads</span></code>:
+this is no longer an option as the <code class="docutils literal notranslate"><span class="pre">--without-threads</span></code> option has
+been removed for Python 3.7 <a class="footnote-reference brackets" href="#id35" id="id13">16</a>.</li>
+<li>Affected platforms should use CPython’s built-in TLS implementation
+instead of a native TLS implementation: This is a more acceptable
+alternative to the previous idea, and in fact there had been a patch to do
+just that <a class="footnote-reference brackets" href="#id23" id="id14">4</a>.  However, the built-in implementation being “slower and
+clunkier” in general than native implementations still needlessly hobbles
+performance on affected platforms.  At least one other module
+(<code class="docutils literal notranslate"><span class="pre">tracemalloc</span></code>) is also broken if Python is built without a native TLS
+implementation.  This idea also cannot be adopted because the built-in
+implementation has since been removed.</li>
+<li>Keep the existing API, but work around the issue by providing a mapping from
+<code class="docutils literal notranslate"><span class="pre">pthread_key_t</span></code> values to <code class="docutils literal notranslate"><span class="pre">int</span></code> values.  A couple attempts were made at
+this (<a class="footnote-reference brackets" href="#id24" id="id15">5</a>, <a class="footnote-reference brackets" href="#id25" id="id16">6</a>), but this injects needless complexity and overhead
+into performance-critical code on platforms that are not currently affected
+by this issue (such as Linux).  Even if use of this workaround were made
+conditional on platform compatibility, it introduces platform-specific code
+to maintain, and still has the problem of the previous rejected ideas of
+needlessly hobbling performance on affected platforms.</li>
+</ul>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id44">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>An initial version of a patch <a class="footnote-reference brackets" href="#id26" id="id17">7</a> is available on the bug tracker for this
+issue.  Since the migration to GitHub, its development has continued in the
+<code class="docutils literal notranslate"><span class="pre">pep539-tss-api</span></code> feature branch <a class="footnote-reference brackets" href="#id29" id="id18">10</a> in Masayuki Yamamoto’s fork of the
+CPython repository on GitHub. A work-in-progress PR is available at <a class="footnote-reference brackets" href="#id30" id="id19">11</a>.</p>
+<p>This reference implementation covers not only the new API implementation
+features, but also the client code updates needed to replace the existing
+TLS API with the new TSS API.</p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id45">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+<div class="section" id="references-and-footnotes">
+<h2><a class="toc-backref" href="#id46">References and Footnotes</a><a class="headerlink" href="#references-and-footnotes" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id20"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><a class="reference external" href="http://bugs.python.org/issue25658">http://bugs.python.org/issue25658</a></dd>
+<dt class="label" id="id21"><span class="brackets"><a class="fn-backref" href="#id9">2</a></span></dt>
+<dd><a class="reference external" href="https://bugs.python.org/msg116292">https://bugs.python.org/msg116292</a></dd>
+<dt class="label" id="id22"><span class="brackets"><a class="fn-backref" href="#id12">3</a></span></dt>
+<dd><a class="reference external" href="https://msdn.microsoft.com/en-us/library/windows/desktop/ms686801(v=vs.85).aspx">https://msdn.microsoft.com/en-us/library/windows/desktop/ms686801(v=vs.85).aspx</a></dd>
+<dt class="label" id="id23"><span class="brackets"><a class="fn-backref" href="#id14">4</a></span></dt>
+<dd><a class="reference external" href="http://bugs.python.org/file45548/configure-pthread_key_t.patch">http://bugs.python.org/file45548/configure-pthread_key_t.patch</a></dd>
+<dt class="label" id="id24"><span class="brackets"><a class="fn-backref" href="#id15">5</a></span></dt>
+<dd><a class="reference external" href="http://bugs.python.org/file44269/issue25658-1.patch">http://bugs.python.org/file44269/issue25658-1.patch</a></dd>
+<dt class="label" id="id25"><span class="brackets"><a class="fn-backref" href="#id16">6</a></span></dt>
+<dd><a class="reference external" href="http://bugs.python.org/file44303/key-constant-time.diff">http://bugs.python.org/file44303/key-constant-time.diff</a></dd>
+<dt class="label" id="id26"><span class="brackets"><a class="fn-backref" href="#id17">7</a></span></dt>
+<dd><a class="reference external" href="http://bugs.python.org/file46379/pythread-tss-3.patch">http://bugs.python.org/file46379/pythread-tss-3.patch</a></dd>
+<dt class="label" id="id27"><span class="brackets">8</span><span class='fn-backref'><em> (<a href="#id2">1</a>, <a href="#id4">2</a>, <a href="#id5">3</a>) </em></span></dt>
+<dd><a class="reference external" href="https://bugs.python.org/msg298342">https://bugs.python.org/msg298342</a></dd>
+<dt class="label" id="id28"><span class="brackets">9</span><span class='fn-backref'><em> (<a href="#id6">1</a>, <a href="#id7">2</a>) </em></span></dt>
+<dd><a class="reference external" href="http://bugs.python.org/issue30832">http://bugs.python.org/issue30832</a></dd>
+<dt class="label" id="id29"><span class="brackets"><a class="fn-backref" href="#id18">10</a></span></dt>
+<dd><a class="reference external" href="https://github.com/python/cpython/compare/master...ma8ma:pep539-tss-api">https://github.com/python/cpython/compare/master…ma8ma:pep539-tss-api</a></dd>
+<dt class="label" id="id30"><span class="brackets"><a class="fn-backref" href="#id19">11</a></span></dt>
+<dd><a class="reference external" href="https://github.com/python/cpython/pull/1362">https://github.com/python/cpython/pull/1362</a></dd>
+<dt class="label" id="id31"><span class="brackets"><a class="fn-backref" href="#id3">12</a></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/c-api/init.html#c.Py_FinalizeEx">https://docs.python.org/3/c-api/init.html#c.Py_FinalizeEx</a></dd>
+<dt class="label" id="id32"><span class="brackets"><a class="fn-backref" href="#id10">13</a></span></dt>
+<dd>It is also called as “stable ABI”
+(<a class="reference external" href="https://www.python.org/dev/peps/pep-0384/">https://www.python.org/dev/peps/pep-0384/</a>)</dd>
+<dt class="label" id="id33"><span class="brackets"><a class="fn-backref" href="#id8">14</a></span></dt>
+<dd><a class="reference external" href="http://pubs.opengroup.org/onlinepubs/009695399/functions/pthread_key_create.html">http://pubs.opengroup.org/onlinepubs/009695399/functions/pthread_key_create.html</a></dd>
+<dt class="label" id="id34"><span class="brackets"><a class="fn-backref" href="#id11">15</a></span></dt>
+<dd><a class="reference external" href="http://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf#page=404">http://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf#page=404</a></dd>
+<dt class="label" id="id35"><span class="brackets"><a class="fn-backref" href="#id13">16</a></span></dt>
+<dd><a class="reference external" href="https://bugs.python.org/issue31370">https://bugs.python.org/issue31370</a></dd>
+</dl>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0539.txt">https://github.com/python/peps/blob/master/pep-0539.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0539.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0538.html">PEP 0538</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0540.html">PEP 0540</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 539 – A New C-API for Thread-Local Storage in CPython</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#comparison-of-api-specification">Comparison of API Specification</a></li>
+<li><a class="reference internal" href="#example">Example</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#platform-support-changes">Platform Support Changes</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#rationale-for-proposed-solution">Rationale for Proposed Solution</a></li>
+<li><a class="reference internal" href="#rejected-ideas">Rejected Ideas</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+<li><a class="reference internal" href="#references-and-footnotes">References and Footnotes</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

@@ -1,0 +1,315 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 3114 – Renaming iterator.next() to iterator.__next__() &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 3115 – Metaclasses in Python 3000" href="pep-3115.html" />
+    <link rel="prev" title="PEP 3113 – Removal of Tuple Parameter Unpacking" href="pep-3113.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 3114 – Renaming iterator.next() to iterator.__next__()</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-3114-renaming-iterator-next-to-iterator-next">
+<h1 class="page-title">PEP 3114 – Renaming iterator.next() to iterator.__next__()<a class="headerlink" href="#pep-3114-renaming-iterator-next-to-iterator-next" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">3114</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Renaming iterator.next() to iterator.__next__()</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Ka-Ping Yee &lt;ping&#32;&#97;t&#32;zesty.ca&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">04-Mar-2007</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.0</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id13">Abstract</a></li>
+<li><a class="reference internal" href="#names-with-double-underscores" id="id14">Names With Double Underscores</a></li>
+<li><a class="reference internal" href="#double-underscore-methods-and-built-in-functions" id="id15">Double-Underscore Methods and Built-In Functions</a></li>
+<li><a class="reference internal" href="#previous-proposals" id="id16">Previous Proposals</a></li>
+<li><a class="reference internal" href="#objections" id="id17">Objections</a></li>
+<li><a class="reference internal" href="#transition-plan" id="id18">Transition Plan</a></li>
+<li><a class="reference internal" href="#approval" id="id19">Approval</a></li>
+<li><a class="reference internal" href="#implementation" id="id20">Implementation</a></li>
+<li><a class="reference internal" href="#references" id="id21">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id22">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id13">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>The iterator protocol in Python 2.x consists of two methods:
+<code class="docutils literal notranslate"><span class="pre">__iter__()</span></code> called on an iterable object to yield an iterator, and
+<code class="docutils literal notranslate"><span class="pre">next()</span></code> called on an iterator object to yield the next item in the
+sequence.  Using a <code class="docutils literal notranslate"><span class="pre">for</span></code> loop to iterate over an iterable object
+implicitly calls both of these methods.  This PEP proposes that the
+<code class="docutils literal notranslate"><span class="pre">next</span></code> method be renamed to <code class="docutils literal notranslate"><span class="pre">__next__</span></code>, consistent with all the
+other protocols in Python in which a method is implicitly called as
+part of a language-level protocol, and that a built-in function named
+<code class="docutils literal notranslate"><span class="pre">next</span></code> be introduced to invoke <code class="docutils literal notranslate"><span class="pre">__next__</span></code> method, consistent with
+the manner in which other protocols are explicitly invoked.</p>
+</div>
+<div class="section" id="names-with-double-underscores">
+<h2><a class="toc-backref" href="#id14">Names With Double Underscores</a><a class="headerlink" href="#names-with-double-underscores" title="Permalink to this headline">¶</a></h2>
+<p>In Python, double underscores before and after a name are used to
+distinguish names that belong to the language itself.  Attributes and
+methods that are implicitly used or created by the interpreter employ
+this naming convention; some examples are:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">__file__</span></code> - an attribute automatically created by the interpreter</li>
+<li><code class="docutils literal notranslate"><span class="pre">__dict__</span></code> - an attribute with special meaning to the interpreter</li>
+<li><code class="docutils literal notranslate"><span class="pre">__init__</span></code> - a method implicitly called by the interpreter</li>
+</ul>
+<p>Note that this convention applies to methods such as <code class="docutils literal notranslate"><span class="pre">__init__</span></code> that
+are explicitly defined by the programmer, as well as attributes such as
+<code class="docutils literal notranslate"><span class="pre">__file__</span></code> that can only be accessed by naming them explicitly, so it
+includes names that are used <em>or</em> created by the interpreter.</p>
+<p>(Not all things that are called “protocols” are made of methods with
+double-underscore names.  For example, the <code class="docutils literal notranslate"><span class="pre">__contains__</span></code> method has
+double underscores because the language construct <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">in</span> <span class="pre">y</span></code> implicitly
+calls <code class="docutils literal notranslate"><span class="pre">__contains__</span></code>.  But even though the <code class="docutils literal notranslate"><span class="pre">read</span></code> method is part of
+the file protocol, it does not have double underscores because there is
+no language construct that implicitly invokes <code class="docutils literal notranslate"><span class="pre">x.read()</span></code>.)</p>
+<p>The use of double underscores creates a separate namespace for names
+that are part of the Python language definition, so that programmers
+are free to create variables, attributes, and methods that start with
+letters, without fear of silently colliding with names that have a
+language-defined purpose.  (Colliding with reserved keywords is still
+a concern, but at least this will immediately yield a syntax error.)</p>
+<p>The naming of the <code class="docutils literal notranslate"><span class="pre">next</span></code> method on iterators is an exception to
+this convention.  Code that nowhere contains an explicit call to a
+<code class="docutils literal notranslate"><span class="pre">next</span></code> method can nonetheless be silently affected by the presence
+of such a method.  Therefore, this PEP proposes that iterators should
+have a <code class="docutils literal notranslate"><span class="pre">__next__</span></code> method instead of a <code class="docutils literal notranslate"><span class="pre">next</span></code> method (with no
+change in semantics).</p>
+</div>
+<div class="section" id="double-underscore-methods-and-built-in-functions">
+<h2><a class="toc-backref" href="#id15">Double-Underscore Methods and Built-In Functions</a><a class="headerlink" href="#double-underscore-methods-and-built-in-functions" title="Permalink to this headline">¶</a></h2>
+<p>The Python language defines several protocols that are implemented or
+customized by defining methods with double-underscore names.  In each
+case, the protocol is provided by an internal method implemented as a
+C function in the interpreter.  For objects defined in Python, this
+C function supports customization by implicitly invoking a Python method
+with a double-underscore name (it often does a little bit of additional
+work beyond just calling the Python method.)</p>
+<p>Sometimes the protocol is invoked by a syntactic construct:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">x[y]</span></code> –&gt; internal <code class="docutils literal notranslate"><span class="pre">tp_getitem</span></code> –&gt; <code class="docutils literal notranslate"><span class="pre">x.__getitem__(y)</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">+</span> <span class="pre">y</span></code> –&gt; internal <code class="docutils literal notranslate"><span class="pre">nb_add</span></code> –&gt; <code class="docutils literal notranslate"><span class="pre">x.__add__(y)</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">-x</span></code> –&gt; internal <code class="docutils literal notranslate"><span class="pre">nb_negative</span></code> –&gt; <code class="docutils literal notranslate"><span class="pre">x.__neg__()</span></code></li>
+</ul>
+<p>Sometimes there is no syntactic construct, but it is still useful to be
+able to explicitly invoke the protocol.  For such cases Python offers a
+built-in function of the same name but without the double underscores.</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">len(x)</span></code> –&gt; internal <code class="docutils literal notranslate"><span class="pre">sq_length</span></code> –&gt; <code class="docutils literal notranslate"><span class="pre">x.__len__()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">hash(x)</span></code> –&gt; internal <code class="docutils literal notranslate"><span class="pre">tp_hash</span></code> –&gt; <code class="docutils literal notranslate"><span class="pre">x.__hash__()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">iter(x)</span></code> –&gt; internal <code class="docutils literal notranslate"><span class="pre">tp_iter</span></code> –&gt; <code class="docutils literal notranslate"><span class="pre">x.__iter__()</span></code></li>
+</ul>
+<p>Following this pattern, the natural way to handle <code class="docutils literal notranslate"><span class="pre">next</span></code> is to add a
+<code class="docutils literal notranslate"><span class="pre">next</span></code> built-in function that behaves in exactly the same fashion.</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">next(x)</span></code> –&gt; internal <code class="docutils literal notranslate"><span class="pre">tp_iternext</span></code> –&gt; <code class="docutils literal notranslate"><span class="pre">x.__next__()</span></code></li>
+</ul>
+<p>Further, it is proposed that the <code class="docutils literal notranslate"><span class="pre">next</span></code> built-in function accept a
+sentinel value as an optional second argument, following the style of
+the <code class="docutils literal notranslate"><span class="pre">getattr</span></code> and <code class="docutils literal notranslate"><span class="pre">iter</span></code> built-in functions.  When called with two
+arguments, <code class="docutils literal notranslate"><span class="pre">next</span></code> catches the StopIteration exception and returns
+the sentinel value instead of propagating the exception.  This creates
+a nice duality between <code class="docutils literal notranslate"><span class="pre">iter</span></code> and <code class="docutils literal notranslate"><span class="pre">next</span></code>:</p>
+<blockquote>
+<div>iter(function, sentinel) &lt;–&gt; next(iterator, sentinel)</div></blockquote>
+</div>
+<div class="section" id="previous-proposals">
+<h2><a class="toc-backref" href="#id16">Previous Proposals</a><a class="headerlink" href="#previous-proposals" title="Permalink to this headline">¶</a></h2>
+<p>This proposal is not a new idea.  The idea proposed here was supported
+by the BDFL on python-dev <a class="footnote-reference brackets" href="#id7" id="id1">1</a> and is even mentioned in the original
+iterator PEP, PEP 234:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">In</span> <span class="n">retrospect</span><span class="p">,</span> <span class="n">it</span> <span class="n">might</span> <span class="n">have</span> <span class="n">been</span> <span class="n">better</span> <span class="n">to</span> <span class="n">go</span> <span class="k">for</span> <span class="fm">__next__</span><span class="p">()</span>
+<span class="ow">and</span> <span class="n">have</span> <span class="n">a</span> <span class="n">new</span> <span class="n">built</span><span class="o">-</span><span class="ow">in</span><span class="p">,</span> <span class="nb">next</span><span class="p">(</span><span class="n">it</span><span class="p">),</span> <span class="n">which</span> <span class="n">calls</span> <span class="n">it</span><span class="o">.</span><span class="fm">__next__</span><span class="p">()</span><span class="o">.</span>
+<span class="n">But</span> <span class="n">alas</span><span class="p">,</span> <span class="n">it</span><span class="s1">&#39;s too late; this has been deployed in Python 2.2</span>
+<span class="n">since</span> <span class="n">December</span> <span class="mf">2001.</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="objections">
+<h2><a class="toc-backref" href="#id17">Objections</a><a class="headerlink" href="#objections" title="Permalink to this headline">¶</a></h2>
+<p>There have been a few objections to the addition of more built-ins.
+In particular, Martin von Loewis writes <a class="footnote-reference brackets" href="#id8" id="id2">2</a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">I</span> <span class="n">dislike</span> <span class="n">the</span> <span class="n">introduction</span> <span class="n">of</span> <span class="n">more</span> <span class="n">builtins</span> <span class="n">unless</span> <span class="n">they</span> <span class="n">have</span> <span class="n">a</span> <span class="n">true</span>
+<span class="n">generality</span> <span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">e</span><span class="o">.</span> <span class="n">are</span> <span class="n">likely</span> <span class="n">to</span> <span class="n">be</span> <span class="n">needed</span> <span class="ow">in</span> <span class="n">many</span> <span class="n">programs</span><span class="p">)</span><span class="o">.</span> <span class="n">For</span> <span class="n">this</span>
+<span class="n">one</span><span class="p">,</span> <span class="n">I</span> <span class="n">think</span> <span class="n">the</span> <span class="n">normal</span> <span class="n">usage</span> <span class="n">of</span> <span class="fm">__next__</span> <span class="n">will</span> <span class="n">be</span> <span class="k">with</span> <span class="n">a</span> <span class="k">for</span> <span class="n">loop</span><span class="p">,</span> <span class="n">so</span>
+<span class="n">I</span> <span class="n">don</span><span class="s1">&#39;t think one would often need an explicit next() invocation.</span>
+
+<span class="n">It</span> <span class="ow">is</span> <span class="n">also</span> <span class="ow">not</span> <span class="n">true</span> <span class="n">that</span> <span class="n">most</span> <span class="n">protocols</span> <span class="n">are</span> <span class="n">explicitly</span> <span class="n">invoked</span> <span class="n">through</span>
+<span class="n">builtin</span> <span class="n">functions</span><span class="o">.</span> <span class="n">Instead</span><span class="p">,</span> <span class="n">most</span> <span class="n">protocols</span> <span class="n">are</span> <span class="n">can</span> <span class="n">be</span> <span class="n">explicitly</span> <span class="n">invoked</span>
+<span class="n">through</span> <span class="n">methods</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">operator</span> <span class="n">module</span><span class="o">.</span> <span class="n">So</span> <span class="n">following</span> <span class="n">tradition</span><span class="p">,</span> <span class="n">it</span>
+<span class="n">should</span> <span class="n">be</span> <span class="n">operator</span><span class="o">.</span><span class="n">next</span><span class="o">.</span>
+
+<span class="o">...</span>
+
+<span class="n">As</span> <span class="n">an</span> <span class="n">alternative</span><span class="p">,</span> <span class="n">I</span> <span class="n">propose</span> <span class="n">that</span> <span class="nb">object</span> <span class="n">grows</span> <span class="n">a</span> <span class="o">.</span><span class="n">next</span><span class="p">()</span> <span class="n">method</span><span class="p">,</span>
+<span class="n">which</span> <span class="n">calls</span> <span class="fm">__next__</span> <span class="n">by</span> <span class="n">default</span><span class="o">.</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="transition-plan">
+<h2><a class="toc-backref" href="#id18">Transition Plan</a><a class="headerlink" href="#transition-plan" title="Permalink to this headline">¶</a></h2>
+<p>Two additional transformations will be added to the 2to3 translation
+tool <a class="footnote-reference brackets" href="#id9" id="id3">3</a>:</p>
+<ul class="simple">
+<li>Method definitions named <code class="docutils literal notranslate"><span class="pre">next</span></code> will be renamed to <code class="docutils literal notranslate"><span class="pre">__next__</span></code>.</li>
+<li>Explicit calls to the <code class="docutils literal notranslate"><span class="pre">next</span></code> method will be replaced with calls
+to the built-in <code class="docutils literal notranslate"><span class="pre">next</span></code> function.  For example, <code class="docutils literal notranslate"><span class="pre">x.next()</span></code> will
+become <code class="docutils literal notranslate"><span class="pre">next(x)</span></code>.</li>
+</ul>
+<p>Collin Winter looked into the possibility of automatically deciding
+whether to perform the second transformation depending on the presence
+of a module-level binding to <code class="docutils literal notranslate"><span class="pre">next</span></code> <a class="footnote-reference brackets" href="#id10" id="id4">4</a> and found that it would be
+“ugly and slow”.  Instead, the translation tool will emit warnings
+upon detecting such a binding.  Collin has proposed warnings for the
+following conditions <a class="footnote-reference brackets" href="#id11" id="id5">5</a>:</p>
+<ul class="simple">
+<li>Module-level assignments to <code class="docutils literal notranslate"><span class="pre">next</span></code>.</li>
+<li>Module-level definitions of a function named <code class="docutils literal notranslate"><span class="pre">next</span></code>.</li>
+<li>Module-level imports of the name <code class="docutils literal notranslate"><span class="pre">next</span></code>.</li>
+<li>Assignments to <code class="docutils literal notranslate"><span class="pre">__builtin__.next</span></code>.</li>
+</ul>
+</div>
+<div class="section" id="approval">
+<h2><a class="toc-backref" href="#id19">Approval</a><a class="headerlink" href="#approval" title="Permalink to this headline">¶</a></h2>
+<p>This PEP was accepted by Guido on March 6, 2007 <a class="footnote-reference brackets" href="#id11" id="id6">5</a>.</p>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id20">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>A patch with the necessary changes (except the 2to3 tool) was written
+by Georg Brandl and committed as revision 54910.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id21">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id7"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>Single- vs. Multi-pass iterability (Guido van Rossum)
+<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2002-July/026814.html">https://mail.python.org/pipermail/python-dev/2002-July/026814.html</a></dd>
+<dt class="label" id="id8"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>PEP: rename it.next() to it.__next__()… (Martin von Loewis)
+<a class="reference external" href="https://mail.python.org/pipermail/python-3000/2007-March/005965.html">https://mail.python.org/pipermail/python-3000/2007-March/005965.html</a></dd>
+<dt class="label" id="id9"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd>2to3 refactoring tool
+<a class="reference external" href="http://svn.python.org/view/sandbox/trunk/2to3/">http://svn.python.org/view/sandbox/trunk/2to3/</a></dd>
+<dt class="label" id="id10"><span class="brackets"><a class="fn-backref" href="#id4">4</a></span></dt>
+<dd>PEP: rename it.next() to it.__next__()… (Collin Winter)
+<a class="reference external" href="https://mail.python.org/pipermail/python-3000/2007-March/006020.html">https://mail.python.org/pipermail/python-3000/2007-March/006020.html</a></dd>
+<dt class="label" id="id11"><span class="brackets">5</span><span class='fn-backref'><em> (<a href="#id5">1</a>, <a href="#id6">2</a>) </em></span></dt>
+<dd>PEP 3113 transition plan
+<a class="reference external" href="https://mail.python.org/pipermail/python-3000/2007-March/006044.html">https://mail.python.org/pipermail/python-3000/2007-March/006044.html</a></dd>
+<dt class="label" id="id12"><span class="brackets">6</span></dt>
+<dd>PEP: rename it.next() to it.__next__()… (Guido van Rossum)
+<a class="reference external" href="https://mail.python.org/pipermail/python-3000/2007-March/006027.html">https://mail.python.org/pipermail/python-3000/2007-March/006027.html</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id22">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-3114.txt">https://github.com/python/peps/blob/master/pep-3114.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-3114.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-3113.html">PEP 3113</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-3115.html">PEP 3115</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 3114 – Renaming iterator.next() to iterator.__next__()</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#names-with-double-underscores">Names With Double Underscores</a></li>
+<li><a class="reference internal" href="#double-underscore-methods-and-built-in-functions">Double-Underscore Methods and Built-In Functions</a></li>
+<li><a class="reference internal" href="#previous-proposals">Previous Proposals</a></li>
+<li><a class="reference internal" href="#objections">Objections</a></li>
+<li><a class="reference internal" href="#transition-plan">Transition Plan</a></li>
+<li><a class="reference internal" href="#approval">Approval</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

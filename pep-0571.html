@@ -1,0 +1,577 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 571 – The manylinux2010 Platform Tag &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 572 – Assignment Expressions" href="pep-0572.html" />
+    <link rel="prev" title="PEP 570 – Python Positional-Only Parameters" href="pep-0570.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 571 – The manylinux2010 Platform Tag</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-571-the-manylinux2010-platform-tag">
+<h1 class="page-title">PEP 571 – The manylinux2010 Platform Tag<a class="headerlink" href="#pep-571-the-manylinux2010-platform-tag" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">571</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">The manylinux2010 Platform Tag</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Mark  Williams &lt;mrw&#32;&#97;t&#32;enotuniq.org&gt;,
+Geoffrey Thomas &lt;geofft&#32;&#97;t&#32;ldpreload.com&gt;,
+Thomas Kluyver &lt;thomas&#32;&#97;t&#32;kluyver.me.uk&gt;</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even">Nick Coghlan &lt;ncoghlan&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-odd">Discussions-To</dt>
+<dd class="field-odd">Distutils SIG &lt;<a class="reference external" href="mailto:distutils-sig&#37;&#52;&#48;python&#46;org?subject=PEP%20571">distutils-sig&#32;&#97;t&#32;python.org</a>&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Active</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Informational</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even"><p></p></dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd"><p></p></dd>
+<dt class="field-even">Resolution</dt>
+<dd class="field-even"><a class="reference external" href="https://mail.python.org/pipermail/distutils-sig/2018-April/032156.html">https://mail.python.org/pipermail/distutils-sig/2018-April/032156.html</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id47">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id48">Rationale</a></li>
+<li><a class="reference internal" href="#the-manylinux2010-policy" id="id49">The <code class="docutils literal notranslate"><span class="pre">manylinux2010</span></code> policy</a></li>
+<li><a class="reference internal" href="#compilation-of-compliant-wheels" id="id50">Compilation of Compliant Wheels</a><ul>
+<li><a class="reference internal" href="#docker-image" id="id51">Docker Image</a><ul>
+<li><a class="reference internal" href="#compatibility-with-kernels-that-lack-vsyscall" id="id52">Compatibility with kernels that lack <code class="docutils literal notranslate"><span class="pre">vsyscall</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#auditwheel" id="id53">Auditwheel</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#platform-detection-for-installers" id="id54">Platform Detection for Installers</a></li>
+<li><a class="reference internal" href="#backwards-compatibility-with-manylinux1-wheels" id="id55">Backwards compatibility with <code class="docutils literal notranslate"><span class="pre">manylinux1</span></code> wheels</a></li>
+<li><a class="reference internal" href="#pypi-support" id="id56">PyPI Support</a></li>
+<li><a class="reference internal" href="#summary-of-changes-to-pep-571" id="id57">Summary of changes to PEP 571</a></li>
+<li><a class="reference internal" href="#references" id="id58">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id59">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id47">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes the creation of a <code class="docutils literal notranslate"><span class="pre">manylinux2010</span></code> platform tag to
+succeed the <code class="docutils literal notranslate"><span class="pre">manylinux1</span></code> tag introduced by PEP 513 <a class="footnote-reference brackets" href="#id24" id="id1">1</a>.  It also
+proposes that PyPI and <code class="docutils literal notranslate"><span class="pre">pip</span></code> both be updated to support uploading,
+downloading, and installing <code class="docutils literal notranslate"><span class="pre">manylinux2010</span></code> distributions on compatible
+platforms.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id48">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>True to its name, the <code class="docutils literal notranslate"><span class="pre">manylinux1</span></code> platform tag has made the
+installation of binary extension modules a reality on many Linux
+systems.  Libraries like <code class="docutils literal notranslate"><span class="pre">cryptography</span></code> <a class="footnote-reference brackets" href="#id25" id="id2">2</a> and <code class="docutils literal notranslate"><span class="pre">numpy</span></code> <a class="footnote-reference brackets" href="#id26" id="id3">3</a> are
+more accessible to Python developers now that their installation on
+common architectures does not depend on fragile development
+environments and build toolchains.</p>
+<p><code class="docutils literal notranslate"><span class="pre">manylinux1</span></code> wheels achieve their portability by allowing the
+extension modules they contain to link against only a small set of
+system-level shared libraries that export versioned symbols old enough
+to benefit from backwards-compatibility policies.  Extension modules
+in a <code class="docutils literal notranslate"><span class="pre">manylinux1</span></code> wheel that rely on <code class="docutils literal notranslate"><span class="pre">glibc</span></code>, for example, must be
+built against version 2.5 or earlier; they may then be run systems
+that provide more recent <code class="docutils literal notranslate"><span class="pre">glibc</span></code> version that still export the
+required symbols at version 2.5.</p>
+<p>PEP 513 drew its whitelisted shared libraries and their symbol
+versions from CentOS 5.11, which was the oldest supported CentOS
+release at the time of its writing.  Unfortunately, CentOS 5.11
+reached its end-of-life on March 31st, 2017 with a clear warning
+against its continued use. <a class="footnote-reference brackets" href="#id27" id="id4">4</a> No further updates, such as security
+patches, will be made available.  This means that its packages will
+remain at obsolete versions that hamper the efforts of Python software
+packagers who use the <code class="docutils literal notranslate"><span class="pre">manylinux1</span></code> Docker image.</p>
+<p>CentOS 6 is now the oldest supported CentOS release, and will receive
+maintenance updates through November 30th, 2020. <a class="footnote-reference brackets" href="#id28" id="id5">5</a> We propose that
+a new PEP 425-style <a class="footnote-reference brackets" href="#id29" id="id6">6</a> platform tag called <code class="docutils literal notranslate"><span class="pre">manylinux2010</span></code> be derived
+from CentOS 6 and that the <code class="docutils literal notranslate"><span class="pre">manylinux</span></code> toolchain, PyPI, and <code class="docutils literal notranslate"><span class="pre">pip</span></code>
+be updated to support it.</p>
+<p>This was originally proposed as <code class="docutils literal notranslate"><span class="pre">manylinux2</span></code>, but the versioning has
+been changed to use calendar years (also known as CalVer <a class="footnote-reference brackets" href="#id46" id="id7">23</a>). This
+makes it easier to define future <em>manylinux</em> tags out of order: for
+example, a hypothetical <code class="docutils literal notranslate"><span class="pre">manylinux2017</span></code> standard may be defined via
+a new PEP before <code class="docutils literal notranslate"><span class="pre">manylinux2014</span></code>, or a <code class="docutils literal notranslate"><span class="pre">manylinux2007</span></code> standard
+might be defined that targets systems older than this PEP but newer
+than <code class="docutils literal notranslate"><span class="pre">manylinux1</span></code>.</p>
+<p>Calendar versioning also gives a rough idea of which Linux
+distribution versions support which tag: <code class="docutils literal notranslate"><span class="pre">manylinux2010</span></code> will work
+on most distribution versions released since 2010. This is only an
+approximation, however: the actual compatibility rules are defined
+below, and some newer distributions may not meet them.</p>
+</div>
+<div class="section" id="the-manylinux2010-policy">
+<h2><a class="toc-backref" href="#id49">The <code class="docutils literal notranslate"><span class="pre">manylinux2010</span></code> policy</a><a class="headerlink" href="#the-manylinux2010-policy" title="Permalink to this headline">¶</a></h2>
+<p>The following criteria determine a <code class="docutils literal notranslate"><span class="pre">linux</span></code> wheel’s eligibility for
+the <code class="docutils literal notranslate"><span class="pre">manylinux2010</span></code> tag:</p>
+<ol class="arabic">
+<li>The wheel may only contain binary executables and shared objects
+compiled for one of the two architectures supported by CentOS 6:
+x86_64 or i686. <a class="footnote-reference brackets" href="#id28" id="id8">5</a></li>
+<li><p>The wheel’s binary executables or shared objects may not link
+against externally-provided libraries except those in the following
+whitelist:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">libgcc_s</span><span class="o">.</span><span class="n">so</span><span class="o">.</span><span class="mi">1</span>
+<span class="n">libstdc</span><span class="o">++.</span><span class="n">so</span><span class="o">.</span><span class="mi">6</span>
+<span class="n">libm</span><span class="o">.</span><span class="n">so</span><span class="o">.</span><span class="mi">6</span>
+<span class="n">libdl</span><span class="o">.</span><span class="n">so</span><span class="o">.</span><span class="mi">2</span>
+<span class="n">librt</span><span class="o">.</span><span class="n">so</span><span class="o">.</span><span class="mi">1</span>
+<span class="n">libc</span><span class="o">.</span><span class="n">so</span><span class="o">.</span><span class="mi">6</span>
+<span class="n">libnsl</span><span class="o">.</span><span class="n">so</span><span class="o">.</span><span class="mi">1</span>
+<span class="n">libutil</span><span class="o">.</span><span class="n">so</span><span class="o">.</span><span class="mi">1</span>
+<span class="n">libpthread</span><span class="o">.</span><span class="n">so</span><span class="o">.</span><span class="mi">0</span>
+<span class="n">libresolv</span><span class="o">.</span><span class="n">so</span><span class="o">.</span><span class="mi">2</span>
+<span class="n">libX11</span><span class="o">.</span><span class="n">so</span><span class="o">.</span><span class="mi">6</span>
+<span class="n">libXext</span><span class="o">.</span><span class="n">so</span><span class="o">.</span><span class="mi">6</span>
+<span class="n">libXrender</span><span class="o">.</span><span class="n">so</span><span class="o">.</span><span class="mi">1</span>
+<span class="n">libICE</span><span class="o">.</span><span class="n">so</span><span class="o">.</span><span class="mi">6</span>
+<span class="n">libSM</span><span class="o">.</span><span class="n">so</span><span class="o">.</span><span class="mi">6</span>
+<span class="n">libGL</span><span class="o">.</span><span class="n">so</span><span class="o">.</span><span class="mi">1</span>
+<span class="n">libgobject</span><span class="o">-</span><span class="mf">2.0</span><span class="o">.</span><span class="n">so</span><span class="o">.</span><span class="mi">0</span>
+<span class="n">libgthread</span><span class="o">-</span><span class="mf">2.0</span><span class="o">.</span><span class="n">so</span><span class="o">.</span><span class="mi">0</span>
+<span class="n">libglib</span><span class="o">-</span><span class="mf">2.0</span><span class="o">.</span><span class="n">so</span><span class="o">.</span><span class="mi">0</span>
+</pre></div>
+</div>
+<p>This list is identical to the externally-provided libraries
+whitelisted for <code class="docutils literal notranslate"><span class="pre">manylinux1</span></code>, minus <code class="docutils literal notranslate"><span class="pre">libncursesw.so.5</span></code> and
+<code class="docutils literal notranslate"><span class="pre">libpanelw.so.5</span></code>. <a class="footnote-reference brackets" href="#id30" id="id9">7</a> <code class="docutils literal notranslate"><span class="pre">libpythonX.Y</span></code> remains ineligible for
+inclusion for the same reasons outlined in PEP 513.</p>
+<p><code class="docutils literal notranslate"><span class="pre">libcrypt.so.1</span></code> was retrospectively removed from the whitelist after
+Fedora 30 was released with <code class="docutils literal notranslate"><span class="pre">libcrypt.so.2</span></code> instead.</p>
+<p>On Debian-based systems, these libraries are provided by the packages:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 83%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head">Package</th>
+<th class="head">Libraries</th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td>libc6</td>
+<td>libdl.so.2, libresolv.so.2, librt.so.1, libc.so.6,
+libpthread.so.0, libm.so.6, libutil.so.1, libnsl.so.1</td>
+</tr>
+<tr class="row-odd"><td>libgcc1</td>
+<td>libgcc_s.so.1</td>
+</tr>
+<tr class="row-even"><td>libgl1</td>
+<td>libGL.so.1</td>
+</tr>
+<tr class="row-odd"><td>libglib2.0-0</td>
+<td>libgobject-2.0.so.0, libgthread-2.0.so.0, libglib-2.0.so.0</td>
+</tr>
+<tr class="row-even"><td>libice6</td>
+<td>libICE.so.6</td>
+</tr>
+<tr class="row-odd"><td>libsm6</td>
+<td>libSM.so.6</td>
+</tr>
+<tr class="row-even"><td>libstdc++6</td>
+<td>libstdc++.so.6</td>
+</tr>
+<tr class="row-odd"><td>libx11-6</td>
+<td>libX11.so.6</td>
+</tr>
+<tr class="row-even"><td>libxext6</td>
+<td>libXext.so.6</td>
+</tr>
+<tr class="row-odd"><td>libxrender1</td>
+<td>libXrender.so.1</td>
+</tr>
+</tbody>
+</table>
+<p>On RPM-based systems, they are provided by these packages:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 83%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head">Package</th>
+<th class="head">Libraries</th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td>glib2</td>
+<td>libglib-2.0.so.0, libgthread-2.0.so.0, libgobject-2.0.so.0</td>
+</tr>
+<tr class="row-odd"><td>glibc</td>
+<td>libresolv.so.2, libutil.so.1, libnsl.so.1, librt.so.1,
+libpthread.so.0, libdl.so.2, libm.so.6, libc.so.6</td>
+</tr>
+<tr class="row-even"><td>libICE</td>
+<td>libICE.so.6</td>
+</tr>
+<tr class="row-odd"><td>libX11</td>
+<td>libX11.so.6</td>
+</tr>
+<tr class="row-even"><td>libXext:</td>
+<td>libXext.so.6</td>
+</tr>
+<tr class="row-odd"><td>libXrender</td>
+<td>libXrender.so.1</td>
+</tr>
+<tr class="row-even"><td>libgcc:</td>
+<td>libgcc_s.so.1</td>
+</tr>
+<tr class="row-odd"><td>libstdc++</td>
+<td>libstdc++.so.6</td>
+</tr>
+<tr class="row-even"><td>mesa</td>
+<td>libGL.so.1</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li><p>If the wheel contains binary executables or shared objects linked
+against any whitelisted libraries that also export versioned
+symbols, they may only depend on the following maximum versions:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">GLIBC_2</span><span class="o">.</span><span class="mi">12</span>
+<span class="n">CXXABI_1</span><span class="o">.</span><span class="mf">3.3</span>
+<span class="n">GLIBCXX_3</span><span class="o">.</span><span class="mf">4.13</span>
+<span class="n">GCC_4</span><span class="o">.</span><span class="mf">5.0</span>
+</pre></div>
+</div>
+<p>As an example, <code class="docutils literal notranslate"><span class="pre">manylinux2010</span></code> wheels may include binary artifacts
+that require <code class="docutils literal notranslate"><span class="pre">glibc</span></code> symbols at version <code class="docutils literal notranslate"><span class="pre">GLIBC_2.4</span></code>, because
+this an earlier version than the maximum of <code class="docutils literal notranslate"><span class="pre">GLIBC_2.12</span></code>.</p>
+</li>
+<li>If a wheel is built for any version of CPython 2 or CPython
+versions 3.0 up to and including 3.2, it <em>must</em> include a CPython
+ABI tag indicating its Unicode ABI.  A <code class="docutils literal notranslate"><span class="pre">manylinux2010</span></code> wheel built
+against Python 2, then, must include either the <code class="docutils literal notranslate"><span class="pre">cpy27mu</span></code> tag
+indicating it was built against an interpreter with the UCS-4 ABI
+or the <code class="docutils literal notranslate"><span class="pre">cpy27m</span></code> tag indicating an interpeter with the UCS-2
+ABI. <a class="footnote-reference brackets" href="#id31" id="id10">8</a> <a class="footnote-reference brackets" href="#id32" id="id11">9</a></li>
+<li>A wheel <em>must not</em> require the <code class="docutils literal notranslate"><span class="pre">PyFPE_jbuf</span></code> symbol.  This is
+achieved by building it against a Python compiled <em>without</em> the
+<code class="docutils literal notranslate"><span class="pre">--with-fpectl</span></code> <code class="docutils literal notranslate"><span class="pre">configure</span></code> flag.</li>
+</ol>
+</div>
+<div class="section" id="compilation-of-compliant-wheels">
+<h2><a class="toc-backref" href="#id50">Compilation of Compliant Wheels</a><a class="headerlink" href="#compilation-of-compliant-wheels" title="Permalink to this headline">¶</a></h2>
+<p>Like <code class="docutils literal notranslate"><span class="pre">manylinux1</span></code>, the <code class="docutils literal notranslate"><span class="pre">auditwheel</span></code> tool adds <code class="docutils literal notranslate"><span class="pre">manylinux2010</span></code>
+platform tags to <code class="docutils literal notranslate"><span class="pre">linux</span></code> wheels built by <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">wheel</span></code> or
+<code class="docutils literal notranslate"><span class="pre">bdist_wheel</span></code> in a <code class="docutils literal notranslate"><span class="pre">manylinux2010</span></code> Docker container.</p>
+<div class="section" id="docker-image">
+<h3><a class="toc-backref" href="#id51">Docker Image</a><a class="headerlink" href="#docker-image" title="Permalink to this headline">¶</a></h3>
+<p>Two <code class="docutils literal notranslate"><span class="pre">manylinux2010</span></code> Docker images based on CentOS 6 are
+provided for building binary <code class="docutils literal notranslate"><span class="pre">linux</span></code> wheels that can reliably be
+converted to <code class="docutils literal notranslate"><span class="pre">manylinux2010</span></code> wheels.  <a class="footnote-reference brackets" href="#id33" id="id12">10</a> The x86_64 image comes with a
+new compiler suite installed (<code class="docutils literal notranslate"><span class="pre">gcc</span></code>, <code class="docutils literal notranslate"><span class="pre">g++</span></code>, and <code class="docutils literal notranslate"><span class="pre">gfortran</span></code>
+from <code class="docutils literal notranslate"><span class="pre">devtoolset-8</span></code>) as well as the latest releases of Python and <code class="docutils literal notranslate"><span class="pre">pip</span></code>.
+For the i686 image, the compiler suite installed is from <code class="docutils literal notranslate"><span class="pre">devtoolset-7</span></code>.</p>
+<div class="section" id="compatibility-with-kernels-that-lack-vsyscall">
+<h4><a class="toc-backref" href="#id52">Compatibility with kernels that lack <code class="docutils literal notranslate"><span class="pre">vsyscall</span></code></a><a class="headerlink" href="#compatibility-with-kernels-that-lack-vsyscall" title="Permalink to this headline">¶</a></h4>
+<p>A Docker container assumes that its userland is compatible with its
+host’s kernel.  Unfortunately, an increasingly common kernel
+configuration breaks this assumption for x86_64 CentOS 6 Docker
+images.</p>
+<p>Versions 2.14 and earlier of <code class="docutils literal notranslate"><span class="pre">glibc</span></code> require the kernel provide an
+archaic system call optimization known as <code class="docutils literal notranslate"><span class="pre">vsyscall</span></code> on x86_64. <a class="footnote-reference brackets" href="#id34" id="id13">11</a>
+To effect the optimization, the kernel maps a read-only page of
+frequently-called system calls – most notably <code class="docutils literal notranslate"><span class="pre">time(2)</span></code> – into
+each process at a fixed memory location.  <code class="docutils literal notranslate"><span class="pre">glibc</span></code> then invokes these
+system calls by dereferencing a function pointer to the appropriate
+offset into the <code class="docutils literal notranslate"><span class="pre">vsyscall</span></code> page and calling it.  This avoids the
+overhead associated with invoking the kernel that affects normal
+system call invocation.  <code class="docutils literal notranslate"><span class="pre">vsyscall</span></code> has long been deprecated in
+favor of an equivalent mechanism known as vDSO, or “virtual dynamic
+shared object”, in which the kernel instead maps a relocatable virtual
+shared object containing the optimized system calls into each
+process. <a class="footnote-reference brackets" href="#id35" id="id14">12</a></p>
+<p>The <code class="docutils literal notranslate"><span class="pre">vsyscall</span></code> page has serious security implications because it
+does not participate in address space layout randomization (ASLR).
+Its predictable location and contents make it a useful source of
+gadgets used in return-oriented programming attacks. <a class="footnote-reference brackets" href="#id36" id="id15">13</a> At the same
+time, its elimination breaks the x86_64 ABI, because <code class="docutils literal notranslate"><span class="pre">glibc</span></code>
+versions that depend on <code class="docutils literal notranslate"><span class="pre">vsyscall</span></code> suffer from segmentation faults
+when attempting to dereference a system call pointer into a
+non-existent page.  As a compromise, Linux 3.1 implemented an
+“emulated” <code class="docutils literal notranslate"><span class="pre">vsyscall</span></code> that reduced the executable code, and thus the
+material for ROP gadgets, mapped into the process. <a class="footnote-reference brackets" href="#id37" id="id16">14</a>
+<code class="docutils literal notranslate"><span class="pre">vsyscall=emulated</span></code> has been the default configuration in most
+distribution’s kernels for many years.</p>
+<p>Unfortunately, <code class="docutils literal notranslate"><span class="pre">vsyscall</span></code> emulation still exposes predictable code
+at a reliable memory location, and continues to be useful for
+return-oriented programming. <a class="footnote-reference brackets" href="#id38" id="id17">15</a> Because most distributions have now
+upgraded to <code class="docutils literal notranslate"><span class="pre">glibc</span></code> versions that do not depend on <code class="docutils literal notranslate"><span class="pre">vsyscall</span></code>,
+they are beginning to ship kernels that do not support <code class="docutils literal notranslate"><span class="pre">vsyscall</span></code> at
+all. <a class="footnote-reference brackets" href="#id39" id="id18">16</a></p>
+<p>CentOS 5.11 and 6 both include versions of <code class="docutils literal notranslate"><span class="pre">glibc</span></code> that depend on
+the <code class="docutils literal notranslate"><span class="pre">vsyscall</span></code> page (2.5 and 2.12.2 respectively), so containers
+based on either cannot run under kernels provided with many
+distribution’s upcoming releases. <a class="footnote-reference brackets" href="#id40" id="id19">17</a> If Travis CI, for example,
+begins running jobs under
+a kernel that does not provide the <code class="docutils literal notranslate"><span class="pre">vsyscall</span></code> interface, Python
+packagers will not be able to use our Docker images there to build
+<code class="docutils literal notranslate"><span class="pre">manylinux</span></code> wheels. <a class="footnote-reference brackets" href="#id42" id="id20">19</a></p>
+<p>We have derived a patch from the <code class="docutils literal notranslate"><span class="pre">glibc</span></code> git repository that
+backports the removal of all dependencies on <code class="docutils literal notranslate"><span class="pre">vsyscall</span></code> to the
+version of <code class="docutils literal notranslate"><span class="pre">glibc</span></code> included with our <code class="docutils literal notranslate"><span class="pre">manylinux2010</span></code> image. <a class="footnote-reference brackets" href="#id43" id="id21">20</a>
+Rebuilding <code class="docutils literal notranslate"><span class="pre">glibc</span></code>, and thus building <code class="docutils literal notranslate"><span class="pre">manylinux2010</span></code> image itself,
+still requires a host kernel that provides the <code class="docutils literal notranslate"><span class="pre">vsyscall</span></code> mechanism,
+but the resulting image can be both run on hosts that provide it and
+those that do not.  Because the <code class="docutils literal notranslate"><span class="pre">vsyscall</span></code> interface is an
+optimization that is only applied to running processes, the
+<code class="docutils literal notranslate"><span class="pre">manylinux2010</span></code> wheels built with this modified image should be
+identical to those built on an unmodified CentOS 6 system.  Also, the
+<code class="docutils literal notranslate"><span class="pre">vsyscall</span></code> problem applies only to x86_64; it is not part of the
+i686 ABI.</p>
+</div>
+</div>
+<div class="section" id="auditwheel">
+<h3><a class="toc-backref" href="#id53">Auditwheel</a><a class="headerlink" href="#auditwheel" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">auditwheel</span></code> tool has also been updated to produce
+<code class="docutils literal notranslate"><span class="pre">manylinux2010</span></code> wheels. <a class="footnote-reference brackets" href="#id44" id="id22">21</a> Its behavior and purpose are otherwise
+unchanged from PEP 513.</p>
+</div>
+</div>
+<div class="section" id="platform-detection-for-installers">
+<h2><a class="toc-backref" href="#id54">Platform Detection for Installers</a><a class="headerlink" href="#platform-detection-for-installers" title="Permalink to this headline">¶</a></h2>
+<p>Platforms may define a <code class="docutils literal notranslate"><span class="pre">manylinux2010_compatible</span></code> boolean attribute on
+the <code class="docutils literal notranslate"><span class="pre">_manylinux</span></code> module described in PEP 513.  A platform is
+considered incompatible with <code class="docutils literal notranslate"><span class="pre">manylinux2010</span></code> if the attribute is
+<code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
+<p>If the <code class="docutils literal notranslate"><span class="pre">_manylinux</span></code> module is not found, or it does not have the attribute
+<code class="docutils literal notranslate"><span class="pre">manylinux2010_compatible</span></code>, tools may fall back to checking for glibc. If the
+platform has glibc 2.12 or newer, it is assumed to be compatible unless the
+<code class="docutils literal notranslate"><span class="pre">_manylinux</span></code> module says otherwise.</p>
+<p>Specifically, the algorithm we propose is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">is_manylinux2010_compatible</span><span class="p">():</span>
+    <span class="c1"># Only Linux, and only x86-64 / i686</span>
+    <span class="kn">from</span> <span class="nn">distutils.util</span> <span class="kn">import</span> <span class="n">get_platform</span>
+    <span class="k">if</span> <span class="n">get_platform</span><span class="p">()</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;linux-x86_64&quot;</span><span class="p">,</span> <span class="s2">&quot;linux-i686&quot;</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="c1"># Check for presence of _manylinux module</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">_manylinux</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">_manylinux</span><span class="o">.</span><span class="n">manylinux2010_compatible</span><span class="p">)</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">ImportError</span><span class="p">,</span> <span class="ne">AttributeError</span><span class="p">):</span>
+        <span class="c1"># Fall through to heuristic check below</span>
+        <span class="k">pass</span>
+
+    <span class="c1"># Check glibc version. CentOS 6 uses glibc 2.12.</span>
+    <span class="c1"># PEP 513 contains an implementation of this function.</span>
+    <span class="k">return</span> <span class="n">have_compatible_glibc</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">12</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="backwards-compatibility-with-manylinux1-wheels">
+<h2><a class="toc-backref" href="#id55">Backwards compatibility with <code class="docutils literal notranslate"><span class="pre">manylinux1</span></code> wheels</a><a class="headerlink" href="#backwards-compatibility-with-manylinux1-wheels" title="Permalink to this headline">¶</a></h2>
+<p>As explained in PEP 513, the specified symbol versions for
+<code class="docutils literal notranslate"><span class="pre">manylinux1</span></code> whitelisted libraries constitute an <em>upper bound</em>.  The
+same is true for the symbol versions defined for <code class="docutils literal notranslate"><span class="pre">manylinux2010</span></code> in
+this PEP.  As a result, <code class="docutils literal notranslate"><span class="pre">manylinux1</span></code> wheels are considered
+<code class="docutils literal notranslate"><span class="pre">manylinux2010</span></code> wheels.  A <code class="docutils literal notranslate"><span class="pre">pip</span></code> that recognizes the <code class="docutils literal notranslate"><span class="pre">manylinux2010</span></code>
+platform tag will thus install <code class="docutils literal notranslate"><span class="pre">manylinux1</span></code> wheels for
+<code class="docutils literal notranslate"><span class="pre">manylinux2010</span></code> platforms – even when explicitly set – when no
+<code class="docutils literal notranslate"><span class="pre">manylinux2010</span></code> wheels are available. <a class="footnote-reference brackets" href="#id45" id="id23">22</a></p>
+</div>
+<div class="section" id="pypi-support">
+<h2><a class="toc-backref" href="#id56">PyPI Support</a><a class="headerlink" href="#pypi-support" title="Permalink to this headline">¶</a></h2>
+<p>PyPI should permit wheels containing the <code class="docutils literal notranslate"><span class="pre">manylinux2010</span></code> platform tag
+to be uploaded in the same way that it permits <code class="docutils literal notranslate"><span class="pre">manylinux1</span></code>.  It
+should not attempt to verify the compatibility of <code class="docutils literal notranslate"><span class="pre">manylinux2010</span></code>
+wheels.</p>
+</div>
+<div class="section" id="summary-of-changes-to-pep-571">
+<h2><a class="toc-backref" href="#id57">Summary of changes to PEP 571</a><a class="headerlink" href="#summary-of-changes-to-pep-571" title="Permalink to this headline">¶</a></h2>
+<p>The following changes were made to this PEP based on feedback received after
+it was approved:</p>
+<ul class="simple">
+<li>The maximum version symbol of <code class="docutils literal notranslate"><span class="pre">libgcc_s</span></code> was updated from <code class="docutils literal notranslate"><span class="pre">GCC_4.3.0</span></code>
+to <code class="docutils literal notranslate"><span class="pre">GCC_4.5.0</span></code> to address 32-bit Cent OS 6. This doesn’t affect x86_64
+because <code class="docutils literal notranslate"><span class="pre">libgcc_s</span></code> for x86_64 has no additional symbol from
+<code class="docutils literal notranslate"><span class="pre">GCC_4.3.0</span></code> to <code class="docutils literal notranslate"><span class="pre">GCC_4.5.0</span></code>.</li>
+</ul>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id58">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id24"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>PEP 513 – A Platform Tag for Portable Linux Built Distributions
+(<a class="reference external" href="https://www.python.org/dev/peps/pep-0513/">https://www.python.org/dev/peps/pep-0513/</a>)</dd>
+<dt class="label" id="id25"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>pyca/cryptography
+(<a class="reference external" href="https://cryptography.io/">https://cryptography.io/</a>)</dd>
+<dt class="label" id="id26"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd>numpy
+(<a class="reference external" href="https://numpy.org">https://numpy.org</a>)</dd>
+<dt class="label" id="id27"><span class="brackets"><a class="fn-backref" href="#id4">4</a></span></dt>
+<dd>CentOS 5.11 EOL announcement
+(<a class="reference external" href="https://lists.centos.org/pipermail/centos-announce/2017-April/022350.html">https://lists.centos.org/pipermail/centos-announce/2017-April/022350.html</a>)</dd>
+<dt class="label" id="id28"><span class="brackets">5</span><span class='fn-backref'><em> (<a href="#id5">1</a>, <a href="#id8">2</a>) </em></span></dt>
+<dd>CentOS Product Specifications
+(<a class="reference external" href="https://web.archive.org/web/20180108090257/https://wiki.centos.org/About/Product">https://web.archive.org/web/20180108090257/https://wiki.centos.org/About/Product</a>)</dd>
+<dt class="label" id="id29"><span class="brackets"><a class="fn-backref" href="#id6">6</a></span></dt>
+<dd>PEP 425 – Compatibility Tags for Built Distributions
+(<a class="reference external" href="https://www.python.org/dev/peps/pep-0425/">https://www.python.org/dev/peps/pep-0425/</a>)</dd>
+<dt class="label" id="id30"><span class="brackets"><a class="fn-backref" href="#id9">7</a></span></dt>
+<dd>ncurses 5 -&gt; 6 transition means we probably need to drop some
+libraries from the manylinux whitelist
+(<a class="reference external" href="https://github.com/pypa/manylinux/issues/94">https://github.com/pypa/manylinux/issues/94</a>)</dd>
+<dt class="label" id="id31"><span class="brackets"><a class="fn-backref" href="#id10">8</a></span></dt>
+<dd>PEP 3149
+<a class="reference external" href="https://www.python.org/dev/peps/pep-3149/">https://www.python.org/dev/peps/pep-3149/</a></dd>
+<dt class="label" id="id32"><span class="brackets"><a class="fn-backref" href="#id11">9</a></span></dt>
+<dd>SOABI support for Python 2.X and PyPy
+<a class="reference external" href="https://github.com/pypa/pip/pull/3075">https://github.com/pypa/pip/pull/3075</a></dd>
+<dt class="label" id="id33"><span class="brackets"><a class="fn-backref" href="#id12">10</a></span></dt>
+<dd>manylinux2010 Docker image
+(<a class="reference external" href="https://quay.io/repository/pypa/manylinux2010_x86_64">https://quay.io/repository/pypa/manylinux2010_x86_64</a>)</dd>
+<dt class="label" id="id34"><span class="brackets"><a class="fn-backref" href="#id13">11</a></span></dt>
+<dd>On vsyscalls and the vDSO
+(<a class="reference external" href="https://lwn.net/Articles/446528/">https://lwn.net/Articles/446528/</a>)</dd>
+<dt class="label" id="id35"><span class="brackets"><a class="fn-backref" href="#id14">12</a></span></dt>
+<dd>vdso(7)
+(<a class="reference external" href="http://man7.org/linux/man-pages/man7/vdso.7.html">http://man7.org/linux/man-pages/man7/vdso.7.html</a>)</dd>
+<dt class="label" id="id36"><span class="brackets"><a class="fn-backref" href="#id15">13</a></span></dt>
+<dd>Framing Signals – A Return to Portable Shellcode
+(<a class="reference external" href="http://www.cs.vu.nl/~herbertb/papers/srop_sp14.pdf">http://www.cs.vu.nl/~herbertb/papers/srop_sp14.pdf</a>)</dd>
+<dt class="label" id="id37"><span class="brackets"><a class="fn-backref" href="#id16">14</a></span></dt>
+<dd>ChangeLog-3.1
+(<a class="reference external" href="https://www.kernel.org/pub/linux/kernel/v3.x/ChangeLog-3.1">https://www.kernel.org/pub/linux/kernel/v3.x/ChangeLog-3.1</a>)</dd>
+<dt class="label" id="id38"><span class="brackets"><a class="fn-backref" href="#id17">15</a></span></dt>
+<dd>Project Zero: Three bypasses and a fix for one of Flash’s Vector.&lt;*&gt; mitigations
+(<a class="reference external" href="https://googleprojectzero.blogspot.com/2015/08/three-bypasses-and-fix-for-one-of.html">https://googleprojectzero.blogspot.com/2015/08/three-bypasses-and-fix-for-one-of.html</a>)</dd>
+<dt class="label" id="id39"><span class="brackets"><a class="fn-backref" href="#id18">16</a></span></dt>
+<dd>linux: activate CONFIG_LEGACY_VSYSCALL_NONE ?
+(<a class="reference external" href="https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=852620">https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=852620</a>)</dd>
+<dt class="label" id="id40"><span class="brackets"><a class="fn-backref" href="#id19">17</a></span></dt>
+<dd>[Wheel-builders] Heads-up re: new kernel configurations breaking the manylinux docker image
+(<a class="reference external" href="https://mail.python.org/pipermail/wheel-builders/2016-December/000239.html">https://mail.python.org/pipermail/wheel-builders/2016-December/000239.html</a>)</dd>
+<dt class="label" id="id41"><span class="brackets">18</span></dt>
+<dd>No longer used</dd>
+<dt class="label" id="id42"><span class="brackets"><a class="fn-backref" href="#id20">19</a></span></dt>
+<dd>Travis CI
+(<a class="reference external" href="https://travis-ci.org/">https://travis-ci.org/</a>)</dd>
+<dt class="label" id="id43"><span class="brackets"><a class="fn-backref" href="#id21">20</a></span></dt>
+<dd>remove-vsyscall.patch
+<a class="reference external" href="https://github.com/markrwilliams/manylinux/commit/e9493d55471d153089df3aafca8cfbcb50fa8093#diff-3eda4130bdba562657f3ec7c1b3f5720">https://github.com/markrwilliams/manylinux/commit/e9493d55471d153089df3aafca8cfbcb50fa8093#diff-3eda4130bdba562657f3ec7c1b3f5720</a></dd>
+<dt class="label" id="id44"><span class="brackets"><a class="fn-backref" href="#id22">21</a></span></dt>
+<dd>auditwheel manylinux2 branch
+(<a class="reference external" href="https://github.com/markrwilliams/auditwheel/tree/manylinux2">https://github.com/markrwilliams/auditwheel/tree/manylinux2</a>)</dd>
+<dt class="label" id="id45"><span class="brackets"><a class="fn-backref" href="#id23">22</a></span></dt>
+<dd>pip manylinux2 branch
+<a class="reference external" href="https://github.com/markrwilliams/pip/commits/manylinux2">https://github.com/markrwilliams/pip/commits/manylinux2</a></dd>
+<dt class="label" id="id46"><span class="brackets"><a class="fn-backref" href="#id7">23</a></span></dt>
+<dd>Calendar Versioning
+<a class="reference external" href="http://calver.org/">http://calver.org/</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id59">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed into the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0571.rst">https://github.com/python/peps/blob/master/pep-0571.rst</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0571.rst.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0570.html">PEP 0570</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0572.html">PEP 0572</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 571 – The manylinux2010 Platform Tag</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#the-manylinux2010-policy">The <code class="docutils literal notranslate"><span class="pre">manylinux2010</span></code> policy</a></li>
+<li><a class="reference internal" href="#compilation-of-compliant-wheels">Compilation of Compliant Wheels</a><ul>
+<li><a class="reference internal" href="#docker-image">Docker Image</a><ul>
+<li><a class="reference internal" href="#compatibility-with-kernels-that-lack-vsyscall">Compatibility with kernels that lack <code class="docutils literal notranslate"><span class="pre">vsyscall</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#auditwheel">Auditwheel</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#platform-detection-for-installers">Platform Detection for Installers</a></li>
+<li><a class="reference internal" href="#backwards-compatibility-with-manylinux1-wheels">Backwards compatibility with <code class="docutils literal notranslate"><span class="pre">manylinux1</span></code> wheels</a></li>
+<li><a class="reference internal" href="#pypi-support">PyPI Support</a></li>
+<li><a class="reference internal" href="#summary-of-changes-to-pep-571">Summary of changes to PEP 571</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

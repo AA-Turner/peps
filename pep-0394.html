@@ -1,0 +1,516 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 394 – The “python” Command on Unix-Like Systems &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 395 – Qualified Names for Modules" href="pep-0395.html" />
+    <link rel="prev" title="PEP 393 – Flexible String Representation" href="pep-0393.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 394 – The “python” Command on Unix-Like Systems</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-394-the-python-command-on-unix-like-systems">
+<h1 class="page-title">PEP 394 – The “python” Command on Unix-Like Systems<a class="headerlink" href="#pep-394-the-python-command-on-unix-like-systems" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">394</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">The “python” Command on Unix-Like Systems</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Kerrick Staley &lt;mail&#32;&#97;t&#32;kerrickstaley.com&gt;,
+Nick Coghlan &lt;ncoghlan&#32;&#97;t&#32;gmail.com&gt;,
+Barry Warsaw &lt;barry&#32;&#97;t&#32;python.org&gt;,
+Petr Viktorin &lt;encukou&#32;&#97;t&#32;gmail.com&gt;,
+Miro Hrončok &lt;miro&#32;&#97;t&#32;hroncok.cz&gt;,
+Carol Willing &lt;willingc&#32;&#97;t&#32;gmail.com&gt;,</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Active</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Informational</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">02-Mar-2011</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd">04-Mar-2011, 20-Jul-2011, 16-Feb-2012, 30-Sep-2014, 28-Apr-2018,
+26-Jun-2019</dd>
+<dt class="field-even">Resolution</dt>
+<dd class="field-even"><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2012-February/116594.html">https://mail.python.org/pipermail/python-dev/2012-February/116594.html</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id21">Abstract</a></li>
+<li><a class="reference internal" href="#recommendation" id="id22">Recommendation</a><ul>
+<li><a class="reference internal" href="#for-python-runtime-distributors" id="id23">For Python runtime distributors</a></li>
+<li><a class="reference internal" href="#for-python-script-publishers" id="id24">For Python script publishers</a></li>
+<li><a class="reference internal" href="#for-end-users-of-python" id="id25">For end users of Python</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#history-of-this-pep" id="id26">History of this PEP</a></li>
+<li><a class="reference internal" href="#current-rationale" id="id27">Current Rationale</a></li>
+<li><a class="reference internal" href="#future-changes-to-this-recommendation" id="id28">Future Changes to this Recommendation</a></li>
+<li><a class="reference internal" href="#migration-notes" id="id29">Migration Notes</a></li>
+<li><a class="reference internal" href="#backwards-compatibility" id="id30">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#application-to-the-cpython-reference-interpreter" id="id31">Application to the CPython Reference Interpreter</a></li>
+<li><a class="reference internal" href="#impact-on-python-environment-variables" id="id32">Impact on PYTHON* Environment Variables</a></li>
+<li><a class="reference internal" href="#exclusion-of-ms-windows" id="id33">Exclusion of MS Windows</a></li>
+<li><a class="reference internal" href="#references" id="id34">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id35">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id21">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP outlines the behavior of Python scripts when the <code class="docutils literal notranslate"><span class="pre">python</span></code> command
+is invoked.
+Depending on a distribution or system configuration,
+<code class="docutils literal notranslate"><span class="pre">python</span></code> may or may not be installed.
+If <code class="docutils literal notranslate"><span class="pre">python</span></code> is installed its target interpreter may refer to <code class="docutils literal notranslate"><span class="pre">python2</span></code>
+or <code class="docutils literal notranslate"><span class="pre">python3</span></code>.
+End users may be unaware of this inconsistency across Unix-like systems.
+This PEP’s goal is to reduce user confusion about what <code class="docutils literal notranslate"><span class="pre">python</span></code> references
+and what will be the script’s behavior.</p>
+<p>The recommendations in the next section of this PEP will outline the behavior
+when:</p>
+<ul class="simple">
+<li>using virtual environments</li>
+<li>writing cross-platform scripts with shebangs for either <code class="docutils literal notranslate"><span class="pre">python2</span></code> or <code class="docutils literal notranslate"><span class="pre">python3</span></code></li>
+</ul>
+<p>The PEP’s goal is to clarify the behavior for script end users, distribution
+providers, and script maintainers / authors.</p>
+</div>
+<div class="section" id="recommendation">
+<h2><a class="toc-backref" href="#id22">Recommendation</a><a class="headerlink" href="#recommendation" title="Permalink to this headline">¶</a></h2>
+<p>Our recommendations are detailed below.
+We call out any expectations that these recommendations are based upon.</p>
+<div class="section" id="for-python-runtime-distributors">
+<h3><a class="toc-backref" href="#id23">For Python runtime distributors</a><a class="headerlink" href="#for-python-runtime-distributors" title="Permalink to this headline">¶</a></h3>
+<ul>
+<li><p>We expect Unix-like software distributions (including systems like macOS and
+Cygwin) to install the <code class="docutils literal notranslate"><span class="pre">python2</span></code> command into the default path
+whenever a version of the Python 2 interpreter is installed, and the same
+for <code class="docutils literal notranslate"><span class="pre">python3</span></code> and the Python 3 interpreter.</p>
+</li>
+<li><p>When  invoked, <code class="docutils literal notranslate"><span class="pre">python2</span></code> should run some version of the Python 2
+interpreter, and <code class="docutils literal notranslate"><span class="pre">python3</span></code> should run some version of the Python 3
+interpreter.</p>
+</li>
+<li><p>If the <code class="docutils literal notranslate"><span class="pre">python</span></code> command is installed, it is expected to invoke either
+the same version of Python as the <code class="docutils literal notranslate"><span class="pre">python3</span></code> command or as the <code class="docutils literal notranslate"><span class="pre">python2</span></code>
+command.</p>
+</li>
+<li><p>Distributors may choose to set the behavior of the <code class="docutils literal notranslate"><span class="pre">python</span></code> command
+as follows:</p>
+<blockquote>
+<div><ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">python2</span></code>,</li>
+<li><code class="docutils literal notranslate"><span class="pre">python3</span></code>,</li>
+<li>not provide <code class="docutils literal notranslate"><span class="pre">python</span></code> command,</li>
+<li>allow <code class="docutils literal notranslate"><span class="pre">python</span></code> to be configurable by an end user or
+a system administrator.</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>The Python 3.x <code class="docutils literal notranslate"><span class="pre">idle</span></code>, <code class="docutils literal notranslate"><span class="pre">pydoc</span></code>, and <code class="docutils literal notranslate"><span class="pre">python-config</span></code> commands should
+likewise be available as <code class="docutils literal notranslate"><span class="pre">idle3</span></code>, <code class="docutils literal notranslate"><span class="pre">pydoc3</span></code>, and <code class="docutils literal notranslate"><span class="pre">python3-config</span></code>;
+Python 2.x versions as <code class="docutils literal notranslate"><span class="pre">idle2</span></code>, <code class="docutils literal notranslate"><span class="pre">pydoc2</span></code>, and <code class="docutils literal notranslate"><span class="pre">python2-config</span></code>.
+The commands with no version number should either invoke the same version
+of Python as the <code class="docutils literal notranslate"><span class="pre">python</span></code> command, or not be available at all.</p>
+</li>
+<li><p>When packaging third party Python scripts, distributors are encouraged to
+change less specific shebangs to more specific ones.
+This ensures software is used with the latest version of Python available,
+and it can remove a dependency on Python 2.
+The details on what specifics to set are left to the distributors;
+though. Example specifics could include:</p>
+<ul class="simple">
+<li>Changing <code class="docutils literal notranslate"><span class="pre">python</span></code> shebangs to <code class="docutils literal notranslate"><span class="pre">python3</span></code> when Python 3.x is supported.</li>
+<li>Changing <code class="docutils literal notranslate"><span class="pre">python</span></code> shebangs to <code class="docutils literal notranslate"><span class="pre">python2</span></code> when Python 3.x is not yet
+supported.</li>
+<li>Changing <code class="docutils literal notranslate"><span class="pre">python3</span></code> shebangs to <code class="docutils literal notranslate"><span class="pre">python3.8</span></code> if the software is built
+with Python 3.8.</li>
+</ul>
+</li>
+<li><p>When a virtual environment (created by the PEP 405 <code class="docutils literal notranslate"><span class="pre">venv</span></code> package or a
+similar tool such as <code class="docutils literal notranslate"><span class="pre">virtualenv</span></code> or <code class="docutils literal notranslate"><span class="pre">conda</span></code>) is active, the <code class="docutils literal notranslate"><span class="pre">python</span></code>
+command should refer to the virtual environment’s interpreter and should
+always be available.
+The <code class="docutils literal notranslate"><span class="pre">python3</span></code> or <code class="docutils literal notranslate"><span class="pre">python2</span></code> command (according to the environment’s
+interpreter version) should also be available.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="for-python-script-publishers">
+<h3><a class="toc-backref" href="#id24">For Python script publishers</a><a class="headerlink" href="#for-python-script-publishers" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>When reinvoking the interpreter from a Python script, querying
+<code class="docutils literal notranslate"><span class="pre">sys.executable</span></code> to avoid hardcoded assumptions regarding the
+interpreter location remains the preferred approach.</li>
+<li>Encourage your end users to use a virtual environment.
+This makes the user’s environment more predictable (possibly resulting
+in fewer issues), and helps avoid disrupting their system.</li>
+<li>For scripts that are only expected to be run in an activated virtual
+environment, shebang lines can be written as <code class="docutils literal notranslate"><span class="pre">#!/usr/bin/env</span> <span class="pre">python</span></code>,
+as this instructs the script to respect the active virtual environment.</li>
+<li>In cases where the script is expected to be executed outside virtual
+environments, developers will need to be aware of the following
+discrepancies across platforms and installation methods:<ul>
+<li>Older Linux distributions will provide a <code class="docutils literal notranslate"><span class="pre">python</span></code> command that
+refers to Python 2, and will likely not provide a <code class="docutils literal notranslate"><span class="pre">python2</span></code> command.</li>
+<li>Some newer Linux distributions will provide a <code class="docutils literal notranslate"><span class="pre">python</span></code> command that
+refers to Python 3.</li>
+<li>Some Linux distributions will not provide a <code class="docutils literal notranslate"><span class="pre">python</span></code> command at
+all by default, but will provide a <code class="docutils literal notranslate"><span class="pre">python3</span></code> command by default.</li>
+</ul>
+</li>
+<li>When potentially targeting these environments, developers may either
+use a Python package installation tool that rewrites shebang lines for
+the installed environment, provide instructions on updating shebang lines
+interactively, or else use more specific shebang lines that are
+tailored to the target environment.</li>
+<li>Scripts targeting both “<em>old systems</em>” and systems without the default
+<code class="docutils literal notranslate"><span class="pre">python</span></code> command need to make a compromise and document this situation.
+Avoiding shebangs (via the console_scripts Entry Points (<a class="footnote-reference brackets" href="#id19" id="id1">9</a>) or similar
+means) is the recommended workaround for this problem.</li>
+<li>Applications designed exclusively for a specific environment (such as
+a container or virtual environment) may continue to use the <code class="docutils literal notranslate"><span class="pre">python</span></code>
+command name.</li>
+</ul>
+</div>
+<div class="section" id="for-end-users-of-python">
+<h3><a class="toc-backref" href="#id25">For end users of Python</a><a class="headerlink" href="#for-end-users-of-python" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>While far from being universally available, <code class="docutils literal notranslate"><span class="pre">python</span></code> remains the
+preferred spelling for explicitly invoking Python, as this is the
+spelling that virtual environments make consistently available
+across different platforms and Python installations.</li>
+<li>For software that is not distributed with (or developed for) your system,
+we recommend using a virtual environment, possibly with an environment
+manager like <code class="docutils literal notranslate"><span class="pre">conda</span></code> or <code class="docutils literal notranslate"><span class="pre">pipenv</span></code>, to help avoid disrupting your system
+Python installation.</li>
+</ul>
+<p>These recommendations are the outcome of the relevant python-dev discussions
+in March and July 2011 (<a class="footnote-reference brackets" href="#id11" id="id2">1</a>, <a class="footnote-reference brackets" href="#id12" id="id3">2</a>), February 2012 (<a class="footnote-reference brackets" href="#id14" id="id4">4</a>),
+September 2014 (<a class="footnote-reference brackets" href="#id16" id="id5">6</a>), discussion on GitHub in April 2018 (<a class="footnote-reference brackets" href="#id17" id="id6">7</a>),
+on python-dev in February 2019 (<a class="footnote-reference brackets" href="#id18" id="id7">8</a>), and during the PEP update review
+in May/June 2019 (<a class="footnote-reference brackets" href="#id20" id="id8">10</a>).</p>
+</div>
+</div>
+<div class="section" id="history-of-this-pep">
+<h2><a class="toc-backref" href="#id26">History of this PEP</a><a class="headerlink" href="#history-of-this-pep" title="Permalink to this headline">¶</a></h2>
+<p>In 2011, the majority of distributions
+aliased the <code class="docutils literal notranslate"><span class="pre">python</span></code> command to Python 2, but some started switching it to
+Python 3 (<a class="footnote-reference brackets" href="#id15" id="id9">5</a>). As some of the former distributions did not provide a
+<code class="docutils literal notranslate"><span class="pre">python2</span></code> command by default, there was previously no way for Python 2 code
+(or any code that invokes the Python 2 interpreter directly rather than via
+<code class="docutils literal notranslate"><span class="pre">sys.executable</span></code>) to reliably run on all Unix-like systems without
+modification, as the <code class="docutils literal notranslate"><span class="pre">python</span></code> command would invoke the wrong interpreter
+version on some systems, and the <code class="docutils literal notranslate"><span class="pre">python2</span></code> command would fail completely
+on others. This PEP originally provided a very simple mechanism
+to restore cross-platform support, with minimal additional work required
+on the part of distribution maintainers. Simplified, the recommendation was:</p>
+<ol class="arabic simple">
+<li>The <code class="docutils literal notranslate"><span class="pre">python</span></code> command was preferred for code compatible with both
+Python 2 and 3 (since it was available on all systems, even those that
+already aliased it to Python 3).</li>
+<li>The <code class="docutils literal notranslate"><span class="pre">python</span></code> command should always invoke Python 2 (to prevent
+hard-to-diagnose errors when Python 2 code is run on Python 3).</li>
+<li>The <code class="docutils literal notranslate"><span class="pre">python2</span></code> and <code class="docutils literal notranslate"><span class="pre">python3</span></code> commands should be available to specify
+the version explicitly.</li>
+</ol>
+<p>However, these recommendations implicitly assumed that Python 2 would always be
+available. As Python 2 is nearing its end of life in 2020 (PEP 373, PEP 404),
+distributions are making Python 2 optional or removing it entirely.
+This means either removing the <code class="docutils literal notranslate"><span class="pre">python</span></code> command or switching it to invoke
+Python 3. Some distributors also decided that their users were better served by
+ignoring the PEP’s original recommendations, and provided system
+administrators with the freedom to configure their systems based on
+the needs of their particular environment.</p>
+</div>
+<div class="section" id="current-rationale">
+<span id="rationale"></span><h2><a class="toc-backref" href="#id27">Current Rationale</a><a class="headerlink" href="#current-rationale" title="Permalink to this headline">¶</a></h2>
+<p>As of 2019, activating a Python virtual environment (or its functional
+equivalent) prior to script execution is one way to obtain a consistent
+cross-platform and cross-distribution experience.</p>
+<p>Accordingly, publishers can expect users of the software to provide a suitable
+execution environment.</p>
+</div>
+<div class="section" id="future-changes-to-this-recommendation">
+<h2><a class="toc-backref" href="#id28">Future Changes to this Recommendation</a><a class="headerlink" href="#future-changes-to-this-recommendation" title="Permalink to this headline">¶</a></h2>
+<p>This recommendation will be periodically reviewed over the next few years,
+and updated when the core development team judges it appropriate. As a
+point of reference, regular maintenance releases for the Python 2.7 series
+will continue until January 2020.</p>
+</div>
+<div class="section" id="migration-notes">
+<h2><a class="toc-backref" href="#id29">Migration Notes</a><a class="headerlink" href="#migration-notes" title="Permalink to this headline">¶</a></h2>
+<p>This section does not contain any official recommendations from the core
+CPython developers. It’s merely a collection of notes regarding various
+aspects of migrating to Python 3 as the default version of Python for a
+system. They will hopefully be helpful to any distributions considering
+making such a change.</p>
+<ul>
+<li><p>The main barrier to a distribution switching the <code class="docutils literal notranslate"><span class="pre">python</span></code> command from
+<code class="docutils literal notranslate"><span class="pre">python2</span></code> to <code class="docutils literal notranslate"><span class="pre">python3</span></code> isn’t breakage within the distribution, but
+instead breakage of private third party scripts developed by sysadmins
+and other users. Updating the <code class="docutils literal notranslate"><span class="pre">python</span></code> command to invoke <code class="docutils literal notranslate"><span class="pre">python3</span></code>
+by default indicates that a distribution is willing to break such scripts
+with errors that are potentially quite confusing for users that aren’t
+familiar with the backwards incompatible changes in Python 3. For
+example, while the change of <code class="docutils literal notranslate"><span class="pre">print</span></code> from a statement to a builtin
+function is relatively simple for automated converters to handle, the
+SyntaxError from attempting to use the Python 2 notation in Python 3
+may be confusing for users that are not aware of the change:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python3 -c &#39;print &quot;Hello, world!&quot;&#39;
+  File &quot;&lt;string&gt;&quot;, line 1
+    print &quot;Hello, world!&quot;
+          ^
+SyntaxError: Missing parentheses in call to &#39;print&#39;. Did you mean print(&quot;Hello, world!&quot;)?
+</pre></div>
+</div>
+<p>While this might be obvious for experienced Pythonistas, such scripts
+might even be run by people who are not familiar with Python at all.
+Avoiding breakage of such third party scripts was the key reason this
+PEP used to recommend that <code class="docutils literal notranslate"><span class="pre">python</span></code> continue to refer to <code class="docutils literal notranslate"><span class="pre">python2</span></code>.</p>
+</li>
+<li><p>The error message <code class="docutils literal notranslate"><span class="pre">python:</span> <span class="pre">command</span> <span class="pre">not</span> <span class="pre">found</span></code> tends to be surprisingly
+actionable, even for people unfamiliar with Python.</p>
+</li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">pythonX.X</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">python3.6</span></code>) commands exist on modern systems, on
+which they invoke specific minor versions of the Python interpreter. It
+can be useful for distribution-specific packages to take advantage of these
+utilities if they exist, since it will prevent code breakage if the default
+minor version of a given major version is changed. However, scripts
+intending to be cross-platform should not rely on the presence of these
+utilities, but rather should be tested on several recent minor versions of
+the target major version, compensating, if necessary, for the small
+differences that exist between minor versions. This prevents the need for
+sysadmins to install many very similar versions of the interpreter.</p>
+</li>
+<li><p>When the <code class="docutils literal notranslate"><span class="pre">pythonX.X</span></code> binaries are provided by a distribution, the
+<code class="docutils literal notranslate"><span class="pre">python2</span></code> and <code class="docutils literal notranslate"><span class="pre">python3</span></code> commands should refer to one of those files
+rather than being provided as a separate binary file.</p>
+</li>
+<li><p>It is strongly encouraged that distribution-specific packages use <code class="docutils literal notranslate"><span class="pre">python3</span></code>
+(or <code class="docutils literal notranslate"><span class="pre">python2</span></code>) rather than <code class="docutils literal notranslate"><span class="pre">python</span></code>, even in code that is not intended to
+operate on other distributions. This will reduce problems if the
+distribution later decides to change the version of the Python interpreter
+that the <code class="docutils literal notranslate"><span class="pre">python</span></code> command invokes, or if a sysadmin installs a custom
+<code class="docutils literal notranslate"><span class="pre">python</span></code> command with a different major version than the distribution
+default.</p>
+</li>
+<li><p>If the above point is adhered to and sysadmins are permitted to change the
+<code class="docutils literal notranslate"><span class="pre">python</span></code> command, then the <code class="docutils literal notranslate"><span class="pre">python</span></code> command should always be implemented
+as a link to the interpreter binary (or a link to a link) and not vice
+versa. That way, if a sysadmin does decide to replace the installed
+<code class="docutils literal notranslate"><span class="pre">python</span></code> file, they can do so without inadvertently deleting the
+previously installed binary.</p>
+</li>
+<li><p>Even as the Python 2 interpreter becomes less common, it remains reasonable
+for scripts to continue to use the <code class="docutils literal notranslate"><span class="pre">python3</span></code> convention, rather than just
+<code class="docutils literal notranslate"><span class="pre">python</span></code>.</p>
+</li>
+<li><p>If these conventions are adhered to, it will become the case that the
+<code class="docutils literal notranslate"><span class="pre">python</span></code> command is only executed in an interactive manner as a user
+convenience, or else when using a virtual environment or similar mechanism.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="backwards-compatibility">
+<h2><a class="toc-backref" href="#id30">Backwards Compatibility</a><a class="headerlink" href="#backwards-compatibility" title="Permalink to this headline">¶</a></h2>
+<p>A potential problem can arise if a script adhering to the
+<code class="docutils literal notranslate"><span class="pre">python2</span></code>/<code class="docutils literal notranslate"><span class="pre">python3</span></code> convention is executed on a system not supporting
+these commands. This is mostly a non-issue, since the sysadmin can simply
+create these symbolic links and avoid further problems. It is a significantly
+more obvious breakage than the sometimes cryptic errors that can arise when
+attempting to execute a script containing Python 2 specific syntax with a
+Python 3 interpreter or vice versa.</p>
+</div>
+<div class="section" id="application-to-the-cpython-reference-interpreter">
+<h2><a class="toc-backref" href="#id31">Application to the CPython Reference Interpreter</a><a class="headerlink" href="#application-to-the-cpython-reference-interpreter" title="Permalink to this headline">¶</a></h2>
+<p>While technically a new feature, the <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">install</span></code> and <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">bininstall</span></code>
+command in the 2.7 version of CPython were adjusted to create the
+following chains of symbolic links in the relevant <code class="docutils literal notranslate"><span class="pre">bin</span></code> directory (the
+final item listed in the chain is the actual installed binary, preceding
+items are relative symbolic links):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-&gt;</span> <span class="n">python2</span> <span class="o">-&gt;</span> <span class="n">python2</span><span class="o">.</span><span class="mi">7</span>
+<span class="n">python</span><span class="o">-</span><span class="n">config</span> <span class="o">-&gt;</span> <span class="n">python2</span><span class="o">-</span><span class="n">config</span> <span class="o">-&gt;</span> <span class="n">python2</span><span class="o">.</span><span class="mi">7</span><span class="o">-</span><span class="n">config</span>
+</pre></div>
+</div>
+<p>Similar adjustments were made to the macOS binary installer.</p>
+<p>This feature first appeared in the default installation process in
+CPython 2.7.3.</p>
+<p>The installation commands in the CPython 3.x series already create the
+appropriate symlinks. For example, CPython 3.2 creates:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python3</span> <span class="o">-&gt;</span> <span class="n">python3</span><span class="o">.</span><span class="mi">2</span>
+<span class="n">idle3</span> <span class="o">-&gt;</span> <span class="n">idle3</span><span class="o">.</span><span class="mi">2</span>
+<span class="n">pydoc3</span> <span class="o">-&gt;</span> <span class="n">pydoc3</span><span class="o">.</span><span class="mi">2</span>
+<span class="n">python3</span><span class="o">-</span><span class="n">config</span> <span class="o">-&gt;</span> <span class="n">python3</span><span class="o">.</span><span class="mi">2</span><span class="o">-</span><span class="n">config</span>
+</pre></div>
+</div>
+<p>And CPython 3.3 creates:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python3</span> <span class="o">-&gt;</span> <span class="n">python3</span><span class="o">.</span><span class="mi">3</span>
+<span class="n">idle3</span> <span class="o">-&gt;</span> <span class="n">idle3</span><span class="o">.</span><span class="mi">3</span>
+<span class="n">pydoc3</span> <span class="o">-&gt;</span> <span class="n">pydoc3</span><span class="o">.</span><span class="mi">3</span>
+<span class="n">python3</span><span class="o">-</span><span class="n">config</span> <span class="o">-&gt;</span> <span class="n">python3</span><span class="o">.</span><span class="mi">3</span><span class="o">-</span><span class="n">config</span>
+<span class="n">pysetup3</span> <span class="o">-&gt;</span> <span class="n">pysetup3</span><span class="o">.</span><span class="mi">3</span>
+</pre></div>
+</div>
+<p>The implementation progress of these features in the default installers was
+managed on the tracker as issue #12627 (<a class="footnote-reference brackets" href="#id13" id="id10">3</a>).</p>
+</div>
+<div class="section" id="impact-on-python-environment-variables">
+<h2><a class="toc-backref" href="#id32">Impact on PYTHON* Environment Variables</a><a class="headerlink" href="#impact-on-python-environment-variables" title="Permalink to this headline">¶</a></h2>
+<p>The choice of target for the <code class="docutils literal notranslate"><span class="pre">python</span></code> command implicitly affects a
+distribution’s expected interpretation of the various Python related
+environment variables. The use of <code class="docutils literal notranslate"><span class="pre">*.pth</span></code> files in the relevant
+<code class="docutils literal notranslate"><span class="pre">site-packages</span></code> folder, the “per-user site packages” feature (see
+<code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">site</span></code>) or more flexible tools such as <code class="docutils literal notranslate"><span class="pre">virtualenv</span></code> are all more
+tolerant of the presence of multiple versions of Python on a system than the
+direct use of <code class="docutils literal notranslate"><span class="pre">PYTHONPATH</span></code>.</p>
+</div>
+<div class="section" id="exclusion-of-ms-windows">
+<h2><a class="toc-backref" href="#id33">Exclusion of MS Windows</a><a class="headerlink" href="#exclusion-of-ms-windows" title="Permalink to this headline">¶</a></h2>
+<p>This PEP deliberately excludes any proposals relating to Microsoft Windows, as
+devising an equivalent solution for Windows was deemed too complex to handle
+here. PEP 397 and the related discussion on the python-dev mailing list
+address this issue.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id34">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id11"><span class="brackets"><a class="fn-backref" href="#id2">1</a></span></dt>
+<dd>Support the /usr/bin/python2 symlink upstream (with bonus grammar class!)
+(<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2011-March/108491.html">https://mail.python.org/pipermail/python-dev/2011-March/108491.html</a>)</dd>
+<dt class="label" id="id12"><span class="brackets"><a class="fn-backref" href="#id3">2</a></span></dt>
+<dd>Rebooting PEP 394 (aka Support the /usr/bin/python2 symlink upstream)
+(<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2011-July/112322.html">https://mail.python.org/pipermail/python-dev/2011-July/112322.html</a>)</dd>
+<dt class="label" id="id13"><span class="brackets"><a class="fn-backref" href="#id10">3</a></span></dt>
+<dd>Implement PEP 394 in the CPython Makefile
+(<a class="reference external" href="http://bugs.python.org/issue12627">http://bugs.python.org/issue12627</a>)</dd>
+<dt class="label" id="id14"><span class="brackets"><a class="fn-backref" href="#id4">4</a></span></dt>
+<dd>PEP 394 request for pronouncement (python2 symlink in *nix systems)
+(<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2012-February/116435.html">https://mail.python.org/pipermail/python-dev/2012-February/116435.html</a>)</dd>
+<dt class="label" id="id15"><span class="brackets"><a class="fn-backref" href="#id9">5</a></span></dt>
+<dd>Arch Linux announcement that their “python” link now refers Python 3
+(<a class="reference external" href="https://www.archlinux.org/news/python-is-now-python-3/">https://www.archlinux.org/news/python-is-now-python-3/</a>)</dd>
+<dt class="label" id="id16"><span class="brackets"><a class="fn-backref" href="#id5">6</a></span></dt>
+<dd>PEP 394 - Clarification of what “python” command should invoke
+(<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2014-September/136374.html">https://mail.python.org/pipermail/python-dev/2014-September/136374.html</a>)</dd>
+<dt class="label" id="id17"><span class="brackets"><a class="fn-backref" href="#id6">7</a></span></dt>
+<dd>PEP 394: Allow the <cite>python</cite> command to not be installed, and other
+minor edits
+(<a class="reference external" href="https://github.com/python/peps/pull/630">https://github.com/python/peps/pull/630</a>)</dd>
+<dt class="label" id="id18"><span class="brackets"><a class="fn-backref" href="#id7">8</a></span></dt>
+<dd>Another update for PEP 394 – The “python” Command on Unix-Like Systems
+(<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2019-February/156272.html">https://mail.python.org/pipermail/python-dev/2019-February/156272.html</a>)</dd>
+<dt class="label" id="id19"><span class="brackets"><a class="fn-backref" href="#id1">9</a></span></dt>
+<dd>The console_scripts Entry Point
+(<a class="reference external" href="https://python-packaging.readthedocs.io/en/latest/command-line-scripts.html#the-console-scripts-entry-point">https://python-packaging.readthedocs.io/en/latest/command-line-scripts.html#the-console-scripts-entry-point</a>)</dd>
+<dt class="label" id="id20"><span class="brackets"><a class="fn-backref" href="#id8">10</a></span></dt>
+<dd>May 2019 PEP update review
+(<a class="reference external" href="https://github.com/python/peps/pull/989">https://github.com/python/peps/pull/989</a>)</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id35">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0394.txt">https://github.com/python/peps/blob/master/pep-0394.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0394.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0393.html">PEP 0393</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0395.html">PEP 0395</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 394 – The “python” Command on Unix-Like Systems</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#recommendation">Recommendation</a><ul>
+<li><a class="reference internal" href="#for-python-runtime-distributors">For Python runtime distributors</a></li>
+<li><a class="reference internal" href="#for-python-script-publishers">For Python script publishers</a></li>
+<li><a class="reference internal" href="#for-end-users-of-python">For end users of Python</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#history-of-this-pep">History of this PEP</a></li>
+<li><a class="reference internal" href="#current-rationale">Current Rationale</a></li>
+<li><a class="reference internal" href="#future-changes-to-this-recommendation">Future Changes to this Recommendation</a></li>
+<li><a class="reference internal" href="#migration-notes">Migration Notes</a></li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#application-to-the-cpython-reference-interpreter">Application to the CPython Reference Interpreter</a></li>
+<li><a class="reference internal" href="#impact-on-python-environment-variables">Impact on PYTHON* Environment Variables</a></li>
+<li><a class="reference internal" href="#exclusion-of-ms-windows">Exclusion of MS Windows</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

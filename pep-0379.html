@@ -1,0 +1,300 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 379 – Adding an Assignment Expression &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 380 – Syntax for Delegating to a Subgenerator" href="pep-0380.html" />
+    <link rel="prev" title="PEP 378 – Format Specifier for Thousands Separator" href="pep-0378.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 379 – Adding an Assignment Expression</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-379-adding-an-assignment-expression">
+<h1 class="page-title">PEP 379 – Adding an Assignment Expression<a class="headerlink" href="#pep-379-adding-an-assignment-expression" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">379</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Adding an Assignment Expression</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Jervis Whitley &lt;jervisau&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Withdrawn</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">14-Mar-2009</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.7, 3.2</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id3">Abstract</a></li>
+<li><a class="reference internal" href="#motivation-and-summary" id="id4">Motivation and Summary</a></li>
+<li><a class="reference internal" href="#use-cases" id="id5">Use Cases</a></li>
+<li><a class="reference internal" href="#specification" id="id6">Specification</a></li>
+<li><a class="reference internal" href="#examples-from-the-standard-library" id="id7">Examples from the Standard Library</a></li>
+<li><a class="reference internal" href="#examples" id="id8">Examples</a></li>
+<li><a class="reference internal" href="#references" id="id9">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id10">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id3">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP adds a new assignment expression to the Python language
+to make it possible to assign the result of an expression in
+almost any place.  The new expression will allow the assignment of
+the result of an expression at first use (in a comparison for
+example).</p>
+</div>
+<div class="section" id="motivation-and-summary">
+<h2><a class="toc-backref" href="#id4">Motivation and Summary</a><a class="headerlink" href="#motivation-and-summary" title="Permalink to this headline">¶</a></h2>
+<p>Issue1714448 “if something as x:” <a class="footnote-reference brackets" href="#id2" id="id1">1</a> describes a feature to allow
+assignment of the result of an expression in an if statement to a
+name.  It supposed that the <code class="docutils literal notranslate"><span class="pre">as</span></code> syntax could be borrowed for this
+purpose.  Many times it is not the expression itself that is
+interesting, rather one of the terms that make up the
+expression. To be clear, something like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="p">(</span><span class="n">f_result</span><span class="p">()</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span> <span class="k">as</span> <span class="n">res</span><span class="p">:</span>
+</pre></div>
+</div>
+<p>seems awfully limited, when this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="p">(</span><span class="n">f_result</span><span class="p">()</span> <span class="k">as</span> <span class="n">res</span><span class="p">)</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]:</span>
+</pre></div>
+</div>
+<p>is probably the desired result.</p>
+</div>
+<div class="section" id="use-cases">
+<h2><a class="toc-backref" href="#id5">Use Cases</a><a class="headerlink" href="#use-cases" title="Permalink to this headline">¶</a></h2>
+<p>See the Examples section near the end.</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id6">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>A new expression is proposed with the (nominal) syntax:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">EXPR</span> <span class="o">-&gt;</span> <span class="n">VAR</span>
+</pre></div>
+</div>
+<p>This single expression does the following:</p>
+<ul class="simple">
+<li>Evaluate the value of <code class="docutils literal notranslate"><span class="pre">EXPR</span></code>, an arbitrary expression;</li>
+<li>Assign the result to <code class="docutils literal notranslate"><span class="pre">VAR</span></code>, a single assignment target; and</li>
+<li>Leave the result of <code class="docutils literal notranslate"><span class="pre">EXPR</span></code> on the Top of Stack (TOS)</li>
+</ul>
+<p>Here <code class="docutils literal notranslate"><span class="pre">-&gt;</span></code> or (<code class="docutils literal notranslate"><span class="pre">RARROW</span></code>) has been used to illustrate the concept that
+the result of <code class="docutils literal notranslate"><span class="pre">EXPR</span></code> is assigned to <code class="docutils literal notranslate"><span class="pre">VAR</span></code>.</p>
+<p>The translation of the proposed syntax is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">VAR</span> <span class="o">=</span> <span class="p">(</span><span class="n">EXPR</span><span class="p">)</span>
+<span class="p">(</span><span class="n">EXPR</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The assignment target can be either an attribute, a subscript or
+name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">f</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">name</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>      <span class="c1"># where &#39;name&#39; exists previously.</span>
+
+<span class="n">f</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">name</span><span class="o">.</span><span class="n">attr</span>    <span class="c1"># again &#39;name&#39; exists prior to this expression.</span>
+
+<span class="n">f</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">name</span>
+</pre></div>
+</div>
+<p>This expression should be available anywhere that an expression is
+currently accepted.</p>
+<p>All exceptions that are currently raised during invalid
+assignments will continue to be raised when using the assignment
+expression.  For example, a <code class="docutils literal notranslate"><span class="pre">NameError</span></code> will be raised when in
+example 1 and 2 above if <code class="docutils literal notranslate"><span class="pre">name</span></code> is not previously defined, or an
+<code class="docutils literal notranslate"><span class="pre">IndexError</span></code> if index 0 was out of range.</p>
+</div>
+<div class="section" id="examples-from-the-standard-library">
+<h2><a class="toc-backref" href="#id7">Examples from the Standard Library</a><a class="headerlink" href="#examples-from-the-standard-library" title="Permalink to this headline">¶</a></h2>
+<p>The following two examples were chosen after a brief search
+through the standard library, specifically both are from ast.py
+which happened to be open at the time of the search.</p>
+<p>Original:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">walk</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">deque</span>
+    <span class="n">todo</span> <span class="o">=</span> <span class="n">deque</span><span class="p">([</span><span class="n">node</span><span class="p">])</span>
+    <span class="k">while</span> <span class="n">todo</span><span class="p">:</span>
+        <span class="n">node</span> <span class="o">=</span> <span class="n">todo</span><span class="o">.</span><span class="n">popleft</span><span class="p">()</span>
+        <span class="n">todo</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">iter_child_nodes</span><span class="p">(</span><span class="n">node</span><span class="p">))</span>
+        <span class="k">yield</span> <span class="n">node</span>
+</pre></div>
+</div>
+<p>Using assignment expression:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">walk</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">deque</span>
+    <span class="n">todo</span> <span class="o">=</span> <span class="n">deque</span><span class="p">([</span><span class="n">node</span><span class="p">])</span>
+    <span class="k">while</span> <span class="n">todo</span><span class="p">:</span>
+        <span class="n">todo</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">iter_child_nodes</span><span class="p">(</span><span class="n">todo</span><span class="o">.</span><span class="n">popleft</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">node</span><span class="p">))</span>
+        <span class="k">yield</span> <span class="n">node</span>
+</pre></div>
+</div>
+<p>Original:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">get_docstring</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">clean</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="p">(</span><span class="n">FunctionDef</span><span class="p">,</span> <span class="n">ClassDef</span><span class="p">,</span> <span class="n">Module</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%r</span><span class="s2"> can&#39;t have docstrings&quot;</span>
+                            <span class="o">%</span> <span class="n">node</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">body</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">body</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">Expr</span><span class="p">)</span> <span class="ow">and</span> \
+    <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">body</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">Str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">clean</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">inspect</span>
+            <span class="k">return</span> <span class="n">inspect</span><span class="o">.</span><span class="n">cleandoc</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">body</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">s</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">node</span><span class="o">.</span><span class="n">body</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">s</span>
+</pre></div>
+</div>
+<p>Using assignment expression:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">get_docstring</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">clean</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="p">(</span><span class="n">FunctionDef</span><span class="p">,</span> <span class="n">ClassDef</span><span class="p">,</span> <span class="n">Module</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%r</span><span class="s2"> can&#39;t have docstrings&quot;</span>
+                            <span class="o">%</span> <span class="n">node</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">body</span> <span class="o">-&gt;</span> <span class="n">body</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">body</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-&gt;</span> <span class="n">elem</span><span class="p">,</span> <span class="n">Expr</span><span class="p">)</span> <span class="ow">and</span> \
+    <span class="nb">isinstance</span><span class="p">(</span><span class="n">elem</span><span class="o">.</span><span class="n">value</span> <span class="o">-&gt;</span> <span class="n">value</span><span class="p">,</span> <span class="n">Str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">clean</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">inspect</span>
+            <span class="k">return</span> <span class="n">inspect</span><span class="o">.</span><span class="n">cleandoc</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">s</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">value</span><span class="o">.</span><span class="n">s</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="examples">
+<h2><a class="toc-backref" href="#id8">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<p>The examples shown below highlight some of the desirable features
+of the assignment expression, and some of the possible corner
+cases.</p>
+<ol class="arabic">
+<li><p>Assignment in an if statement for use later:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">expensive</span><span class="p">():</span>
+    <span class="kn">import</span> <span class="nn">time</span><span class="p">;</span> <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s1">&#39;spam&#39;</span>
+
+<span class="k">if</span> <span class="n">expensive</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">res</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;spam&#39;</span><span class="p">,</span> <span class="s1">&#39;eggs&#39;</span><span class="p">):</span>
+    <span class="n">dosomething</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p>Assignment in a while loop clause:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">expensive</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">res</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+    <span class="n">dosomething</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p>Keep the iterator object from the for loop:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">expensive</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">res</span><span class="p">:</span>
+    <span class="n">sell_on_internet</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p>Corner case:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">ch</span> <span class="o">-&gt;</span> <span class="n">please_dont</span> <span class="ow">in</span> <span class="n">expensive</span><span class="p">():</span>
+    <span class="k">pass</span>
+<span class="c1"># who would want to do this? Not I.</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id9">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>Issue1714448 “if something as x:”, k0wax
+<a class="reference external" href="http://bugs.python.org/issue1714448">http://bugs.python.org/issue1714448</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id10">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0379.txt">https://github.com/python/peps/blob/master/pep-0379.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0379.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0378.html">PEP 0378</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0380.html">PEP 0380</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 379 – Adding an Assignment Expression</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation-and-summary">Motivation and Summary</a></li>
+<li><a class="reference internal" href="#use-cases">Use Cases</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#examples-from-the-standard-library">Examples from the Standard Library</a></li>
+<li><a class="reference internal" href="#examples">Examples</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

@@ -1,0 +1,406 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 3153 – Asynchronous IO support &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 3154 – Pickle protocol version 4" href="pep-3154.html" />
+    <link rel="prev" title="PEP 3152 – Cofunctions" href="pep-3152.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 3153 – Asynchronous IO support</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-3153-asynchronous-io-support">
+<h1 class="page-title">PEP 3153 – Asynchronous IO support<a class="headerlink" href="#pep-3153-asynchronous-io-support" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">3153</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Asynchronous IO support</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Laurens Van Houtven &lt;_&#32;&#97;t&#32;lvh.cc&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Superseded</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">29-May-2011</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd">TBD</dd>
+<dt class="field-even">Superseded-By</dt>
+<dd class="field-even"><a class="reference external" href="./pep-3156.html">3156</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id19">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id20">Rationale</a></li>
+<li><a class="reference internal" href="#communication-abstractions" id="id21">Communication abstractions</a><ul>
+<li><a class="reference internal" href="#transports" id="id22">Transports</a></li>
+<li><a class="reference internal" href="#protocols" id="id23">Protocols</a></li>
+<li><a class="reference internal" href="#why-separate-protocols-and-transports" id="id24">Why separate protocols and transports?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#flow-control" id="id25">Flow control</a><ul>
+<li><a class="reference internal" href="#consumers" id="id26">Consumers</a></li>
+<li><a class="reference internal" href="#producers" id="id27">Producers</a><ul>
+<li><a class="reference internal" href="#considered-api-alternatives" id="id28">Considered API alternatives</a><ul>
+<li><a class="reference internal" href="#generators-as-producers" id="id29">Generators as producers</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references" id="id30">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id31">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id19">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP describes an abstraction of asynchronous IO for the Python
+standard library.</p>
+<p>The goal is to reach an abstraction that can be implemented by many
+different asynchronous IO backends and provides a target for library
+developers to write code portable between those different backends.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id20">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>People who want to write asynchronous code in Python right now have a
+few options:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">asyncore</span></code> and <code class="docutils literal notranslate"><span class="pre">asynchat</span></code></li>
+<li>something bespoke, most likely based on the <code class="docutils literal notranslate"><span class="pre">select</span></code> module</li>
+<li>using a third party library, such as <a class="reference external" href="http://www.twistedmatrix.com/">Twisted</a> <a class="footnote-reference brackets" href="#id4" id="id5">2</a> or <a class="reference external" href="http://www.gevent.org/">gevent</a> <a class="footnote-reference brackets" href="#id6" id="id7">3</a></li>
+</ul>
+<p>Unfortunately, each of these options has its downsides, which this PEP
+tries to address.</p>
+<p>Despite having been part of the Python standard library for a long
+time, the asyncore module suffers from fundamental flaws following
+from an inflexible API that does not stand up to the expectations of a
+modern asynchronous networking module.</p>
+<p>Moreover, its approach is too simplistic to provide developers with
+all the tools they need in order to fully exploit the potential of
+asynchronous networking.</p>
+<p>The most popular solution right now used in production involves the
+use of third party libraries.  These often provide satisfactory
+solutions, but there is a lack of compatibility between these
+libraries, which tends to make codebases very tightly coupled to the
+library they use.</p>
+<p>This current lack of portability between different asynchronous IO
+libraries causes a lot of duplicated effort for third party library
+developers.  A sufficiently powerful abstraction could mean that
+asynchronous code gets written once, but used everywhere.</p>
+<p>An eventual added goal would be for standard library implementations
+of wire and network protocols to evolve towards being real protocol
+implementations, as opposed to standalone libraries that do everything
+including calling <code class="docutils literal notranslate"><span class="pre">recv()</span></code> blockingly.  This means they could be
+easily reused for both synchronous and asynchronous code.</p>
+</div>
+<div class="section" id="communication-abstractions">
+<h2><a class="toc-backref" href="#id21">Communication abstractions</a><a class="headerlink" href="#communication-abstractions" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="transports">
+<h3><a class="toc-backref" href="#id22">Transports</a><a class="headerlink" href="#transports" title="Permalink to this headline">¶</a></h3>
+<p>Transports provide a uniform API for reading bytes from and writing
+bytes to different kinds of connections.  Transports in this PEP are
+always ordered, reliable, bidirectional, stream-oriented two-endpoint
+connections.  This might be a TCP socket, an SSL connection, a pipe
+(named or otherwise), a serial port…  It may abstract a file
+descriptor on POSIX platforms or a Handle on Windows or some other
+data structure appropriate to a particular platform.  It encapsulates
+all of the particular implementation details of using that platform
+data structure and presents a uniform interface for application
+developers.</p>
+<p>Transports talk to two things: the other side of the connection on one
+hand, and a protocol on the other.  It’s a bridge between the specific
+underlying transfer mechanism and the protocol.  Its job can be
+described as allowing the protocol to just send and receive bytes,
+taking care of all of the magic that needs to happen to those bytes to
+be eventually sent across the wire.</p>
+<p>The primary feature of a transport is sending bytes to a protocol and
+receiving bytes from the underlying protocol.  Writing to the
+transport is done using the <code class="docutils literal notranslate"><span class="pre">write</span></code> and <code class="docutils literal notranslate"><span class="pre">write_sequence</span></code> methods.
+The latter method is a performance optimization, to allow software to
+take advantage of specific capabilities in some transport mechanisms.
+Specifically, this allows transports to use <a class="reference external" href="http://pubs.opengroup.org/onlinepubs/009695399/functions/writev.html">writev</a> <a class="footnote-reference brackets" href="#id8" id="id9">4</a> instead of <a class="reference external" href="http://pubs.opengroup.org/onlinepubs/009695399/functions/write.html">write</a> <a class="footnote-reference brackets" href="#id10" id="id11">5</a>
+or <a class="reference external" href="http://pubs.opengroup.org/onlinepubs/009695399/functions/send.html">send</a> <a class="footnote-reference brackets" href="#id12" id="id13">6</a>, also known as scatter/gather IO.</p>
+<p>A transport can be paused and resumed.  This will cause it to buffer
+data coming from protocols and stop sending received data to the
+protocol.</p>
+<p>A transport can also be closed, half-closed and aborted.  A closed
+transport will finish writing all of the data queued in it to the
+underlying mechanism, and will then stop reading or writing data.
+Aborting a transport stops it, closing the connection without sending
+any data that is still queued.</p>
+<p>Further writes will result in exceptions being thrown.  A half-closed
+transport may not be written to anymore, but will still accept
+incoming data.</p>
+</div>
+<div class="section" id="protocols">
+<h3><a class="toc-backref" href="#id23">Protocols</a><a class="headerlink" href="#protocols" title="Permalink to this headline">¶</a></h3>
+<p>Protocols are probably more familiar to new users.  The terminology is
+consistent with what you would expect from something called a
+protocol: the protocols most people think of first, like HTTP, IRC,
+SMTP… are all examples of something that would be implemented in a
+protocol.</p>
+<p>The shortest useful definition of a protocol is a (usually two-way)
+bridge between the transport and the rest of the application logic.  A
+protocol will receive bytes from a transport and translates that
+information into some behavior, typically resulting in some method
+calls on an object.  Similarly, application logic calls some methods
+on the protocol, which the protocol translates into bytes and
+communicates to the transport.</p>
+<p>One of the simplest protocols is a line-based protocol, where data is
+delimited by <code class="docutils literal notranslate"><span class="pre">\r\n</span></code>.  The protocol will receive bytes from the
+transport and buffer them until there is at least one complete line.
+Once that’s done, it will pass this line along to some object.
+Ideally that would be accomplished using a callable or even a
+completely separate object composed by the protocol, but it could also
+be implemented by subclassing (as is the case with Twisted’s
+<code class="docutils literal notranslate"><span class="pre">LineReceiver</span></code>).  For the other direction, the protocol could have a
+<code class="docutils literal notranslate"><span class="pre">write_line</span></code> method, which adds the required <code class="docutils literal notranslate"><span class="pre">\r\n</span></code> and passes the
+new bytes buffer on to the transport.</p>
+<p>This PEP suggests a generalized <code class="docutils literal notranslate"><span class="pre">LineReceiver</span></code> called
+<code class="docutils literal notranslate"><span class="pre">ChunkProtocol</span></code>, where a “chunk” is a message in a stream, delimited
+by the specified delimiter.  Instances take a delimiter and a callable
+that will be called with a chunk of data once it’s received (as
+opposed to Twisted’s subclassing behavior).  <code class="docutils literal notranslate"><span class="pre">ChunkProtocol</span></code> also
+has a <code class="docutils literal notranslate"><span class="pre">write_chunk</span></code> method analogous to the <code class="docutils literal notranslate"><span class="pre">write_line</span></code> method
+described above.</p>
+</div>
+<div class="section" id="why-separate-protocols-and-transports">
+<h3><a class="toc-backref" href="#id24">Why separate protocols and transports?</a><a class="headerlink" href="#why-separate-protocols-and-transports" title="Permalink to this headline">¶</a></h3>
+<p>This separation between protocol and transport often confuses people
+who first come across it.  In fact, the standard library itself does
+not make this distinction in many cases, particularly not in the API
+it provides to users.</p>
+<p>It is nonetheless a very useful distinction.  In the worst case, it
+simplifies the implementation by clear separation of concerns.
+However, it often serves the far more useful purpose of being able to
+reuse protocols across different transports.</p>
+<p>Consider a simple RPC protocol.  The same bytes may be transferred
+across many different transports, for example pipes or sockets.  To
+help with this, we separate the protocol out from the transport.  The
+protocol just reads and writes bytes, and doesn’t really care what
+mechanism is used to eventually transfer those bytes.</p>
+<p>This also allows for protocols to be stacked or nested easily,
+allowing for even more code reuse.  A common example of this is
+JSON-RPC: according to the specification, it can be used across both
+sockets and HTTP <a class="footnote-reference brackets" href="#jsonrpc" id="id1">1</a>.  In practice, it tends to be primarily
+encapsulated in HTTP.  The protocol-transport abstraction allows us to
+build a stack of protocols and transports that allow you to use HTTP
+as if it were a transport.  For JSON-RPC, that might get you a stack
+somewhat like this:</p>
+<ol class="arabic simple">
+<li>TCP socket transport</li>
+<li>HTTP protocol</li>
+<li>HTTP-based transport</li>
+<li>JSON-RPC protocol</li>
+<li>Application code</li>
+</ol>
+</div>
+</div>
+<div class="section" id="flow-control">
+<h2><a class="toc-backref" href="#id25">Flow control</a><a class="headerlink" href="#flow-control" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="consumers">
+<h3><a class="toc-backref" href="#id26">Consumers</a><a class="headerlink" href="#consumers" title="Permalink to this headline">¶</a></h3>
+<p>Consumers consume bytes produced by producers.  Together with
+producers, they make flow control possible.</p>
+<p>Consumers primarily play a passive role in flow control.  They get
+called whenever a producer has some data available.  They then process
+that data, and typically yield control back to the producer.</p>
+<p>Consumers typically implement buffers of some sort.  They make flow
+control possible by telling their producer about the current status of
+those buffers.  A consumer can instruct a producer to stop producing
+entirely, stop producing temporarily, or resume producing if it has
+been told to pause previously.</p>
+<p>Producers are registered to the consumer using the <code class="docutils literal notranslate"><span class="pre">register</span></code>
+method.</p>
+</div>
+<div class="section" id="producers">
+<h3><a class="toc-backref" href="#id27">Producers</a><a class="headerlink" href="#producers" title="Permalink to this headline">¶</a></h3>
+<p>Where consumers consume bytes, producers produce them.</p>
+<p>Producers are modeled after the <a class="reference external" href="http://twistedmatrix.com/documents/current/api/twisted.internet.interfaces.IPushProducer.html">IPushProducer</a> <a class="footnote-reference brackets" href="#id14" id="id15">7</a> interface found in
+Twisted.  Although there is an <a class="reference external" href="http://twistedmatrix.com/documents/current/api/twisted.internet.interfaces.IPullProducer.html">IPullProducer</a> <a class="footnote-reference brackets" href="#id17" id="id18">8</a> as well, it is on the
+whole far less interesting and therefore probably out of the scope of
+this PEP.</p>
+<p>Although producers can be told to stop producing entirely, the two
+most interesting methods they have are <code class="docutils literal notranslate"><span class="pre">pause</span></code> and <code class="docutils literal notranslate"><span class="pre">resume</span></code>.
+These are usually called by the consumer, to signify whether it is
+ready to process (“consume”) more data or not.  Consumers and
+producers cooperate to make flow control possible.</p>
+<p>In addition to the Twisted <a class="reference external" href="http://twistedmatrix.com/documents/current/api/twisted.internet.interfaces.IPushProducer.html">IPushProducer</a> <a class="footnote-reference brackets" href="#id14" id="id16">7</a> interface, producers have a
+<code class="docutils literal notranslate"><span class="pre">half_register</span></code> method which is called with the consumer when the
+consumer tries to register that producer.  In most cases, this will
+just be a case of setting <code class="docutils literal notranslate"><span class="pre">self.consumer</span> <span class="pre">=</span> <span class="pre">consumer</span></code>, but some
+producers may require more complex preconditions or behavior when a
+consumer is registered.  End-users are not supposed to call this
+method directly.</p>
+<div class="section" id="considered-api-alternatives">
+<h4><a class="toc-backref" href="#id28">Considered API alternatives</a><a class="headerlink" href="#considered-api-alternatives" title="Permalink to this headline">¶</a></h4>
+<div class="section" id="generators-as-producers">
+<h5><a class="toc-backref" href="#id29">Generators as producers</a><a class="headerlink" href="#generators-as-producers" title="Permalink to this headline">¶</a></h5>
+<p>Generators have been suggested as way to implement producers.
+However, there appear to be a few problems with this.</p>
+<p>First of all, there is a conceptual problem.  A generator, in a sense,
+is “passive”.  It needs to be told, through a method call, to take
+action.  A producer is “active”: it initiates those method calls.  A
+real producer has a symmetric relationship with its consumer.  In the
+case of a generator-turned-producer, only the consumer would have a
+reference, and the producer is blissfully unaware of the consumer’s
+existence.</p>
+<p>This conceptual problem translates into a few technical issues as
+well.  After a successful <code class="docutils literal notranslate"><span class="pre">write</span></code> method call on its consumer, a
+(push) producer is free to take action once more.  In the case of a
+generator, it would need to be told, either by asking for the next
+object through the iteration protocol (a process which could block
+indefinitely), or perhaps by throwing some kind of signal exception
+into it.</p>
+<p>This signaling setup may provide a technically feasible solution, but
+it is still unsatisfactory.  For one, this introduces unwarranted
+complexity in the consumer, which now not only needs to understand how
+to receive and process data, but also how to ask for new data and deal
+with the case of no new data being available.</p>
+<p>This latter edge case is particularly problematic.  It needs to be
+taken care of, since the entire operation is not allowed to block.
+However, generators can not raise an exception on iteration without
+terminating, thereby losing the state of the generator.  As a result,
+signaling a lack of available data would have to be done using a
+sentinel value, instead of being done using th exception mechanism.</p>
+<p>Last but not least, nobody produced actually working code
+demonstrating how they could be used.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id30">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="jsonrpc"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>Sections <a class="reference external" href="http://json-rpc.org/wiki/specification#a2.1JSON-RPCoverstreamconnections">2.1</a> and
+<a class="reference external" href="http://json-rpc.org/wiki/specification#a2.2JSON-RPCoverHTTP">2.2</a> .</dd>
+</dl>
+<dl class="footnote brackets">
+<dt class="label" id="id4"><span class="brackets"><a class="fn-backref" href="#id5">2</a></span></dt>
+<dd><a class="reference external" href="http://www.twistedmatrix.com/">http://www.twistedmatrix.com/</a></dd>
+<dt class="label" id="id6"><span class="brackets"><a class="fn-backref" href="#id7">3</a></span></dt>
+<dd><a class="reference external" href="http://www.gevent.org/">http://www.gevent.org/</a></dd>
+<dt class="label" id="id8"><span class="brackets"><a class="fn-backref" href="#id9">4</a></span></dt>
+<dd><a class="reference external" href="http://pubs.opengroup.org/onlinepubs/009695399/functions/writev.html">http://pubs.opengroup.org/onlinepubs/009695399/functions/writev.html</a></dd>
+<dt class="label" id="id10"><span class="brackets"><a class="fn-backref" href="#id11">5</a></span></dt>
+<dd><a class="reference external" href="http://pubs.opengroup.org/onlinepubs/009695399/functions/write.html">http://pubs.opengroup.org/onlinepubs/009695399/functions/write.html</a></dd>
+<dt class="label" id="id12"><span class="brackets"><a class="fn-backref" href="#id13">6</a></span></dt>
+<dd><a class="reference external" href="http://pubs.opengroup.org/onlinepubs/009695399/functions/send.html">http://pubs.opengroup.org/onlinepubs/009695399/functions/send.html</a></dd>
+<dt class="label" id="id14"><span class="brackets">7</span><span class='fn-backref'><em> (<a href="#id15">1</a>, <a href="#id16">2</a>) </em></span></dt>
+<dd><a class="reference external" href="http://twistedmatrix.com/documents/current/api/twisted.internet.interfaces.IPushProducer.html">http://twistedmatrix.com/documents/current/api/twisted.internet.interfaces.IPushProducer.html</a></dd>
+<dt class="label" id="id17"><span class="brackets"><a class="fn-backref" href="#id18">8</a></span></dt>
+<dd><a class="reference external" href="http://twistedmatrix.com/documents/current/api/twisted.internet.interfaces.IPullProducer.html">http://twistedmatrix.com/documents/current/api/twisted.internet.interfaces.IPullProducer.html</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id31">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-3153.txt">https://github.com/python/peps/blob/master/pep-3153.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-3153.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-3152.html">PEP 3152</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-3154.html">PEP 3154</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 3153 – Asynchronous IO support</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#communication-abstractions">Communication abstractions</a><ul>
+<li><a class="reference internal" href="#transports">Transports</a></li>
+<li><a class="reference internal" href="#protocols">Protocols</a></li>
+<li><a class="reference internal" href="#why-separate-protocols-and-transports">Why separate protocols and transports?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#flow-control">Flow control</a><ul>
+<li><a class="reference internal" href="#consumers">Consumers</a></li>
+<li><a class="reference internal" href="#producers">Producers</a><ul>
+<li><a class="reference internal" href="#considered-api-alternatives">Considered API alternatives</a><ul>
+<li><a class="reference internal" href="#generators-as-producers">Generators as producers</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

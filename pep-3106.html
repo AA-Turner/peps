@@ -1,0 +1,427 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 3106 – Revamping dict.keys(), .values() and .items() &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 3107 – Function Annotations" href="pep-3107.html" />
+    <link rel="prev" title="PEP 3105 – Make print a function" href="pep-3105.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 3106 – Revamping dict.keys(), .values() and .items()</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-3106-revamping-dict-keys-values-and-items">
+<h1 class="page-title">PEP 3106 – Revamping dict.keys(), .values() and .items()<a class="headerlink" href="#pep-3106-revamping-dict-keys-values-and-items" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">3106</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Revamping dict.keys(), .values() and .items()</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Guido van Rossum</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">19-Dec-2006</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id4">Abstract</a></li>
+<li><a class="reference internal" href="#introduction" id="id5">Introduction</a></li>
+<li><a class="reference internal" href="#specification" id="id6">Specification</a></li>
+<li><a class="reference internal" href="#open-issues" id="id7">Open Issues</a></li>
+<li><a class="reference internal" href="#references" id="id8">References</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id4">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes to change the .keys(), .values() and .items()
+methods of the built-in dict type to return a set-like or unordered
+container object whose contents are derived from the underlying
+dictionary rather than a list which is a copy of the keys, etc.; and
+to remove the .iterkeys(), .itervalues() and .iteritems() methods.</p>
+<p>The approach is inspired by that taken in the Java Collections
+Framework <a class="footnote-reference brackets" href="#id3" id="id1">1</a>.</p>
+</div>
+<div class="section" id="introduction">
+<h2><a class="toc-backref" href="#id5">Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>It has long been the plan to change the .keys(), .values() and
+.items() methods of the built-in dict type to return a more
+lightweight object than a list, and to get rid of .iterkeys(),
+.itervalues() and .iteritems().  The idea is that code that currently
+(in 2.x) reads:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span> <span class="o">...</span>
+</pre></div>
+</div>
+<p>should be rewritten as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">items</span><span class="p">():</span> <span class="o">...</span>
+</pre></div>
+</div>
+<p>(and similar for .itervalues() and .iterkeys(), except the latter is
+redundant since we can write that loop as <code class="docutils literal notranslate"><span class="pre">for</span> <span class="pre">k</span> <span class="pre">in</span> <span class="pre">d</span></code>.)</p>
+<p>Code that currently reads:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">a</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>    <span class="c1"># assume we really want a list here</span>
+</pre></div>
+</div>
+<p>(etc.) should be rewritten as</p>
+<blockquote>
+<div>a = list(d.keys())</div></blockquote>
+<p>There are (at least) two ways to accomplish this.  The original plan
+was to simply let .keys(), .values() and .items() return an iterator,
+i.e. exactly what iterkeys(), itervalues() and iteritems() return in
+Python 2.x.  However, the Java Collections Framework <a class="footnote-reference brackets" href="#id3" id="id2">1</a> suggests
+that a better solution is possible: the methods return objects with
+set behavior (for .keys() and .items()) or multiset (== bag) behavior
+(for .values()) that do not contain copies of the keys, values or
+items, but rather reference the underlying dict and pull their values
+out of the dict as needed.</p>
+<p>The advantage of this approach is that one can still write code like
+this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">a</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">a</span><span class="p">:</span> <span class="o">...</span>
+<span class="c1"># And later, again:</span>
+<span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">a</span><span class="p">:</span> <span class="o">...</span>
+</pre></div>
+</div>
+<p>Effectively, iter(d.keys()) (etc.) in Python 3.0 will do what
+d.iterkeys() (etc.) does in Python 2.x; but in most contexts we don’t
+have to write the iter() call because it is implied by a for-loop.</p>
+<p>The objects returned by the .keys() and .items() methods behave like
+sets.  The object returned by the values() method behaves like a much
+simpler unordered collection – it cannot be a set because duplicate
+values are possible.</p>
+<p>Because of the set behavior, it will be possible to check whether two
+dicts have the same keys by simply testing:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">a</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="o">==</span> <span class="n">b</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span> <span class="o">...</span>
+</pre></div>
+</div>
+<p>and similarly for .items().</p>
+<p>These operations are thread-safe only to the extent that using them in
+a thread-unsafe way may cause an exception but will not cause
+corruption of the internal representation.</p>
+<p>As in Python 2.x, mutating a dict while iterating over it using an
+iterator has an undefined effect and will in most cases raise a
+RuntimeError exception.  (This is similar to the guarantees made by
+the Java Collections Framework.)</p>
+<p>The objects returned by .keys() and .items() are fully interoperable
+with instances of the built-in set and frozenset types; for example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">set</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">==</span> <span class="n">d</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>is guaranteed to be True (except when d is being modified
+simultaneously by another thread).</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id6">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>I’m using pseudo-code to specify the semantics:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">dict</span><span class="p">:</span>
+
+    <span class="c1"># Omitting all other dict methods for brevity.</span>
+    <span class="c1"># The .iterkeys(), .itervalues() and .iteritems() methods</span>
+    <span class="c1"># will be removed.</span>
+
+    <span class="k">def</span> <span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">d_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">items</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">d_items</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">d_values</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">d_keys</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__d</span> <span class="o">=</span> <span class="n">d</span>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__d</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__d</span>
+
+    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__d</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">key</span>
+
+    <span class="c1"># The following operations should be implemented to be</span>
+    <span class="c1"># compatible with sets; this can be done by exploiting</span>
+    <span class="c1"># the above primitive operations:</span>
+    <span class="c1">#</span>
+    <span class="c1">#   &lt;, &lt;=, ==, !=, &gt;=, &gt; (returning a bool)</span>
+    <span class="c1">#   &amp;, |, ^, - (returning a new, real set object)</span>
+    <span class="c1">#</span>
+    <span class="c1"># as well as their method counterparts (.union(), etc.).</span>
+    <span class="c1">#</span>
+    <span class="c1"># To specify the semantics, we can specify x == y as:</span>
+    <span class="c1">#</span>
+    <span class="c1">#   set(x) == set(y)   if both x and y are d_keys instances</span>
+    <span class="c1">#   set(x) == y        if x is a d_keys instance</span>
+    <span class="c1">#   x == set(y)        if y is a d_keys instance</span>
+    <span class="c1">#</span>
+    <span class="c1"># and so on for all other operations.</span>
+
+<span class="k">class</span> <span class="nc">d_items</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__d</span> <span class="o">=</span> <span class="n">d</span>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__d</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__d</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">__d</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">==</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__d</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__d</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+    <span class="c1"># As well as the set operations mentioned for d_keys above.</span>
+    <span class="c1"># However the specifications suggested there will not work if</span>
+    <span class="c1"># the values aren&#39;t hashable.  Fortunately, the operations can</span>
+    <span class="c1"># still be implemented efficiently.  For example, this is how</span>
+    <span class="c1"># intersection can be specified:</span>
+
+    <span class="k">def</span> <span class="fm">__and__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="nb">set</span><span class="p">,</span> <span class="nb">frozenset</span><span class="p">,</span> <span class="n">d_keys</span><span class="p">)):</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">other</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+                    <span class="n">result</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">result</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">d_items</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">NotImplemented</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">other</span> <span class="o">=</span> <span class="n">other</span><span class="p">,</span> <span class="bp">self</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">other</span><span class="p">:</span>
+                <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="o">=</span> <span class="n">item</span>
+                <span class="n">d</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="k">return</span> <span class="n">d</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+
+    <span class="c1"># And here is equality:</span>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="nb">set</span><span class="p">,</span> <span class="nb">frozenset</span><span class="p">,</span> <span class="n">d_keys</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">False</span>
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">other</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">item</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="kc">False</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">d_items</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">NotImplemented</span>
+        <span class="c1"># XXX We could also just compare the underlying dicts...</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">item</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">other</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="k">def</span> <span class="fm">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="c1"># XXX Perhaps object.__ne__() should be defined this way.</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__eq__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">NotImplemented</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">result</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+<span class="k">class</span> <span class="nc">d_values</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__d</span> <span class="o">=</span> <span class="n">d</span>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__d</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="c1"># This is slow, and it&#39;s what &quot;x in y&quot; uses as a fallback</span>
+        <span class="c1"># if __contains__ is not defined; but I&#39;d rather make it</span>
+        <span class="c1"># explicit that it is supported.</span>
+        <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+             <span class="k">if</span> <span class="n">v</span> <span class="o">==</span> <span class="n">value</span><span class="p">:</span>
+                 <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__d</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">__d</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">d_values</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">NotImplemented</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="c1"># XXX Sometimes this could be optimized, but these are the</span>
+        <span class="c1"># semantics: we can&#39;t depend on the values to be hashable</span>
+        <span class="c1"># or comparable.</span>
+        <span class="n">olist</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">olist</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">assert</span> <span class="n">olist</span> <span class="o">==</span> <span class="p">[]</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="k">def</span> <span class="fm">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__eq__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">NotImplemented</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">result</span>
+        <span class="k">return</span> <span class="n">result</span>
+</pre></div>
+</div>
+<p>Notes:</p>
+<p>The view objects are not directly mutable, but don’t implement
+__hash__(); their value can change if the underlying dict is mutated.</p>
+<p>The only requirements on the underlying dict are that it implements
+__getitem__(), __contains__(), __iter__(), and __len__().</p>
+<p>We don’t implement .copy() – the presence of a .copy()
+method suggests that the copy has the same type as the original, but
+that’s not feasible without copying the underlying dict.  If you want
+a copy of a specific type, like list or set, you can just pass one
+of the above to the list() or set() constructor.</p>
+<p>The specification implies that the order in which items
+are returned by .keys(), .values() and .items() is the same (just as
+it was in Python 2.x), because the order is all derived from the dict
+iterator (which is presumably arbitrary but stable as long as a dict
+isn’t modified).  This can be expressed by the following invariant:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">list</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">items</span><span class="p">())</span> <span class="o">==</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">d</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="open-issues">
+<h2><a class="toc-backref" href="#id7">Open Issues</a><a class="headerlink" href="#open-issues" title="Permalink to this headline">¶</a></h2>
+<p>Do we need more of a motivation?  I would think that being able to do
+set operations on keys and items without having to copy them should
+speak for itself.</p>
+<p>I’ve left out the implementation of various set operations.  These
+could still present small surprises.</p>
+<p>It would be okay if multiple calls to d.keys() (etc.) returned the
+same object, since the object’s only state is the dict to which it
+refers.  Is this worth having extra slots in the dict object for?
+Should that be a weak reference or should the d_keys (etc.) object
+live forever once created?  Strawman: probably not worth the extra
+slots in every dict.</p>
+<p>Should d_keys, d_values and d_items have a public instance variable or
+method through which one can retrieve the underlying dict?  Strawman:
+yes (but what should it be called?).</p>
+<p>I’m soliciting better names than d_keys, d_values and d_items.  These
+classes could be public so that their implementations could be reused
+by the .keys(), .values() and .items() methods of other mappings.  Or
+should they?</p>
+<p>Should the d_keys, d_values and d_items classes be reusable?
+Strawman: yes.</p>
+<p>Should they be subclassable?  Strawman: yes (but see below).</p>
+<p>A particularly nasty issue is whether operations that are specified in
+terms of other operations (e.g. .discard()) must really be implemented
+in terms of those other operations; this may appear irrelevant but it
+becomes relevant if these classes are ever subclassed.  Historically,
+Python has a really poor track record of specifying the semantics of
+highly optimized built-in types clearly in such cases; my strawman is
+to continue that trend.  Subclassing may still be useful to <em>add</em> new
+methods, for example.</p>
+<p>I’ll leave the decisions (especially about naming) up to whoever
+submits a working implementation.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id8">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id3"><span class="brackets">1</span><span class='fn-backref'><em> (<a href="#id1">1</a>, <a href="#id2">2</a>) </em></span></dt>
+<dd>Java Collections Framework
+<a class="reference external" href="http://java.sun.com/docs/books/tutorial/collections/index.html">http://java.sun.com/docs/books/tutorial/collections/index.html</a></dd>
+</dl>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-3106.txt">https://github.com/python/peps/blob/master/pep-3106.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-3106.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-3105.html">PEP 3105</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-3107.html">PEP 3107</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 3106 – Revamping dict.keys(), .values() and .items()</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#open-issues">Open Issues</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

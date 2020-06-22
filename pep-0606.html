@@ -1,0 +1,690 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 606 – Python Compatibility Version &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 607 – Reducing CPython’s Feature Delivery Latency" href="pep-0607.html" />
+    <link rel="prev" title="PEP 605 – A rolling feature release stream for CPython" href="pep-0605.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 606 – Python Compatibility Version</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-606-python-compatibility-version">
+<h1 class="page-title">PEP 606 – Python Compatibility Version<a class="headerlink" href="#pep-606-python-compatibility-version" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">606</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Python Compatibility Version</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Victor Stinner &lt;vstinner&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Rejected</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">18-Oct-2019</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.9</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id1">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id2">Rationale</a><ul>
+<li><a class="reference internal" href="#the-need-to-evolve-frequently" id="id3">The need to evolve frequently</a></li>
+<li><a class="reference internal" href="#partial-compatibility-to-minimize-the-python-maintenance-burden" id="id4">Partial compatibility to minimize the Python maintenance burden</a></li>
+<li><a class="reference internal" href="#cases-excluded-from-backward-compatibility" id="id5">Cases excluded from backward compatibility</a></li>
+<li><a class="reference internal" href="#upgrading-a-project-to-a-newer-python" id="id6">Upgrading a project to a newer Python</a></li>
+<li><a class="reference internal" href="#cleaning-up-python-and-deprecationwarning" id="id7">Cleaning up Python and DeprecationWarning</a></li>
+<li><a class="reference internal" href="#redistribute-the-maintenance-burden" id="id8">Redistribute the maintenance burden</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#examples-of-backward-compatibility" id="id9">Examples of backward compatibility</a><ul>
+<li><a class="reference internal" href="#collections-abc-aliases" id="id10">collections ABC aliases</a></li>
+<li><a class="reference internal" href="#deprecated-open-u-mode" id="id11">Deprecated open() “U” mode</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#specification" id="id12">Specification</a><ul>
+<li><a class="reference internal" href="#sys-functions" id="id13">sys functions</a></li>
+<li><a class="reference internal" href="#command-line" id="id14">Command line</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#backwards-compatibility" id="id15">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#security-implications" id="id16">Security Implications</a></li>
+<li><a class="reference internal" href="#alternatives" id="id17">Alternatives</a><ul>
+<li><a class="reference internal" href="#provide-a-workaround-for-each-incompatible-change" id="id18">Provide a workaround for each incompatible change</a></li>
+<li><a class="reference internal" href="#handle-backward-compatibility-in-the-parser" id="id19">Handle backward compatibility in the parser</a><ul>
+<li><a class="reference internal" href="#from-future-import-python38-syntax" id="id20">from __future__ import python38_syntax</a></li>
+<li><a class="reference internal" href="#update-cache-tag" id="id21">Update cache_tag</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#temporary-moratorium-on-incompatible-changes" id="id22">Temporary moratorium on incompatible changes</a></li>
+<li><a class="reference internal" href="#pep-387" id="id23">PEP 387</a></li>
+<li><a class="reference internal" href="#pep-497" id="id24">PEP 497</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#examples-of-incompatible-changes" id="id25">Examples of incompatible changes</a><ul>
+<li><a class="reference internal" href="#python-3-8" id="id26">Python 3.8</a></li>
+<li><a class="reference internal" href="#python-3-7" id="id27">Python 3.7</a></li>
+<li><a class="reference internal" href="#micro-releases" id="id28">Micro releases</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references" id="id29">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id30">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id1">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Add <code class="docutils literal notranslate"><span class="pre">sys.set_python_compat_version(version)</span></code> to enable partial
+compatibility with requested Python version. Add
+<code class="docutils literal notranslate"><span class="pre">sys.get_python_compat_version()</span></code>.</p>
+<p>Modify a few functions in the standard library to implement partial
+compatibility with Python 3.8.</p>
+<p>Add <code class="docutils literal notranslate"><span class="pre">sys.set_python_min_compat_version(version)</span></code> to deny backward
+compatibility with Python versions older than <em>version</em>.</p>
+<p>Add <code class="docutils literal notranslate"><span class="pre">-X</span> <span class="pre">compat_version=VERSION</span></code> and <code class="docutils literal notranslate"><span class="pre">-X</span> <span class="pre">min_compat_version=VERSION</span></code>
+command line options. Add <code class="docutils literal notranslate"><span class="pre">PYTHONCOMPATVERSION</span></code> and
+<code class="docutils literal notranslate"><span class="pre">PYTHONCOMPATMINVERSION</span></code> environment variables.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id2">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="the-need-to-evolve-frequently">
+<h3><a class="toc-backref" href="#id3">The need to evolve frequently</a><a class="headerlink" href="#the-need-to-evolve-frequently" title="Permalink to this headline">¶</a></h3>
+<p>To remain relevant and useful, Python has to evolve frequently; some
+enhancements require incompatible changes. Any incompatible change can
+break an unknown number of Python projects.  Developers can decide to
+not implement a feature because of that.</p>
+<p>Users want to get the latest Python version to obtain new features and
+better performance. A few incompatible changes can prevent them from using their
+applications on the latest Python version.</p>
+<p>This PEP proposes to add a partial compatibility with old Python
+versions as a tradeoff to fit both use cases.</p>
+<p>The main issue with the migration from Python 2 to Python 3 is not that
+Python 3 is backward incompatible, but how incompatible changes were
+introduced.</p>
+</div>
+<div class="section" id="partial-compatibility-to-minimize-the-python-maintenance-burden">
+<h3><a class="toc-backref" href="#id4">Partial compatibility to minimize the Python maintenance burden</a><a class="headerlink" href="#partial-compatibility-to-minimize-the-python-maintenance-burden" title="Permalink to this headline">¶</a></h3>
+<p>While technically it would be possible to provide full compatibility
+with old Python versions, this PEP proposes to minimize the number of
+functions handling backward compatibility to reduce the maintenance
+burden of the Python project (CPython).</p>
+<p>Each change introducing backport compatibility to a function should be
+properly discussed to estimate the maintenance cost in the long-term.</p>
+<p>Backward compatibility code will be dropped on each Python release, on a
+case by case basis. Each compatibility function can be supported for a
+different number of Python releases depending on its maintenance cost
+and the estimated risk (number of broken projects) if it’s removed.</p>
+<p>The maintenance cost does not only come from the code implementing the
+backward compatibility, but also comes from the additional tests.</p>
+</div>
+<div class="section" id="cases-excluded-from-backward-compatibility">
+<h3><a class="toc-backref" href="#id5">Cases excluded from backward compatibility</a><a class="headerlink" href="#cases-excluded-from-backward-compatibility" title="Permalink to this headline">¶</a></h3>
+<p>The performance overhead of any compatibility code must be low when
+<code class="docutils literal notranslate"><span class="pre">sys.set_python_compat_version()</span></code> is not called.</p>
+<p>The C API is out of the scope of this PEP: <code class="docutils literal notranslate"><span class="pre">Py_LIMITED_API</span></code> macro and
+the stable ABI are solving this problem differently, see the <a class="reference external" href="https://www.python.org/dev/peps/pep-0384/">PEP 384:
+Defining a Stable ABI</a>.</p>
+<p>Security fixes which break backward compatibility on purpose will
+not get a compatibility layer; security matters more than compatibility.
+For example, <code class="docutils literal notranslate"><span class="pre">http.client.HTTPSConnection</span></code> was modified in Python
+3.4.3 to performs all the necessary certificate and hostname checks by
+default. It was a deliberate change motivated by <a class="reference external" href="https://www.python.org/dev/peps/pep-0476/">PEP 476: Enabling
+certificate verification by default for stdlib http clients</a> (<a class="reference external" href="https://bugs.python.org/issue22417">bpo-22417</a>).</p>
+<p>The Python language does not provide backward compatibility.</p>
+<p>Changes which are not clearly incompatible are not covered by this PEP.
+For example, Python 3.9 changed the default protocol in the <code class="docutils literal notranslate"><span class="pre">pickle</span></code>
+module to Protocol 4 which was first introduced in Python 3.4. This
+change is backward compatible up to Python 3.4. There is no need to use
+the Protocol 3 by default when compatibility with Python 3.8 is
+requested.</p>
+<p>The new <code class="docutils literal notranslate"><span class="pre">DeprecationWarning</span></code> and <code class="docutils literal notranslate"><span class="pre">PendingDeprecatingWarning</span></code> warnings
+in Python 3.9 will not be disabled in Python 3.8 compatibility mode.
+If a project runs its test suite using <code class="docutils literal notranslate"><span class="pre">-Werror</span></code> (treat any warning as
+an error), these warnings must be fixed, or specific deprecation
+warnings must be ignored on a case by case basis.</p>
+</div>
+<div class="section" id="upgrading-a-project-to-a-newer-python">
+<h3><a class="toc-backref" href="#id6">Upgrading a project to a newer Python</a><a class="headerlink" href="#upgrading-a-project-to-a-newer-python" title="Permalink to this headline">¶</a></h3>
+<p>Without backward compatibility, all incompatible changes must be fixed
+at once, which can be a blocker issue. It is even worse when a project
+is upgraded to a newer Python which is separated by multiple releases
+from the old Python.</p>
+<p>Postponing an upgrade only makes things worse: each skipped release adds
+more incompatible changes. The technical debt only steadily
+increases over time.</p>
+<p>With backward compatibility, it becomes possible to upgrade Python
+increamentally in a project, without having to fix all of the issues at once.</p>
+<p>The “all-or-nothing” is a showstopper to port large Python 2 code bases
+to Python 3. The list of incompatible changes between Python 2 and
+Python 3 is long, and it’s getting longer with each Python 3.x release.</p>
+</div>
+<div class="section" id="cleaning-up-python-and-deprecationwarning">
+<h3><a class="toc-backref" href="#id7">Cleaning up Python and DeprecationWarning</a><a class="headerlink" href="#cleaning-up-python-and-deprecationwarning" title="Permalink to this headline">¶</a></h3>
+<p>One of the <a class="reference external" href="https://www.python.org/dev/peps/pep-0020/">Zen of Python (PEP 20)</a> motto is:</p>
+<blockquote>
+<div>There should be one– and preferably only one –obvious way to do
+it.</div></blockquote>
+<p>When Python evolves, new ways inevitably emerge. <code class="docutils literal notranslate"><span class="pre">DeprecationWarning``s</span>
+<span class="pre">are</span> <span class="pre">emitted</span> <span class="pre">to</span> <span class="pre">suggest</span> <span class="pre">using</span> <span class="pre">the</span> <span class="pre">new</span> <span class="pre">way,</span> <span class="pre">but</span> <span class="pre">many</span> <span class="pre">developers</span> <span class="pre">ignore</span>
+<span class="pre">these</span> <span class="pre">warnings,</span> <span class="pre">which</span> <span class="pre">are</span> <span class="pre">silent</span> <span class="pre">by</span> <span class="pre">default</span> <span class="pre">(except</span> <span class="pre">in</span> <span class="pre">the</span> <span class="pre">``__main__</span></code>
+module: see the <a class="reference external" href="https://www.python.org/dev/peps/pep-0565/">PEP 565</a>).
+Some developers simply ignore all warnings when there are too many
+warnings, thus only bother with exceptions when the deprecated code is
+removed.</p>
+<p>Sometimes, supporting both ways has a minor maintenance cost, but
+developers prefer to drop the old way to clean up their code. These kinds of
+changes are backward incompatible.</p>
+<p>Some developers can take the end of the Python 2 support as an
+opportunity to push even more incompatible changes than usual.</p>
+<p>Adding an opt-in backward compatibility prevents the breaking of
+applications and allows developers to continue doing these cleanups.</p>
+</div>
+<div class="section" id="redistribute-the-maintenance-burden">
+<h3><a class="toc-backref" href="#id8">Redistribute the maintenance burden</a><a class="headerlink" href="#redistribute-the-maintenance-burden" title="Permalink to this headline">¶</a></h3>
+<p>The backward compatibility involves authors of incompatible
+changes more in the upgrade path.</p>
+</div>
+</div>
+<div class="section" id="examples-of-backward-compatibility">
+<h2><a class="toc-backref" href="#id9">Examples of backward compatibility</a><a class="headerlink" href="#examples-of-backward-compatibility" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="collections-abc-aliases">
+<h3><a class="toc-backref" href="#id10">collections ABC aliases</a><a class="headerlink" href="#collections-abc-aliases" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">collections.abc</span></code> aliases to ABC classes have been removed from the
+<code class="docutils literal notranslate"><span class="pre">collections</span></code> module in Python 3.9, after being deprecated since
+Python 3.3. For example, <code class="docutils literal notranslate"><span class="pre">collections.Mapping</span></code> no longer exists.</p>
+<p>In Python 3.6, aliases were created in <code class="docutils literal notranslate"><span class="pre">collections/__init__.py</span></code> by
+<code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">_collections_abc</span> <span class="pre">import</span> <span class="pre">*</span></code>.</p>
+<p>In Python 3.7, a <code class="docutils literal notranslate"><span class="pre">__getattr__()</span></code> has been added to the <code class="docutils literal notranslate"><span class="pre">collections</span></code>
+module to emit a DeprecationWarning upon first access to an
+attribute:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="fm">__getattr__</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+    <span class="c1"># For backwards compatibility, continue to make the collections ABCs</span>
+    <span class="c1"># through Python 3.6 available through the collections module.</span>
+    <span class="c1"># Note: no new collections ABCs were added in Python 3.7</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">_collections_abc</span><span class="o">.</span><span class="n">__all__</span><span class="p">:</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">_collections_abc</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="kn">import</span> <span class="nn">warnings</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Using or importing the ABCs from &#39;collections&#39; instead &quot;</span>
+                      <span class="s2">&quot;of from &#39;collections.abc&#39; is deprecated since Python 3.3, &quot;</span>
+                      <span class="s2">&quot;and in 3.9 it will be removed.&quot;</span><span class="p">,</span>
+                      <span class="ne">DeprecationWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="nb">globals</span><span class="p">()[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">obj</span>
+        <span class="k">return</span> <span class="n">obj</span>
+    <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;module </span><span class="si">{</span><span class="vm">__name__</span><span class="si">!r}</span><span class="s1"> has no attribute </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s1">&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Compatibility with Python 3.8 can be restored in Python 3.9 by adding
+back the <code class="docutils literal notranslate"><span class="pre">__getattr__()</span></code> function, but only when backward
+compatibility is requested:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="fm">__getattr__</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">get_python_compat_version</span><span class="p">()</span> <span class="o">&lt;</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">9</span><span class="p">)</span>
+       <span class="ow">and</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">_collections_abc</span><span class="o">.</span><span class="n">__all__</span><span class="p">):</span>
+        <span class="o">...</span>
+    <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;module </span><span class="si">{</span><span class="vm">__name__</span><span class="si">!r}</span><span class="s1"> has no attribute </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s1">&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="deprecated-open-u-mode">
+<h3><a class="toc-backref" href="#id11">Deprecated open() “U” mode</a><a class="headerlink" href="#deprecated-open-u-mode" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">&quot;U&quot;</span></code> mode of <code class="docutils literal notranslate"><span class="pre">open()</span></code> is deprecated since Python 3.4 and emits a
+<code class="docutils literal notranslate"><span class="pre">DeprecationWarning</span></code>. <a class="reference external" href="https://bugs.python.org/issue37330">bpo-37330</a> proposes to drop this mode:
+<code class="docutils literal notranslate"><span class="pre">open(filename,</span> <span class="pre">&quot;rU&quot;)</span></code> would raise an exception.</p>
+<p>This change falls into the “cleanup” category: it is not required to
+implement a feature.</p>
+<p>A backward compatibility mode would be trivial to implement and would be
+welcomed by users.</p>
+</div>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id12">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="sys-functions">
+<h3><a class="toc-backref" href="#id13">sys functions</a><a class="headerlink" href="#sys-functions" title="Permalink to this headline">¶</a></h3>
+<p>Add 3 functions to the <code class="docutils literal notranslate"><span class="pre">sys</span></code> module:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">sys.set_python_compat_version(version)</span></code>: set the Python
+compatibility version. If it has been called previously, use the
+minimum of requested versions. Raise an exception if
+<code class="docutils literal notranslate"><span class="pre">sys.set_python_min_compat_version(min_version)</span></code> has been called and
+<code class="docutils literal notranslate"><span class="pre">version</span> <span class="pre">&lt;</span> <span class="pre">min_version</span></code>.
+<em>version</em> must be greater than or equal to <code class="docutils literal notranslate"><span class="pre">(3,</span> <span class="pre">0)</span></code>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">sys.set_python_min_compat_version(min_version)</span></code>: set the
+<strong>minimum</strong> compatibility version. Raise an exception if
+<code class="docutils literal notranslate"><span class="pre">sys.set_python_compat_version(old_version)</span></code> has been called
+previously and <code class="docutils literal notranslate"><span class="pre">old_version</span> <span class="pre">&lt;</span> <span class="pre">min_version</span></code>.
+<em>min_version</em> must be greater than or equal to <code class="docutils literal notranslate"><span class="pre">(3,</span> <span class="pre">0)</span></code>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">sys.get_python_compat_version()</span></code>: get the Python compatibility
+version. Return a <code class="docutils literal notranslate"><span class="pre">tuple</span></code> of 3 integers.</li>
+</ul>
+<p>A <em>version</em> must a tuple of 2 or 3 integers. <code class="docutils literal notranslate"><span class="pre">(major,</span> <span class="pre">minor)</span></code> version
+is equivalent to <code class="docutils literal notranslate"><span class="pre">(major,</span> <span class="pre">minor,</span> <span class="pre">0)</span></code>.</p>
+<p>By default, <code class="docutils literal notranslate"><span class="pre">sys.get_python_compat_version()</span></code> returns the current
+Python version.</p>
+<p>For example, to request compatibility with Python 3.8.0:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">collections</span>
+
+<span class="n">sys</span><span class="o">.</span><span class="n">set_python_compat_version</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+
+<span class="c1"># collections.Mapping alias, removed from Python 3.9, is available</span>
+<span class="c1"># again, even if collections has been imported before calling</span>
+<span class="c1"># set_python_compat_version().</span>
+<span class="n">parent</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">Mapping</span>
+</pre></div>
+</div>
+<p>Obviously, calling <code class="docutils literal notranslate"><span class="pre">sys.set_python_compat_version(version)</span></code> has no
+effect on code executed before the call. Use <code class="docutils literal notranslate"><span class="pre">-X</span>
+<span class="pre">compat_version=VERSION</span></code> command line option or
+<code class="docutils literal notranslate"><span class="pre">PYTHONCOMPATVERSIONVERSION=VERSION</span></code> environment variable to set the
+compatibility version at Python startup.</p>
+</div>
+<div class="section" id="command-line">
+<h3><a class="toc-backref" href="#id14">Command line</a><a class="headerlink" href="#command-line" title="Permalink to this headline">¶</a></h3>
+<p>Add <code class="docutils literal notranslate"><span class="pre">-X</span> <span class="pre">compat_version=VERSION</span></code> and <code class="docutils literal notranslate"><span class="pre">-X</span> <span class="pre">min_compat_version=VERSION</span></code>
+command line options: call respectivelly
+<code class="docutils literal notranslate"><span class="pre">sys.set_python_compat_version()</span></code> and
+<code class="docutils literal notranslate"><span class="pre">sys.set_python_min_compat_version()</span></code>. <code class="docutils literal notranslate"><span class="pre">VERSION</span></code> is a version string
+with 2 or 3 numbers (<code class="docutils literal notranslate"><span class="pre">major.minor.micro</span></code> or <code class="docutils literal notranslate"><span class="pre">major.minor</span></code>). For
+example, <code class="docutils literal notranslate"><span class="pre">-X</span> <span class="pre">compat_version=3.8</span></code> calls
+<code class="docutils literal notranslate"><span class="pre">sys.set_python_compat_version((3,</span> <span class="pre">8))</span></code>.</p>
+<p>Add <code class="docutils literal notranslate"><span class="pre">PYTHONCOMPATVERSIONVERSION=VERSION</span></code> and
+<code class="docutils literal notranslate"><span class="pre">PYTHONCOMPATMINVERSION=VERSION=VERSION</span></code> environment variables: call
+respectivelly <code class="docutils literal notranslate"><span class="pre">sys.set_python_compat_version()</span></code> and
+<code class="docutils literal notranslate"><span class="pre">sys.set_python_min_compat_version()</span></code>.  <code class="docutils literal notranslate"><span class="pre">VERSION</span></code> is a version
+string with the same format as the command line options.</p>
+</div>
+</div>
+<div class="section" id="backwards-compatibility">
+<h2><a class="toc-backref" href="#id15">Backwards Compatibility</a><a class="headerlink" href="#backwards-compatibility" title="Permalink to this headline">¶</a></h2>
+<p>Introducing the <code class="docutils literal notranslate"><span class="pre">sys.set_python_compat_version()</span></code> function means that an
+application will behave differently depending on the compatibility
+version. Moreover, since the version can be decreased multiple times,
+the application can behave differently depending on the import order.</p>
+<p>Python 3.9 with <code class="docutils literal notranslate"><span class="pre">sys.set_python_compat_version((3,</span> <span class="pre">8))</span></code> is not fully
+compatible with Python 3.8: the compatibility is only partial.</p>
+</div>
+<div class="section" id="security-implications">
+<h2><a class="toc-backref" href="#id16">Security Implications</a><a class="headerlink" href="#security-implications" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">sys.set_python_compat_version()</span></code> must not disable security fixes.</p>
+</div>
+<div class="section" id="alternatives">
+<h2><a class="toc-backref" href="#id17">Alternatives</a><a class="headerlink" href="#alternatives" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="provide-a-workaround-for-each-incompatible-change">
+<h3><a class="toc-backref" href="#id18">Provide a workaround for each incompatible change</a><a class="headerlink" href="#provide-a-workaround-for-each-incompatible-change" title="Permalink to this headline">¶</a></h3>
+<p>An application can work around most incompatible changes which
+impacts it.</p>
+<p>For example, <code class="docutils literal notranslate"><span class="pre">collections</span></code> aliases can be added back using:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">collections.abc</span>
+<span class="n">collections</span><span class="o">.</span><span class="n">Mapping</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">Mapping</span>
+<span class="n">collections</span><span class="o">.</span><span class="n">Sequence</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">Sequence</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="handle-backward-compatibility-in-the-parser">
+<h3><a class="toc-backref" href="#id19">Handle backward compatibility in the parser</a><a class="headerlink" href="#handle-backward-compatibility-in-the-parser" title="Permalink to this headline">¶</a></h3>
+<p>The parser is modified to support multiple versions of the Python
+language (grammar).</p>
+<p>The current Python parser cannot be easily modified for that. AST and
+grammar are hardcoded to a single Python version.</p>
+<p>In Python 3.8, <code class="docutils literal notranslate"><span class="pre">compile()</span></code> has an undocumented
+<code class="docutils literal notranslate"><span class="pre">_feature_version</span></code> to not consider <code class="docutils literal notranslate"><span class="pre">async</span></code> and <code class="docutils literal notranslate"><span class="pre">await</span></code> as
+keywords.</p>
+<p>The latest major language backward incompatible change was Python 3.7
+which made <code class="docutils literal notranslate"><span class="pre">async</span></code> and <code class="docutils literal notranslate"><span class="pre">await</span></code> real keywords. It seems like Twisted
+was the only affected project, and Twisted had a single affected
+function (it used a parameter called <code class="docutils literal notranslate"><span class="pre">async</span></code>).</p>
+<p>Handling backward compatibility in the parser seems quite complex, not
+only to modify the parser, but also for developers who have to check
+which version of the Python language is used.</p>
+<div class="section" id="from-future-import-python38-syntax">
+<h4><a class="toc-backref" href="#id20">from __future__ import python38_syntax</a><a class="headerlink" href="#from-future-import-python38-syntax" title="Permalink to this headline">¶</a></h4>
+<p>Add <code class="docutils literal notranslate"><span class="pre">pythonXY_syntax</span></code> to the <code class="docutils literal notranslate"><span class="pre">__future__</span></code> module. It would enable
+backward compatibility with Python X.Y syntax, but only for the current
+file.</p>
+<p>With this option, there is no need to change
+<code class="docutils literal notranslate"><span class="pre">sys.implementation.cache_tag</span></code> to use a different <code class="docutils literal notranslate"><span class="pre">.pyc</span></code> filename,
+since the parser will always produce the same output for the same input
+(except for the optimization level).</p>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">python35_syntax</span>
+
+<span class="k">async</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="k">await</span> <span class="o">=</span> <span class="mi">2</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="update-cache-tag">
+<h4><a class="toc-backref" href="#id21">Update cache_tag</a><a class="headerlink" href="#update-cache-tag" title="Permalink to this headline">¶</a></h4>
+<p>Modify the parser to use <code class="docutils literal notranslate"><span class="pre">sys.get_python_compat_version()</span></code> to choose
+the version of the Python language.</p>
+<p><code class="docutils literal notranslate"><span class="pre">sys.set_python_compat_version()</span></code> updates
+<code class="docutils literal notranslate"><span class="pre">sys.implementation.cache_tag</span></code> to include the compatibility version
+without the micro version as a suffix. For example, Python 3.9 uses
+<code class="docutils literal notranslate"><span class="pre">'cpython-39'</span></code> by default, but
+<code class="docutils literal notranslate"><span class="pre">sys.set_python_compat_version((3,</span> <span class="pre">7,</span> <span class="pre">2))</span></code> sets <code class="docutils literal notranslate"><span class="pre">cache_tag</span></code> to
+<code class="docutils literal notranslate"><span class="pre">'cpython-39-37'</span></code>. Changes to the Python language are now allowed
+in micro releases.</p>
+<p>One problem is that <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">asyncio</span></code> is likely to fail if
+<code class="docutils literal notranslate"><span class="pre">sys.set_python_compat_version((3,</span> <span class="pre">6))</span></code> has been called previously.
+The code of the <code class="docutils literal notranslate"><span class="pre">asyncio</span></code> module requires <code class="docutils literal notranslate"><span class="pre">async</span></code> and <code class="docutils literal notranslate"><span class="pre">await</span></code> to
+be real keywords (change done in Python 3.7).</p>
+<p>Another problem is that regular users cannot write <code class="docutils literal notranslate"><span class="pre">.pyc</span></code> files into
+system directories, and so cannot create them on demand. It means that
+<code class="docutils literal notranslate"><span class="pre">.pyc</span></code> optimization cannot be used in the backward compatibility mode.</p>
+<p>One solution for that is to modify the Python installer and Python
+package installers to precompile <code class="docutils literal notranslate"><span class="pre">.pyc</span></code> files not only for the current
+Python version, but also for multiple older Python versions (up to
+Python 3.0?).</p>
+<p>Each <code class="docutils literal notranslate"><span class="pre">.py</span></code> file would have 3n <code class="docutils literal notranslate"><span class="pre">.pyc</span></code> files (3 optimization levels),
+where <code class="docutils literal notranslate"><span class="pre">n</span></code> is the number of supported Python versions. For example, it
+means 6 <code class="docutils literal notranslate"><span class="pre">.pyc</span></code> files, instead of 3, to support Python 3.8 and Python
+3.9.</p>
+</div>
+</div>
+<div class="section" id="temporary-moratorium-on-incompatible-changes">
+<h3><a class="toc-backref" href="#id22">Temporary moratorium on incompatible changes</a><a class="headerlink" href="#temporary-moratorium-on-incompatible-changes" title="Permalink to this headline">¶</a></h3>
+<p>In 2009, PEP 3003 “Python Language Moratorium” proposed a
+temporary moratorium (suspension) of all changes to the Python language
+syntax, semantics, and built-ins for Python 3.1 and Python 3.2.</p>
+<p>In May 2018, during the PEP 572 discussions, it was also proposed to slow
+down Python changes: see the python-dev thread <a class="reference external" href="https://mail.python.org/archives/list/python-dev&#64;python.org/thread/HHKRXOMRJQH75VNM3JMSQIOOU6MIUB24/#PHA35EAPNONZMTOYBINGFR6XXNMCDPFQ">Slow down…</a></p>
+<p><a class="reference external" href="https://mail.python.org/archives/list/python-dev&#64;python.org/message/XR7IF2OB3S72KBP3PEQ3IKBOERE4FV2I/">Barry Warsaw’s call on this</a>:</p>
+<blockquote>
+<div>I don’t believe that the way for Python to remain relevant and
+useful for the next 10 years is to cease all language evolution.
+Who knows what the computing landscape will look like in 5 years,
+let alone 10?  Something as arbitrary as a 10 year moratorium is
+(again, IMHO) a death sentence for the language.</div></blockquote>
+</div>
+<div class="section" id="pep-387">
+<h3><a class="toc-backref" href="#id23">PEP 387</a><a class="headerlink" href="#pep-387" title="Permalink to this headline">¶</a></h3>
+<p><a class="reference external" href="https://www.python.org/dev/peps/pep-0387/">PEP 387 – Backwards Compatibility Policy</a> proposes a process to make
+incompatible changes. The main point is the 4th step of the process:</p>
+<blockquote>
+<div>See if there’s any feedback. Users not involved in the original
+discussions may comment now after seeing the warning. Perhaps
+reconsider.</div></blockquote>
+</div>
+<div class="section" id="pep-497">
+<h3><a class="toc-backref" href="#id24">PEP 497</a><a class="headerlink" href="#pep-497" title="Permalink to this headline">¶</a></h3>
+<p><a class="reference external" href="https://www.python.org/dev/peps/pep-0497/">PEP 497 – A standard mechanism for backward compatibility</a> proposes different
+solutions to provide backward compatibility.</p>
+<p>Except for the <code class="docutils literal notranslate"><span class="pre">__past__</span></code> mechanism idea, PEP 497 does not propose
+concrete solutions:</p>
+<blockquote>
+<div>When an incompatible change to core language syntax or semantics is
+being made, Python-dev’s policy is to prefer and expect that,
+wherever possible, a mechanism for backward compatibility be
+considered and provided for future Python versions after the
+breaking change is adopted by default, in addition to any mechanisms
+proposed for forward compatibility such as new future_statements.</div></blockquote>
+</div>
+</div>
+<div class="section" id="examples-of-incompatible-changes">
+<h2><a class="toc-backref" href="#id25">Examples of incompatible changes</a><a class="headerlink" href="#examples-of-incompatible-changes" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="python-3-8">
+<h3><a class="toc-backref" href="#id26">Python 3.8</a><a class="headerlink" href="#python-3-8" title="Permalink to this headline">¶</a></h3>
+<p>Examples of Python 3.8 incompatible changes:</p>
+<ul class="simple">
+<li>(During beta phase) <code class="docutils literal notranslate"><span class="pre">PyCode_New()</span></code> required a new parameter: it
+broke all Cython extensions (all projects distributing precompiled
+Cython code). This change has been reverted during the 3.8 beta phase
+and a new <code class="docutils literal notranslate"><span class="pre">PyCode_NewWithPosOnlyArgs()</span></code> function was added instead.</li>
+<li><code class="docutils literal notranslate"><span class="pre">types.CodeType</span></code> requires an additional mandatory parameter.
+The <code class="docutils literal notranslate"><span class="pre">CodeType.replace()</span></code> function was added to help projects to no
+longer depend on the exact signature of the <code class="docutils literal notranslate"><span class="pre">CodeType</span></code> constructor.</li>
+<li>C extensions are no longer linked to libpython.</li>
+<li><code class="docutils literal notranslate"><span class="pre">sys.abiflags</span></code> changed from <code class="docutils literal notranslate"><span class="pre">'m'</span></code> to an empty string.
+For example, <code class="docutils literal notranslate"><span class="pre">python3.8m</span></code> program is gone.</li>
+<li>The C structure <code class="docutils literal notranslate"><span class="pre">PyInterpreterState</span></code> was made opaque.<ul>
+<li>Blender:<ul>
+<li><a class="reference external" href="https://bugzilla.redhat.com/show_bug.cgi?id=1734980#c6">https://bugzilla.redhat.com/show_bug.cgi?id=1734980#c6</a></li>
+<li><a class="reference external" href="https://developer.blender.org/D6038">https://developer.blender.org/D6038</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>XML attribute order: <a class="reference external" href="https://bugs.python.org/issue34160">bpo-34160</a>. Broken projects:<ul>
+<li><a class="reference external" href="https://bugs.python.org/issue34160#msg329612">coverage</a></li>
+<li><a class="reference external" href="https://sourceforge.net/p/docutils/bugs/359/">docutils</a></li>
+<li><a class="reference external" href="https://bugzilla.redhat.com/show_bug.cgi?id=1705475">pcs</a></li>
+<li><a class="reference external" href="https://bugzilla.redhat.com/show_bug.cgi?id=1705391">python-glyphsLib</a></li>
+</ul>
+</li>
+</ul>
+<p>Backward compatibility cannot be added for all these changes. For
+example, changes in the C API and in the build system are out of the
+scope of this PEP.</p>
+<p>See <a class="reference external" href="https://docs.python.org/dev/whatsnew/3.8.html#api-and-feature-removals">What’s New In Python 3.8: API and Feature Removals</a>
+for all changes.</p>
+<p>See also the <a class="reference external" href="https://docs.python.org/dev/whatsnew/3.8.html#porting-to-python-3-8">Porting to Python 3.8</a>
+section of What’s New In Python 3.8.</p>
+</div>
+<div class="section" id="python-3-7">
+<h3><a class="toc-backref" href="#id27">Python 3.7</a><a class="headerlink" href="#python-3-7" title="Permalink to this headline">¶</a></h3>
+<p>Examples of Python 3.7 incompatible changes:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">async</span></code> and <code class="docutils literal notranslate"><span class="pre">await</span></code> are now reserved keywords.</li>
+<li>Several undocumented internal imports were removed. One example is
+that <code class="docutils literal notranslate"><span class="pre">os.errno</span></code> is no longer available; use <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">errno</span></code>
+directly instead. Note that such undocumented internal imports may be
+removed any time without notice, even in micro version releases.</li>
+<li>Unknown escapes consisting of <code class="docutils literal notranslate"><span class="pre">'\'</span></code> and an ASCII letter in
+replacement templates for <code class="docutils literal notranslate"><span class="pre">re.sub()</span></code> were deprecated in Python 3.5,
+and will now cause an error.</li>
+<li>The <code class="docutils literal notranslate"><span class="pre">asyncio.windows_utils.socketpair()</span></code> function has been removed:
+it was an alias to <code class="docutils literal notranslate"><span class="pre">socket.socketpair()</span></code>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">asyncio</span></code> no longer exports the <code class="docutils literal notranslate"><span class="pre">selectors</span></code> and <code class="docutils literal notranslate"><span class="pre">_overlapped</span></code>
+modules as <code class="docutils literal notranslate"><span class="pre">asyncio.selectors</span></code> and <code class="docutils literal notranslate"><span class="pre">asyncio._overlapped</span></code>. Replace
+<code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">asyncio</span> <span class="pre">import</span> <span class="pre">selectors</span></code> with <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">selectors</span></code>.</li>
+<li>PEP 479 is enabled for all code in Python 3.7, meaning that
+<code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> exceptions raised directly or indirectly in
+coroutines and generators are transformed into <code class="docutils literal notranslate"><span class="pre">RuntimeError</span></code>
+exceptions.</li>
+<li><code class="docutils literal notranslate"><span class="pre">socketserver.ThreadingMixIn.server_close()</span></code> now waits until all
+non-daemon threads complete.  Set the new <code class="docutils literal notranslate"><span class="pre">block_on_close</span></code> class
+attribute to <code class="docutils literal notranslate"><span class="pre">False</span></code> to get the pre-3.7 behaviour.</li>
+<li>The <code class="docutils literal notranslate"><span class="pre">struct.Struct.format</span></code> type is now <code class="docutils literal notranslate"><span class="pre">str</span></code> instead of
+<code class="docutils literal notranslate"><span class="pre">bytes</span></code>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">repr</span></code> for <code class="docutils literal notranslate"><span class="pre">datetime.timedelta</span></code> has changed to include the keyword
+arguments in the output.</li>
+<li><code class="docutils literal notranslate"><span class="pre">tracemalloc.Traceback</span></code> frames are now sorted from oldest to most
+recent to be more consistent with <code class="docutils literal notranslate"><span class="pre">traceback</span></code>.</li>
+</ul>
+<p>Adding backward compatibility for most of these changes would be easy.</p>
+<p>See also the <a class="reference external" href="https://docs.python.org/dev/whatsnew/3.7.html#porting-to-python-3-7">Porting to Python 3.7</a>
+section of What’s New In Python 3.7.</p>
+</div>
+<div class="section" id="micro-releases">
+<h3><a class="toc-backref" href="#id28">Micro releases</a><a class="headerlink" href="#micro-releases" title="Permalink to this headline">¶</a></h3>
+<p>Sometimes, incompatible changes are introduced in micro releases
+(<code class="docutils literal notranslate"><span class="pre">micro</span></code> in <code class="docutils literal notranslate"><span class="pre">major.minor.micro</span></code>) to fix bugs or security
+vulnerabilities. Examples include:</p>
+<ul class="simple">
+<li>Python 3.7.2, <code class="docutils literal notranslate"><span class="pre">compileall</span></code> and  <code class="docutils literal notranslate"><span class="pre">py_compile</span></code> module: the
+<em>invalidation_mode</em> parameter’s default value is updated to <code class="docutils literal notranslate"><span class="pre">None</span></code>;
+the <code class="docutils literal notranslate"><span class="pre">SOURCE_DATE_EPOCH</span></code> environment variable no longer
+overrides the value of the <em>invalidation_mode</em> argument, and
+determines its default value instead.</li>
+<li>Python 3.7.1, <code class="docutils literal notranslate"><span class="pre">xml</span></code> modules: the SAX parser no longer processes
+general external entities by default to increase security by default.</li>
+<li>Python 3.5.2, <code class="docutils literal notranslate"><span class="pre">os.urandom()</span></code>: on Linux, if the <code class="docutils literal notranslate"><span class="pre">getrandom()</span></code>
+syscall blocks (the urandom entropy pool is not initialized yet), fall
+back on reading <code class="docutils literal notranslate"><span class="pre">/dev/urandom</span></code>.</li>
+<li>Python 3.5.1, <code class="docutils literal notranslate"><span class="pre">sys.setrecursionlimit()</span></code>: a <code class="docutils literal notranslate"><span class="pre">RecursionError</span></code>
+exception is now raised if the new limit is too low at the current
+recursion depth.</li>
+<li>Python 3.4.4, <code class="docutils literal notranslate"><span class="pre">ssl.create_default_context()</span></code>: RC4 was dropped from
+the default cipher string.</li>
+<li>Python 3.4.3, <code class="docutils literal notranslate"><span class="pre">http.client</span></code>: <code class="docutils literal notranslate"><span class="pre">HTTPSConnection</span></code> now performs all
+the necessary certificate and hostname checks by default.</li>
+<li>Python 3.4.2, <code class="docutils literal notranslate"><span class="pre">email.message</span></code>: <code class="docutils literal notranslate"><span class="pre">EmailMessage.is_attachment()</span></code> is
+now a method instead of a property, for consistency with
+<code class="docutils literal notranslate"><span class="pre">Message.is_multipart()</span></code>.</li>
+<li>Python 3.4.1, <code class="docutils literal notranslate"><span class="pre">os.makedirs(name,</span> <span class="pre">mode=0o777,</span> <span class="pre">exist_ok=False)</span></code>:
+Before Python 3.4.1, if <em>exist_ok</em> was <code class="docutils literal notranslate"><span class="pre">True</span></code> and the directory
+existed, <code class="docutils literal notranslate"><span class="pre">makedirs()</span></code> would still raise an error if <em>mode</em> did not
+match the mode of the existing directory. Since this behavior was
+impossible to implement safely, it was removed in Python 3.4.1
+(<a class="reference external" href="https://bugs.python.org/issue21082">bpo-21082</a>).</li>
+</ul>
+<p>Examples of changes made in micro releases which are not backward
+incompatible:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">ssl.OP_NO_TLSv1_3</span></code> constant was added to 2.7.15, 3.6.3 and 3.7.0
+for backwards compatibility with OpenSSL 1.0.2.</li>
+<li><code class="docutils literal notranslate"><span class="pre">typing.AsyncContextManager</span></code> was added to Python 3.6.2.</li>
+<li>The <code class="docutils literal notranslate"><span class="pre">zipfile</span></code> module accepts a path-like object since Python 3.6.2.</li>
+<li><code class="docutils literal notranslate"><span class="pre">loop.create_future()</span></code> was added to Python 3.5.2 in the <code class="docutils literal notranslate"><span class="pre">asyncio</span></code>
+module.</li>
+</ul>
+<p>No backward compatibility code is needed for these kinds of changes.</p>
+</div>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id29">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<p>Accepted PEPs:</p>
+<ul class="simple">
+<li><a class="reference external" href="https://www.python.org/dev/peps/pep-0005/">PEP 5 – Guidelines for Language Evolution</a></li>
+<li><a class="reference external" href="https://www.python.org/dev/peps/pep-0236/">PEP 236 – Back to the __future__</a></li>
+<li><a class="reference external" href="https://www.python.org/dev/peps/pep-0411/">PEP 411 – Provisional packages in the Python standard library</a></li>
+<li><a class="reference external" href="https://www.python.org/dev/peps/pep-3002/">PEP 3002 – Procedure for Backwards-Incompatible Changes</a></li>
+</ul>
+<p>Draft PEPs:</p>
+<ul class="simple">
+<li><a class="reference external" href="https://www.python.org/dev/peps/pep-0602/">PEP 602 – Annual Release Cycle for Python</a></li>
+<li><a class="reference external" href="https://www.python.org/dev/peps/pep-0605/">PEP 605 – A rolling feature release stream for CPython</a></li>
+<li>See also withdrawn <a class="reference external" href="https://www.python.org/dev/peps/pep-0598/">PEP 598 – Introducing incremental feature
+releases</a></li>
+</ul>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id30">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document is placed in the public domain or under the
+CC0-1.0-Universal license, whichever is more permissive.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0606.rst">https://github.com/python/peps/blob/master/pep-0606.rst</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0606.rst.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0605.html">PEP 0605</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0607.html">PEP 0607</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 606 – Python Compatibility Version</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a><ul>
+<li><a class="reference internal" href="#the-need-to-evolve-frequently">The need to evolve frequently</a></li>
+<li><a class="reference internal" href="#partial-compatibility-to-minimize-the-python-maintenance-burden">Partial compatibility to minimize the Python maintenance burden</a></li>
+<li><a class="reference internal" href="#cases-excluded-from-backward-compatibility">Cases excluded from backward compatibility</a></li>
+<li><a class="reference internal" href="#upgrading-a-project-to-a-newer-python">Upgrading a project to a newer Python</a></li>
+<li><a class="reference internal" href="#cleaning-up-python-and-deprecationwarning">Cleaning up Python and DeprecationWarning</a></li>
+<li><a class="reference internal" href="#redistribute-the-maintenance-burden">Redistribute the maintenance burden</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#examples-of-backward-compatibility">Examples of backward compatibility</a><ul>
+<li><a class="reference internal" href="#collections-abc-aliases">collections ABC aliases</a></li>
+<li><a class="reference internal" href="#deprecated-open-u-mode">Deprecated open() “U” mode</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#sys-functions">sys functions</a></li>
+<li><a class="reference internal" href="#command-line">Command line</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#security-implications">Security Implications</a></li>
+<li><a class="reference internal" href="#alternatives">Alternatives</a><ul>
+<li><a class="reference internal" href="#provide-a-workaround-for-each-incompatible-change">Provide a workaround for each incompatible change</a></li>
+<li><a class="reference internal" href="#handle-backward-compatibility-in-the-parser">Handle backward compatibility in the parser</a><ul>
+<li><a class="reference internal" href="#from-future-import-python38-syntax">from __future__ import python38_syntax</a></li>
+<li><a class="reference internal" href="#update-cache-tag">Update cache_tag</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#temporary-moratorium-on-incompatible-changes">Temporary moratorium on incompatible changes</a></li>
+<li><a class="reference internal" href="#pep-387">PEP 387</a></li>
+<li><a class="reference internal" href="#pep-497">PEP 497</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#examples-of-incompatible-changes">Examples of incompatible changes</a><ul>
+<li><a class="reference internal" href="#python-3-8">Python 3.8</a></li>
+<li><a class="reference internal" href="#python-3-7">Python 3.7</a></li>
+<li><a class="reference internal" href="#micro-releases">Micro releases</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

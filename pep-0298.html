@@ -1,0 +1,324 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 298 – The Locked Buffer Interface &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 299 – Special __main__() function in modules" href="pep-0299.html" />
+    <link rel="prev" title="PEP 297 – Support for System Upgrades" href="pep-0297.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 298 – The Locked Buffer Interface</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-298-the-locked-buffer-interface">
+<h1 class="page-title">PEP 298 – The Locked Buffer Interface<a class="headerlink" href="#pep-298-the-locked-buffer-interface" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">298</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">The Locked Buffer Interface</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Thomas Heller &lt;theller&#32;&#97;t&#32;python.net&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Withdrawn</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">26-Jul-2002</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.3</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">30-Jul-2002, 1-Aug-2002</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id4">Abstract</a></li>
+<li><a class="reference internal" href="#specification" id="id5">Specification</a></li>
+<li><a class="reference internal" href="#implementation" id="id6">Implementation</a></li>
+<li><a class="reference internal" href="#backward-compatibility" id="id7">Backward Compatibility</a></li>
+<li><a class="reference internal" href="#reference-implementation" id="id8">Reference Implementation</a></li>
+<li><a class="reference internal" href="#additional-notes-comments" id="id9">Additional Notes/Comments</a></li>
+<li><a class="reference internal" href="#community-feedback" id="id10">Community Feedback</a></li>
+<li><a class="reference internal" href="#references" id="id11">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id12">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id4">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes an extension to the buffer interface called the
+‘locked buffer interface’.</p>
+<p>The locked buffer interface avoids the flaws of the ‘old’ buffer
+interface <a class="footnote-reference brackets" href="#id2" id="id1">1</a> as defined in Python versions up to and including
+2.2, and has the following semantics:</p>
+<ul class="simple">
+<li>The lifetime of the retrieved pointer is clearly defined and
+controlled by the client.</li>
+<li>The buffer size is returned as a ‘size_t’ data type, which
+allows access to large buffers on platforms where <code class="docutils literal notranslate"><span class="pre">sizeof(int)</span>
+<span class="pre">!=</span> <span class="pre">sizeof(void</span> <span class="pre">*)</span></code>.</li>
+</ul>
+<p>(Guido comments: This second sounds like a change we could also
+make to the “old” buffer interface, if we introduce another flag
+bit that’s <em>not</em> part of the default flags.)</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id5">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>The locked buffer interface exposes new functions which return the
+size and the pointer to the internal memory block of any python
+object which chooses to implement this interface.</p>
+<p>Retrieving a buffer from an object puts this object in a locked
+state during which the buffer may not be freed, resized, or
+reallocated.</p>
+<p>The object must be unlocked again by releasing the buffer if it’s
+no longer used by calling another function in the locked buffer
+interface.  If the object never resizes or reallocates the buffer
+during its lifetime, this function may be NULL.  Failure to call
+this function (if it is != NULL) is a programming error and may
+have unexpected results.</p>
+<p>The locked buffer interface omits the memory segment model which
+is present in the old buffer interface - only a single memory
+block can be exposed.</p>
+<p>The memory blocks can be accessed without holding the global
+interpreter lock.</p>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id6">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>Define a new flag in Include/object.h:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">/*</span> <span class="n">PyBufferProcs</span> <span class="n">contains</span> <span class="n">bf_acquirelockedreadbuffer</span><span class="p">,</span>
+   <span class="n">bf_acquirelockedwritebuffer</span><span class="p">,</span> <span class="ow">and</span> <span class="n">bf_releaselockedbuffer</span> <span class="o">*/</span>
+<span class="c1">#define Py_TPFLAGS_HAVE_LOCKEDBUFFER (1L&lt;&lt;15)</span>
+</pre></div>
+</div>
+<p>This flag would be included in <code class="docutils literal notranslate"><span class="pre">Py_TPFLAGS_DEFAULT</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#define Py_TPFLAGS_DEFAULT  ( \</span>
+                    <span class="o">....</span>
+                    <span class="n">Py_TPFLAGS_HAVE_LOCKEDBUFFER</span> <span class="o">|</span> \
+                    <span class="o">....</span>
+                    <span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Extend the <code class="docutils literal notranslate"><span class="pre">PyBufferProcs</span></code> structure by new fields in
+Include/object.h:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">typedef</span> <span class="n">size_t</span> <span class="p">(</span><span class="o">*</span><span class="n">acquirelockedreadbufferproc</span><span class="p">)(</span><span class="n">PyObject</span> <span class="o">*</span><span class="p">,</span>
+                                              <span class="n">const</span> <span class="n">void</span> <span class="o">**</span><span class="p">);</span>
+<span class="n">typedef</span> <span class="n">size_t</span> <span class="p">(</span><span class="o">*</span><span class="n">acquirelockedwritebufferproc</span><span class="p">)(</span><span class="n">PyObject</span> <span class="o">*</span><span class="p">,</span>
+                                               <span class="n">void</span> <span class="o">**</span><span class="p">);</span>
+<span class="n">typedef</span> <span class="n">void</span> <span class="p">(</span><span class="o">*</span><span class="n">releaselockedbufferproc</span><span class="p">)(</span><span class="n">PyObject</span> <span class="o">*</span><span class="p">);</span>
+
+<span class="n">typedef</span> <span class="n">struct</span> <span class="p">{</span>
+    <span class="n">getreadbufferproc</span> <span class="n">bf_getreadbuffer</span><span class="p">;</span>
+    <span class="n">getwritebufferproc</span> <span class="n">bf_getwritebuffer</span><span class="p">;</span>
+    <span class="n">getsegcountproc</span> <span class="n">bf_getsegcount</span><span class="p">;</span>
+    <span class="n">getcharbufferproc</span> <span class="n">bf_getcharbuffer</span><span class="p">;</span>
+    <span class="o">/*</span> <span class="n">locked</span> <span class="n">buffer</span> <span class="n">interface</span> <span class="n">functions</span> <span class="o">*/</span>
+    <span class="n">acquirelockedreadbufferproc</span> <span class="n">bf_acquirelockedreadbuffer</span><span class="p">;</span>
+    <span class="n">acquirelockedwritebufferproc</span> <span class="n">bf_acquirelockedwritebuffer</span><span class="p">;</span>
+    <span class="n">releaselockedbufferproc</span> <span class="n">bf_releaselockedbuffer</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">PyBufferProcs</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>The new fields are present if the <code class="docutils literal notranslate"><span class="pre">Py_TPFLAGS_HAVE_LOCKEDBUFFER</span></code>
+flag is set in the object’s type.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">Py_TPFLAGS_HAVE_LOCKEDBUFFER</span></code> flag implies the
+<code class="docutils literal notranslate"><span class="pre">Py_TPFLAGS_HAVE_GETCHARBUFFER</span></code> flag.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">acquirelockedreadbufferproc</span></code> and <code class="docutils literal notranslate"><span class="pre">acquirelockedwritebufferproc</span></code>
+functions return the size in bytes of the memory block on success,
+and fill in the passed void * pointer on success.  If these
+functions fail - either because an error occurs or no memory block
+is exposed - they must set the void * pointer to NULL and raise an
+exception.  The return value is undefined in these cases and
+should not be used.</p>
+<p>If calls to these functions succeed, eventually the buffer must be
+released by a call to the <code class="docutils literal notranslate"><span class="pre">releaselockedbufferproc</span></code>, supplying the
+original object as argument.  The <code class="docutils literal notranslate"><span class="pre">releaselockedbufferproc</span></code> cannot
+fail.  For objects that actually maintain an internal lock count
+it would be a fatal error if the <code class="docutils literal notranslate"><span class="pre">releaselockedbufferproc</span></code> function
+would be called too often, leading to a negative lock count.</p>
+<p>Similar to the ‘old’ buffer interface, any of these functions may
+be set to NULL, but it is strongly recommended to implement the
+<code class="docutils literal notranslate"><span class="pre">releaselockedbufferproc</span></code> function (even if it does nothing) if any
+of the <code class="docutils literal notranslate"><span class="pre">acquireread</span></code>/<code class="docutils literal notranslate"><span class="pre">writelockedbufferproc</span></code> functions are
+implemented, to discourage extension writers from checking for a
+NULL value and not calling it.</p>
+<p>These functions aren’t supposed to be called directly, they are
+called through convenience functions declared in
+Include/abstract.h:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">int</span> <span class="n">PyObject_AcquireLockedReadBuffer</span><span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="n">obj</span><span class="p">,</span>
+                                    <span class="n">const</span> <span class="n">void</span> <span class="o">**</span><span class="n">buffer</span><span class="p">,</span>
+                                    <span class="n">size_t</span> <span class="o">*</span><span class="n">buffer_len</span><span class="p">);</span>
+
+<span class="nb">int</span> <span class="n">PyObject_AcquireLockedWriteBuffer</span><span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="n">obj</span><span class="p">,</span>
+                                      <span class="n">void</span> <span class="o">**</span><span class="n">buffer</span><span class="p">,</span>
+                                      <span class="n">size_t</span> <span class="o">*</span><span class="n">buffer_len</span><span class="p">);</span>
+
+<span class="n">void</span> <span class="n">PyObject_ReleaseLockedBuffer</span><span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="n">obj</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>The former two functions return 0 on success, set buffer to the
+memory location and buffer_len to the length of the memory block
+in bytes. On failure, or if the locked buffer interface is not
+implemented by obj, they return -1 and set an exception.</p>
+<p>The latter function doesn’t return anything, and cannot fail.</p>
+</div>
+<div class="section" id="backward-compatibility">
+<h2><a class="toc-backref" href="#id7">Backward Compatibility</a><a class="headerlink" href="#backward-compatibility" title="Permalink to this headline">¶</a></h2>
+<p>The size of the <code class="docutils literal notranslate"><span class="pre">PyBufferProcs</span></code> structure changes if this proposal
+is implemented, but the type’s <code class="docutils literal notranslate"><span class="pre">tp_flags</span></code> slot can be used to
+determine if the additional fields are present.</p>
+</div>
+<div class="section" id="reference-implementation">
+<h2><a class="toc-backref" href="#id8">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>An implementation has been uploaded to the SourceForge patch
+manager as <a class="reference external" href="https://bugs.python.org/issue652857">https://bugs.python.org/issue652857</a>.</p>
+</div>
+<div class="section" id="additional-notes-comments">
+<h2><a class="toc-backref" href="#id9">Additional Notes/Comments</a><a class="headerlink" href="#additional-notes-comments" title="Permalink to this headline">¶</a></h2>
+<p>Python strings, unicode strings, mmap objects, and array objects
+would expose the locked buffer interface.</p>
+<p>mmap and array objects would actually enter a locked state while
+the buffer is active, this is not needed for strings and unicode
+objects.  Resizing locked array objects is not allowed and will
+raise an exception. Whether closing a locked mmap object is an
+error or will only be deferred until the lock count reaches zero
+is an implementation detail.</p>
+<p>Guido recommends</p>
+<blockquote>
+<div><p>But I’m still very concerned that if most built-in types
+(e.g. strings, bytes) don’t implement the release
+functionality, it’s too easy for an extension to seem to work
+while forgetting to release the buffer.</p>
+<p>I recommend that at least some built-in types implement the
+acquire/release functionality with a counter, and assert that
+the counter is zero when the object is deleted – if the
+assert fails, someone DECREF’ed their reference to the object
+without releasing it.  (The rule should be that you must own a
+reference to the object while you’ve acquired the object.)</p>
+<p>For strings that might be impractical because the string
+object would have to grow 4 bytes to hold the counter; but the
+new bytes object (PEP 296) could easily implement the counter,
+and the array object too – that way there will be plenty of
+opportunity to test proper use of the protocol.</p>
+</div></blockquote>
+</div>
+<div class="section" id="community-feedback">
+<h2><a class="toc-backref" href="#id10">Community Feedback</a><a class="headerlink" href="#community-feedback" title="Permalink to this headline">¶</a></h2>
+<p>Greg Ewing doubts the locked buffer interface is needed at all, he
+thinks the normal buffer interface could be used if the pointer is
+(re)fetched each time it’s used.  This seems to be dangerous,
+because even innocent looking calls to the Python API like
+<code class="docutils literal notranslate"><span class="pre">Py_DECREF()</span></code> may trigger execution of arbitrary Python code.</p>
+<p>The first version of this proposal didn’t have the release
+function, but it turned out that this would have been too
+restrictive: mmap and array objects wouldn’t have been able to
+implement it, because mmap objects can be closed anytime if not
+locked, and array objects could resize or reallocate the buffer.</p>
+<p>This PEP will probably be rejected because nobody except the
+author needs it.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id11">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>The buffer interface
+<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2000-October/009974.html">https://mail.python.org/pipermail/python-dev/2000-October/009974.html</a></dd>
+<dt class="label" id="id3"><span class="brackets">2</span></dt>
+<dd>The Buffer Problem
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0296/">http://www.python.org/dev/peps/pep-0296/</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id12">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0298.txt">https://github.com/python/peps/blob/master/pep-0298.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0298.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0297.html">PEP 0297</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0299.html">PEP 0299</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 298 – The Locked Buffer Interface</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#backward-compatibility">Backward Compatibility</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#additional-notes-comments">Additional Notes/Comments</a></li>
+<li><a class="reference internal" href="#community-feedback">Community Feedback</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

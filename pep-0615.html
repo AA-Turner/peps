@@ -1,0 +1,1048 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 615 – Support for the IANA Time Zone Database in the Standard Library &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 616 – String methods to remove prefixes and suffixes" href="pep-0616.html" />
+    <link rel="prev" title="PEP 614 – Relaxing Grammar Restrictions On Decorators" href="pep-0614.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 615 – Support for the IANA Time Zone Database in the Standard Library</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-615-support-for-the-iana-time-zone-database-in-the-standard-library">
+<h1 class="page-title">PEP 615 – Support for the IANA Time Zone Database in the Standard Library<a class="headerlink" href="#pep-615-support-for-the-iana-time-zone-database-in-the-standard-library" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">615</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Support for the IANA Time Zone Database in the Standard Library</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Paul Ganssle &lt;paul at ganssle.io&gt;</dd>
+<dt class="field-even">Discussions-To</dt>
+<dd class="field-even"><a class="reference external" href="https://discuss.python.org/t/3468">https://discuss.python.org/t/3468</a></dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd">Accepted</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even">Standards Track</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">2020-02-22</dd>
+<dt class="field-even">Python-Version</dt>
+<dd class="field-even">3.9</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd">2020-02-25, 2020-03-29</dd>
+<dt class="field-even">Replaces</dt>
+<dd class="field-even"><a class="reference external" href="./pep-0431.html">431</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id31">Abstract</a></li>
+<li><a class="reference internal" href="#motivation" id="id32">Motivation</a></li>
+<li><a class="reference internal" href="#proposal" id="id33">Proposal</a><ul>
+<li><a class="reference internal" href="#the-zoneinfo-zoneinfo-class" id="id34">The <code class="docutils literal notranslate"><span class="pre">zoneinfo.ZoneInfo</span></code> class</a><ul>
+<li><a class="reference internal" href="#constructors" id="id35">Constructors</a></li>
+<li><a class="reference internal" href="#behavior-during-data-updates" id="id36">Behavior during data updates</a></li>
+<li><a class="reference internal" href="#deliberate-cache-invalidation" id="id37">Deliberate cache invalidation</a></li>
+<li><a class="reference internal" href="#string-representation" id="id38">String representation</a></li>
+<li><a class="reference internal" href="#pickle-serialization" id="id39">Pickle serialization</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#sources-for-time-zone-data" id="id40">Sources for time zone data</a><ul>
+<li><a class="reference internal" href="#system-time-zone-information" id="id41">System time zone information</a></li>
+<li><a class="reference internal" href="#the-tzdata-python-package" id="id42">The <code class="docutils literal notranslate"><span class="pre">tzdata</span></code> Python package</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#search-path-configuration" id="id43">Search path configuration</a><ul>
+<li><a class="reference internal" href="#compile-time-options" id="id44">Compile-time options</a></li>
+<li><a class="reference internal" href="#environment-variables" id="id45">Environment variables</a></li>
+<li><a class="reference internal" href="#reset-tzpath-function" id="id46"><code class="docutils literal notranslate"><span class="pre">reset_tzpath</span></code> function</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#backwards-compatibility" id="id47">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#security-implications" id="id48">Security Implications</a></li>
+<li><a class="reference internal" href="#reference-implementation" id="id49">Reference Implementation</a></li>
+<li><a class="reference internal" href="#rejected-ideas" id="id50">Rejected Ideas</a><ul>
+<li><a class="reference internal" href="#building-a-custom-tzdb-compiler" id="id51">Building a custom tzdb compiler</a></li>
+<li><a class="reference internal" href="#including-tzdata-in-the-standard-library-by-default" id="id52">Including <code class="docutils literal notranslate"><span class="pre">tzdata</span></code> in the standard library by default</a></li>
+<li><a class="reference internal" href="#support-for-leap-seconds" id="id53">Support for leap seconds</a></li>
+<li><a class="reference internal" href="#using-a-pytz-like-interface" id="id54">Using a <code class="docutils literal notranslate"><span class="pre">pytz</span></code>-like interface</a></li>
+<li><a class="reference internal" href="#windows-support-via-microsoft-s-icu-api" id="id55">Windows support via Microsoft’s ICU API</a></li>
+<li><a class="reference internal" href="#alternative-environment-variable-configurations" id="id56">Alternative environment variable configurations</a></li>
+<li><a class="reference internal" href="#using-the-datetime-module" id="id57">Using the <code class="docutils literal notranslate"><span class="pre">datetime</span></code> module</a><ul>
+<li><a class="reference internal" href="#arguments-against-putting-zoneinfo-directly-into-datetime" id="id58">Arguments against putting <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> directly into <code class="docutils literal notranslate"><span class="pre">datetime</span></code></a></li>
+<li><a class="reference internal" href="#using-datetime-zoneinfo-instead-of-zoneinfo" id="id59">Using <code class="docutils literal notranslate"><span class="pre">datetime.zoneinfo</span></code> instead of <code class="docutils literal notranslate"><span class="pre">zoneinfo</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#footnotes" id="id60">Footnotes</a></li>
+<li><a class="reference internal" href="#references" id="id61">References</a><ul>
+<li><a class="reference internal" href="#other-time-zone-implementations" id="id62">Other time zone implementations:</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#copyright" id="id63">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id31">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This proposes adding a module, <code class="docutils literal notranslate"><span class="pre">zoneinfo</span></code>, to provide a concrete time zone
+implementation supporting the IANA time zone database.  By default,
+<code class="docutils literal notranslate"><span class="pre">zoneinfo</span></code> will use the system’s time zone data if available; if no system
+time zone data is available, the library will fall back to using the
+first-party package <code class="docutils literal notranslate"><span class="pre">tzdata</span></code>, deployed on PyPI. <a class="reference internal" href="#d" id="id1"><span>[d]</span></a></p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id32">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">datetime</span></code> library uses a flexible mechanism to handle time zones: all
+conversions and time zone information queries are delegated to an instance of a
+subclass of the abstract <code class="docutils literal notranslate"><span class="pre">datetime.tzinfo</span></code> base class. <a class="footnote-reference brackets" href="#tzinfo" id="id2">16</a> This allows
+users to implement arbitrarily complex time zone rules, but in practice the
+majority of users want support for just three types of time zone: <a class="reference internal" href="#a" id="id3"><span>[a]</span></a></p>
+<ol class="arabic simple">
+<li>UTC and fixed offsets thereof</li>
+<li>The system local time zone</li>
+<li>IANA time zones</li>
+</ol>
+<p>In Python 3.2, the <code class="docutils literal notranslate"><span class="pre">datetime.timezone</span></code> class was introduced to support the
+first class of time zone (with a special <code class="docutils literal notranslate"><span class="pre">datetime.timezone.utc</span></code> singleton
+for UTC).</p>
+<p>While there is still no “local” time zone, in Python 3.0 the semantics of naïve
+time zones was changed to support many “local time” operations, and it is now
+possible to get a fixed time zone offset from a local time:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2020</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">22</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astimezone</span><span class="p">())</span>
+<span class="go">2020-02-22 12:00:00-05:00</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2020</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">22</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astimezone</span><span class="p">()</span>
+<span class="gp">... </span>      <span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S %Z&quot;</span><span class="p">))</span>
+<span class="go">2020-02-22 12:00:00 EST</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2020</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">22</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astimezone</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>However, there is still no support for the time zones described in the IANA
+time zone database (also called the “tz” database or the Olson database
+<a class="footnote-reference brackets" href="#tzdb-wiki" id="id4">9</a>).  The time zone database is in the public domain and is widely
+distributed — it is present by default on many Unix-like operating systems.
+Great care goes into the stability of the database: there are IETF RFCs both
+for the maintenance procedures (RFC 6557 <a class="footnote-reference brackets" href="#rfc6557" id="id5">1</a>) and for the compiled
+binary (TZif) format (RFC 8636 <a class="footnote-reference brackets" href="#rfc8536" id="id6">3</a>).  As such, it is likely that adding
+support for the compiled outputs of the IANA database will add great value to
+end users even with the relatively long cadence of standard library releases.</p>
+</div>
+<div class="section" id="proposal">
+<h2><a class="toc-backref" href="#id33">Proposal</a><a class="headerlink" href="#proposal" title="Permalink to this headline">¶</a></h2>
+<p>This PEP has three main concerns:</p>
+<ol class="arabic simple">
+<li>The semantics of the <code class="docutils literal notranslate"><span class="pre">zoneinfo.ZoneInfo</span></code> class (<a class="reference internal" href="#zoneinfo-class">zoneinfo-class</a>)</li>
+<li>Time zone data sources used (<a class="reference internal" href="#data-sources">data-sources</a>)</li>
+<li>Options for configuration of the time zone search path (<a class="reference internal" href="#search-path-config">search-path-config</a>)</li>
+</ol>
+<p>Because of the complexity of the proposal, rather than having separate
+“specification” and “rationale” sections the design decisions and rationales
+are grouped together by subject.</p>
+<div class="section" id="the-zoneinfo-zoneinfo-class">
+<span id="zoneinfo-class"></span><h3><a class="toc-backref" href="#id34">The <code class="docutils literal notranslate"><span class="pre">zoneinfo.ZoneInfo</span></code> class</a><a class="headerlink" href="#the-zoneinfo-zoneinfo-class" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="constructors">
+<span id="id7"></span><h4><a class="toc-backref" href="#id35">Constructors</a><a class="headerlink" href="#constructors" title="Permalink to this headline">¶</a></h4>
+<p>The initial design of the <code class="docutils literal notranslate"><span class="pre">zoneinfo.ZoneInfo</span></code> class has several constructors.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ZoneInfo</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The primary constructor takes a single argument, <code class="docutils literal notranslate"><span class="pre">key</span></code>, which is a string
+indicating the name of a zone file in the system time zone database (e.g.
+<code class="docutils literal notranslate"><span class="pre">&quot;America/New_York&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;Europe/London&quot;</span></code>), and returns a <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code>
+constructed from the first matching data source on search path (see the
+<a class="reference internal" href="#data-sources">data-sources</a> section for more details). All zone information must be eagerly
+read from the data source (usually a TZif file) upon construction, and may
+not change during the lifetime of the object (this restriction applies to all
+<code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> constructors).</p>
+<p>In the event that no matching file is found on the search path (either because
+the system does not supply time zone data or because the key is invalid), the
+constructor will raise a <code class="docutils literal notranslate"><span class="pre">zoneinfo.ZoneInfoNotFoundError</span></code>, which will be a
+subclass of <code class="docutils literal notranslate"><span class="pre">KeyError</span></code>.</p>
+<p>One somewhat unusual guarantee made by this constructor is that calls with
+identical arguments must return <em>identical</em> objects. Specifically, for all
+values of <code class="docutils literal notranslate"><span class="pre">key</span></code>, the following assertion must always be valid <a class="reference internal" href="#b" id="id8"><span>[b]</span></a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">a</span> <span class="o">=</span> <span class="n">ZoneInfo</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<span class="n">b</span> <span class="o">=</span> <span class="n">ZoneInfo</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">a</span> <span class="ow">is</span> <span class="n">b</span>
+</pre></div>
+</div>
+<p>The reason for this comes from the fact that the semantics of datetime
+operations (e.g. comparison, arithmetic) depend on whether the datetimes
+involved represent the same or different zones; two datetimes are in the same
+zone only if <code class="docutils literal notranslate"><span class="pre">dt1.tzinfo</span> <span class="pre">is</span> <span class="pre">dt2.tzinfo</span></code>. <a class="footnote-reference brackets" href="#nontransitive-comp" id="id9">4</a> In addition
+to the modest performance benefit from avoiding unnecessary proliferation of
+<code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> objects, providing this guarantee should minimize surprising
+behavior for end users.</p>
+<p><code class="docutils literal notranslate"><span class="pre">dateutil.tz.gettz</span></code> has provided a similar guarantee since version 2.7.0
+(release March 2018). <a class="footnote-reference brackets" href="#dateutil-tz" id="id10">22</a></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The implementation may decide how to implement the cache behavior, but the
+guarantee made here only requires that as long as two references exist to
+the result of identical constructor calls, they must be references to the
+same object. This is consistent with a reference counted cache where
+<code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> objects are ejected when no references to them exist (for
+example, a cache implemented with a <code class="docutils literal notranslate"><span class="pre">weakref.WeakValueDictionary</span></code>) — it is
+allowed but not required or recommended to implement this with a “strong”
+cache, where all <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> files are kept alive indefinitely.</p>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ZoneInfo</span><span class="o">.</span><span class="n">no_cache</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This is an alternate constructor that bypasses the constructor’s cache.  It is
+identical to the primary constructor, but returns a new object on each call.
+This is likely most useful for testing purposes, or to deliberately induce
+“different zone” semantics between datetimes with the same nominal time zone.</p>
+<p>Even if an object constructed by this method would have been a cache miss, it
+must not be entered into the cache; in other words, the following assertion
+should always be true:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">ZoneInfo</span><span class="o">.</span><span class="n">no_cache</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">ZoneInfo</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">b</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ZoneInfo</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">fobj</span><span class="p">:</span> <span class="n">IO</span><span class="p">[</span><span class="nb">bytes</span><span class="p">],</span> <span class="o">/</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This is an alternate constructor that allows the construction of a <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code>
+object from any TZif byte stream.  This constructor takes an optional
+parameter, <code class="docutils literal notranslate"><span class="pre">key</span></code>, which sets the name of the zone, for the purposes of
+<code class="docutils literal notranslate"><span class="pre">__str__</span></code> and <code class="docutils literal notranslate"><span class="pre">__repr__</span></code> (see <a class="reference internal" href="#representations">Representations</a>).</p>
+<p>Unlike the primary constructor, this always constructs a new object.  There are
+two reasons that this deviates from the primary constructor’s caching behavior:
+stream objects have mutable state and so determining whether two inputs are
+identical is difficult or impossible, and it is likely that users constructing
+from a file specifically want to load from that file and not a cache.</p>
+<p>As with <code class="docutils literal notranslate"><span class="pre">ZoneInfo.no_cache</span></code>, objects constructed by this method must not be
+added to the cache.</p>
+</div>
+<div class="section" id="behavior-during-data-updates">
+<h4><a class="toc-backref" href="#id36">Behavior during data updates</a><a class="headerlink" href="#behavior-during-data-updates" title="Permalink to this headline">¶</a></h4>
+<p>It is important that a given <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> object’s behavior not change during
+its lifetime, because a <code class="docutils literal notranslate"><span class="pre">datetime</span></code>’s <code class="docutils literal notranslate"><span class="pre">utcoffset()</span></code> method is used in both
+its equality and hash calculations, and if the result were to change during the
+<code class="docutils literal notranslate"><span class="pre">datetime</span></code>’s lifetime, it could break the invariant for all hashable objects
+<a class="footnote-reference brackets" href="#hashable-def" id="id11">6</a> <a class="footnote-reference brackets" href="#hashes-equality" id="id12">7</a>  that if <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">==</span> <span class="pre">y</span></code>, it must also be true
+that <code class="docutils literal notranslate"><span class="pre">hash(x)</span> <span class="pre">==</span> <span class="pre">hash(y)</span></code> <a class="reference internal" href="#c" id="id13"><span>[c]</span></a> .</p>
+<p>Considering both the preservation of <code class="docutils literal notranslate"><span class="pre">datetime</span></code>’s invariants and the
+primary constructor’s contract to always return the same object when called
+with identical arguments, if a source of time zone data is updated during a run
+of the interpreter, it must not invalidate any caches or modify any
+existing <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> objects. Newly constructed <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> objects, however,
+should come from the updated data source.</p>
+<p>This means that the point at which a <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> file is updated depends
+primarily on the semantics of the caching behavior. The only guaranteed way to
+get a <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> file from an updated data source is to induce a cache miss,
+either by bypassing the cache and using <code class="docutils literal notranslate"><span class="pre">ZoneInfo.no_cache</span></code> or by clearing the
+cache.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The specified cache behavior does not require that the cache be lazily
+populated — it is consistent with the specification (though not
+recommended) to eagerly pre-populate the cache with time zones that have
+never been constructed.</p>
+</div>
+</div>
+<div class="section" id="deliberate-cache-invalidation">
+<h4><a class="toc-backref" href="#id37">Deliberate cache invalidation</a><a class="headerlink" href="#deliberate-cache-invalidation" title="Permalink to this headline">¶</a></h4>
+<p>In addition to <code class="docutils literal notranslate"><span class="pre">ZoneInfo.no_cache</span></code>, which allows a user to <em>bypass</em> the
+cache, <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> also exposes a <code class="docutils literal notranslate"><span class="pre">clear_cache</span></code> method to deliberately
+invalidate either the entire cache or selective portions of the cache:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ZoneInfo</span><span class="o">.</span><span class="n">clear_cache</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">only_keys</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</pre></div>
+</div>
+<p>If no arguments are passed, all caches are invalidated and the first call for
+each key to the primary <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> constructor after the cache has been
+cleared will return a new instance.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">NYC0</span> <span class="o">=</span> <span class="n">ZoneInfo</span><span class="p">(</span><span class="s2">&quot;America/New_York&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">NYC0</span> <span class="ow">is</span> <span class="n">ZoneInfo</span><span class="p">(</span><span class="s2">&quot;America/New_York&quot;</span><span class="p">)</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ZoneInfo</span><span class="o">.</span><span class="n">clear_cache</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">NYC1</span> <span class="o">=</span> <span class="n">ZoneInfo</span><span class="p">(</span><span class="s2">&quot;America/New_York&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">NYC0</span> <span class="ow">is</span> <span class="n">NYC1</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">NYC1</span> <span class="ow">is</span> <span class="n">ZoneInfo</span><span class="p">(</span><span class="s2">&quot;America/New_York&quot;</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>An optional parameter, <code class="docutils literal notranslate"><span class="pre">only_keys</span></code>, takes an iterable of keys to clear from
+the cache, otherwise leaving the cache intact.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">NYC0</span> <span class="o">=</span> <span class="n">ZoneInfo</span><span class="p">(</span><span class="s2">&quot;America/New_York&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">LA0</span> <span class="o">=</span> <span class="n">ZoneInfo</span><span class="p">(</span><span class="s2">&quot;America/Los_Angeles&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ZoneInfo</span><span class="o">.</span><span class="n">clear_cache</span><span class="p">(</span><span class="n">only_keys</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;America/New_York&quot;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">NYC1</span> <span class="o">=</span> <span class="n">ZoneInfo</span><span class="p">(</span><span class="s2">&quot;America/New_York&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">LA0</span> <span class="o">=</span> <span class="n">ZoneInfo</span><span class="p">(</span><span class="s2">&quot;America/Los_Angeles&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">NYC0</span> <span class="ow">is</span> <span class="n">NYC1</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">LA0</span> <span class="ow">is</span> <span class="n">LA1</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>Manipulation of the cache behavior is expected to be a niche use case; this
+function is primarily provided to facilitate testing, and to allow users with
+unusual requirements to tune the cache invalidation behavior to their needs.</p>
+</div>
+<div class="section" id="string-representation">
+<span id="representations"></span><h4><a class="toc-backref" href="#id38">String representation</a><a class="headerlink" href="#string-representation" title="Permalink to this headline">¶</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> class’s <code class="docutils literal notranslate"><span class="pre">__str__</span></code> representation will be drawn from the
+<code class="docutils literal notranslate"><span class="pre">key</span></code> parameter. This is partially because the <code class="docutils literal notranslate"><span class="pre">key</span></code> represents a
+human-readable “name” of the string, but also because it is a useful parameter
+that users will want exposed. It is necessary to provide a mechanism to expose
+the key for serialization between languages and because it is also a primary
+key for localization projects like CLDR (the Unicode Common Locale Data
+Repository <a class="footnote-reference brackets" href="#cldr" id="id14">8</a>).</p>
+<p>An example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">zone</span> <span class="o">=</span> <span class="n">ZoneInfo</span><span class="p">(</span><span class="s2">&quot;Pacific/Kwajalein&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">str</span><span class="p">(</span><span class="n">zone</span><span class="p">)</span>
+<span class="go">&#39;Pacific/Kwajalein&#39;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dt</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2020</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">zone</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dt</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span><span class="si">}</span><span class="s2"> [</span><span class="si">{</span><span class="n">dt</span><span class="o">.</span><span class="n">tzinfo</span><span class="si">}</span><span class="s2">]&quot;</span>
+<span class="go">&#39;2020-04-01T03:15:00+12:00 [Pacific/Kwajalein]&#39;</span>
+</pre></div>
+</div>
+<p>When a <code class="docutils literal notranslate"><span class="pre">key</span></code> is not specified, the <code class="docutils literal notranslate"><span class="pre">str</span></code> operation should not fail, but
+should return the file’s <code class="docutils literal notranslate"><span class="pre">__repr__</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">zone</span> <span class="o">=</span> <span class="n">ZoneInfo</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">str</span><span class="p">(</span><span class="n">zone</span><span class="p">)</span>
+<span class="go">&#39;ZoneInfo.from_file(&lt;_io.BytesIO object at ...&gt;)&#39;</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">__repr__</span></code> for a <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> is implementation-defined and not
+necessarily stable between versions, but it must not be a valid <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code>
+key, to avoid confusion between a key-derived <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> with a valid
+<code class="docutils literal notranslate"><span class="pre">__str__</span></code> and a file-derived <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> which has fallen through to the
+<code class="docutils literal notranslate"><span class="pre">__repr__</span></code>.</p>
+<p>Since the use of <code class="docutils literal notranslate"><span class="pre">str()</span></code> to access the key provides no easy way to check
+for the <em>presence</em> of a key (the only way is to try constructing a <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code>
+from it and detect whether it raises an exception), <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> objects will
+also expose a read-only <code class="docutils literal notranslate"><span class="pre">key</span></code> attribute, which will be <code class="docutils literal notranslate"><span class="pre">None</span></code> in the event
+that no key was supplied.</p>
+</div>
+<div class="section" id="pickle-serialization">
+<h4><a class="toc-backref" href="#id39">Pickle serialization</a><a class="headerlink" href="#pickle-serialization" title="Permalink to this headline">¶</a></h4>
+<p>Rather than serializing all transition data, <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> objects will be
+serialized by key, and <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> objects constructed from raw files (even
+those with a value for <code class="docutils literal notranslate"><span class="pre">key</span></code> specified) cannot be pickled.</p>
+<p>The behavior of a <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> file depends on how it was constructed:</p>
+<ol class="arabic">
+<li><p><code class="docutils literal notranslate"><span class="pre">ZoneInfo(key)</span></code>: When constructed with the primary constructor, a
+<code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> object will be serialized by key, and when deserialized the
+will use the primary constructor in the deserializing process, and thus be
+expected to be the same object as other references to the same time zone.
+For example, if <code class="docutils literal notranslate"><span class="pre">europe_berlin_pkl</span></code> is a string containing a pickle
+constructed from <code class="docutils literal notranslate"><span class="pre">ZoneInfo(&quot;Europe/Berlin&quot;)</span></code>, one would expect the
+following behavior:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">ZoneInfo</span><span class="p">(</span><span class="s2">&quot;Europe/Berlin&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">europe_berlin_pkl</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="ow">is</span> <span class="n">b</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZoneInfo.no_cache(key)</span></code>: When constructed from the cache-bypassing
+constructor, the <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> object will still be serialized by key, but
+when deserialized, it will use the cache bypassing constructor. If
+<code class="docutils literal notranslate"><span class="pre">europe_berlin_pkl_nc</span></code> is a string containing a pickle constructed from
+<code class="docutils literal notranslate"><span class="pre">ZoneInfo.no_cache(&quot;Europe/Berlin&quot;)</span></code>, one would expect the following
+behavior:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">ZoneInfo</span><span class="p">(</span><span class="s2">&quot;Europe/Berlin&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">europe_berlin_pkl_nc</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="ow">is</span> <span class="n">b</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+</li>
+<li><code class="docutils literal notranslate"><span class="pre">ZoneInfo.from_file(fobj,</span> <span class="pre">/,</span> <span class="pre">key=None)</span></code>: When constructed from a file, the
+<code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> object will raise an exception on pickling. If an end user
+wants to pickle a <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> constructed from a file, it is recommended
+that they use a wrapper type or a custom serialization function: either
+serializing by key or storing the contents of the file object and
+serializing that.</li>
+</ol>
+<p>This method of serialization requires that the time zone data for the required
+key be available on both the serializing and deserializing side, similar to the
+way that references to classes and functions are expected to exist in both the
+serializing and deserializing environments. It also means that no guarantees
+are made about the consistency of results when unpickling a <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code>
+pickled in an environment with a different version of the time zone data.</p>
+</div>
+</div>
+<div class="section" id="sources-for-time-zone-data">
+<span id="data-sources"></span><h3><a class="toc-backref" href="#id40">Sources for time zone data</a><a class="headerlink" href="#sources-for-time-zone-data" title="Permalink to this headline">¶</a></h3>
+<p>One of the hardest challenges for IANA time zone support is keeping the data up
+to date; between 1997 and 2020, there have been between 3 and 21 releases per
+year, often in response to changes in time zone rules with little to no notice
+(see <a class="footnote-reference brackets" href="#timing-of-tz-changes" id="id15">10</a> for more details).  In order to keep up to date,
+and to give the system administrator control over the data source, we propose
+to use system-deployed time zone data wherever possible.  However, not all
+systems ship a publicly accessible time zone database — notably Windows uses a
+different system for managing time zones — and so if available <code class="docutils literal notranslate"><span class="pre">zoneinfo</span></code>
+falls back to an installable first-party package, <code class="docutils literal notranslate"><span class="pre">tzdata</span></code>, available on
+PyPI. <a class="reference internal" href="#d" id="id16"><span>[d]</span></a>  If no system zoneinfo files are found but <code class="docutils literal notranslate"><span class="pre">tzdata</span></code> is installed, the
+primary <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> constructor will use <code class="docutils literal notranslate"><span class="pre">tzdata</span></code> as the time zone source.</p>
+<div class="section" id="system-time-zone-information">
+<h4><a class="toc-backref" href="#id41">System time zone information</a><a class="headerlink" href="#system-time-zone-information" title="Permalink to this headline">¶</a></h4>
+<p>Many Unix-like systems deploy time zone data by default, or provide a canonical
+time zone data package (often called <code class="docutils literal notranslate"><span class="pre">tzdata</span></code>, as it is on Arch Linux, Fedora,
+and Debian).  Whenever possible, it would be preferable to defer to the system
+time zone information, because this allows time zone information for all
+language stacks to be updated and maintained in one place.  Python distributors
+are encouraged to ensure that time zone data is installed alongside Python
+whenever possible (e.g. by declaring <code class="docutils literal notranslate"><span class="pre">tzdata</span></code> as a dependency for the
+<code class="docutils literal notranslate"><span class="pre">python</span></code> package).</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">zoneinfo</span></code> module will use a “search path” strategy analogous to the
+<code class="docutils literal notranslate"><span class="pre">PATH</span></code> environment variable  or the <code class="docutils literal notranslate"><span class="pre">sys.path</span></code> variable in Python; the
+<code class="docutils literal notranslate"><span class="pre">zoneinfo.TZPATH</span></code> variable will be read-only (see <a class="reference internal" href="#search-path-config">search-path-config</a> for
+more details), ordered list of time zone data locations to search.  When
+creating a <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> instance from a key, the zone file will be constructed
+from the first data source on the path in which the key exists, so for example,
+if <code class="docutils literal notranslate"><span class="pre">TZPATH</span></code> were:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">TZPATH</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">&quot;/usr/share/zoneinfo&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;/etc/zoneinfo&quot;</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+<p>and (although this would be very unusual) <code class="docutils literal notranslate"><span class="pre">/usr/share/zoneinfo</span></code> contained
+only <code class="docutils literal notranslate"><span class="pre">America/New_York</span></code> and <code class="docutils literal notranslate"><span class="pre">/etc/zoneinfo</span></code> contained both
+<code class="docutils literal notranslate"><span class="pre">America/New_York</span></code> and <code class="docutils literal notranslate"><span class="pre">Europe/Moscow</span></code>, then
+<code class="docutils literal notranslate"><span class="pre">ZoneInfo(&quot;America/New_York&quot;)</span></code> would be satisfied by
+<code class="docutils literal notranslate"><span class="pre">/usr/share/zoneinfo/America/New_York</span></code>, while <code class="docutils literal notranslate"><span class="pre">ZoneInfo(&quot;Europe/Moscow&quot;)</span></code>
+would be satisfied by <code class="docutils literal notranslate"><span class="pre">/etc/zoneinfo/Europe/Moscow</span></code>.</p>
+<p>At the moment, on Windows systems, the search path will default to empty,
+because Windows does not officially ship a copy of the time zone database.  On
+non-Windows systems, the search path will default to a list of the most
+commonly observed search paths.  Although this is subject to change in future
+versions, at launch the default search path will be:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">TZPATH</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">&quot;/usr/share/zoneinfo&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;/usr/lib/zoneinfo&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;/usr/share/lib/zoneinfo&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;/etc/zoneinfo&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>This may be configured both at compile time or at runtime; more information on
+configuration options at <a class="reference internal" href="#search-path-config">search-path-config</a>.</p>
+</div>
+<div class="section" id="the-tzdata-python-package">
+<h4><a class="toc-backref" href="#id42">The <code class="docutils literal notranslate"><span class="pre">tzdata</span></code> Python package</a><a class="headerlink" href="#the-tzdata-python-package" title="Permalink to this headline">¶</a></h4>
+<p>In order to ensure easy access to time zone data for all end users, this PEP
+proposes to create a data-only package <code class="docutils literal notranslate"><span class="pre">tzdata</span></code> as a fallback for when system
+data is not available.  The <code class="docutils literal notranslate"><span class="pre">tzdata</span></code> package would be distributed on PyPI as
+a “first party” package <a class="reference internal" href="#d" id="id17"><span>[d]</span></a>, maintained by the CPython development team.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">tzdata</span></code> package contains only data and metadata, with no public-facing
+functions or classes.  It will be designed to be compatible with both newer
+<code class="docutils literal notranslate"><span class="pre">importlib.resources</span></code> <a class="footnote-reference brackets" href="#importlib-resources" id="id18">17</a> access patterns and older
+access patterns like <code class="docutils literal notranslate"><span class="pre">pkgutil.get_data</span></code> <a class="footnote-reference brackets" href="#pkgutil-data" id="id19">18</a> .</p>
+<p>While it is designed explicitly for the use of CPython, the <code class="docutils literal notranslate"><span class="pre">tzdata</span></code> package
+is intended as a public package in its own right, and it may be used as an
+“official” source of time zone data for third party Python packages.</p>
+</div>
+</div>
+<div class="section" id="search-path-configuration">
+<span id="search-path-config"></span><h3><a class="toc-backref" href="#id43">Search path configuration</a><a class="headerlink" href="#search-path-configuration" title="Permalink to this headline">¶</a></h3>
+<p>The time zone search path is very system-dependent, and sometimes even
+application-dependent, and as such it makes sense to provide options to
+customize it.  This PEP provides for three such avenues for customization:</p>
+<ol class="arabic simple">
+<li>Global configuration via a compile-time option</li>
+<li>Per-run configuration via environment variables</li>
+<li>Runtime configuration change via a <code class="docutils literal notranslate"><span class="pre">reset_tzpath</span></code> function</li>
+</ol>
+<p>In all methods of configuration, the search path must consist of only absolute,
+rather than relative paths. Implementations may choose to ignore, warn or raise
+an exception if a string other than an absolute path is found (and may make
+different choices depending on the context — e.g. raising an exception when an
+invalid path is passed to <code class="docutils literal notranslate"><span class="pre">reset_tzpath</span></code> but warning  when one is included in
+the environment variable). If an exception is not raised, any strings other
+than an absolute path must not be included in the time zone search path.</p>
+<div class="section" id="compile-time-options">
+<h4><a class="toc-backref" href="#id44">Compile-time options</a><a class="headerlink" href="#compile-time-options" title="Permalink to this headline">¶</a></h4>
+<p>It is most likely that downstream distributors will know exactly where their
+system time zone data is deployed, and so a compile-time option
+<code class="docutils literal notranslate"><span class="pre">PYTHONTZPATH</span></code> will be provided to set the default search path.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">PYTHONTZPATH</span></code> option should be a string delimited by <code class="docutils literal notranslate"><span class="pre">os.pathsep</span></code>,
+listing possible locations for the time zone data to be deployed (e.g.
+<code class="docutils literal notranslate"><span class="pre">/usr/share/zoneinfo</span></code>).</p>
+</div>
+<div class="section" id="environment-variables">
+<h4><a class="toc-backref" href="#id45">Environment variables</a><a class="headerlink" href="#environment-variables" title="Permalink to this headline">¶</a></h4>
+<p>When initializing <code class="docutils literal notranslate"><span class="pre">TZPATH</span></code> (and whenever <code class="docutils literal notranslate"><span class="pre">reset_tzpath</span></code> is called with no
+arguments), the <code class="docutils literal notranslate"><span class="pre">zoneinfo</span></code> module will use the environment variable
+<code class="docutils literal notranslate"><span class="pre">PYTHONTZPATH</span></code>, if it exists, to set the search path.</p>
+<p><code class="docutils literal notranslate"><span class="pre">PYTHONTZPATH</span></code> is an <code class="docutils literal notranslate"><span class="pre">os.pathsep</span></code>-delimited string which <em>replaces</em> (rather
+than augments) the default time zone path. Some examples of the proposed
+semantics:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python print_tzpath.py
+(&quot;/usr/share/zoneinfo&quot;,
+ &quot;/usr/lib/zoneinfo&quot;,
+ &quot;/usr/share/lib/zoneinfo&quot;,
+ &quot;/etc/zoneinfo&quot;)
+
+$ PYTHONTZPATH=&quot;/etc/zoneinfo:/usr/share/zoneinfo&quot; python print_tzpath.py
+(&quot;/etc/zoneinfo&quot;,
+ &quot;/usr/share/zoneinfo&quot;)
+
+$ PYTHONTZPATH=&quot;&quot; python print_tzpath.py
+()
+</pre></div>
+</div>
+<p>This provides no built-in mechanism for prepending or appending to the default
+search path, as these use cases are likely to be somewhat more niche. It should
+be possible to populate an environment variable with the default search path
+fairly easily:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ export DEFAULT_TZPATH=$(python -c \
+    &quot;import os, zoneinfo; print(os.pathsep.join(zoneinfo.TZPATH))&quot;)
+</pre></div>
+</div>
+</div>
+<div class="section" id="reset-tzpath-function">
+<h4><a class="toc-backref" href="#id46"><code class="docutils literal notranslate"><span class="pre">reset_tzpath</span></code> function</a><a class="headerlink" href="#reset-tzpath-function" title="Permalink to this headline">¶</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">zoneinfo</span></code> provides a <code class="docutils literal notranslate"><span class="pre">reset_tzpath</span></code> function that allows for changing the
+search path at runtime.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">reset_tzpath</span><span class="p">(</span>
+    <span class="n">to</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p>When called with a sequence of paths, this function sets <code class="docutils literal notranslate"><span class="pre">zoneinfo.TZPATH</span></code> to
+a tuple constructed from the desired value.  When called with no arguments or
+<code class="docutils literal notranslate"><span class="pre">None</span></code>, this function resets <code class="docutils literal notranslate"><span class="pre">zoneinfo.TZPATH</span></code> to the default
+configuration.</p>
+<p>This is likely to be primarily useful for (permanently or temporarily)
+disabling the use of system time zone paths and forcing the module to use the
+<code class="docutils literal notranslate"><span class="pre">tzdata</span></code> package.  It is not likely that <code class="docutils literal notranslate"><span class="pre">reset_tzpath</span></code> will be a common
+operation, save perhaps in test functions sensitive to time zone configuration,
+but it seems preferable to provide an official mechanism for changing this
+rather than allowing a proliferation of hacks around the immutability of
+<code class="docutils literal notranslate"><span class="pre">TZPATH</span></code>.</p>
+<div class="admonition caution">
+<p class="admonition-title">Caution</p>
+<p>Although changing <code class="docutils literal notranslate"><span class="pre">TZPATH</span></code> during a run is a supported operation, users
+should be advised that doing so may occasionally lead to unusual semantics,
+and when making design trade-offs greater weight will be afforded to using
+a static <code class="docutils literal notranslate"><span class="pre">TZPATH</span></code>, which is the much more common use case.</p>
+</div>
+<p>As noted in <a class="reference internal" href="#constructors">Constructors</a>, the primary <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> constructor employs a cache
+to ensure that two identically-constructed <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> objects always compare
+as identical (i.e. <code class="docutils literal notranslate"><span class="pre">ZoneInfo(key)</span> <span class="pre">is</span> <span class="pre">ZoneInfo(key)</span></code>), and the nature of this
+cache is implementation-defined.  This means that the behavior of the
+<code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> constructor may be unpredictably inconsistent in some situations
+when used with the same <code class="docutils literal notranslate"><span class="pre">key</span></code> under different values of <code class="docutils literal notranslate"><span class="pre">TZPATH</span></code>. For
+example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">reset_tzpath</span><span class="p">(</span><span class="n">to</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;/my/custom/tzdb&quot;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">ZoneInfo</span><span class="p">(</span><span class="s2">&quot;My/Custom/Zone&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">reset_tzpath</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">ZoneInfo</span><span class="p">(</span><span class="s2">&quot;My/Custom/Zone&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">a</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">b</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">c</span> <span class="o">=</span> <span class="n">ZoneInfo</span><span class="p">(</span><span class="s2">&quot;My/Custom/Zone&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In this example, <code class="docutils literal notranslate"><span class="pre">My/Custom/Zone</span></code> exists only in the <code class="docutils literal notranslate"><span class="pre">/my/custom/tzdb</span></code> and
+not on the default search path.  In all implementations the constructor for
+<code class="docutils literal notranslate"><span class="pre">a</span></code> must succeed.  It is implementation-defined whether the constructor for
+<code class="docutils literal notranslate"><span class="pre">b</span></code> succeeds, but if it does, it must be true that <code class="docutils literal notranslate"><span class="pre">a</span> <span class="pre">is</span> <span class="pre">b</span></code>, because both
+<code class="docutils literal notranslate"><span class="pre">a</span></code> and <code class="docutils literal notranslate"><span class="pre">b</span></code> are references to the same key. It is also
+implementation-defined whether the constructor for <code class="docutils literal notranslate"><span class="pre">c</span></code> succeeds.
+Implementations of <code class="docutils literal notranslate"><span class="pre">zoneinfo</span></code> <em>may</em> return the object constructed in previous
+constructor calls, or they may fail with an exception.</p>
+</div>
+</div>
+</div>
+<div class="section" id="backwards-compatibility">
+<h2><a class="toc-backref" href="#id47">Backwards Compatibility</a><a class="headerlink" href="#backwards-compatibility" title="Permalink to this headline">¶</a></h2>
+<p>This will have no backwards compatibility issues as it will create a new API.</p>
+<p>With only minor modification, a backport with support for Python 3.6+ of the
+<code class="docutils literal notranslate"><span class="pre">zoneinfo</span></code> module could be created.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">tzdata</span></code> package is designed to be “data only”, and should support any
+version of Python that it can be built for (including Python 2.7).</p>
+</div>
+<div class="section" id="security-implications">
+<h2><a class="toc-backref" href="#id48">Security Implications</a><a class="headerlink" href="#security-implications" title="Permalink to this headline">¶</a></h2>
+<p>This will require parsing zoneinfo data from disk, mostly from system locations
+but potentially from user-supplied data.  Errors in the implementation
+(particularly the C code) could cause potential security issues, but there is
+no special risk relative to parsing other file types.</p>
+<p>Because the time zone data keys are essentially paths relative to some time
+zone root, implementations should take care to avoid path traversal attacks.
+Requesting keys such as <code class="docutils literal notranslate"><span class="pre">../../../path/to/something</span></code> should not reveal
+anything about the state of the file system outside of the time zone path.</p>
+</div>
+<div class="section" id="reference-implementation">
+<h2><a class="toc-backref" href="#id49">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>An initial reference implementation is available at
+<a class="reference external" href="https://github.com/pganssle/zoneinfo">https://github.com/pganssle/zoneinfo</a></p>
+<p>This may eventually be converted into a backport for 3.6+.</p>
+</div>
+<div class="section" id="rejected-ideas">
+<h2><a class="toc-backref" href="#id50">Rejected Ideas</a><a class="headerlink" href="#rejected-ideas" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="building-a-custom-tzdb-compiler">
+<h3><a class="toc-backref" href="#id51">Building a custom tzdb compiler</a><a class="headerlink" href="#building-a-custom-tzdb-compiler" title="Permalink to this headline">¶</a></h3>
+<p>One major concern with the use of the TZif format is that it does not actually
+contain enough information to always correctly determine the value to return
+for <code class="docutils literal notranslate"><span class="pre">tzinfo.dst()</span></code>.  This is because for any given time zone offset, TZif
+only marks the UTC offset and whether or not it represents a DST offset, but
+<code class="docutils literal notranslate"><span class="pre">tzinfo.dst()</span></code> returns the total amount of the DST shift, so that the
+“standard” offset can be reconstructed from <code class="docutils literal notranslate"><span class="pre">datetime.utcoffset()</span> <span class="pre">-</span>
+<span class="pre">datetime.dst()</span></code>.  The value to use for <code class="docutils literal notranslate"><span class="pre">dst()</span></code> can be determined by finding
+the equivalent STD offset and calculating the difference, but the TZif format
+does not specify which offsets form STD/DST pairs, and so heuristics must be
+used to determine this.</p>
+<p>One common heuristic — looking at the most recent standard offset — notably
+fails in the case of the time zone changes in Portugal in 1992 and 1996, where
+the “standard” offset was shifted by 1 hour during a DST transition, leading to
+a transition from STD to DST status with no change in offset.  In fact, it is
+possible (though it has never happened) for a time zone to be created that is
+permanently DST and has no standard offsets.</p>
+<p>Although this information is missing in the compiled TZif binaries, it is
+present in the raw tzdb files, and it would be possible to parse this
+information ourselves and create a more suitable binary format.</p>
+<p>This idea was rejected for several reasons:</p>
+<ol class="arabic simple">
+<li>It precludes the use of any system-deployed time zone information, which is
+usually present only in TZif format.</li>
+<li>The raw tzdb format, while stable, is <em>less</em> stable than the TZif format;
+some downstream tzdb parsers have already run into problems with old
+deployments of their custom parsers becoming incompatible with recent tzdb
+releases, leading to the creation of a “rearguard” format to ease the
+transition. <a class="footnote-reference brackets" href="#rearguard" id="id20">11</a></li>
+<li>Heuristics currently suffice in <code class="docutils literal notranslate"><span class="pre">dateutil</span></code> and <code class="docutils literal notranslate"><span class="pre">pytz</span></code> for all known time
+zones, historical and present, and it is not very likely that new time zones
+will appear that cannot be captured by heuristics — though it is somewhat
+more likely that new rules that are not captured by the <em>current</em> generation
+of heuristics will appear; in that case, bugfixes would be required to
+accommodate the changed situation.</li>
+<li>The <code class="docutils literal notranslate"><span class="pre">dst()</span></code> method’s utility (and in fact the <code class="docutils literal notranslate"><span class="pre">isdst</span></code> parameter in TZif)
+is somewhat questionable to start with, as almost all the useful information
+is contained in the <code class="docutils literal notranslate"><span class="pre">utcoffset()</span></code> and <code class="docutils literal notranslate"><span class="pre">tzname()</span></code> methods, which are not
+subject to the same problems.</li>
+</ol>
+<p>In short, maintaining a custom tzdb compiler or compiled package adds
+maintenance burdens to both the CPython dev team and system administrators, and
+its main benefit is to address a hypothetical failure that would likely have
+minimal real world effects were it to occur.</p>
+</div>
+<div class="section" id="including-tzdata-in-the-standard-library-by-default">
+<span id="why-no-default-tzdata"></span><h3><a class="toc-backref" href="#id52">Including <code class="docutils literal notranslate"><span class="pre">tzdata</span></code> in the standard library by default</a><a class="headerlink" href="#including-tzdata-in-the-standard-library-by-default" title="Permalink to this headline">¶</a></h3>
+<p>Although PEP 453 <a class="footnote-reference brackets" href="#pep453-ensurepip" id="id21">13</a>, which introduced the <code class="docutils literal notranslate"><span class="pre">ensurepip</span></code>
+mechanism to CPython, provides a convenient template for a standard library
+module maintained on PyPI, a potentially similar <code class="docutils literal notranslate"><span class="pre">ensuretzdata</span></code> mechanism is
+somewhat less necessary, and would be complicated enough that it is considered
+out of scope for this PEP.</p>
+<p>Because the <code class="docutils literal notranslate"><span class="pre">zoneinfo</span></code> module is designed to use the system time zone data
+wherever possible, the <code class="docutils literal notranslate"><span class="pre">tzdata</span></code> package is unnecessary (and may be
+undesirable) on systems that deploy time zone data, and so it does not seem
+critical to ship <code class="docutils literal notranslate"><span class="pre">tzdata</span></code> with CPython.</p>
+<p>It is also not yet clear how these hybrid standard library / PyPI modules
+should be updated, (other than <code class="docutils literal notranslate"><span class="pre">pip</span></code>, which has a natural mechanism for
+updates and notifications) and since it is not critical to the operation of the
+module, it seems prudent to defer any such proposal.</p>
+</div>
+<div class="section" id="support-for-leap-seconds">
+<h3><a class="toc-backref" href="#id53">Support for leap seconds</a><a class="headerlink" href="#support-for-leap-seconds" title="Permalink to this headline">¶</a></h3>
+<p>In addition to time zone offset and name rules, the IANA time zone database
+also provides a source of leap second data. This is deemed out of scope because
+<code class="docutils literal notranslate"><span class="pre">datetime.datetime</span></code> currently has no support for leap seconds, and the
+question of leap second data can be deferred until leap second support is
+added.</p>
+<p>The first-party <code class="docutils literal notranslate"><span class="pre">tzdata</span></code> package should ship the leap second data, even if it
+is not used by the <code class="docutils literal notranslate"><span class="pre">zoneinfo</span></code> module.</p>
+</div>
+<div class="section" id="using-a-pytz-like-interface">
+<h3><a class="toc-backref" href="#id54">Using a <code class="docutils literal notranslate"><span class="pre">pytz</span></code>-like interface</a><a class="headerlink" href="#using-a-pytz-like-interface" title="Permalink to this headline">¶</a></h3>
+<p>A <code class="docutils literal notranslate"><span class="pre">pytz</span></code>-like (<a class="footnote-reference brackets" href="#pytz" id="id22">24</a>) interface was proposed in PEP 431 <a class="footnote-reference brackets" href="#pep431" id="id23">14</a>, but
+was ultimately withdrawn / rejected for lack of ambiguous datetime support.
+PEP 495 <a class="footnote-reference brackets" href="#pep495" id="id24">15</a> added the <code class="docutils literal notranslate"><span class="pre">fold</span></code> attribute to address this problem, but
+<code class="docutils literal notranslate"><span class="pre">fold</span></code> obviates the need for <code class="docutils literal notranslate"><span class="pre">pytz</span></code>’s non-standard <code class="docutils literal notranslate"><span class="pre">tzinfo</span></code> classes, and
+so a <code class="docutils literal notranslate"><span class="pre">pytz</span></code>-like interface is no longer necessary. <a class="footnote-reference brackets" href="#fastest-footgun" id="id25">5</a></p>
+<p>The <code class="docutils literal notranslate"><span class="pre">zoneinfo</span></code> approach is more closely based on <code class="docutils literal notranslate"><span class="pre">dateutil.tz</span></code>, which
+implemented support for <code class="docutils literal notranslate"><span class="pre">fold</span></code> (including a backport to older versions) just
+before the release of Python 3.6.</p>
+</div>
+<div class="section" id="windows-support-via-microsoft-s-icu-api">
+<h3><a class="toc-backref" href="#id55">Windows support via Microsoft’s ICU API</a><a class="headerlink" href="#windows-support-via-microsoft-s-icu-api" title="Permalink to this headline">¶</a></h3>
+<p>Windows does not ship the time zone database as TZif files, but as of Windows
+10’s 2017 Creators Update, Microsoft has provided an API for interacting with
+the International Components for Unicode (ICU) project <a class="footnote-reference brackets" href="#icu-project" id="id26">19</a>
+<a class="footnote-reference brackets" href="#ms-icu-documentation" id="id27">20</a> , which includes an API for accessing time zone data —
+sourced from the IANA time zone database. <a class="footnote-reference brackets" href="#icu-timezone-api" id="id28">21</a></p>
+<p>Providing bindings for this would allow us to support Windows “out of the box”
+without the need to install the <code class="docutils literal notranslate"><span class="pre">tzdata</span></code> package, but unfortunately the C
+headers provided by Windows do not provide any access to the underlying time
+zone data — only an API to query the system for transition and offset
+information is available. This would constrain the semantics of any ICU-based
+implementation in ways that may not be compatible with a non-ICU-based
+implementation — particularly around the behavior of the cache.</p>
+<p>Since it seems like ICU cannot be used as simply an additional data source for
+<code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> files, this PEP considers the ICU support to be out of scope, and
+probably better supported by a third-party library.</p>
+</div>
+<div class="section" id="alternative-environment-variable-configurations">
+<h3><a class="toc-backref" href="#id56">Alternative environment variable configurations</a><a class="headerlink" href="#alternative-environment-variable-configurations" title="Permalink to this headline">¶</a></h3>
+<p>This PEP proposes to use a single environment variable: <code class="docutils literal notranslate"><span class="pre">PYTHONTZPATH</span></code>.
+This is based on the assumption that the majority of users who would want to
+manipulate the time zone path would want to fully replace it (e.g. “I know
+exactly where my time zone data is”), and other use cases like prepending to
+the existing search path would be less common.</p>
+<p>There are several other schemes that were considered and rejected:</p>
+<ol class="arabic">
+<li>Separate <code class="docutils literal notranslate"><span class="pre">PYTHON_TZPATH</span></code> into two environment variables:
+<code class="docutils literal notranslate"><span class="pre">DEFAULT_PYTHONTZPATH</span></code> and <code class="docutils literal notranslate"><span class="pre">PYTHONTZPATH</span></code>, where <code class="docutils literal notranslate"><span class="pre">PYTHONTZPATH</span></code> would
+contain values to append (or prepend) to the default time zone path, and
+<code class="docutils literal notranslate"><span class="pre">DEFAULT_PYTHONTZPATH</span></code> would <em>replace</em> the default time zone path. This
+was rejected because it would likely lead to user confusion if the primary
+use case is to replace rather than augment.</li>
+<li>Adding either <code class="docutils literal notranslate"><span class="pre">PYTHONTZPATH_PREPEND</span></code>, <code class="docutils literal notranslate"><span class="pre">PYTHONTZPATH_APPEND</span></code> or both, so
+that users can augment the search path on either end without attempting to
+determine what the default time zone path is. This was rejected as likely to
+be unnecessary, and because it could easily be added in a
+backwards-compatible manner in future updates if there is much demand for
+such a feature.</li>
+<li><p>Use only the <code class="docutils literal notranslate"><span class="pre">PYTHONTZPATH</span></code> variable, but provide a custom special value
+that represents the default time zone path, e.g. <code class="docutils literal notranslate"><span class="pre">&lt;&lt;DEFAULT_TZPATH&gt;&gt;</span></code>, so
+users could append to the time zone path with, e.g.
+<code class="docutils literal notranslate"><span class="pre">PYTHONTZPATH=&lt;&lt;DEFAULT_TZPATH&gt;&gt;:/my/path</span></code> could be used to append
+<code class="docutils literal notranslate"><span class="pre">/my/path</span></code> to the end of the time zone path.</p>
+<p>One advantage to this scheme would be that it would add a natural extension
+point for specifying non-file-based elements on the search path, such as
+changing the priority of <code class="docutils literal notranslate"><span class="pre">tzdata</span></code> if it exists, or if native support for
+TZDIST <a class="footnote-reference brackets" href="#rfc7808" id="id29">2</a> were to be added to the library in the future.</p>
+<p>This was rejected mainly because these sort of special values are not
+usually found in <code class="docutils literal notranslate"><span class="pre">PATH</span></code>-like variables and the only currently proposed use
+case is a stand-in for the default <code class="docutils literal notranslate"><span class="pre">TZPATH</span></code>, which can be acquired by
+executing a Python program to query for the default value. An additional
+factor in rejecting this is that because <code class="docutils literal notranslate"><span class="pre">PYTHONTZPATH</span></code> accepts only
+absolute paths, any string that does not represent a valid absolute path is
+implicitly reserved for future use, so it would be possible to introduce
+these special values as necessary in a backwards-compatible way in future
+versions of the library.</p>
+</li>
+</ol>
+</div>
+<div class="section" id="using-the-datetime-module">
+<h3><a class="toc-backref" href="#id57">Using the <code class="docutils literal notranslate"><span class="pre">datetime</span></code> module</a><a class="headerlink" href="#using-the-datetime-module" title="Permalink to this headline">¶</a></h3>
+<p>One possible idea would be to add <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> to the <code class="docutils literal notranslate"><span class="pre">datetime</span></code> module,
+rather than giving it its own separate module. This PEP favors the use of
+a separate <code class="docutils literal notranslate"><span class="pre">zoneinfo</span></code> module,though a nested <code class="docutils literal notranslate"><span class="pre">datetime.zoneinfo</span></code> module
+was also under consideration.</p>
+<div class="section" id="arguments-against-putting-zoneinfo-directly-into-datetime">
+<h4><a class="toc-backref" href="#id58">Arguments against putting <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> directly into <code class="docutils literal notranslate"><span class="pre">datetime</span></code></a><a class="headerlink" href="#arguments-against-putting-zoneinfo-directly-into-datetime" title="Permalink to this headline">¶</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">datetime</span></code> module is already somewhat crowded, as it has many classes
+with somewhat complex behavior — <code class="docutils literal notranslate"><span class="pre">datetime.datetime</span></code>, <code class="docutils literal notranslate"><span class="pre">datetime.date</span></code>,
+<code class="docutils literal notranslate"><span class="pre">datetime.time</span></code>, <code class="docutils literal notranslate"><span class="pre">datetime.timedelta</span></code>, <code class="docutils literal notranslate"><span class="pre">datetime.timezone</span></code> and
+<code class="docutils literal notranslate"><span class="pre">datetime.tzinfo</span></code>.  The module’s implementation and documentation are already
+quite complicated, and it is probably beneficial to try to not to compound the
+problem if it can be helped.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> class is also in some ways different from all the other
+classes provided by <code class="docutils literal notranslate"><span class="pre">datetime</span></code>; the other classes are all intended to be
+lean, simple data types, whereas the <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> class is more complex: it is
+a parser for a specific format (TZif), a representation for the information
+stored in that format and a mechanism to look up the information in well-known
+locations in the system.</p>
+<p>Finally, while it is true that someone who needs the <code class="docutils literal notranslate"><span class="pre">zoneinfo</span></code> module also
+needs the <code class="docutils literal notranslate"><span class="pre">datetime</span></code> module, the reverse is not necessarily true: many people
+will want to use <code class="docutils literal notranslate"><span class="pre">datetime</span></code> without <code class="docutils literal notranslate"><span class="pre">zoneinfo</span></code>.  Considering that
+<code class="docutils literal notranslate"><span class="pre">zoneinfo</span></code> will likely pull in additional, possibly more heavy-weight
+standard library modules, it would be preferable to allow the two to be
+imported separately — particularly if potential “tree shaking” distributions
+are in Python’s future. <a class="footnote-reference brackets" href="#tree-shaking" id="id30">12</a></p>
+<p>In the final analysis, it makes sense to keep <code class="docutils literal notranslate"><span class="pre">zoneinfo</span></code> a separate module
+with a separate documentation page rather than to put its classes and functions
+directly into <code class="docutils literal notranslate"><span class="pre">datetime</span></code>.</p>
+</div>
+<div class="section" id="using-datetime-zoneinfo-instead-of-zoneinfo">
+<h4><a class="toc-backref" href="#id59">Using <code class="docutils literal notranslate"><span class="pre">datetime.zoneinfo</span></code> instead of <code class="docutils literal notranslate"><span class="pre">zoneinfo</span></code></a><a class="headerlink" href="#using-datetime-zoneinfo-instead-of-zoneinfo" title="Permalink to this headline">¶</a></h4>
+<p>A more palatable configuration may be to nest <code class="docutils literal notranslate"><span class="pre">zoneinfo</span></code> as a module under
+<code class="docutils literal notranslate"><span class="pre">datetime</span></code>, as <code class="docutils literal notranslate"><span class="pre">datetime.zoneinfo</span></code>.</p>
+<p>Arguments in favor of this:</p>
+<ol class="arabic simple">
+<li>It neatly namespaces <code class="docutils literal notranslate"><span class="pre">zoneinfo</span></code> together with <code class="docutils literal notranslate"><span class="pre">datetime</span></code></li>
+<li>The <code class="docutils literal notranslate"><span class="pre">timezone</span></code> class is already in <code class="docutils literal notranslate"><span class="pre">datetime</span></code>, and it may seem strange
+that some time zones are in <code class="docutils literal notranslate"><span class="pre">datetime</span></code> and others are in a top-level
+module.</li>
+<li>As mentioned earlier, importing <code class="docutils literal notranslate"><span class="pre">zoneinfo</span></code> necessarily requires importing
+<code class="docutils literal notranslate"><span class="pre">datetime</span></code>, so it is no imposition to require importing the parent module.</li>
+</ol>
+<p>Arguments against this:</p>
+<ol class="arabic">
+<li><p>In order to avoid forcing all <code class="docutils literal notranslate"><span class="pre">datetime</span></code> users to import <code class="docutils literal notranslate"><span class="pre">zoneinfo</span></code>, the
+<code class="docutils literal notranslate"><span class="pre">zoneinfo</span></code> module would need to be lazily imported, which means that
+end-users would need to explicitly import <code class="docutils literal notranslate"><span class="pre">datetime.zoneinfo</span></code> (as opposed
+to importing <code class="docutils literal notranslate"><span class="pre">datetime</span></code> and accessing the <code class="docutils literal notranslate"><span class="pre">zoneinfo</span></code> attribute on the
+module). This is the way <code class="docutils literal notranslate"><span class="pre">dateutil</span></code> works (all submodules are lazily
+imported), and it is a perennial source of confusion for end users.</p>
+<p>This confusing requirement from end-users can be avoided using a
+module-level <code class="docutils literal notranslate"><span class="pre">__getattr__</span></code> and <code class="docutils literal notranslate"><span class="pre">__dir__</span></code> per PEP 562, but this would
+add some complexity to the implementation of the <code class="docutils literal notranslate"><span class="pre">datetime</span></code> module. This
+sort of behavior in modules or classes tends to confuse static analysis
+tools, which may not be desirable for a library as widely-used and critical
+as <code class="docutils literal notranslate"><span class="pre">datetime</span></code>.</p>
+</li>
+<li><p>Nesting the implementation under <code class="docutils literal notranslate"><span class="pre">datetime</span></code> would likely require
+<code class="docutils literal notranslate"><span class="pre">datetime</span></code> to be reorganized from a single-file module (<code class="docutils literal notranslate"><span class="pre">datetime.py</span></code>)
+to a directory with an <code class="docutils literal notranslate"><span class="pre">__init__.py</span></code>.  This is a minor concern, but the
+structure of the <code class="docutils literal notranslate"><span class="pre">datetime</span></code> module has been stable for many years, and it
+would be preferable to avoid churn if possible.</p>
+<p>This concern <em>could</em> be alleviated by implementing <code class="docutils literal notranslate"><span class="pre">zoneinfo</span></code> as
+<code class="docutils literal notranslate"><span class="pre">_zoneinfo.py</span></code> and importing it as <code class="docutils literal notranslate"><span class="pre">zoneinfo</span></code> from within <code class="docutils literal notranslate"><span class="pre">datetime</span></code>,
+but this does not seem desirable from an aesthetic or code organization
+standpoint, and it would preclude the version of nesting where end users are
+required to explicitly import <code class="docutils literal notranslate"><span class="pre">datetime.zoneinfo</span></code>.</p>
+</li>
+</ol>
+<p>This PEP takes the position that on balance it would be best to use a separate
+top-level <code class="docutils literal notranslate"><span class="pre">zoneinfo</span></code> module because the benefits of nesting are not so great
+that it overwhelms the practical implementation concerns.</p>
+</div>
+</div>
+</div>
+<div class="section" id="footnotes">
+<h2><a class="toc-backref" href="#id60">Footnotes</a><a class="headerlink" href="#footnotes" title="Permalink to this headline">¶</a></h2>
+<dl class="citation">
+<dt class="label" id="a"><span class="brackets"><a class="fn-backref" href="#id3">a</a></span></dt>
+<dd>The claim that the vast majority of users only want a few types of time
+zone is based on anecdotal impressions rather than anything remotely
+scientific.  As one data point, <code class="docutils literal notranslate"><span class="pre">dateutil</span></code> provides many time zone types,
+but user support mostly focuses on these three types.</dd>
+<dt class="label" id="b"><span class="brackets"><a class="fn-backref" href="#id8">b</a></span></dt>
+<dd>The statement that identically constructed <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> files should be
+identical objects may be violated if the user deliberately clears the time
+zone cache.</dd>
+<dt class="label" id="c"><span class="brackets"><a class="fn-backref" href="#id13">c</a></span></dt>
+<dd>The hash value for a given <code class="docutils literal notranslate"><span class="pre">datetime</span></code> is cached on first calculation, so
+we do not need to worry about the possibly more serious issue that a given
+<code class="docutils literal notranslate"><span class="pre">datetime</span></code> object’s hash would change during its lifetime.</dd>
+<dt class="label" id="d"><span class="brackets">d</span><span class='fn-backref'><em> (<a href="#id1">1</a>, <a href="#id16">2</a>, <a href="#id17">3</a>) </em></span></dt>
+<dd>The term “first party” here is distinguished from “third party” in that,
+although it is is distributed via PyPI and is not currently included in
+Python by default, it is to be considered an official sub-project of
+CPython rather than a “blessed” third-party package.</dd>
+</dl>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id61">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="rfc6557"><span class="brackets"><a class="fn-backref" href="#id5">1</a></span></dt>
+<dd>RFC 6557: Procedures for Maintaining the Time Zone Database
+<a class="reference external" href="https://tools.ietf.org/html/rfc6557">https://tools.ietf.org/html/rfc6557</a></dd>
+<dt class="label" id="rfc7808"><span class="brackets"><a class="fn-backref" href="#id29">2</a></span></dt>
+<dd>RFC 7808: Time Zone Data Distribution Service
+<a class="reference external" href="https://tools.ietf.org/html/rfc7808">https://tools.ietf.org/html/rfc7808</a></dd>
+<dt class="label" id="rfc8536"><span class="brackets"><a class="fn-backref" href="#id6">3</a></span></dt>
+<dd>RFC 8536: The Time Zone Information Format (TZif)
+<a class="reference external" href="https://tools.ietf.org/html/rfc8536">https://tools.ietf.org/html/rfc8536</a></dd>
+<dt class="label" id="nontransitive-comp"><span class="brackets"><a class="fn-backref" href="#id9">4</a></span></dt>
+<dd>Paul Ganssle: “A curious case of non-transitive datetime comparison”
+(Published 15 February 2018)
+<a class="reference external" href="https://blog.ganssle.io/articles/2018/02/a-curious-case-datetimes.html">https://blog.ganssle.io/articles/2018/02/a-curious-case-datetimes.html</a></dd>
+<dt class="label" id="fastest-footgun"><span class="brackets"><a class="fn-backref" href="#id25">5</a></span></dt>
+<dd>Paul Ganssle: “pytz: The Fastest Footgun in the West” (Published 19 March
+2018) <a class="reference external" href="https://blog.ganssle.io/articles/2018/03/pytz-fastest-footgun.html">https://blog.ganssle.io/articles/2018/03/pytz-fastest-footgun.html</a></dd>
+<dt class="label" id="hashable-def"><span class="brackets"><a class="fn-backref" href="#id11">6</a></span></dt>
+<dd>Python documentation: “Glossary” (Version 3.8.2)
+<a class="reference external" href="https://docs.python.org/3/glossary.html#term-hashable">https://docs.python.org/3/glossary.html#term-hashable</a></dd>
+<dt class="label" id="hashes-equality"><span class="brackets"><a class="fn-backref" href="#id12">7</a></span></dt>
+<dd>Hynek Schlawack: “Python Hashes and Equality” (Published 20 November 2017)
+<a class="reference external" href="https://hynek.me/articles/hashes-and-equality/">https://hynek.me/articles/hashes-and-equality/</a></dd>
+<dt class="label" id="cldr"><span class="brackets"><a class="fn-backref" href="#id14">8</a></span></dt>
+<dd>CLDR: Unicode Common Locale Data Repository
+<a class="reference external" href="http://cldr.unicode.org/#TOC-How-to-Use">http://cldr.unicode.org/#TOC-How-to-Use</a>-</dd>
+<dt class="label" id="tzdb-wiki"><span class="brackets"><a class="fn-backref" href="#id4">9</a></span></dt>
+<dd>Wikipedia page for Tz database:
+<a class="reference external" href="https://en.wikipedia.org/wiki/Tz_database">https://en.wikipedia.org/wiki/Tz_database</a></dd>
+<dt class="label" id="timing-of-tz-changes"><span class="brackets"><a class="fn-backref" href="#id15">10</a></span></dt>
+<dd>Code of Matt: “On the Timing of Time Zone Changes” (Matt Johnson-Pint, 23
+April 2016) <a class="reference external" href="https://codeofmatt.com/on-the-timing-of-time-zone-changes/">https://codeofmatt.com/on-the-timing-of-time-zone-changes/</a></dd>
+<dt class="label" id="rearguard"><span class="brackets"><a class="fn-backref" href="#id20">11</a></span></dt>
+<dd>tz mailing list: [PROPOSED] Support zi parsers that mishandle negative DST
+offsets (Paul Eggert, 23 April 2018)
+<a class="reference external" href="https://mm.icann.org/pipermail/tz/2018-April/026421.html">https://mm.icann.org/pipermail/tz/2018-April/026421.html</a></dd>
+<dt class="label" id="tree-shaking"><span class="brackets"><a class="fn-backref" href="#id30">12</a></span></dt>
+<dd>“Russell Keith-Magee: Python On Other Platforms” (15 May 2019, Jesse Jiryu
+Davis)
+<a class="reference external" href="https://pyfound.blogspot.com/2019/05/russell-keith-magee-python-on-other.html">https://pyfound.blogspot.com/2019/05/russell-keith-magee-python-on-other.html</a></dd>
+<dt class="label" id="pep453-ensurepip"><span class="brackets"><a class="fn-backref" href="#id21">13</a></span></dt>
+<dd>PEP 453: Explicit bootstrapping of pip in Python installations
+<a class="reference external" href="https://www.python.org/dev/peps/pep-0453/">https://www.python.org/dev/peps/pep-0453/</a></dd>
+<dt class="label" id="pep431"><span class="brackets"><a class="fn-backref" href="#id23">14</a></span></dt>
+<dd>PEP 431: Time zone support improvements
+<a class="reference external" href="https://www.python.org/dev/peps/pep-0431/">https://www.python.org/dev/peps/pep-0431/</a></dd>
+<dt class="label" id="pep495"><span class="brackets"><a class="fn-backref" href="#id24">15</a></span></dt>
+<dd>PEP 495: Local Time Disambiguation
+<a class="reference external" href="https://www.python.org/dev/peps/pep-0495/">https://www.python.org/dev/peps/pep-0495/</a></dd>
+<dt class="label" id="tzinfo"><span class="brackets"><a class="fn-backref" href="#id2">16</a></span></dt>
+<dd><code class="docutils literal notranslate"><span class="pre">datetime.tzinfo</span></code> documentation
+<a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.tzinfo">https://docs.python.org/3/library/datetime.html#datetime.tzinfo</a></dd>
+<dt class="label" id="importlib-resources"><span class="brackets"><a class="fn-backref" href="#id18">17</a></span></dt>
+<dd><code class="docutils literal notranslate"><span class="pre">importlib.resources</span></code> documentation
+<a class="reference external" href="https://docs.python.org/3/library/importlib.html#module-importlib.resources">https://docs.python.org/3/library/importlib.html#module-importlib.resources</a></dd>
+<dt class="label" id="pkgutil-data"><span class="brackets"><a class="fn-backref" href="#id19">18</a></span></dt>
+<dd><code class="docutils literal notranslate"><span class="pre">pkgutil.get_data</span></code> documentation
+<a class="reference external" href="https://docs.python.org/3/library/pkgutil.html#pkgutil.get_data">https://docs.python.org/3/library/pkgutil.html#pkgutil.get_data</a></dd>
+<dt class="label" id="icu-project"><span class="brackets"><a class="fn-backref" href="#id26">19</a></span></dt>
+<dd>ICU TimeZone classes
+<a class="reference external" href="http://userguide.icu-project.org/datetime/timezone">http://userguide.icu-project.org/datetime/timezone</a></dd>
+<dt class="label" id="ms-icu-documentation"><span class="brackets"><a class="fn-backref" href="#id27">20</a></span></dt>
+<dd>Microsoft documentation for International Components for Unicode (ICU)
+<a class="reference external" href="https://docs.microsoft.com/en-us/windows/win32/intl/international-components-for-unicode--icu-">https://docs.microsoft.com/en-us/windows/win32/intl/international-components-for-unicode–icu-</a></dd>
+<dt class="label" id="icu-timezone-api"><span class="brackets"><a class="fn-backref" href="#id28">21</a></span></dt>
+<dd><code class="docutils literal notranslate"><span class="pre">icu::TimeZone</span></code> class documentation
+<a class="reference external" href="https://unicode-org.github.io/icu-docs/apidoc/released/icu4c/classicu_1_1TimeZone.html">https://unicode-org.github.io/icu-docs/apidoc/released/icu4c/classicu_1_1TimeZone.html</a></dd>
+</dl>
+<div class="section" id="other-time-zone-implementations">
+<h3><a class="toc-backref" href="#id62">Other time zone implementations:</a><a class="headerlink" href="#other-time-zone-implementations" title="Permalink to this headline">¶</a></h3>
+<dl class="footnote brackets">
+<dt class="label" id="dateutil-tz"><span class="brackets"><a class="fn-backref" href="#id10">22</a></span></dt>
+<dd><code class="docutils literal notranslate"><span class="pre">dateutil.tz</span></code>
+<a class="reference external" href="https://dateutil.readthedocs.io/en/stable/tz.html">https://dateutil.readthedocs.io/en/stable/tz.html</a></dd>
+<dt class="label" id="dateutil-tzwin"><span class="brackets">23</span></dt>
+<dd><code class="docutils literal notranslate"><span class="pre">dateutil.tz.win</span></code>: Concrete time zone implementations wrapping Windows
+time zones
+<a class="reference external" href="https://dateutil.readthedocs.io/en/stable/tzwin.html">https://dateutil.readthedocs.io/en/stable/tzwin.html</a></dd>
+<dt class="label" id="pytz"><span class="brackets"><a class="fn-backref" href="#id22">24</a></span></dt>
+<dd><code class="docutils literal notranslate"><span class="pre">pytz</span></code>
+<a class="reference external" href="http://pytz.sourceforge.net/">http://pytz.sourceforge.net/</a></dd>
+</dl>
+</div>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id63">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document is placed in the public domain or under the
+CC0-1.0-Universal license, whichever is more permissive.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0615.rst">https://github.com/python/peps/blob/master/pep-0615.rst</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0615.rst.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0614.html">PEP 0614</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0616.html">PEP 0616</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 615 – Support for the IANA Time Zone Database in the Standard Library</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#proposal">Proposal</a><ul>
+<li><a class="reference internal" href="#the-zoneinfo-zoneinfo-class">The <code class="docutils literal notranslate"><span class="pre">zoneinfo.ZoneInfo</span></code> class</a><ul>
+<li><a class="reference internal" href="#constructors">Constructors</a></li>
+<li><a class="reference internal" href="#behavior-during-data-updates">Behavior during data updates</a></li>
+<li><a class="reference internal" href="#deliberate-cache-invalidation">Deliberate cache invalidation</a></li>
+<li><a class="reference internal" href="#string-representation">String representation</a></li>
+<li><a class="reference internal" href="#pickle-serialization">Pickle serialization</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#sources-for-time-zone-data">Sources for time zone data</a><ul>
+<li><a class="reference internal" href="#system-time-zone-information">System time zone information</a></li>
+<li><a class="reference internal" href="#the-tzdata-python-package">The <code class="docutils literal notranslate"><span class="pre">tzdata</span></code> Python package</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#search-path-configuration">Search path configuration</a><ul>
+<li><a class="reference internal" href="#compile-time-options">Compile-time options</a></li>
+<li><a class="reference internal" href="#environment-variables">Environment variables</a></li>
+<li><a class="reference internal" href="#reset-tzpath-function"><code class="docutils literal notranslate"><span class="pre">reset_tzpath</span></code> function</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#security-implications">Security Implications</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#rejected-ideas">Rejected Ideas</a><ul>
+<li><a class="reference internal" href="#building-a-custom-tzdb-compiler">Building a custom tzdb compiler</a></li>
+<li><a class="reference internal" href="#including-tzdata-in-the-standard-library-by-default">Including <code class="docutils literal notranslate"><span class="pre">tzdata</span></code> in the standard library by default</a></li>
+<li><a class="reference internal" href="#support-for-leap-seconds">Support for leap seconds</a></li>
+<li><a class="reference internal" href="#using-a-pytz-like-interface">Using a <code class="docutils literal notranslate"><span class="pre">pytz</span></code>-like interface</a></li>
+<li><a class="reference internal" href="#windows-support-via-microsoft-s-icu-api">Windows support via Microsoft’s ICU API</a></li>
+<li><a class="reference internal" href="#alternative-environment-variable-configurations">Alternative environment variable configurations</a></li>
+<li><a class="reference internal" href="#using-the-datetime-module">Using the <code class="docutils literal notranslate"><span class="pre">datetime</span></code> module</a><ul>
+<li><a class="reference internal" href="#arguments-against-putting-zoneinfo-directly-into-datetime">Arguments against putting <code class="docutils literal notranslate"><span class="pre">ZoneInfo</span></code> directly into <code class="docutils literal notranslate"><span class="pre">datetime</span></code></a></li>
+<li><a class="reference internal" href="#using-datetime-zoneinfo-instead-of-zoneinfo">Using <code class="docutils literal notranslate"><span class="pre">datetime.zoneinfo</span></code> instead of <code class="docutils literal notranslate"><span class="pre">zoneinfo</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#footnotes">Footnotes</a></li>
+<li><a class="reference internal" href="#references">References</a><ul>
+<li><a class="reference internal" href="#other-time-zone-implementations">Other time zone implementations:</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

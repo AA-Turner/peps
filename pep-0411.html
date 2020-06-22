@@ -1,0 +1,319 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 411 – Provisional packages in the Python standard library &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 412 – Key-Sharing Dictionary" href="pep-0412.html" />
+    <link rel="prev" title="PEP 410 – Use decimal.Decimal type for timestamps" href="pep-0410.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 411 – Provisional packages in the Python standard library</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-411-provisional-packages-in-the-python-standard-library">
+<h1 class="page-title">PEP 411 – Provisional packages in the Python standard library<a class="headerlink" href="#pep-411-provisional-packages-in-the-python-standard-library" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">411</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Provisional packages in the Python standard library</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Nick Coghlan &lt;ncoghlan&#32;&#97;t&#32;gmail.com&gt;,
+Eli Bendersky &lt;eliben&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Active</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Informational</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">2012-02-10</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.3</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">2012-02-10, 2012-03-24</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id3">Abstract</a></li>
+<li><a class="reference internal" href="#proposal-a-documented-provisional-state" id="id4">Proposal - a documented provisional state</a><ul>
+<li><a class="reference internal" href="#marking-a-package-provisional" id="id5">Marking a package provisional</a></li>
+<li><a class="reference internal" href="#which-packages-should-go-through-the-provisional-state" id="id6">Which packages should go through the provisional state</a></li>
+<li><a class="reference internal" href="#criteria-for-graduation" id="id7">Criteria for “graduation”</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rationale" id="id8">Rationale</a><ul>
+<li><a class="reference internal" href="#benefits-for-the-core-development-team" id="id9">Benefits for the core development team</a></li>
+<li><a class="reference internal" href="#benefits-for-end-users" id="id10">Benefits for end users</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#candidates-for-provisional-inclusion-into-the-standard-library" id="id11">Candidates for provisional inclusion into the standard library</a></li>
+<li><a class="reference internal" href="#rejected-alternatives-and-variations" id="id12">Rejected alternatives and variations</a></li>
+<li><a class="reference internal" href="#references" id="id13">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id14">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id3">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>The process of including a new package into the Python standard library is
+hindered by the API lock-in and promise of backward compatibility implied by
+a package being formally part of Python.  This PEP describes a methodology
+for marking a standard library package “provisional” for the period of a single
+feature release.  A provisional package may have its API modified prior to
+“graduating” into a “stable” state.  On one hand, this state provides the
+package with the benefits of being formally part of the Python distribution.
+On the other hand, the core development team explicitly states that no promises
+are made with regards to the stability of the package’s API, which may
+change for the next release.  While it is considered an unlikely outcome,
+such packages may even be removed from the standard library without a
+deprecation period if the concerns regarding their API or maintenance prove
+well-founded.</p>
+</div>
+<div class="section" id="proposal-a-documented-provisional-state">
+<h2><a class="toc-backref" href="#id4">Proposal - a documented provisional state</a><a class="headerlink" href="#proposal-a-documented-provisional-state" title="Permalink to this headline">¶</a></h2>
+<p>Whenever the Python core development team decides that a new package should be
+included into the standard library, but isn’t entirely sure about whether the
+package’s API is optimal, the package can be included and marked as
+“provisional”.</p>
+<p>In the next feature release, the package may either be “graduated” into a normal
+“stable” state in the standard library, remain in provisional state, or be
+rejected and removed entirely from the Python source tree.  If the package ends
+up graduating into the stable state after being provisional, its API may
+be changed according to accumulated feedback.  The core development team
+explicitly makes no guarantees about API stability and backward compatibility
+of provisional packages.</p>
+<div class="section" id="marking-a-package-provisional">
+<h3><a class="toc-backref" href="#id5">Marking a package provisional</a><a class="headerlink" href="#marking-a-package-provisional" title="Permalink to this headline">¶</a></h3>
+<p>A package will be marked provisional by a notice in its documentation page and
+its docstring. The following paragraph will be added as a note at the top of
+the documentation page:</p>
+<blockquote>
+<div>The &lt;X&gt; package has been included in the standard library on a
+provisional basis.  Backwards incompatible changes (up to and including
+removal of the package) may occur if deemed necessary by the core
+developers.</div></blockquote>
+<p>The phrase “provisional basis” will then be a link to the glossary term
+“provisional package”, defined as:</p>
+<blockquote>
+<div><p>A provisional package is one which has been deliberately excluded from the
+standard library’s backwards compatibility guarantees.  While major
+changes to such packages are not expected, as long as they are marked
+provisional, backwards incompatible changes (up to and including removal of
+the package) may occur if deemed necessary by core developers.  Such changes
+will not be made gratuitously – they will occur only if serious flaws are
+uncovered that were missed prior to the inclusion of the package.</p>
+<p>This process allows the standard library to continue to evolve over time,
+without locking in problematic design errors for extended periods of time.
+See PEP 411 for more details.</p>
+</div></blockquote>
+<p>The following will be added to the start of the package’s docstring:</p>
+<blockquote>
+<div>The API of this package is currently provisional.  Refer to the
+documentation for details.</div></blockquote>
+<p>Moving a package from the provisional to the stable state simply implies
+removing these notes from its documentation page and docstring.</p>
+</div>
+<div class="section" id="which-packages-should-go-through-the-provisional-state">
+<h3><a class="toc-backref" href="#id6">Which packages should go through the provisional state</a><a class="headerlink" href="#which-packages-should-go-through-the-provisional-state" title="Permalink to this headline">¶</a></h3>
+<p>We expect most packages proposed for addition into the Python standard library
+to go through a feature release in the provisional state. There may, however,
+be some exceptions, such as packages that use a pre-defined API (for example
+<code class="docutils literal notranslate"><span class="pre">lzma</span></code>, which generally follows the API of the existing <code class="docutils literal notranslate"><span class="pre">bz2</span></code> package),
+or packages with an API that has wide acceptance in the Python development
+community.</p>
+<p>In any case, packages that are proposed to be added to the standard library,
+whether via the provisional state or directly, must fulfill the acceptance
+conditions set by PEP 2.</p>
+</div>
+<div class="section" id="criteria-for-graduation">
+<h3><a class="toc-backref" href="#id7">Criteria for “graduation”</a><a class="headerlink" href="#criteria-for-graduation" title="Permalink to this headline">¶</a></h3>
+<p>In principle, most provisional packages should eventually graduate to the
+stable standard library.  Some reasons for not graduating are:</p>
+<ul class="simple">
+<li>The package may prove to be unstable or fragile, without sufficient developer
+support to maintain it.</li>
+<li>A much better alternative package may be found during the preview release.</li>
+</ul>
+<p>Essentially, the decision will be made by the core developers on a per-case
+basis.  The point to emphasize here is that a package’s inclusion in the
+standard library as “provisional” in some release does not guarantee it will
+continue being part of Python in the next release.  At the same time, the bar
+for making changes in a provisional package is quite high.  We expect that
+most of the API of most provisional packages will be unchanged at graduation.
+Withdrawals are expected to be rare.</p>
+</div>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id8">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="benefits-for-the-core-development-team">
+<h3><a class="toc-backref" href="#id9">Benefits for the core development team</a><a class="headerlink" href="#benefits-for-the-core-development-team" title="Permalink to this headline">¶</a></h3>
+<p>Currently, the core developers are really reluctant to add new interfaces to
+the standard library.  This is because as soon as they’re published in a
+release, API design mistakes get locked in due to backward compatibility
+concerns.</p>
+<p>By gating all major API additions through some kind of a provisional mechanism
+for a full release, we get one full release cycle of community feedback
+before we lock in the APIs with our standard backward compatibility guarantee.</p>
+<p>We can also start integrating provisional packages with the rest of the standard
+library early, so long as we make it clear to packagers that the provisional
+packages should not be considered optional.  The only difference between
+provisional APIs and the rest of the standard library is that provisional APIs
+are explicitly exempted from the usual backward compatibility guarantees.</p>
+</div>
+<div class="section" id="benefits-for-end-users">
+<h3><a class="toc-backref" href="#id10">Benefits for end users</a><a class="headerlink" href="#benefits-for-end-users" title="Permalink to this headline">¶</a></h3>
+<p>For future end users, the broadest benefit lies in a better “out-of-the-box”
+experience - rather than being told “oh, the standard library tools for task X
+are horrible, download this 3rd party library instead”, those superior tools
+are more likely to be just be an import away.</p>
+<p>For environments where developers are required to conduct due diligence on
+their upstream dependencies (severely harming the cost-effectiveness of, or
+even ruling out entirely, much of the material on PyPI), the key benefit lies
+in ensuring that all packages in the provisional state are clearly under
+python-dev’s aegis from at least the following perspectives:</p>
+<ul class="simple">
+<li>Licensing:  Redistributed by the PSF under a Contributor Licensing Agreement.</li>
+<li>Documentation: The documentation of the package is published and organized via
+the standard Python documentation tools (i.e. ReST source, output generated
+with Sphinx and published on <a class="reference external" href="http://docs.python.org">http://docs.python.org</a>).</li>
+<li>Testing: The package test suites are run on the python.org buildbot fleet
+and results published via <a class="reference external" href="http://www.python.org/dev/buildbot">http://www.python.org/dev/buildbot</a>.</li>
+<li>Issue management: Bugs and feature requests are handled on
+<a class="reference external" href="http://bugs.python.org">http://bugs.python.org</a></li>
+<li>Source control: The master repository for the software is published
+on <a class="reference external" href="http://hg.python.org">http://hg.python.org</a>.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="candidates-for-provisional-inclusion-into-the-standard-library">
+<h2><a class="toc-backref" href="#id11">Candidates for provisional inclusion into the standard library</a><a class="headerlink" href="#candidates-for-provisional-inclusion-into-the-standard-library" title="Permalink to this headline">¶</a></h2>
+<p>For Python 3.3, there are a number of clear current candidates:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">regex</span></code> (<a class="reference external" href="http://pypi.python.org/pypi/regex">http://pypi.python.org/pypi/regex</a>) - approved by Guido <a class="footnote-reference brackets" href="#id2" id="id1">1</a>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">daemon</span></code> (PEP 3143)</li>
+<li><code class="docutils literal notranslate"><span class="pre">ipaddr</span></code> (PEP 3144)</li>
+</ul>
+<p>Other possible future use cases include:</p>
+<ul class="simple">
+<li>Improved HTTP modules (e.g. <code class="docutils literal notranslate"><span class="pre">requests</span></code>)</li>
+<li>HTML 5 parsing support (e.g. <code class="docutils literal notranslate"><span class="pre">html5lib</span></code>)</li>
+<li>Improved URL/URI/IRI parsing</li>
+<li>A standard image API (PEP 368)</li>
+<li>Improved encapsulation of import state (PEP 406)</li>
+<li>Standard event loop API (PEP 3153)</li>
+<li>A binary version of WSGI for Python 3 (e.g. PEP 444)</li>
+<li>Generic function support (e.g. <code class="docutils literal notranslate"><span class="pre">simplegeneric</span></code>)</li>
+</ul>
+</div>
+<div class="section" id="rejected-alternatives-and-variations">
+<h2><a class="toc-backref" href="#id12">Rejected alternatives and variations</a><a class="headerlink" href="#rejected-alternatives-and-variations" title="Permalink to this headline">¶</a></h2>
+<p>See PEP 408.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id13">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2012-January/115962.html">https://mail.python.org/pipermail/python-dev/2012-January/115962.html</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id14">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0411.txt">https://github.com/python/peps/blob/master/pep-0411.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0411.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0410.html">PEP 0410</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0412.html">PEP 0412</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 411 – Provisional packages in the Python standard library</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#proposal-a-documented-provisional-state">Proposal - a documented provisional state</a><ul>
+<li><a class="reference internal" href="#marking-a-package-provisional">Marking a package provisional</a></li>
+<li><a class="reference internal" href="#which-packages-should-go-through-the-provisional-state">Which packages should go through the provisional state</a></li>
+<li><a class="reference internal" href="#criteria-for-graduation">Criteria for “graduation”</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rationale">Rationale</a><ul>
+<li><a class="reference internal" href="#benefits-for-the-core-development-team">Benefits for the core development team</a></li>
+<li><a class="reference internal" href="#benefits-for-end-users">Benefits for end users</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#candidates-for-provisional-inclusion-into-the-standard-library">Candidates for provisional inclusion into the standard library</a></li>
+<li><a class="reference internal" href="#rejected-alternatives-and-variations">Rejected alternatives and variations</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

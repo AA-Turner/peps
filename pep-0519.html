@@ -1,0 +1,654 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 519 – Adding a file system path protocol &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 520 – Preserving Class Attribute Definition Order" href="pep-0520.html" />
+    <link rel="prev" title="PEP 518 – Specifying Minimum Build System Requirements for Python Projects" href="pep-0518.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 519 – Adding a file system path protocol</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-519-adding-a-file-system-path-protocol">
+<h1 class="page-title">PEP 519 – Adding a file system path protocol<a class="headerlink" href="#pep-519-adding-a-file-system-path-protocol" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">519</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Adding a file system path protocol</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Brett Cannon &lt;brett&#32;&#97;t&#32;python.org&gt;,
+Koos Zevenhoven &lt;k7hoven&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">11-May-2016</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.6</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">11-May-2016,
+12-May-2016,
+13-May-2016</dd>
+<dt class="field-odd">Resolution</dt>
+<dd class="field-odd"><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2016-May/144646.html">https://mail.python.org/pipermail/python-dev/2016-May/144646.html</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id14">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id15">Rationale</a></li>
+<li><a class="reference internal" href="#proposal" id="id16">Proposal</a><ul>
+<li><a class="reference internal" href="#protocol" id="id17">Protocol</a></li>
+<li><a class="reference internal" href="#standard-library-changes" id="id18">Standard library changes</a><ul>
+<li><a class="reference internal" href="#builtins" id="id19">builtins</a></li>
+<li><a class="reference internal" href="#os" id="id20">os</a></li>
+<li><a class="reference internal" href="#os-path" id="id21">os.path</a></li>
+<li><a class="reference internal" href="#pathlib" id="id22">pathlib</a></li>
+<li><a class="reference internal" href="#c-api" id="id23">C API</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#backwards-compatibility" id="id24">Backwards compatibility</a></li>
+<li><a class="reference internal" href="#implementation" id="id25">Implementation</a></li>
+<li><a class="reference internal" href="#rejected-ideas" id="id26">Rejected Ideas</a><ul>
+<li><a class="reference internal" href="#other-names-for-the-protocol-s-method" id="id27">Other names for the protocol’s method</a></li>
+<li><a class="reference internal" href="#separate-str-bytes-methods" id="id28">Separate str/bytes methods</a></li>
+<li><a class="reference internal" href="#providing-a-path-attribute" id="id29">Providing a <code class="docutils literal notranslate"><span class="pre">path</span></code> attribute</a></li>
+<li><a class="reference internal" href="#have-fspath-only-return-strings" id="id30">Have <code class="docutils literal notranslate"><span class="pre">__fspath__()</span></code> only return strings</a></li>
+<li><a class="reference internal" href="#a-generic-string-encoding-mechanism" id="id31">A generic string encoding mechanism</a></li>
+<li><a class="reference internal" href="#have-fspath-be-an-attribute" id="id32">Have __fspath__ be an attribute</a></li>
+<li><a class="reference internal" href="#provide-specific-type-hinting-support" id="id33">Provide specific type hinting support</a></li>
+<li><a class="reference internal" href="#provide-os-fspathb" id="id34">Provide <code class="docutils literal notranslate"><span class="pre">os.fspathb()</span></code></a></li>
+<li><a class="reference internal" href="#call-fspath-off-of-the-instance" id="id35">Call <code class="docutils literal notranslate"><span class="pre">__fspath__()</span></code> off of the instance</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#acknowledgements" id="id36">Acknowledgements</a></li>
+<li><a class="reference internal" href="#references" id="id37">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id38">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id14">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes a protocol for classes which represent a file system
+path to be able to provide a <code class="docutils literal notranslate"><span class="pre">str</span></code> or <code class="docutils literal notranslate"><span class="pre">bytes</span></code> representation.
+Changes to Python’s standard library are also proposed to utilize this
+protocol where appropriate to facilitate the use of path objects where
+historically only <code class="docutils literal notranslate"><span class="pre">str</span></code> and/or <code class="docutils literal notranslate"><span class="pre">bytes</span></code> file system paths are
+accepted. The goal is to facilitate the migration of users towards
+rich path objects while providing an easy way to work with code
+expecting <code class="docutils literal notranslate"><span class="pre">str</span></code> or <code class="docutils literal notranslate"><span class="pre">bytes</span></code>.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id15">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Historically in Python, file system paths have been represented as
+strings or bytes. This choice of representation has stemmed from C’s
+own decision to represent file system paths as
+<code class="docutils literal notranslate"><span class="pre">const</span> <span class="pre">char</span> <span class="pre">*</span></code> <a class="footnote-reference brackets" href="#libc-open" id="id1">3</a>. While that is a totally serviceable
+format to use for file system paths, it’s not necessarily optimal. At
+issue is the fact that while all file system paths can be represented
+as strings or bytes, not all strings or bytes represent a file system
+path. This can lead to issues where any e.g. string duck-types to a
+file system path whether it actually represents a path or not.</p>
+<p>To help elevate the representation of file system paths from their
+representation as strings and bytes to a richer object representation,
+the pathlib module <a class="footnote-reference brackets" href="#id12" id="id2">4</a> was provisionally introduced in
+Python 3.4 through PEP 428. While considered by some as an improvement
+over strings and bytes for file system paths, it has suffered from a
+lack of adoption. Typically the key issue listed for the low adoption
+rate has been the lack of support in the standard library. This lack
+of support required users of pathlib to manually convert path objects
+to strings by calling <code class="docutils literal notranslate"><span class="pre">str(path)</span></code> which many found error-prone.</p>
+<p>One issue in converting path objects to strings comes from
+the fact that the only generic way to get a string representation of
+the path was to pass the object to <code class="docutils literal notranslate"><span class="pre">str()</span></code>. This can pose a
+problem when done blindly as nearly all Python objects have some
+string representation whether they are a path or not, e.g.
+<code class="docutils literal notranslate"><span class="pre">str(None)</span></code> will give a result that
+<code class="docutils literal notranslate"><span class="pre">builtins.open()</span></code> <a class="footnote-reference brackets" href="#builtins-open" id="id3">5</a> will happily use to create a new
+file.</p>
+<p>Exacerbating this whole situation is the
+<code class="docutils literal notranslate"><span class="pre">DirEntry</span></code> object <a class="footnote-reference brackets" href="#os-direntry" id="id4">8</a>. While path objects have a
+representation that can be extracted using <code class="docutils literal notranslate"><span class="pre">str()</span></code>, <code class="docutils literal notranslate"><span class="pre">DirEntry</span></code>
+objects expose a <code class="docutils literal notranslate"><span class="pre">path</span></code> attribute instead. Having no common
+interface between path objects, <code class="docutils literal notranslate"><span class="pre">DirEntry</span></code>, and any other
+third-party path library has become an issue. A solution that allows
+any path-representing object to declare that it is a path and a way
+to extract a low-level representation that all path objects could
+support is desired.</p>
+<p>This PEP then proposes to introduce a new protocol to be followed by
+objects which represent file system paths. Providing a protocol allows
+for explicit signaling of what objects represent file system paths as
+well as a way to extract a lower-level representation that can be used
+with older APIs which only support strings or bytes.</p>
+<p>Discussions regarding path objects that led to this PEP can be found
+in multiple threads on the python-ideas mailing list archive
+<a class="footnote-reference brackets" href="#python-ideas-archive" id="id5">1</a> for the months of March and April 2016 and on
+the python-dev mailing list archives <a class="footnote-reference brackets" href="#python-dev-archive" id="id6">2</a> during
+April 2016.</p>
+</div>
+<div class="section" id="proposal">
+<h2><a class="toc-backref" href="#id16">Proposal</a><a class="headerlink" href="#proposal" title="Permalink to this headline">¶</a></h2>
+<p>This proposal is split into two parts. One part is the proposal of a
+protocol for objects to declare and provide support for exposing a
+file system path representation. The other part deals with changes to
+Python’s standard library to support the new protocol. These changes
+will also lead to the pathlib module dropping its provisional status.</p>
+<div class="section" id="protocol">
+<h3><a class="toc-backref" href="#id17">Protocol</a><a class="headerlink" href="#protocol" title="Permalink to this headline">¶</a></h3>
+<p>The following abstract base class defines the protocol for an object
+to be considered a path object:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">abc</span>
+<span class="kn">import</span> <span class="nn">typing</span> <span class="k">as</span> <span class="nn">t</span>
+
+
+<span class="k">class</span> <span class="nc">PathLike</span><span class="p">(</span><span class="n">abc</span><span class="o">.</span><span class="n">ABC</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;Abstract base class for implementing the file system path protocol.&quot;&quot;&quot;</span>
+
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span> <span class="nf">__fspath__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Return the file system path representation of the object.&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+</pre></div>
+</div>
+<p>Objects representing file system paths will implement the
+<code class="docutils literal notranslate"><span class="pre">__fspath__()</span></code> method which will return the <code class="docutils literal notranslate"><span class="pre">str</span></code> or <code class="docutils literal notranslate"><span class="pre">bytes</span></code>
+representation of the path. The <code class="docutils literal notranslate"><span class="pre">str</span></code> representation is the
+preferred low-level path representation as it is human-readable and
+what people historically represent paths as.</p>
+</div>
+<div class="section" id="standard-library-changes">
+<h3><a class="toc-backref" href="#id18">Standard library changes</a><a class="headerlink" href="#standard-library-changes" title="Permalink to this headline">¶</a></h3>
+<p>It is expected that most APIs in Python’s standard library that
+currently accept a file system path will be updated appropriately to
+accept path objects (whether that requires code or simply an update
+to documentation will vary). The modules mentioned below, though,
+deserve specific details as they have either fundamental changes that
+empower the ability to use path objects, or entail additions/removal
+of APIs.</p>
+<div class="section" id="builtins">
+<h4><a class="toc-backref" href="#id19">builtins</a><a class="headerlink" href="#builtins" title="Permalink to this headline">¶</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">open()</span></code> <a class="footnote-reference brackets" href="#builtins-open" id="id7">5</a> will be updated to accept path objects as
+well as continue to accept <code class="docutils literal notranslate"><span class="pre">str</span></code> and <code class="docutils literal notranslate"><span class="pre">bytes</span></code>.</p>
+</div>
+<div class="section" id="os">
+<h4><a class="toc-backref" href="#id20">os</a><a class="headerlink" href="#os" title="Permalink to this headline">¶</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">fspath()</span></code> function will be added with the following semantics:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">typing</span> <span class="k">as</span> <span class="nn">t</span>
+
+
+<span class="k">def</span> <span class="nf">fspath</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">PathLike</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Return the string representation of the path.</span>
+
+<span class="sd">    If str or bytes is passed in, it is returned unchanged. If __fspath__()</span>
+<span class="sd">    returns something other than str or bytes then TypeError is raised. If</span>
+<span class="sd">    this function is given something that is not str, bytes, or os.PathLike</span>
+<span class="sd">    then TypeError is raised.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="n">path</span>
+
+    <span class="c1"># Work from the object&#39;s type to match method resolution of other magic</span>
+    <span class="c1"># methods.</span>
+    <span class="n">path_type</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">path_type</span><span class="o">.</span><span class="n">__fspath__</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">path_type</span><span class="p">,</span> <span class="s1">&#39;__fspath__&#39;</span><span class="p">):</span>
+            <span class="k">raise</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="n">path</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;expected __fspath__() to return str or bytes, &quot;</span>
+                            <span class="s2">&quot;not &quot;</span> <span class="o">+</span> <span class="nb">type</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+
+    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;expected str, bytes or os.PathLike object, not &quot;</span>
+                    <span class="o">+</span> <span class="n">path_type</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">os.fsencode()</span></code> <a class="footnote-reference brackets" href="#os-fsencode" id="id8">6</a> and
+<code class="docutils literal notranslate"><span class="pre">os.fsdecode()</span></code> <a class="footnote-reference brackets" href="#os-fsdecode" id="id9">7</a> functions will be updated to accept
+path objects. As both functions coerce their arguments to
+<code class="docutils literal notranslate"><span class="pre">bytes</span></code> and <code class="docutils literal notranslate"><span class="pre">str</span></code>, respectively, they will be updated to call
+<code class="docutils literal notranslate"><span class="pre">__fspath__()</span></code> if present to convert the path object to a <code class="docutils literal notranslate"><span class="pre">str</span></code> or
+<code class="docutils literal notranslate"><span class="pre">bytes</span></code> representation, and then perform their appropriate
+coercion operations as if the return value from <code class="docutils literal notranslate"><span class="pre">__fspath__()</span></code> had
+been the original argument to the coercion function in question.</p>
+<p>The addition of <code class="docutils literal notranslate"><span class="pre">os.fspath()</span></code>, the updates to
+<code class="docutils literal notranslate"><span class="pre">os.fsencode()</span></code>/<code class="docutils literal notranslate"><span class="pre">os.fsdecode()</span></code>, and the current semantics of
+<code class="docutils literal notranslate"><span class="pre">pathlib.PurePath</span></code> provide the semantics necessary to
+get the path representation one prefers. For a path object,
+<code class="docutils literal notranslate"><span class="pre">pathlib.PurePath</span></code>/<code class="docutils literal notranslate"><span class="pre">Path</span></code> can be used. To obtain the <code class="docutils literal notranslate"><span class="pre">str</span></code> or
+<code class="docutils literal notranslate"><span class="pre">bytes</span></code> representation without any coercion, then <code class="docutils literal notranslate"><span class="pre">os.fspath()</span></code>
+can be used. If a <code class="docutils literal notranslate"><span class="pre">str</span></code> is desired and the encoding of <code class="docutils literal notranslate"><span class="pre">bytes</span></code>
+should be assumed to be the default file system encoding, then
+<code class="docutils literal notranslate"><span class="pre">os.fsdecode()</span></code> should be used. If a <code class="docutils literal notranslate"><span class="pre">bytes</span></code> representation is
+desired and any strings should be encoded using the default file
+system encoding, then <code class="docutils literal notranslate"><span class="pre">os.fsencode()</span></code> is used. This PEP recommends
+using path objects when possible and falling back to string paths as
+necessary and using <code class="docutils literal notranslate"><span class="pre">bytes</span></code> as a last resort.</p>
+<p>Another way to view this is as a hierarchy of file system path
+representations (highest- to lowest-level): path → str → bytes. The
+functions and classes under discussion can all accept objects on the
+same level of the hierarchy, but they vary in whether they promote or
+demote objects to another level. The <code class="docutils literal notranslate"><span class="pre">pathlib.PurePath</span></code> class can
+promote a <code class="docutils literal notranslate"><span class="pre">str</span></code> to a path object. The <code class="docutils literal notranslate"><span class="pre">os.fspath()</span></code> function can
+demote a path object to a <code class="docutils literal notranslate"><span class="pre">str</span></code> or <code class="docutils literal notranslate"><span class="pre">bytes</span></code> instance, depending
+on what <code class="docutils literal notranslate"><span class="pre">__fspath__()</span></code> returns.
+The <code class="docutils literal notranslate"><span class="pre">os.fsdecode()</span></code> function will demote a path object to
+a string or promote a <code class="docutils literal notranslate"><span class="pre">bytes</span></code> object to a <code class="docutils literal notranslate"><span class="pre">str</span></code>. The
+<code class="docutils literal notranslate"><span class="pre">os.fsencode()</span></code> function will demote a path or string object to
+<code class="docutils literal notranslate"><span class="pre">bytes</span></code>. There is no function that provides a way to demote a path
+object directly to <code class="docutils literal notranslate"><span class="pre">bytes</span></code> while bypassing string demotion.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">DirEntry</span></code> object <a class="footnote-reference brackets" href="#os-direntry" id="id10">8</a> will gain an <code class="docutils literal notranslate"><span class="pre">__fspath__()</span></code>
+method. It will return the same value as currently found on the
+<code class="docutils literal notranslate"><span class="pre">path</span></code> attribute of <code class="docutils literal notranslate"><span class="pre">DirEntry</span></code> instances.</p>
+<p>The <a class="reference internal" href="#protocol">Protocol</a> ABC will be added to the <code class="docutils literal notranslate"><span class="pre">os</span></code> module under the name
+<code class="docutils literal notranslate"><span class="pre">os.PathLike</span></code>.</p>
+</div>
+<div class="section" id="os-path">
+<h4><a class="toc-backref" href="#id21">os.path</a><a class="headerlink" href="#os-path" title="Permalink to this headline">¶</a></h4>
+<p>The various path-manipulation functions of <code class="docutils literal notranslate"><span class="pre">os.path</span></code> <a class="footnote-reference brackets" href="#id13" id="id11">9</a>
+will be updated to accept path objects. For polymorphic functions that
+accept both bytes and strings, they will be updated to simply use
+<code class="docutils literal notranslate"><span class="pre">os.fspath()</span></code>.</p>
+<p>During the discussions leading up to this PEP it was suggested that
+<code class="docutils literal notranslate"><span class="pre">os.path</span></code> not be updated using an “explicit is better than implicit”
+argument. The thinking was that since <code class="docutils literal notranslate"><span class="pre">__fspath__()</span></code> is polymorphic
+itself it may be better to have code working with <code class="docutils literal notranslate"><span class="pre">os.path</span></code> extract
+the path representation from path objects explicitly. There is also
+the consideration that adding support this deep into the low-level OS
+APIs will lead to code magically supporting path objects without
+requiring any documentation updated, leading to potential complaints
+when it doesn’t work, unbeknownst to the project author.</p>
+<p>But it is the view of this PEP that “practicality beats purity” in
+this instance. To help facilitate the transition to supporting path
+objects, it is better to make the transition as easy as possible than
+to worry about unexpected/undocumented duck typing support for
+path objects by projects.</p>
+<p>There has also been the suggestion that <code class="docutils literal notranslate"><span class="pre">os.path</span></code> functions could be
+used in a tight loop and the overhead of checking or calling
+<code class="docutils literal notranslate"><span class="pre">__fspath__()</span></code> would be too costly. In this scenario only
+path-consuming APIs would be directly updated and path-manipulating
+APIs like the ones in <code class="docutils literal notranslate"><span class="pre">os.path</span></code> would go unmodified. This would
+require library authors to update their code to support path objects
+if they performed any path manipulations, but if the library code
+passed the path straight through then the library wouldn’t need to be
+updated. It is the view of this PEP and Guido, though, that this is an
+unnecessary worry and that performance will still be acceptable.</p>
+</div>
+<div class="section" id="pathlib">
+<h4><a class="toc-backref" href="#id22">pathlib</a><a class="headerlink" href="#pathlib" title="Permalink to this headline">¶</a></h4>
+<p>The constructor for <code class="docutils literal notranslate"><span class="pre">pathlib.PurePath</span></code> and <code class="docutils literal notranslate"><span class="pre">pathlib.Path</span></code> will be
+updated to accept <code class="docutils literal notranslate"><span class="pre">PathLike</span></code> objects. Both <code class="docutils literal notranslate"><span class="pre">PurePath</span></code> and <code class="docutils literal notranslate"><span class="pre">Path</span></code>
+will continue to not accept <code class="docutils literal notranslate"><span class="pre">bytes</span></code> path representations, and so if
+<code class="docutils literal notranslate"><span class="pre">__fspath__()</span></code> returns <code class="docutils literal notranslate"><span class="pre">bytes</span></code> it will raise an exception.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">path</span></code> attribute will be removed as this PEP makes it
+redundant (it has not been included in any released version of Python
+and so is not a backwards-compatibility concern).</p>
+</div>
+<div class="section" id="c-api">
+<h4><a class="toc-backref" href="#id23">C API</a><a class="headerlink" href="#c-api" title="Permalink to this headline">¶</a></h4>
+<p>The C API will gain an equivalent function to <code class="docutils literal notranslate"><span class="pre">os.fspath()</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>/*
+    Return the file system path representation of the object.
+
+    If the object is str or bytes, then allow it to pass through with
+    an incremented refcount. If the object defines __fspath__(), then
+    return the result of that method. All other types raise a TypeError.
+*/
+PyObject *
+PyOS_FSPath(PyObject *path)
+{
+    _Py_IDENTIFIER(__fspath__);
+    PyObject *func = NULL;
+    PyObject *path_repr = NULL;
+
+    if (PyUnicode_Check(path) || PyBytes_Check(path)) {
+        Py_INCREF(path);
+        return path;
+    }
+
+    func = _PyObject_LookupSpecial(path, &amp;PyId___fspath__);
+    if (NULL == func) {
+        return PyErr_Format(PyExc_TypeError,
+                            &quot;expected str, bytes or os.PathLike object, &quot;
+                            &quot;not %S&quot;,
+                            path-&gt;ob_type);
+    }
+
+    path_repr = PyObject_CallFunctionObjArgs(func, NULL);
+    Py_DECREF(func);
+    if (!PyUnicode_Check(path_repr) &amp;&amp; !PyBytes_Check(path_repr)) {
+        Py_DECREF(path_repr);
+        return PyErr_Format(PyExc_TypeError,
+                            &quot;expected __fspath__() to return str or bytes, &quot;
+                            &quot;not %S&quot;,
+                            path_repr-&gt;ob_type);
+    }
+
+    return path_repr;
+}
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="backwards-compatibility">
+<h2><a class="toc-backref" href="#id24">Backwards compatibility</a><a class="headerlink" href="#backwards-compatibility" title="Permalink to this headline">¶</a></h2>
+<p>There are no explicit backwards-compatibility concerns. Unless an
+object incidentally already defines a <code class="docutils literal notranslate"><span class="pre">__fspath__()</span></code> method there is
+no reason to expect the pre-existing code to break or expect to have
+its semantics implicitly changed.</p>
+<p>Libraries wishing to support path objects and a version of Python
+prior to Python 3.6 and the existence of <code class="docutils literal notranslate"><span class="pre">os.fspath()</span></code> can use the
+idiom of
+<code class="docutils literal notranslate"><span class="pre">path.__fspath__()</span> <span class="pre">if</span> <span class="pre">hasattr(path,</span> <span class="pre">&quot;__fspath__&quot;)</span> <span class="pre">else</span> <span class="pre">path</span></code>.</p>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id25">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>This is the task list for what this PEP proposes to be changed in
+Python 3.6:</p>
+<ol class="arabic simple">
+<li>Remove the <code class="docutils literal notranslate"><span class="pre">path</span></code> attribute from pathlib
+(<a class="reference external" href="http://bugs.python.org/issue22570">done</a>)</li>
+<li>Remove the provisional status of pathlib
+(<a class="reference external" href="https://hg.python.org/lookup/a5a013ca5687">done</a>)</li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">os.PathLike</span></code>
+(<a class="reference external" href="https://hg.python.org/lookup/e672cf63d08a">code</a> and
+<a class="reference external" href="http://hg.python.org/lookup/6239673d5e1d">docs</a> done)</li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">PyOS_FSPath()</span></code>
+(<a class="reference external" href="https://hg.python.org/lookup/780cbe18082e">code</a> and
+<a class="reference external" href="http://hg.python.org/lookup/cec1f00c538d">docs</a> done)</li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">os.fspath()</span></code>
+(<a class="reference external" href="https://hg.python.org/lookup/780cbe18082e">done &lt;done</a>)</li>
+<li>Update <code class="docutils literal notranslate"><span class="pre">os.fsencode()</span></code>
+(<a class="reference external" href="https://hg.python.org/lookup/00991aa5fdb5">done</a>)</li>
+<li>Update <code class="docutils literal notranslate"><span class="pre">os.fsdecode()</span></code>
+(<a class="reference external" href="https://hg.python.org/lookup/00991aa5fdb5">done</a>)</li>
+<li>Update <code class="docutils literal notranslate"><span class="pre">pathlib.PurePath</span></code> and <code class="docutils literal notranslate"><span class="pre">pathlib.Path</span></code>
+(<a class="reference external" href="https://hg.python.org/lookup/a5a013ca5687">done</a>)<ol class="arabic simple">
+<li>Add <code class="docutils literal notranslate"><span class="pre">__fspath__()</span></code></li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">os.PathLike</span></code> support to the constructors</li>
+</ol>
+</li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">__fspath__()</span></code> to <code class="docutils literal notranslate"><span class="pre">DirEntry</span></code>
+(<a class="reference external" href="https://hg.python.org/lookup/5a62d682636e">done</a>)</li>
+<li>Update <code class="docutils literal notranslate"><span class="pre">builtins.open()</span></code>
+(<a class="reference external" href="https://hg.python.org/lookup/254125a265d2">done</a>)</li>
+<li>Update <code class="docutils literal notranslate"><span class="pre">os.path</span></code>
+(<a class="reference external" href="https://hg.python.org/cpython/rev/b64f83d6ff24">done</a>)</li>
+<li>Add a <a class="reference external" href="https://docs.python.org/3.6/glossary.html">glossary</a> entry for “path-like”
+(<a class="reference external" href="https://hg.python.org/lookup/9c57178f13dc">done</a>)</li>
+<li>Update <a class="reference external" href="https://docs.python.org/3.6/whatsnew/3.6.html">“What’s New”</a>
+(<a class="reference external" href="https://hg.python.org/cpython/rev/95361959d451">done</a>)</li>
+</ol>
+</div>
+<div class="section" id="rejected-ideas">
+<h2><a class="toc-backref" href="#id26">Rejected Ideas</a><a class="headerlink" href="#rejected-ideas" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="other-names-for-the-protocol-s-method">
+<h3><a class="toc-backref" href="#id27">Other names for the protocol’s method</a><a class="headerlink" href="#other-names-for-the-protocol-s-method" title="Permalink to this headline">¶</a></h3>
+<p>Various names were proposed during discussions leading to this PEP,
+including <code class="docutils literal notranslate"><span class="pre">__path__</span></code>, <code class="docutils literal notranslate"><span class="pre">__pathname__</span></code>, and <code class="docutils literal notranslate"><span class="pre">__fspathname__</span></code>. In
+the end people seemed to gravitate towards <code class="docutils literal notranslate"><span class="pre">__fspath__</span></code> for being
+unambiguous without being unnecessarily long.</p>
+</div>
+<div class="section" id="separate-str-bytes-methods">
+<h3><a class="toc-backref" href="#id28">Separate str/bytes methods</a><a class="headerlink" href="#separate-str-bytes-methods" title="Permalink to this headline">¶</a></h3>
+<p>At one point it was suggested that <code class="docutils literal notranslate"><span class="pre">__fspath__()</span></code> only return
+strings and another method named <code class="docutils literal notranslate"><span class="pre">__fspathb__()</span></code> be introduced to
+return bytes. The thinking is that by making <code class="docutils literal notranslate"><span class="pre">__fspath__()</span></code> not be
+polymorphic it could make dealing with the potential string or bytes
+representations easier. But the general consensus was that returning
+bytes will more than likely be rare and that the various functions in
+the os module are the better abstraction to promote over direct
+calls to <code class="docutils literal notranslate"><span class="pre">__fspath__()</span></code>.</p>
+</div>
+<div class="section" id="providing-a-path-attribute">
+<h3><a class="toc-backref" href="#id29">Providing a <code class="docutils literal notranslate"><span class="pre">path</span></code> attribute</a><a class="headerlink" href="#providing-a-path-attribute" title="Permalink to this headline">¶</a></h3>
+<p>To help deal with the issue of <code class="docutils literal notranslate"><span class="pre">pathlib.PurePath</span></code> not inheriting
+from <code class="docutils literal notranslate"><span class="pre">str</span></code>, originally it was proposed to introduce a <code class="docutils literal notranslate"><span class="pre">path</span></code>
+attribute to mirror what <code class="docutils literal notranslate"><span class="pre">os.DirEntry</span></code> provides. In the end,
+though, it was determined that a protocol would provide the same
+result while not directly exposing an API that most people will never
+need to interact with directly.</p>
+</div>
+<div class="section" id="have-fspath-only-return-strings">
+<h3><a class="toc-backref" href="#id30">Have <code class="docutils literal notranslate"><span class="pre">__fspath__()</span></code> only return strings</a><a class="headerlink" href="#have-fspath-only-return-strings" title="Permalink to this headline">¶</a></h3>
+<p>Much of the discussion that led to this PEP revolved around whether
+<code class="docutils literal notranslate"><span class="pre">__fspath__()</span></code> should be polymorphic and return <code class="docutils literal notranslate"><span class="pre">bytes</span></code> as well as
+<code class="docutils literal notranslate"><span class="pre">str</span></code> or only return <code class="docutils literal notranslate"><span class="pre">str</span></code>. The general sentiment for this view
+was that <code class="docutils literal notranslate"><span class="pre">bytes</span></code> are difficult to work with due to their
+inherent lack of information about their encoding and PEP 383 makes
+it possible to represent all file system paths using <code class="docutils literal notranslate"><span class="pre">str</span></code> with the
+<code class="docutils literal notranslate"><span class="pre">surrogateescape</span></code> handler. Thus, it would be better to forcibly
+promote the use of <code class="docutils literal notranslate"><span class="pre">str</span></code> as the low-level path representation for
+high-level path objects.</p>
+<p>In the end, it was decided that using <code class="docutils literal notranslate"><span class="pre">bytes</span></code> to represent paths is
+simply not going to go away and thus they should be supported to some
+degree. The hope is that people will gravitate towards path objects
+like pathlib and that will move people away from operating directly
+with <code class="docutils literal notranslate"><span class="pre">bytes</span></code>.</p>
+</div>
+<div class="section" id="a-generic-string-encoding-mechanism">
+<h3><a class="toc-backref" href="#id31">A generic string encoding mechanism</a><a class="headerlink" href="#a-generic-string-encoding-mechanism" title="Permalink to this headline">¶</a></h3>
+<p>At one point there was a discussion of developing a generic mechanism
+to extract a string representation of an object that had semantic
+meaning (<code class="docutils literal notranslate"><span class="pre">__str__()</span></code> does not necessarily return anything of
+semantic significance beyond what may be helpful for debugging). In
+the end, it was deemed to lack a motivating need beyond the one this
+PEP is trying to solve in a specific fashion.</p>
+</div>
+<div class="section" id="have-fspath-be-an-attribute">
+<h3><a class="toc-backref" href="#id32">Have __fspath__ be an attribute</a><a class="headerlink" href="#have-fspath-be-an-attribute" title="Permalink to this headline">¶</a></h3>
+<p>It was briefly considered to have <code class="docutils literal notranslate"><span class="pre">__fspath__</span></code> be an attribute
+instead of a method. This was rejected for two reasons. One,
+historically protocols have been implemented as “magic methods” and
+not “magic methods and attributes”. Two, there is no guarantee that
+the lower-level representation of a path object will be pre-computed,
+potentially misleading users that there was no expensive computation
+behind the scenes in case the attribute was implemented as a property.</p>
+<p>This also indirectly ties into the idea of introducing a <code class="docutils literal notranslate"><span class="pre">path</span></code>
+attribute to accomplish the same thing. This idea has an added issue,
+though, of accidentally having any object with a <code class="docutils literal notranslate"><span class="pre">path</span></code> attribute
+meet the protocol’s duck typing. Introducing a new magic method for
+the protocol helpfully avoids any accidental opting into the protocol.</p>
+</div>
+<div class="section" id="provide-specific-type-hinting-support">
+<h3><a class="toc-backref" href="#id33">Provide specific type hinting support</a><a class="headerlink" href="#provide-specific-type-hinting-support" title="Permalink to this headline">¶</a></h3>
+<p>There was some consideration to provding a generic <code class="docutils literal notranslate"><span class="pre">typing.PathLike</span></code>
+class which would allow for e.g. <code class="docutils literal notranslate"><span class="pre">typing.PathLike[str]</span></code> to specify
+a type hint for a path object which returned a string representation.
+While potentially beneficial, the usefulness was deemed too small to
+bother adding the type hint class.</p>
+<p>This also removed any desire to have a class in the <code class="docutils literal notranslate"><span class="pre">typing</span></code> module
+which represented the union of all acceptable path-representing types
+as that can be represented with
+<code class="docutils literal notranslate"><span class="pre">typing.Union[str,</span> <span class="pre">bytes,</span> <span class="pre">os.PathLike]</span></code> easily enough and the hope
+is users will slowly gravitate to path objects only.</p>
+</div>
+<div class="section" id="provide-os-fspathb">
+<h3><a class="toc-backref" href="#id34">Provide <code class="docutils literal notranslate"><span class="pre">os.fspathb()</span></code></a><a class="headerlink" href="#provide-os-fspathb" title="Permalink to this headline">¶</a></h3>
+<p>It was suggested that to mirror the structure of e.g.
+<code class="docutils literal notranslate"><span class="pre">os.getcwd()</span></code>/<code class="docutils literal notranslate"><span class="pre">os.getcwdb()</span></code>, that <code class="docutils literal notranslate"><span class="pre">os.fspath()</span></code> only return
+<code class="docutils literal notranslate"><span class="pre">str</span></code> and that another function named <code class="docutils literal notranslate"><span class="pre">os.fspathb()</span></code> be
+introduced that only returned <code class="docutils literal notranslate"><span class="pre">bytes</span></code>. This was rejected as the
+purposes of the <code class="docutils literal notranslate"><span class="pre">*b()</span></code> functions are tied to querying the file
+system where there is a need to get the raw bytes back. As this PEP
+does not work directly with data on a file system (but which <em>may</em>
+be), the view was taken this distinction is unnecessary. It’s also
+believed that the need for only bytes will not be common enough to
+need to support in such a specific manner as <code class="docutils literal notranslate"><span class="pre">os.fsencode()</span></code> will
+provide similar functionality.</p>
+</div>
+<div class="section" id="call-fspath-off-of-the-instance">
+<h3><a class="toc-backref" href="#id35">Call <code class="docutils literal notranslate"><span class="pre">__fspath__()</span></code> off of the instance</a><a class="headerlink" href="#call-fspath-off-of-the-instance" title="Permalink to this headline">¶</a></h3>
+<p>An earlier draft of this PEP had <code class="docutils literal notranslate"><span class="pre">os.fspath()</span></code> calling
+<code class="docutils literal notranslate"><span class="pre">path.__fspath__()</span></code> instead of <code class="docutils literal notranslate"><span class="pre">type(path).__fspath__(path)</span></code>. The
+changed to be consistent with how other magic methods in Python are
+resolved.</p>
+</div>
+</div>
+<div class="section" id="acknowledgements">
+<h2><a class="toc-backref" href="#id36">Acknowledgements</a><a class="headerlink" href="#acknowledgements" title="Permalink to this headline">¶</a></h2>
+<p>Thanks to everyone who participated in the various discussions related
+to this PEP that spanned both python-ideas and python-dev. Special
+thanks to Stephen Turnbull for direct feedback on early drafts of this
+PEP. More special thanks to Koos Zevenhoven and Ethan Furman for not
+only feedback on early drafts of this PEP but also helping to drive
+the overall discussion on this topic across the two mailing lists.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id37">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="python-ideas-archive"><span class="brackets"><a class="fn-backref" href="#id5">1</a></span></dt>
+<dd>The python-ideas mailing list archive
+(<a class="reference external" href="https://mail.python.org/pipermail/python-ideas/">https://mail.python.org/pipermail/python-ideas/</a>)</dd>
+<dt class="label" id="python-dev-archive"><span class="brackets"><a class="fn-backref" href="#id6">2</a></span></dt>
+<dd>The python-dev mailing list archive
+(<a class="reference external" href="https://mail.python.org/pipermail/python-dev/">https://mail.python.org/pipermail/python-dev/</a>)</dd>
+<dt class="label" id="libc-open"><span class="brackets"><a class="fn-backref" href="#id1">3</a></span></dt>
+<dd><code class="docutils literal notranslate"><span class="pre">open()</span></code> documention for the C standard library
+(<a class="reference external" href="http://www.gnu.org/software/libc/manual/html_node/Opening-and-Closing-Files.html">http://www.gnu.org/software/libc/manual/html_node/Opening-and-Closing-Files.html</a>)</dd>
+<dt class="label" id="id12"><span class="brackets"><a class="fn-backref" href="#id2">4</a></span></dt>
+<dd>The <code class="docutils literal notranslate"><span class="pre">pathlib</span></code> module
+(<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#module-pathlib">https://docs.python.org/3/library/pathlib.html#module-pathlib</a>)</dd>
+<dt class="label" id="builtins-open"><span class="brackets">5</span><span class='fn-backref'><em> (<a href="#id3">1</a>, <a href="#id7">2</a>) </em></span></dt>
+<dd>The <code class="docutils literal notranslate"><span class="pre">builtins.open()</span></code> function
+(<a class="reference external" href="https://docs.python.org/3/library/functions.html#open">https://docs.python.org/3/library/functions.html#open</a>)</dd>
+<dt class="label" id="os-fsencode"><span class="brackets"><a class="fn-backref" href="#id8">6</a></span></dt>
+<dd>The <code class="docutils literal notranslate"><span class="pre">os.fsencode()</span></code> function
+(<a class="reference external" href="https://docs.python.org/3/library/os.html#os.fsencode">https://docs.python.org/3/library/os.html#os.fsencode</a>)</dd>
+<dt class="label" id="os-fsdecode"><span class="brackets"><a class="fn-backref" href="#id9">7</a></span></dt>
+<dd>The <code class="docutils literal notranslate"><span class="pre">os.fsdecode()</span></code> function
+(<a class="reference external" href="https://docs.python.org/3/library/os.html#os.fsdecode">https://docs.python.org/3/library/os.html#os.fsdecode</a>)</dd>
+<dt class="label" id="os-direntry"><span class="brackets">8</span><span class='fn-backref'><em> (<a href="#id4">1</a>, <a href="#id10">2</a>) </em></span></dt>
+<dd>The <code class="docutils literal notranslate"><span class="pre">os.DirEntry</span></code> class
+(<a class="reference external" href="https://docs.python.org/3/library/os.html#os.DirEntry">https://docs.python.org/3/library/os.html#os.DirEntry</a>)</dd>
+<dt class="label" id="id13"><span class="brackets"><a class="fn-backref" href="#id11">9</a></span></dt>
+<dd>The <code class="docutils literal notranslate"><span class="pre">os.path</span></code> module
+(<a class="reference external" href="https://docs.python.org/3/library/os.path.html#module-os.path">https://docs.python.org/3/library/os.path.html#module-os.path</a>)</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id38">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0519.txt">https://github.com/python/peps/blob/master/pep-0519.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0519.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0518.html">PEP 0518</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0520.html">PEP 0520</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 519 – Adding a file system path protocol</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#proposal">Proposal</a><ul>
+<li><a class="reference internal" href="#protocol">Protocol</a></li>
+<li><a class="reference internal" href="#standard-library-changes">Standard library changes</a><ul>
+<li><a class="reference internal" href="#builtins">builtins</a></li>
+<li><a class="reference internal" href="#os">os</a></li>
+<li><a class="reference internal" href="#os-path">os.path</a></li>
+<li><a class="reference internal" href="#pathlib">pathlib</a></li>
+<li><a class="reference internal" href="#c-api">C API</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards compatibility</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#rejected-ideas">Rejected Ideas</a><ul>
+<li><a class="reference internal" href="#other-names-for-the-protocol-s-method">Other names for the protocol’s method</a></li>
+<li><a class="reference internal" href="#separate-str-bytes-methods">Separate str/bytes methods</a></li>
+<li><a class="reference internal" href="#providing-a-path-attribute">Providing a <code class="docutils literal notranslate"><span class="pre">path</span></code> attribute</a></li>
+<li><a class="reference internal" href="#have-fspath-only-return-strings">Have <code class="docutils literal notranslate"><span class="pre">__fspath__()</span></code> only return strings</a></li>
+<li><a class="reference internal" href="#a-generic-string-encoding-mechanism">A generic string encoding mechanism</a></li>
+<li><a class="reference internal" href="#have-fspath-be-an-attribute">Have __fspath__ be an attribute</a></li>
+<li><a class="reference internal" href="#provide-specific-type-hinting-support">Provide specific type hinting support</a></li>
+<li><a class="reference internal" href="#provide-os-fspathb">Provide <code class="docutils literal notranslate"><span class="pre">os.fspathb()</span></code></a></li>
+<li><a class="reference internal" href="#call-fspath-off-of-the-instance">Call <code class="docutils literal notranslate"><span class="pre">__fspath__()</span></code> off of the instance</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#acknowledgements">Acknowledgements</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

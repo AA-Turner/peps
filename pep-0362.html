@@ -1,0 +1,698 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 362 – Function Signature Object &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 363 – Syntax For Dynamic Attribute Access" href="pep-0363.html" />
+    <link rel="prev" title="PEP 361 – Python 2.6 and 3.0 Release Schedule" href="pep-0361.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 362 – Function Signature Object</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-362-function-signature-object">
+<h1 class="page-title">PEP 362 – Function Signature Object<a class="headerlink" href="#pep-362-function-signature-object" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">362</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Function Signature Object</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Brett Cannon &lt;brett&#32;&#97;t&#32;python.org&gt;, Jiwon Seo &lt;seojiwon&#32;&#97;t&#32;gmail.com&gt;,
+Yury Selivanov &lt;yury&#32;&#97;t&#32;edgedb.com&gt;, Larry Hastings &lt;larry&#32;&#97;t&#32;hastings.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">21-Aug-2006</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.3</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">04-Jun-2012</dd>
+<dt class="field-odd">Resolution</dt>
+<dd class="field-odd"><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2012-June/120682.html">https://mail.python.org/pipermail/python-dev/2012-June/120682.html</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id4">Abstract</a></li>
+<li><a class="reference internal" href="#signature-object" id="id5">Signature Object</a></li>
+<li><a class="reference internal" href="#parameter-object" id="id6">Parameter Object</a></li>
+<li><a class="reference internal" href="#boundarguments-object" id="id7">BoundArguments Object</a></li>
+<li><a class="reference internal" href="#implementation" id="id8">Implementation</a></li>
+<li><a class="reference internal" href="#design-considerations" id="id9">Design Considerations</a><ul>
+<li><a class="reference internal" href="#no-implicit-caching-of-signature-objects" id="id10">No implicit caching of Signature objects</a></li>
+<li><a class="reference internal" href="#some-functions-may-not-be-introspectable" id="id11">Some functions may not be introspectable</a></li>
+<li><a class="reference internal" href="#signature-and-parameter-equivalence" id="id12">Signature and Parameter equivalence</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#examples" id="id13">Examples</a><ul>
+<li><a class="reference internal" href="#visualizing-callable-objects-signature" id="id14">Visualizing Callable Objects’ Signature</a></li>
+<li><a class="reference internal" href="#annotation-checker" id="id15">Annotation Checker</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#acceptance" id="id16">Acceptance</a></li>
+<li><a class="reference internal" href="#references" id="id17">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id18">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id4">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Python has always supported powerful introspection capabilities,
+including introspecting functions and methods (for the rest of
+this PEP, “function” refers to both functions and methods).  By
+examining a function object you can fully reconstruct the function’s
+signature.  Unfortunately this information is stored in an inconvenient
+manner, and is spread across a half-dozen deeply nested attributes.</p>
+<p>This PEP proposes a new representation for function signatures.
+The new representation contains all necessary information about a function
+and its parameters, and makes introspection easy and straightforward.</p>
+<p>However, this object does not replace the existing function
+metadata, which is used by Python itself to execute those
+functions.  The new metadata object is intended solely to make
+function introspection easier for Python programmers.</p>
+</div>
+<div class="section" id="signature-object">
+<h2><a class="toc-backref" href="#id5">Signature Object</a><a class="headerlink" href="#signature-object" title="Permalink to this headline">¶</a></h2>
+<p>A Signature object represents the call signature of a function and
+its return annotation.  For each parameter accepted by the function
+it stores a <a class="reference internal" href="#parameter-object">Parameter object</a> in its <code class="docutils literal notranslate"><span class="pre">parameters</span></code> collection.</p>
+<p>A Signature object has the following public attributes and methods:</p>
+<ul>
+<li><dl class="simple">
+<dt>return_annotation<span class="classifier">object</span></dt><dd><p>The “return” annotation for the function. If the function
+has no “return” annotation, this attribute is set to
+<code class="docutils literal notranslate"><span class="pre">Signature.empty</span></code>.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>parameters<span class="classifier">OrderedDict</span></dt><dd><p>An ordered mapping of parameters’ names to the corresponding
+Parameter objects.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>bind(*args, **kwargs) -&gt; BoundArguments</dt><dd><p>Creates a mapping from positional and keyword arguments to
+parameters.  Raises a <code class="docutils literal notranslate"><span class="pre">TypeError</span></code> if the passed arguments do
+not match the signature.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>bind_partial(*args, **kwargs) -&gt; BoundArguments</dt><dd><p>Works the same way as <code class="docutils literal notranslate"><span class="pre">bind()</span></code>, but allows the omission
+of some required arguments (mimics <code class="docutils literal notranslate"><span class="pre">functools.partial</span></code>
+behavior.)  Raises a <code class="docutils literal notranslate"><span class="pre">TypeError</span></code> if the passed arguments do
+not match the signature.</p>
+</dd>
+</dl>
+</li>
+<li><dl>
+<dt>replace(parameters=&lt;optional&gt;, *, return_annotation=&lt;optional&gt;) -&gt; Signature</dt><dd><p>Creates a new Signature instance based on the instance
+<code class="docutils literal notranslate"><span class="pre">replace</span></code> was invoked on.  It is possible to pass different
+<code class="docutils literal notranslate"><span class="pre">parameters</span></code> and/or <code class="docutils literal notranslate"><span class="pre">return_annotation</span></code> to override the
+corresponding properties of the base signature.  To remove
+<code class="docutils literal notranslate"><span class="pre">return_annotation</span></code> from the copied <code class="docutils literal notranslate"><span class="pre">Signature</span></code>, pass in
+<code class="docutils literal notranslate"><span class="pre">Signature.empty</span></code>.</p>
+<p>Note that the ‘=&lt;optional&gt;’ notation, means that the argument is
+optional.  This notation applies to the rest of this PEP.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Signature objects are immutable.  Use <code class="docutils literal notranslate"><span class="pre">Signature.replace()</span></code> to
+make a modified copy:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">foo</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="k">pass</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sig</span> <span class="o">=</span> <span class="n">signature</span><span class="p">(</span><span class="n">foo</span><span class="p">)</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">new_sig</span> <span class="o">=</span> <span class="n">sig</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">return_annotation</span><span class="o">=</span><span class="s2">&quot;new return annotation&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">new_sig</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">sig</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">new_sig</span><span class="o">.</span><span class="n">return_annotation</span> <span class="o">!=</span> <span class="n">sig</span><span class="o">.</span><span class="n">return_annotation</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">new_sig</span><span class="o">.</span><span class="n">parameters</span> <span class="o">==</span> <span class="n">sig</span><span class="o">.</span><span class="n">parameters</span>
+<span class="go">True</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">new_sig</span> <span class="o">=</span> <span class="n">new_sig</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">return_annotation</span><span class="o">=</span><span class="n">new_sig</span><span class="o">.</span><span class="n">empty</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">new_sig</span><span class="o">.</span><span class="n">return_annotation</span> <span class="ow">is</span> <span class="n">Signature</span><span class="o">.</span><span class="n">empty</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>There are two ways to instantiate a Signature class:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>Signature(parameters=&lt;optional&gt;, *, return_annotation=Signature.empty)</dt><dd>Default Signature constructor.  Accepts an optional sequence
+of <code class="docutils literal notranslate"><span class="pre">Parameter</span></code> objects, and an optional <code class="docutils literal notranslate"><span class="pre">return_annotation</span></code>.
+Parameters sequence is validated to check that there are no
+parameters with duplicate names, and that the parameters
+are in the right order, i.e. positional-only first, then
+positional-or-keyword, etc.</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Signature.from_function(function)</dt><dd>Returns a Signature object reflecting the signature of the
+function passed in.</dd>
+</dl>
+</li>
+</ul>
+<p>It’s possible to test Signatures for equality.  Two signatures are
+equal when their parameters are equal, their positional and
+positional-only parameters appear in the same order, and they
+have equal return annotations.</p>
+<p>Changes to the Signature object, or to any of its data members,
+do not affect the function itself.</p>
+<p>Signature also implements <code class="docutils literal notranslate"><span class="pre">__str__</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">str</span><span class="p">(</span><span class="n">Signature</span><span class="o">.</span><span class="n">from_function</span><span class="p">((</span><span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="kc">None</span><span class="p">)))</span>
+<span class="go">&#39;(*args)&#39;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">str</span><span class="p">(</span><span class="n">Signature</span><span class="p">())</span>
+<span class="go">&#39;()&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="parameter-object">
+<h2><a class="toc-backref" href="#id6">Parameter Object</a><a class="headerlink" href="#parameter-object" title="Permalink to this headline">¶</a></h2>
+<p>Python’s expressive syntax means functions can accept many different
+kinds of parameters with many subtle semantic differences.  We
+propose a rich Parameter object designed to represent any possible
+function parameter.</p>
+<p>A Parameter object has the following public attributes and methods:</p>
+<ul>
+<li><dl class="simple">
+<dt>name<span class="classifier">str</span></dt><dd><p>The name of the parameter as a string.  Must be a valid
+python identifier name (with the exception of <code class="docutils literal notranslate"><span class="pre">POSITIONAL_ONLY</span></code>
+parameters, which can have it set to <code class="docutils literal notranslate"><span class="pre">None</span></code>.)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>default<span class="classifier">object</span></dt><dd><p>The default value for the parameter.  If the parameter has no
+default value, this attribute is set to <code class="docutils literal notranslate"><span class="pre">Parameter.empty</span></code>.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>annotation<span class="classifier">object</span></dt><dd><p>The annotation for the parameter.  If the parameter has no
+annotation, this attribute is set to <code class="docutils literal notranslate"><span class="pre">Parameter.empty</span></code>.</p>
+</dd>
+</dl>
+</li>
+<li><dl>
+<dt>kind</dt><dd><p>Describes how argument values are bound to the parameter.
+Possible values:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">Parameter.POSITIONAL_ONLY</span></code> - value must be supplied
+as a positional argument.</p>
+<p>Python has no explicit syntax for defining positional-only
+parameters, but many built-in and extension module functions
+(especially those that accept only one or two parameters)
+accept them.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Parameter.POSITIONAL_OR_KEYWORD</span></code> - value may be
+supplied as either a keyword or positional argument
+(this is the standard binding behaviour for functions
+implemented in Python.)</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Parameter.KEYWORD_ONLY</span></code> - value must be supplied
+as a keyword argument.  Keyword only parameters are those
+which appear after a “*” or “*args” entry in a Python
+function definition.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Parameter.VAR_POSITIONAL</span></code> - a tuple of positional
+arguments that aren’t bound to any other parameter.
+This corresponds to a “*args” parameter in a Python
+function definition.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Parameter.VAR_KEYWORD</span></code> - a dict of keyword arguments
+that aren’t bound to any other parameter. This corresponds
+to a “**kwargs” parameter in a Python function definition.</p>
+</li>
+</ul>
+<p>Always use <code class="docutils literal notranslate"><span class="pre">Parameter.*</span></code> constants for setting and checking
+value of the <code class="docutils literal notranslate"><span class="pre">kind</span></code> attribute.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>replace(*, name=&lt;optional&gt;, kind=&lt;optional&gt;, default=&lt;optional&gt;, annotation=&lt;optional&gt;) -&gt; Parameter</dt><dd><p>Creates a new Parameter instance based on the instance
+<code class="docutils literal notranslate"><span class="pre">replaced</span></code> was invoked on.  To override a Parameter
+attribute, pass the corresponding argument.  To remove
+an attribute from a <code class="docutils literal notranslate"><span class="pre">Parameter</span></code>, pass <code class="docutils literal notranslate"><span class="pre">Parameter.empty</span></code>.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Parameter constructor:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>Parameter(name, kind, *, annotation=Parameter.empty, default=Parameter.empty)</dt><dd>Instantiates a Parameter object. <code class="docutils literal notranslate"><span class="pre">name</span></code> and <code class="docutils literal notranslate"><span class="pre">kind</span></code> are required,
+while <code class="docutils literal notranslate"><span class="pre">annotation</span></code> and <code class="docutils literal notranslate"><span class="pre">default</span></code> are optional.</dd>
+</dl>
+</li>
+</ul>
+<p>Two parameters are equal when they have equal names, kinds, defaults,
+and annotations.</p>
+<p>Parameter objects are immutable.  Instead of modifying a Parameter object,
+you can use <code class="docutils literal notranslate"><span class="pre">Parameter.replace()</span></code> to create a modified copy like so:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">param</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s1">&#39;foo&#39;</span><span class="p">,</span> <span class="n">Parameter</span><span class="o">.</span><span class="n">KEYWORD_ONLY</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">str</span><span class="p">(</span><span class="n">param</span><span class="p">)</span>
+<span class="go">&#39;foo=42&#39;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">str</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">replace</span><span class="p">())</span>
+<span class="go">&#39;foo=42&#39;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">str</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="n">Parameter</span><span class="o">.</span><span class="n">empty</span><span class="p">,</span> <span class="n">annotation</span><span class="o">=</span><span class="s1">&#39;spam&#39;</span><span class="p">))</span>
+<span class="go">&quot;foo:&#39;spam&#39;&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="boundarguments-object">
+<h2><a class="toc-backref" href="#id7">BoundArguments Object</a><a class="headerlink" href="#boundarguments-object" title="Permalink to this headline">¶</a></h2>
+<p>Result of a <code class="docutils literal notranslate"><span class="pre">Signature.bind</span></code> call.  Holds the mapping of arguments
+to the function’s parameters.</p>
+<p>Has the following public attributes:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>arguments<span class="classifier">OrderedDict</span></dt><dd>An ordered, mutable mapping of parameters’ names to arguments’ values.
+Contains only explicitly bound arguments.  Arguments for
+which <code class="docutils literal notranslate"><span class="pre">bind()</span></code> relied on a default value are skipped.</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>args<span class="classifier">tuple</span></dt><dd>Tuple of positional arguments values.  Dynamically computed from
+the ‘arguments’ attribute.</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>kwargs<span class="classifier">dict</span></dt><dd>Dict of keyword arguments values. Dynamically computed from
+the ‘arguments’ attribute.</dd>
+</dl>
+</li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">arguments</span></code> attribute should be used in conjunction with
+<code class="docutils literal notranslate"><span class="pre">Signature.parameters</span></code> for any arguments processing purposes.</p>
+<p><code class="docutils literal notranslate"><span class="pre">args</span></code> and <code class="docutils literal notranslate"><span class="pre">kwargs</span></code> properties can be used to invoke functions:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">test</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="o">...</span>
+
+<span class="n">sig</span> <span class="o">=</span> <span class="n">signature</span><span class="p">(</span><span class="n">test</span><span class="p">)</span>
+<span class="n">ba</span> <span class="o">=</span> <span class="n">sig</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+<span class="n">test</span><span class="p">(</span><span class="o">*</span><span class="n">ba</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">ba</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Arguments which could be passed as part of either <code class="docutils literal notranslate"><span class="pre">*args</span></code> or <code class="docutils literal notranslate"><span class="pre">**kwargs</span></code>
+will be included only in the <code class="docutils literal notranslate"><span class="pre">BoundArguments.args</span></code> attribute.  Consider the
+following example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">test</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+<span class="n">sig</span> <span class="o">=</span> <span class="n">signature</span><span class="p">(</span><span class="n">test</span><span class="p">)</span>
+<span class="n">ba</span> <span class="o">=</span> <span class="n">sig</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="mi">13</span><span class="p">)</span>
+
+<span class="o">&gt;&gt;&gt;</span> <span class="n">ba</span><span class="o">.</span><span class="n">args</span>
+<span class="p">(</span><span class="mi">10</span><span class="p">,)</span>
+
+<span class="o">&gt;&gt;&gt;</span> <span class="n">ba</span><span class="o">.</span><span class="n">kwargs</span><span class="p">:</span>
+<span class="p">{</span><span class="s1">&#39;c&#39;</span><span class="p">:</span> <span class="mi">13</span><span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id8">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>The implementation adds a new function <code class="docutils literal notranslate"><span class="pre">signature()</span></code> to the <code class="docutils literal notranslate"><span class="pre">inspect</span></code>
+module.  The function is the preferred way of getting a <code class="docutils literal notranslate"><span class="pre">Signature</span></code> for
+a callable object.</p>
+<p>The function implements the following algorithm:</p>
+<ul class="simple">
+<li>If the object is not callable - raise a TypeError</li>
+<li>If the object has a <code class="docutils literal notranslate"><span class="pre">__signature__</span></code> attribute and if it
+is not <code class="docutils literal notranslate"><span class="pre">None</span></code> - return it</li>
+<li>If it has a <code class="docutils literal notranslate"><span class="pre">__wrapped__</span></code> attribute, return
+<code class="docutils literal notranslate"><span class="pre">signature(object.__wrapped__)</span></code></li>
+<li>If the object is an instance of <code class="docutils literal notranslate"><span class="pre">FunctionType</span></code>, construct
+and return a new <code class="docutils literal notranslate"><span class="pre">Signature</span></code> for it</li>
+<li>If the object is a bound method, construct and return a new <code class="docutils literal notranslate"><span class="pre">Signature</span></code>
+object, with its first parameter (usually <code class="docutils literal notranslate"><span class="pre">self</span></code> or <code class="docutils literal notranslate"><span class="pre">cls</span></code>)
+removed.  (<code class="docutils literal notranslate"><span class="pre">classmethod</span></code> and <code class="docutils literal notranslate"><span class="pre">staticmethod</span></code> are supported
+too.  Since both are descriptors, the former returns a bound method,
+and the latter returns its wrapped function.)</li>
+<li>If the object is an instance of <code class="docutils literal notranslate"><span class="pre">functools.partial</span></code>, construct
+a new <code class="docutils literal notranslate"><span class="pre">Signature</span></code> from its <code class="docutils literal notranslate"><span class="pre">partial.func</span></code> attribute, and
+account for already bound <code class="docutils literal notranslate"><span class="pre">partial.args</span></code> and <code class="docutils literal notranslate"><span class="pre">partial.kwargs</span></code></li>
+<li>If the object is a class or metaclass:<ul>
+<li>If the object’s type has a <code class="docutils literal notranslate"><span class="pre">__call__</span></code> method defined in
+its MRO, return a Signature for it</li>
+<li>If the object has a <code class="docutils literal notranslate"><span class="pre">__new__</span></code> method defined in its MRO,
+return a Signature object for it</li>
+<li>If the object has a <code class="docutils literal notranslate"><span class="pre">__init__</span></code> method defined in its MRO,
+return a Signature object for it</li>
+</ul>
+</li>
+<li>Return <code class="docutils literal notranslate"><span class="pre">signature(object.__call__)</span></code></li>
+</ul>
+<p>Note that the <code class="docutils literal notranslate"><span class="pre">Signature</span></code> object is created in a lazy manner, and
+is not automatically cached.  However, the user can manually cache a
+Signature by storing it in the <code class="docutils literal notranslate"><span class="pre">__signature__</span></code> attribute.</p>
+<p>An implementation for Python 3.3 can be found at <a class="footnote-reference brackets" href="#impl" id="id1">1</a>.
+The python issue tracking the patch is <a class="footnote-reference brackets" href="#issue" id="id2">2</a>.</p>
+</div>
+<div class="section" id="design-considerations">
+<h2><a class="toc-backref" href="#id9">Design Considerations</a><a class="headerlink" href="#design-considerations" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="no-implicit-caching-of-signature-objects">
+<h3><a class="toc-backref" href="#id10">No implicit caching of Signature objects</a><a class="headerlink" href="#no-implicit-caching-of-signature-objects" title="Permalink to this headline">¶</a></h3>
+<p>The first PEP design had a provision for implicit caching of <code class="docutils literal notranslate"><span class="pre">Signature</span></code>
+objects in the <code class="docutils literal notranslate"><span class="pre">inspect.signature()</span></code> function.  However, this has the
+following downsides:</p>
+<ul class="simple">
+<li>If the <code class="docutils literal notranslate"><span class="pre">Signature</span></code> object is cached then any changes to the function
+it describes will not be reflected in it.  However, If the caching is
+needed, it can be always done manually and explicitly</li>
+<li>It is better to reserve the <code class="docutils literal notranslate"><span class="pre">__signature__</span></code> attribute for the cases
+when there is a need to explicitly set to a <code class="docutils literal notranslate"><span class="pre">Signature</span></code> object that
+is different from the actual one</li>
+</ul>
+</div>
+<div class="section" id="some-functions-may-not-be-introspectable">
+<h3><a class="toc-backref" href="#id11">Some functions may not be introspectable</a><a class="headerlink" href="#some-functions-may-not-be-introspectable" title="Permalink to this headline">¶</a></h3>
+<p>Some functions may not be introspectable in certain implementations of
+Python.  For example, in CPython, built-in functions defined in C provide
+no metadata about their arguments.  Adding support for them is out of
+scope for this PEP.</p>
+</div>
+<div class="section" id="signature-and-parameter-equivalence">
+<h3><a class="toc-backref" href="#id12">Signature and Parameter equivalence</a><a class="headerlink" href="#signature-and-parameter-equivalence" title="Permalink to this headline">¶</a></h3>
+<p>We assume that parameter names have semantic significance–two
+signatures are equal only when their corresponding parameters are equal
+and have the exact same names.  Users who want looser equivalence tests,
+perhaps ignoring names of VAR_KEYWORD or VAR_POSITIONAL parameters, will
+need to implement those themselves.</p>
+</div>
+</div>
+<div class="section" id="examples">
+<h2><a class="toc-backref" href="#id13">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="visualizing-callable-objects-signature">
+<h3><a class="toc-backref" href="#id14">Visualizing Callable Objects’ Signature</a><a class="headerlink" href="#visualizing-callable-objects-signature" title="Permalink to this headline">¶</a></h3>
+<p>Let’s define some classes and functions:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">inspect</span> <span class="kn">import</span> <span class="n">signature</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span><span class="p">,</span> <span class="n">wraps</span>
+
+
+<span class="k">class</span> <span class="nc">FooMeta</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span><span class="n">mcls</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">dct</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">bar</span><span class="p">:</span><span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="n">mcls</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">dct</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">dct</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">dct</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">Foo</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">FooMeta</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spam</span><span class="p">:</span><span class="nb">int</span><span class="o">=</span><span class="mi">42</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spam</span> <span class="o">=</span> <span class="n">spam</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">spam</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">a</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">a</span>
+
+
+<span class="k">def</span> <span class="nf">shared_vars</span><span class="p">(</span><span class="o">*</span><span class="n">shared_args</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Decorator factory that defines shared variables that are</span>
+<span class="sd">       passed to every invocation of the function&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">decorator</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+        <span class="nd">@wraps</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">full_args</span> <span class="o">=</span> <span class="n">shared_args</span> <span class="o">+</span> <span class="n">args</span>
+            <span class="k">return</span> <span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">full_args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># Override signature</span>
+        <span class="n">sig</span> <span class="o">=</span> <span class="n">signature</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="n">sig</span> <span class="o">=</span> <span class="n">sig</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">sig</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">1</span><span class="p">:])</span>
+        <span class="n">wrapper</span><span class="o">.</span><span class="n">__signature__</span> <span class="o">=</span> <span class="n">sig</span>
+
+        <span class="k">return</span> <span class="n">wrapper</span>
+    <span class="k">return</span> <span class="n">decorator</span>
+
+
+<span class="nd">@shared_vars</span><span class="p">({})</span>
+<span class="k">def</span> <span class="nf">example</span><span class="p">(</span><span class="n">_state</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">_state</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span>
+
+
+<span class="k">def</span> <span class="nf">format_signature</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">signature</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Now, in the python REPL:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">format_signature</span><span class="p">(</span><span class="n">FooMeta</span><span class="p">)</span>
+<span class="go">&#39;(name, bases, dct, *, bar:bool=False)&#39;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">format_signature</span><span class="p">(</span><span class="n">Foo</span><span class="p">)</span>
+<span class="go">&#39;(spam:int=42)&#39;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">format_signature</span><span class="p">(</span><span class="n">Foo</span><span class="o">.</span><span class="fm">__call__</span><span class="p">)</span>
+<span class="go">&#39;(self, a, b, *, c) -&gt; tuple&#39;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">format_signature</span><span class="p">(</span><span class="n">Foo</span><span class="p">()</span><span class="o">.</span><span class="fm">__call__</span><span class="p">)</span>
+<span class="go">&#39;(a, b, *, c) -&gt; tuple&#39;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">format_signature</span><span class="p">(</span><span class="n">Foo</span><span class="o">.</span><span class="n">spam</span><span class="p">)</span>
+<span class="go">&#39;(a)&#39;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">format_signature</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="n">Foo</span><span class="p">()</span><span class="o">.</span><span class="fm">__call__</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="mi">3</span><span class="p">))</span>
+<span class="go">&#39;(b, *, c=3) -&gt; tuple&#39;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">format_signature</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="n">Foo</span><span class="p">()</span><span class="o">.</span><span class="fm">__call__</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="mi">3</span><span class="p">),</span> <span class="mi">2</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="mi">20</span><span class="p">))</span>
+<span class="go">&#39;(*, c=20) -&gt; tuple&#39;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">format_signature</span><span class="p">(</span><span class="n">example</span><span class="p">)</span>
+<span class="go">&#39;(a, b, c)&#39;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">format_signature</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="n">example</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="go">&#39;(c)&#39;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">format_signature</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="n">example</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span> <span class="n">c</span><span class="o">=</span><span class="mi">3</span><span class="p">))</span>
+<span class="go">&#39;(b=2, c=3)&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="annotation-checker">
+<h3><a class="toc-backref" href="#id15">Annotation Checker</a><a class="headerlink" href="#annotation-checker" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">import</span> <span class="nn">functools</span>
+
+<span class="k">def</span> <span class="nf">checktypes</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Decorator to verify arguments and return types</span>
+
+<span class="sd">    Example:</span>
+
+<span class="sd">        &gt;&gt;&gt; @checktypes</span>
+<span class="sd">        ... def test(a:int, b:str) -&gt; int:</span>
+<span class="sd">        ...     return int(a * b)</span>
+
+<span class="sd">        &gt;&gt;&gt; test(10, &#39;1&#39;)</span>
+<span class="sd">        1111111111</span>
+
+<span class="sd">        &gt;&gt;&gt; test(10, 1)</span>
+<span class="sd">        Traceback (most recent call last):</span>
+<span class="sd">          ...</span>
+<span class="sd">        ValueError: foo: wrong type of &#39;b&#39; argument, &#39;str&#39; expected, got &#39;int&#39;</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">sig</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+
+    <span class="n">types</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">sig</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+        <span class="c1"># Iterate through function&#39;s parameters and build the list of</span>
+        <span class="c1"># arguments types</span>
+        <span class="n">type_</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">annotation</span>
+        <span class="k">if</span> <span class="n">type_</span> <span class="ow">is</span> <span class="n">param</span><span class="o">.</span><span class="n">empty</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">inspect</span><span class="o">.</span><span class="n">isclass</span><span class="p">(</span><span class="n">type_</span><span class="p">):</span>
+            <span class="c1"># Missing annotation or not a type, skip it</span>
+            <span class="k">continue</span>
+
+        <span class="n">types</span><span class="p">[</span><span class="n">param</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">type_</span>
+
+        <span class="c1"># If the argument has a type specified, let&#39;s check that its</span>
+        <span class="c1"># default value (if present) conforms with the type.</span>
+        <span class="k">if</span> <span class="n">param</span><span class="o">.</span><span class="n">default</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">param</span><span class="o">.</span><span class="n">empty</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">default</span><span class="p">,</span> <span class="n">type_</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{func}</span><span class="s2">: wrong type of a default value for </span><span class="si">{arg!r}</span><span class="s2">&quot;</span><span class="o">.</span> \
+                             <span class="nb">format</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span> <span class="n">arg</span><span class="o">=</span><span class="n">param</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">check_type</span><span class="p">(</span><span class="n">sig</span><span class="p">,</span> <span class="n">arg_name</span><span class="p">,</span> <span class="n">arg_type</span><span class="p">,</span> <span class="n">arg_value</span><span class="p">):</span>
+        <span class="c1"># Internal function that encapsulates arguments type checking</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg_value</span><span class="p">,</span> <span class="n">arg_type</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{func}</span><span class="s2">: wrong type of </span><span class="si">{arg!r}</span><span class="s2"> argument, &quot;</span> \
+                             <span class="s2">&quot;</span><span class="si">{exp!r}</span><span class="s2"> expected, got </span><span class="si">{got!r}</span><span class="s2">&quot;</span><span class="o">.</span> \
+                             <span class="nb">format</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span> <span class="n">arg</span><span class="o">=</span><span class="n">arg_name</span><span class="p">,</span>
+                                    <span class="n">exp</span><span class="o">=</span><span class="n">arg_type</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">got</span><span class="o">=</span><span class="nb">type</span><span class="p">(</span><span class="n">arg_value</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
+
+    <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c1"># Let&#39;s bind the arguments</span>
+        <span class="n">ba</span> <span class="o">=</span> <span class="n">sig</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">arg_name</span><span class="p">,</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">ba</span><span class="o">.</span><span class="n">arguments</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="c1"># And iterate through the bound arguments</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">type_</span> <span class="o">=</span> <span class="n">types</span><span class="p">[</span><span class="n">arg_name</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># OK, we have a type for the argument, lets get the corresponding</span>
+                <span class="c1"># parameter description from the signature object</span>
+                <span class="n">param</span> <span class="o">=</span> <span class="n">sig</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">arg_name</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">param</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="n">param</span><span class="o">.</span><span class="n">VAR_POSITIONAL</span><span class="p">:</span>
+                    <span class="c1"># If this parameter is a variable-argument parameter,</span>
+                    <span class="c1"># then we need to check each of its values</span>
+                    <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">arg</span><span class="p">:</span>
+                        <span class="n">check_type</span><span class="p">(</span><span class="n">sig</span><span class="p">,</span> <span class="n">arg_name</span><span class="p">,</span> <span class="n">type_</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">param</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="n">param</span><span class="o">.</span><span class="n">VAR_KEYWORD</span><span class="p">:</span>
+                    <span class="c1"># If this parameter is a variable-keyword-argument parameter:</span>
+                    <span class="k">for</span> <span class="n">subname</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">arg</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                        <span class="n">check_type</span><span class="p">(</span><span class="n">sig</span><span class="p">,</span> <span class="n">arg_name</span> <span class="o">+</span> <span class="s1">&#39;:&#39;</span> <span class="o">+</span> <span class="n">subname</span><span class="p">,</span> <span class="n">type_</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># And, finally, if this parameter a regular one:</span>
+                    <span class="n">check_type</span><span class="p">(</span><span class="n">sig</span><span class="p">,</span> <span class="n">arg_name</span><span class="p">,</span> <span class="n">type_</span><span class="p">,</span> <span class="n">arg</span><span class="p">)</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">ba</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">ba</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># The last bit - let&#39;s check that the result is correct</span>
+        <span class="n">return_type</span> <span class="o">=</span> <span class="n">sig</span><span class="o">.</span><span class="n">return_annotation</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">return_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">sig</span><span class="o">.</span><span class="n">_empty</span> <span class="ow">and</span>
+                <span class="nb">isinstance</span><span class="p">(</span><span class="n">return_type</span><span class="p">,</span> <span class="nb">type</span><span class="p">)</span> <span class="ow">and</span>
+                <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">return_type</span><span class="p">)):</span>
+
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{func}</span><span class="s1">: wrong return type, </span><span class="si">{exp}</span><span class="s1"> expected, got </span><span class="si">{got}</span><span class="s1">&#39;</span><span class="o">.</span> \
+                             <span class="nb">format</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span> <span class="n">exp</span><span class="o">=</span><span class="n">return_type</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                                    <span class="n">got</span><span class="o">=</span><span class="nb">type</span><span class="p">(</span><span class="n">result</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">return</span> <span class="n">wrapper</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="acceptance">
+<h2><a class="toc-backref" href="#id16">Acceptance</a><a class="headerlink" href="#acceptance" title="Permalink to this headline">¶</a></h2>
+<p>PEP 362 was accepted by Guido, Friday, June 22, 2012 <a class="footnote-reference brackets" href="#accepted" id="id3">3</a> .
+The reference implementation was committed to trunk later that day.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id17">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="impl"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>pep362 branch (<a class="reference external" href="https://bitbucket.org/1st1/cpython/overview">https://bitbucket.org/1st1/cpython/overview</a>)</dd>
+<dt class="label" id="issue"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>issue 15008 (<a class="reference external" href="http://bugs.python.org/issue15008">http://bugs.python.org/issue15008</a>)</dd>
+<dt class="label" id="accepted"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd>“A Desperate Plea For Introspection (aka: BDFAP Needed)” (<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2012-June/120682.html">https://mail.python.org/pipermail/python-dev/2012-June/120682.html</a>)</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id18">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0362.txt">https://github.com/python/peps/blob/master/pep-0362.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0362.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0361.html">PEP 0361</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0363.html">PEP 0363</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 362 – Function Signature Object</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#signature-object">Signature Object</a></li>
+<li><a class="reference internal" href="#parameter-object">Parameter Object</a></li>
+<li><a class="reference internal" href="#boundarguments-object">BoundArguments Object</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#design-considerations">Design Considerations</a><ul>
+<li><a class="reference internal" href="#no-implicit-caching-of-signature-objects">No implicit caching of Signature objects</a></li>
+<li><a class="reference internal" href="#some-functions-may-not-be-introspectable">Some functions may not be introspectable</a></li>
+<li><a class="reference internal" href="#signature-and-parameter-equivalence">Signature and Parameter equivalence</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#examples">Examples</a><ul>
+<li><a class="reference internal" href="#visualizing-callable-objects-signature">Visualizing Callable Objects’ Signature</a></li>
+<li><a class="reference internal" href="#annotation-checker">Annotation Checker</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#acceptance">Acceptance</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

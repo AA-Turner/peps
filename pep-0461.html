@@ -1,0 +1,355 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 461 – Adding % formatting to bytes and bytearray &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 462 – Core development workflow automation for CPython" href="pep-0462.html" />
+    <link rel="prev" title="PEP 460 – Add binary interpolation and formatting" href="pep-0460.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 461 – Adding % formatting to bytes and bytearray</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-461-adding-formatting-to-bytes-and-bytearray">
+<h1 class="page-title">PEP 461 – Adding % formatting to bytes and bytearray<a class="headerlink" href="#pep-461-adding-formatting-to-bytes-and-bytearray" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">461</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Adding % formatting to bytes and bytearray</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Ethan Furman &lt;ethan&#32;&#97;t&#32;stoneleaf.us&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">2014-01-13</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.5</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">2014-01-14, 2014-01-15, 2014-01-17, 2014-02-22, 2014-03-25,
+2014-03-27</dd>
+<dt class="field-odd">Resolution</dt>
+<dd class="field-odd"><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2014-March/133621.html">https://mail.python.org/pipermail/python-dev/2014-March/133621.html</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id19">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id20">Rationale</a></li>
+<li><a class="reference internal" href="#motivation" id="id21">Motivation</a></li>
+<li><a class="reference internal" href="#proposed-semantics-for-bytes-and-bytearray-formatting" id="id22">Proposed semantics for <code class="docutils literal notranslate"><span class="pre">bytes</span></code> and <code class="docutils literal notranslate"><span class="pre">bytearray</span></code> formatting</a><ul>
+<li><a class="reference internal" href="#interpolation" id="id23">%-interpolation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#compatibility-with-python-2" id="id24">Compatibility with Python 2</a></li>
+<li><a class="reference internal" href="#proposed-variations" id="id25">Proposed variations</a></li>
+<li><a class="reference internal" href="#objections" id="id26">Objections</a></li>
+<li><a class="reference internal" href="#footnotes" id="id27">Footnotes</a></li>
+<li><a class="reference internal" href="#copyright" id="id28">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id19">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes adding % formatting operations similar to Python 2’s <code class="docutils literal notranslate"><span class="pre">str</span></code>
+type to <code class="docutils literal notranslate"><span class="pre">bytes</span></code> and <code class="docutils literal notranslate"><span class="pre">bytearray</span></code> <a class="footnote-reference brackets" href="#id10" id="id1">1</a> <a class="footnote-reference brackets" href="#id11" id="id2">2</a>.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id20">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>While interpolation is usually thought of as a string operation, there are
+cases where interpolation on <code class="docutils literal notranslate"><span class="pre">bytes</span></code> or <code class="docutils literal notranslate"><span class="pre">bytearrays</span></code> make sense, and the
+work needed to make up for this missing functionality detracts from the overall
+readability of the code.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id21">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>With Python 3 and the split between <code class="docutils literal notranslate"><span class="pre">str</span></code> and <code class="docutils literal notranslate"><span class="pre">bytes</span></code>, one small but
+important area of programming became slightly more difficult, and much more
+painful – wire format protocols <a class="footnote-reference brackets" href="#id12" id="id3">3</a>.</p>
+<p>This area of programming is characterized by a mixture of binary data and
+ASCII compatible segments of text (aka ASCII-encoded text).  Bringing back a
+restricted %-interpolation for <code class="docutils literal notranslate"><span class="pre">bytes</span></code> and <code class="docutils literal notranslate"><span class="pre">bytearray</span></code> will aid both in
+writing new wire format code, and in porting Python 2 wire format code.</p>
+<p>Common use-cases include <code class="docutils literal notranslate"><span class="pre">dbf</span></code> and <code class="docutils literal notranslate"><span class="pre">pdf</span></code> file formats, <code class="docutils literal notranslate"><span class="pre">email</span></code>
+formats, and <code class="docutils literal notranslate"><span class="pre">FTP</span></code> and <code class="docutils literal notranslate"><span class="pre">HTTP</span></code> communications, among many others.</p>
+</div>
+<div class="section" id="proposed-semantics-for-bytes-and-bytearray-formatting">
+<h2><a class="toc-backref" href="#id22">Proposed semantics for <code class="docutils literal notranslate"><span class="pre">bytes</span></code> and <code class="docutils literal notranslate"><span class="pre">bytearray</span></code> formatting</a><a class="headerlink" href="#proposed-semantics-for-bytes-and-bytearray-formatting" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="interpolation">
+<h3><a class="toc-backref" href="#id23">%-interpolation</a><a class="headerlink" href="#interpolation" title="Permalink to this headline">¶</a></h3>
+<p>All the numeric formatting codes (<code class="docutils literal notranslate"><span class="pre">d</span></code>, <code class="docutils literal notranslate"><span class="pre">i</span></code>, <code class="docutils literal notranslate"><span class="pre">o</span></code>, <code class="docutils literal notranslate"><span class="pre">u</span></code>, <code class="docutils literal notranslate"><span class="pre">x</span></code>, <code class="docutils literal notranslate"><span class="pre">X</span></code>,
+<code class="docutils literal notranslate"><span class="pre">e</span></code>, <code class="docutils literal notranslate"><span class="pre">E</span></code>, <code class="docutils literal notranslate"><span class="pre">f</span></code>, <code class="docutils literal notranslate"><span class="pre">F</span></code>, <code class="docutils literal notranslate"><span class="pre">g</span></code>, <code class="docutils literal notranslate"><span class="pre">G</span></code>, and any that are subsequently added
+to Python 3) will be supported, and will work as they do for str, including
+the padding, justification and other related modifiers (currently <code class="docutils literal notranslate"><span class="pre">#</span></code>, <code class="docutils literal notranslate"><span class="pre">0</span></code>,
+<code class="docutils literal notranslate"><span class="pre">-</span></code>, `` `` (space), and <code class="docutils literal notranslate"><span class="pre">+</span></code> (plus any added to Python 3)).  The only
+non-numeric codes allowed are <code class="docutils literal notranslate"><span class="pre">c</span></code>, <code class="docutils literal notranslate"><span class="pre">b</span></code>, <code class="docutils literal notranslate"><span class="pre">a</span></code>, and <code class="docutils literal notranslate"><span class="pre">s</span></code> (which is a
+synonym for b).</p>
+<p>For the numeric codes, the only difference between <code class="docutils literal notranslate"><span class="pre">str</span></code> and <code class="docutils literal notranslate"><span class="pre">bytes</span></code> (or
+<code class="docutils literal notranslate"><span class="pre">bytearray</span></code>) interpolation is that the results from these codes will be
+ASCII-encoded text, not unicode.  In other words, for any numeric formatting
+code <cite>%x</cite>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="sa">b</span><span class="s2">&quot;</span><span class="si">%x</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">val</span>
+</pre></div>
+</div>
+<p>is equivalent to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%x</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">val</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;ascii&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="sa">b</span><span class="s1">&#39;</span><span class="si">%4x</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="mi">10</span>
+<span class="go">b&#39;   a&#39;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="sa">b</span><span class="s1">&#39;</span><span class="si">%#4x</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="mi">10</span>
+<span class="go">&#39; 0xa&#39;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="sa">b</span><span class="s1">&#39;</span><span class="si">%04X</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="mi">10</span>
+<span class="go">&#39;000A&#39;</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">%c</span></code> will insert a single byte, either from an <code class="docutils literal notranslate"><span class="pre">int</span></code> in range(256), or from
+a <code class="docutils literal notranslate"><span class="pre">bytes</span></code> argument of length 1, not from a <code class="docutils literal notranslate"><span class="pre">str</span></code>.</p>
+<p>Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="sa">b</span><span class="s1">&#39;</span><span class="si">%c</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="mi">48</span>
+<span class="go">b&#39;0&#39;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="sa">b</span><span class="s1">&#39;</span><span class="si">%c</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="sa">b</span><span class="s1">&#39;a&#39;</span>
+<span class="go">b&#39;a&#39;</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">%b</span></code> will insert a series of bytes.  These bytes are collected in one of two
+ways:</p>
+<ul class="simple">
+<li>input type supports <code class="docutils literal notranslate"><span class="pre">Py_buffer</span></code> <a class="footnote-reference brackets" href="#id13" id="id4">4</a>?
+use it to collect the necessary bytes</li>
+<li>input type is something else?
+use its <code class="docutils literal notranslate"><span class="pre">__bytes__</span></code> method <a class="footnote-reference brackets" href="#id14" id="id5">5</a> ; if there isn’t one, raise a <code class="docutils literal notranslate"><span class="pre">TypeError</span></code></li>
+</ul>
+<p>In particular, <code class="docutils literal notranslate"><span class="pre">%b</span></code> will not accept numbers nor <code class="docutils literal notranslate"><span class="pre">str</span></code>.  <code class="docutils literal notranslate"><span class="pre">str</span></code> is rejected
+as the string to bytes conversion requires an encoding, and we are refusing to
+guess; numbers are rejected because:</p>
+<ul class="simple">
+<li>what makes a number is fuzzy (float? Decimal? Fraction? some user type?)</li>
+<li>allowing numbers would lead to ambiguity between numbers and textual
+representations of numbers (3.14 vs ‘3.14’)</li>
+<li>given the nature of wire formats, explicit is definitely better than implicit</li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">%s</span></code> is included as a synonym for <code class="docutils literal notranslate"><span class="pre">%b</span></code> for the sole purpose of making 2/3 code
+bases easier to maintain.  Python 3 only code should use <code class="docutils literal notranslate"><span class="pre">%b</span></code>.</p>
+<p>Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="sa">b</span><span class="s1">&#39;%b&#39;</span> <span class="o">%</span> <span class="sa">b</span><span class="s1">&#39;abc&#39;</span>
+<span class="go">b&#39;abc&#39;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="sa">b</span><span class="s1">&#39;%b&#39;</span> <span class="o">%</span> <span class="s1">&#39;some string&#39;</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf8&#39;</span><span class="p">)</span>
+<span class="go">b&#39;some string&#39;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="sa">b</span><span class="s1">&#39;%b&#39;</span> <span class="o">%</span> <span class="mf">3.14</span>
+<span class="gt">Traceback (most recent call last):</span>
+<span class="c">...</span>
+<span class="gr">TypeError</span>: <span class="n">b&#39;%b&#39; does not accept &#39;float&#39;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="sa">b</span><span class="s1">&#39;%b&#39;</span> <span class="o">%</span> <span class="s1">&#39;hello world!&#39;</span>
+<span class="gt">Traceback (most recent call last):</span>
+<span class="c">...</span>
+<span class="gr">TypeError</span>: <span class="n">b&#39;%b&#39; does not accept &#39;str&#39;</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">%a</span></code> will give the equivalent of
+<code class="docutils literal notranslate"><span class="pre">repr(some_obj).encode('ascii',</span> <span class="pre">'backslashreplace')</span></code> on the interpolated
+value.  Use cases include developing a new protocol and writing landmarks
+into the stream; debugging data going into an existing protocol to see if
+the problem is the protocol itself or bad data; a fall-back for a serialization
+format; or any situation where defining <code class="docutils literal notranslate"><span class="pre">__bytes__</span></code> would not be appropriate
+but a readable/informative representation is needed <a class="footnote-reference brackets" href="#id15" id="id6">6</a>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">%r</span></code> is included as a synonym for <code class="docutils literal notranslate"><span class="pre">%a</span></code> for the sole purpose of making 2/3
+code bases easier to maintain.  Python 3 only code use <code class="docutils literal notranslate"><span class="pre">%a</span></code> <a class="footnote-reference brackets" href="#id16" id="id7">7</a>.</p>
+<p>Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="sa">b</span><span class="s1">&#39;</span><span class="si">%a</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="mf">3.14</span>
+<span class="go">b&#39;3.14&#39;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="sa">b</span><span class="s1">&#39;</span><span class="si">%a</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="sa">b</span><span class="s1">&#39;abc&#39;</span>
+<span class="go">b&quot;b&#39;abc&#39;&quot;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="sa">b</span><span class="s1">&#39;</span><span class="si">%a</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="s1">&#39;def&#39;</span>
+<span class="go">b&quot;&#39;def&#39;&quot;</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="compatibility-with-python-2">
+<h2><a class="toc-backref" href="#id24">Compatibility with Python 2</a><a class="headerlink" href="#compatibility-with-python-2" title="Permalink to this headline">¶</a></h2>
+<p>As noted above, <code class="docutils literal notranslate"><span class="pre">%s</span></code> and <code class="docutils literal notranslate"><span class="pre">%r</span></code> are being included solely to help ease
+migration from, and/or have a single code base with, Python 2.  This is
+important as there are modules both in the wild and behind closed doors that
+currently use the Python 2 <code class="docutils literal notranslate"><span class="pre">str</span></code> type as a <code class="docutils literal notranslate"><span class="pre">bytes</span></code> container, and hence
+are using <code class="docutils literal notranslate"><span class="pre">%s</span></code> as a bytes interpolator.</p>
+<p>However, <code class="docutils literal notranslate"><span class="pre">%b</span></code> and <code class="docutils literal notranslate"><span class="pre">%a</span></code> should be used in new, Python 3 only code, so <code class="docutils literal notranslate"><span class="pre">%s</span></code>
+and <code class="docutils literal notranslate"><span class="pre">%r</span></code> will immediately be deprecated, but not removed from the 3.x series
+<a class="footnote-reference brackets" href="#id16" id="id8">7</a>.</p>
+</div>
+<div class="section" id="proposed-variations">
+<h2><a class="toc-backref" href="#id25">Proposed variations</a><a class="headerlink" href="#proposed-variations" title="Permalink to this headline">¶</a></h2>
+<p>It has been proposed to automatically use <code class="docutils literal notranslate"><span class="pre">.encode('ascii','strict')</span></code> for
+<code class="docutils literal notranslate"><span class="pre">str</span></code> arguments to <code class="docutils literal notranslate"><span class="pre">%b</span></code>.</p>
+<ul class="simple">
+<li>Rejected as this would lead to intermittent failures.  Better to have the
+operation always fail so the trouble-spot can be correctly fixed.</li>
+</ul>
+<p>It has been proposed to have <code class="docutils literal notranslate"><span class="pre">%b</span></code> return the ascii-encoded repr when the
+value is a <code class="docutils literal notranslate"><span class="pre">str</span></code> (b’%b’ % ‘abc’  –&gt; b“‘abc’”).</p>
+<ul class="simple">
+<li>Rejected as this would lead to hard to debug failures far from the problem
+site.  Better to have the operation always fail so the trouble-spot can be
+easily fixed.</li>
+</ul>
+<p>Originally this PEP also proposed adding format-style formatting, but it was
+decided that format and its related machinery were all strictly text (aka
+<code class="docutils literal notranslate"><span class="pre">str</span></code>) based, and it was dropped.</p>
+<p>Various new special methods were proposed, such as <code class="docutils literal notranslate"><span class="pre">__ascii__</span></code>,
+<code class="docutils literal notranslate"><span class="pre">__format_bytes__</span></code>, etc.; such methods are not needed at this time, but can
+be visited again later if real-world use shows deficiencies with this solution.</p>
+<p>A competing PEP, <code class="docutils literal notranslate"><span class="pre">PEP</span> <span class="pre">460</span> <span class="pre">Add</span> <span class="pre">binary</span> <span class="pre">interpolation</span> <span class="pre">and</span> <span class="pre">formatting</span></code> <a class="footnote-reference brackets" href="#id17" id="id9">8</a>,
+also exists.</p>
+</div>
+<div class="section" id="objections">
+<h2><a class="toc-backref" href="#id26">Objections</a><a class="headerlink" href="#objections" title="Permalink to this headline">¶</a></h2>
+<p>The objections raised against this PEP were mainly variations on two themes:</p>
+<ul class="simple">
+<li>the <code class="docutils literal notranslate"><span class="pre">bytes</span></code> and <code class="docutils literal notranslate"><span class="pre">bytearray</span></code> types are for pure binary data, with no
+assumptions about encodings</li>
+<li>offering %-interpolation that assumes an ASCII encoding will be an
+attractive nuisance and lead us back to the problems of the Python 2
+<code class="docutils literal notranslate"><span class="pre">str</span></code>/<code class="docutils literal notranslate"><span class="pre">unicode</span></code> text model</li>
+</ul>
+<p>As was seen during the discussion, <code class="docutils literal notranslate"><span class="pre">bytes</span></code> and <code class="docutils literal notranslate"><span class="pre">bytearray</span></code> are also used
+for mixed binary data and ASCII-compatible segments: file formats such as
+<code class="docutils literal notranslate"><span class="pre">dbf</span></code> and <code class="docutils literal notranslate"><span class="pre">pdf</span></code>, network protocols such as <code class="docutils literal notranslate"><span class="pre">ftp</span></code> and <code class="docutils literal notranslate"><span class="pre">email</span></code>, etc.</p>
+<p><code class="docutils literal notranslate"><span class="pre">bytes</span></code> and <code class="docutils literal notranslate"><span class="pre">bytearray</span></code> already have several methods which assume an ASCII
+compatible encoding.  <code class="docutils literal notranslate"><span class="pre">upper()</span></code>, <code class="docutils literal notranslate"><span class="pre">isalpha()</span></code>, and <code class="docutils literal notranslate"><span class="pre">expandtabs()</span></code> to name
+just a few.  %-interpolation, with its very restricted mini-language, will not
+be any more of a nuisance than the already existing methods.</p>
+<p>Some have objected to allowing the full range of numeric formatting codes with
+the claim that decimal alone would be sufficient.  However, at least two
+formats (dbf and pdf) make use of non-decimal numbers.</p>
+</div>
+<div class="section" id="footnotes">
+<h2><a class="toc-backref" href="#id27">Footnotes</a><a class="headerlink" href="#footnotes" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id10"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><a class="reference external" href="http://docs.python.org/2/library/stdtypes.html#string-formatting">http://docs.python.org/2/library/stdtypes.html#string-formatting</a></dd>
+<dt class="label" id="id11"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>neither string.Template, format, nor str.format are under consideration</dd>
+<dt class="label" id="id12"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2014-January/131518.html">https://mail.python.org/pipermail/python-dev/2014-January/131518.html</a></dd>
+<dt class="label" id="id13"><span class="brackets"><a class="fn-backref" href="#id4">4</a></span></dt>
+<dd><a class="reference external" href="http://docs.python.org/3/c-api/buffer.html">http://docs.python.org/3/c-api/buffer.html</a>
+examples:  <code class="docutils literal notranslate"><span class="pre">memoryview</span></code>, <code class="docutils literal notranslate"><span class="pre">array.array</span></code>, <code class="docutils literal notranslate"><span class="pre">bytearray</span></code>, <code class="docutils literal notranslate"><span class="pre">bytes</span></code></dd>
+<dt class="label" id="id14"><span class="brackets"><a class="fn-backref" href="#id5">5</a></span></dt>
+<dd><a class="reference external" href="http://docs.python.org/3/reference/datamodel.html#object.__bytes__">http://docs.python.org/3/reference/datamodel.html#object.__bytes__</a></dd>
+<dt class="label" id="id15"><span class="brackets"><a class="fn-backref" href="#id6">6</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2014-February/132750.html">https://mail.python.org/pipermail/python-dev/2014-February/132750.html</a></dd>
+<dt class="label" id="id16"><span class="brackets">7</span><span class='fn-backref'><em> (<a href="#id7">1</a>, <a href="#id8">2</a>) </em></span></dt>
+<dd><a class="reference external" href="http://bugs.python.org/issue23467">http://bugs.python.org/issue23467</a> – originally <code class="docutils literal notranslate"><span class="pre">%r</span></code> was not allowed,
+but was added for consistency during the 3.5 alpha stage.</dd>
+<dt class="label" id="id17"><span class="brackets"><a class="fn-backref" href="#id9">8</a></span></dt>
+<dd><a class="reference external" href="http://python.org/dev/peps/pep-0460/">http://python.org/dev/peps/pep-0460/</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id28">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0461.txt">https://github.com/python/peps/blob/master/pep-0461.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0461.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0460.html">PEP 0460</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0462.html">PEP 0462</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 461 – Adding % formatting to bytes and bytearray</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#proposed-semantics-for-bytes-and-bytearray-formatting">Proposed semantics for <code class="docutils literal notranslate"><span class="pre">bytes</span></code> and <code class="docutils literal notranslate"><span class="pre">bytearray</span></code> formatting</a><ul>
+<li><a class="reference internal" href="#interpolation">%-interpolation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#compatibility-with-python-2">Compatibility with Python 2</a></li>
+<li><a class="reference internal" href="#proposed-variations">Proposed variations</a></li>
+<li><a class="reference internal" href="#objections">Objections</a></li>
+<li><a class="reference internal" href="#footnotes">Footnotes</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

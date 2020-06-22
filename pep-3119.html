@@ -1,0 +1,942 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 3119 – Introducing Abstract Base Classes &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 3120 – Using UTF-8 as the default source encoding" href="pep-3120.html" />
+    <link rel="prev" title="PEP 3118 – Revising the buffer protocol" href="pep-3118.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 3119 – Introducing Abstract Base Classes</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-3119-introducing-abstract-base-classes">
+<h1 class="page-title">PEP 3119 – Introducing Abstract Base Classes<a class="headerlink" href="#pep-3119-introducing-abstract-base-classes" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">3119</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Introducing Abstract Base Classes</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Guido van Rossum &lt;guido&#32;&#97;t&#32;python.org&gt;, Talin &lt;viridia&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">18-Apr-2007</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd">26-Apr-2007, 11-May-2007</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id29">Abstract</a><ul>
+<li><a class="reference internal" href="#acknowledgements" id="id30">Acknowledgements</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rationale" id="id31">Rationale</a></li>
+<li><a class="reference internal" href="#specification" id="id32">Specification</a><ul>
+<li><a class="reference internal" href="#overloading-isinstance-and-issubclass" id="id33">Overloading <code class="docutils literal notranslate"><span class="pre">isinstance()</span></code> and <code class="docutils literal notranslate"><span class="pre">issubclass()</span></code></a></li>
+<li><a class="reference internal" href="#the-abc-module-an-abc-support-framework" id="id34">The <code class="docutils literal notranslate"><span class="pre">abc</span></code> Module: an ABC Support Framework</a></li>
+<li><a class="reference internal" href="#abcs-for-containers-and-iterators" id="id35">ABCs for Containers and Iterators</a><ul>
+<li><a class="reference internal" href="#one-trick-ponies" id="id36">One Trick Ponies</a></li>
+<li><a class="reference internal" href="#sets" id="id37">Sets</a></li>
+<li><a class="reference internal" href="#mappings" id="id38">Mappings</a></li>
+<li><a class="reference internal" href="#sequences" id="id39">Sequences</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#strings" id="id40">Strings</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#abcs-vs-alternatives" id="id41">ABCs vs. Alternatives</a><ul>
+<li><a class="reference internal" href="#abcs-vs-duck-typing" id="id42">ABCs vs. Duck Typing</a></li>
+<li><a class="reference internal" href="#abcs-vs-generic-functions" id="id43">ABCs vs. Generic Functions</a></li>
+<li><a class="reference internal" href="#abcs-vs-interfaces" id="id44">ABCs vs. Interfaces</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references" id="id45">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id46">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id29">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This is a proposal to add Abstract Base Class (ABC) support to Python
+3000.  It proposes:</p>
+<ul class="simple">
+<li>A way to overload <code class="docutils literal notranslate"><span class="pre">isinstance()</span></code> and <code class="docutils literal notranslate"><span class="pre">issubclass()</span></code>.</li>
+<li>A new module <code class="docutils literal notranslate"><span class="pre">abc</span></code> which serves as an “ABC support framework”.  It
+defines a metaclass for use with ABCs and a decorator that can be
+used to define abstract methods.</li>
+<li>Specific ABCs for containers and iterators, to be added to the
+collections module.</li>
+</ul>
+<p>Much of the thinking that went into the proposal is not about the
+specific mechanism of ABCs, as contrasted with Interfaces or Generic
+Functions (GFs), but about clarifying philosophical issues like “what
+makes a set”, “what makes a mapping” and “what makes a sequence”.</p>
+<p>There’s also a companion PEP 3141, which defines ABCs for numeric
+types.</p>
+<div class="section" id="acknowledgements">
+<h3><a class="toc-backref" href="#id30">Acknowledgements</a><a class="headerlink" href="#acknowledgements" title="Permalink to this headline">¶</a></h3>
+<p>Talin wrote the Rationale below <a class="footnote-reference brackets" href="#id13" id="id1">1</a> as well as most of the section on
+ABCs vs. Interfaces.  For that alone he deserves co-authorship.  The
+rest of the PEP uses “I” referring to the first author.</p>
+</div>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id31">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>In the domain of object-oriented programming, the usage patterns for
+interacting with an object can be divided into two basic categories,
+which are ‘invocation’ and ‘inspection’.</p>
+<p>Invocation means interacting with an object by invoking its methods.
+Usually this is combined with polymorphism, so that invoking a given
+method may run different code depending on the type of an object.</p>
+<p>Inspection means the ability for external code (outside of the
+object’s methods) to examine the type or properties of that object,
+and make decisions on how to treat that object based on that
+information.</p>
+<p>Both usage patterns serve the same general end, which is to be able to
+support the processing of diverse and potentially novel objects in a
+uniform way, but at the same time allowing processing decisions to be
+customized for each different type of object.</p>
+<p>In classical OOP theory, invocation is the preferred usage pattern,
+and inspection is actively discouraged, being considered a relic of an
+earlier, procedural programming style.  However, in practice this view
+is simply too dogmatic and inflexible, and leads to a kind of design
+rigidity that is very much at odds with the dynamic nature of a
+language like Python.</p>
+<p>In particular, there is often a need to process objects in a way that
+wasn’t anticipated by the creator of the object class.  It is not
+always the best solution to build in to every object methods that
+satisfy the needs of every possible user of that object.  Moreover,
+there are many powerful dispatch philosophies that are in direct
+contrast to the classic OOP requirement of behavior being strictly
+encapsulated within an object, examples being rule or pattern-match
+driven logic.</p>
+<p>On the other hand, one of the criticisms of inspection by classic
+OOP theorists is the lack of formalisms and the ad hoc nature of what
+is being inspected.  In a language such as Python, in which almost any
+aspect of an object can be reflected and directly accessed by external
+code, there are many different ways to test whether an object conforms
+to a particular protocol or not.  For example, if asking ‘is this
+object a mutable sequence container?’, one can look for a base class
+of ‘list’, or one can look for a method named ‘__getitem__’.  But note
+that although these tests may seem obvious, neither of them are
+correct, as one generates false negatives, and the other false
+positives.</p>
+<p>The generally agreed-upon remedy is to standardize the tests, and
+group them into a formal arrangement.  This is most easily done by
+associating with each class a set of standard testable properties,
+either via the inheritance mechanism or some other means.  Each test
+carries with it a set of promises: it contains a promise about the
+general behavior of the class, and a promise as to what other class
+methods will be available.</p>
+<p>This PEP proposes a particular strategy for organizing these tests
+known as Abstract Base Classes, or ABC.  ABCs are simply Python
+classes that are added into an object’s inheritance tree to signal
+certain features of that object to an external inspector.  Tests are
+done using <code class="docutils literal notranslate"><span class="pre">isinstance()</span></code>, and the presence of a particular ABC
+means that the test has passed.</p>
+<p>In addition, the ABCs define a minimal set of methods that establish
+the characteristic behavior of the type.  Code that discriminates
+objects based on their ABC type can trust that those methods will
+always be present.  Each of these methods are accompanied by an
+generalized abstract semantic definition that is described in the
+documentation for the ABC.  These standard semantic definitions are
+not enforced, but are strongly recommended.</p>
+<p>Like all other things in Python, these promises are in the nature of a
+gentlemen’s agreement, which in this case means that while the
+language does enforce some of the promises made in the ABC, it is up
+to the implementer of the concrete class to insure that the remaining
+ones are kept.</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id32">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>The specification follows the categories listed in the abstract:</p>
+<ul class="simple">
+<li>A way to overload <code class="docutils literal notranslate"><span class="pre">isinstance()</span></code> and <code class="docutils literal notranslate"><span class="pre">issubclass()</span></code>.</li>
+<li>A new module <code class="docutils literal notranslate"><span class="pre">abc</span></code> which serves as an “ABC support framework”.  It
+defines a metaclass for use with ABCs and a decorator that can be
+used to define abstract methods.</li>
+<li>Specific ABCs for containers and iterators, to be added to the
+collections module.</li>
+</ul>
+<div class="section" id="overloading-isinstance-and-issubclass">
+<h3><a class="toc-backref" href="#id33">Overloading <code class="docutils literal notranslate"><span class="pre">isinstance()</span></code> and <code class="docutils literal notranslate"><span class="pre">issubclass()</span></code></a><a class="headerlink" href="#overloading-isinstance-and-issubclass" title="Permalink to this headline">¶</a></h3>
+<p>During the development of this PEP and of its companion, PEP 3141, we
+repeatedly faced the choice between standardizing more, fine-grained
+ABCs or fewer, coarse-grained ones.  For example, at one stage, PEP
+3141 introduced the following stack of base classes used for complex
+numbers: MonoidUnderPlus, AdditiveGroup, Ring, Field, Complex (each
+derived from the previous).  And the discussion mentioned several
+other algebraic categorizations that were left out: Algebraic,
+Transcendental, and IntegralDomain, and PrincipalIdealDomain.  In
+earlier versions of the current PEP, we considered the use cases for
+separate classes like Set, ComposableSet, MutableSet, HashableSet,
+MutableComposableSet, HashableComposableSet.</p>
+<p>The dilemma here is that we’d rather have fewer ABCs, but then what
+should a user do who needs a less refined ABC?  Consider e.g. the
+plight of a mathematician who wants to define his own kind of
+Transcendental numbers, but also wants float and int to be considered
+Transcendental.  PEP 3141 originally proposed to patch float.__bases__
+for that purpose, but there are some good reasons to keep the built-in
+types immutable (for one, they are shared between all Python
+interpreters running in the same address space, as is used by
+mod_python <a class="footnote-reference brackets" href="#id28" id="id2">16</a>).</p>
+<p>Another example would be someone who wants to define a generic
+function (PEP 3124) for any sequence that has an <code class="docutils literal notranslate"><span class="pre">append()</span></code> method.
+The <code class="docutils literal notranslate"><span class="pre">Sequence</span></code> ABC (see below) doesn’t promise the <code class="docutils literal notranslate"><span class="pre">append()</span></code>
+method, while <code class="docutils literal notranslate"><span class="pre">MutableSequence</span></code> requires not only <code class="docutils literal notranslate"><span class="pre">append()</span></code> but
+also various other mutating methods.</p>
+<p>To solve these and similar dilemmas, the next section will propose a
+metaclass for use with ABCs that will allow us to add an ABC as a
+“virtual base class” (not the same concept as in C++) to any class,
+including to another ABC.  This allows the standard library to define
+ABCs <code class="docutils literal notranslate"><span class="pre">Sequence</span></code> and <code class="docutils literal notranslate"><span class="pre">MutableSequence</span></code> and register these as
+virtual base classes for built-in types like <code class="docutils literal notranslate"><span class="pre">basestring</span></code>, <code class="docutils literal notranslate"><span class="pre">tuple</span></code>
+and <code class="docutils literal notranslate"><span class="pre">list</span></code>, so that for example the following conditions are all
+true:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">isinstance</span><span class="p">([],</span> <span class="n">Sequence</span><span class="p">)</span>
+<span class="nb">issubclass</span><span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">)</span>
+<span class="nb">issubclass</span><span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">MutableSequence</span><span class="p">)</span>
+<span class="nb">isinstance</span><span class="p">((),</span> <span class="n">Sequence</span><span class="p">)</span>
+<span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="n">MutableSequence</span><span class="p">)</span>
+<span class="nb">isinstance</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">)</span>
+<span class="nb">issubclass</span><span class="p">(</span><span class="nb">bytearray</span><span class="p">,</span> <span class="n">MutableSequence</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The primary mechanism proposed here is to allow overloading the
+built-in functions <code class="docutils literal notranslate"><span class="pre">isinstance()</span></code> and <code class="docutils literal notranslate"><span class="pre">issubclass()</span></code>.  The
+overloading works as follows: The call <code class="docutils literal notranslate"><span class="pre">isinstance(x,</span> <span class="pre">C)</span></code> first
+checks whether <code class="docutils literal notranslate"><span class="pre">C.__instancecheck__</span></code> exists, and if so, calls
+<code class="docutils literal notranslate"><span class="pre">C.__instancecheck__(x)</span></code> instead of its normal implementation.
+Similarly, the call <code class="docutils literal notranslate"><span class="pre">issubclass(D,</span> <span class="pre">C)</span></code> first checks whether
+<code class="docutils literal notranslate"><span class="pre">C.__subclasscheck__</span></code> exists, and if so, calls
+<code class="docutils literal notranslate"><span class="pre">C.__subclasscheck__(D)</span></code> instead of its normal implementation.</p>
+<p>Note that the magic names are not <code class="docutils literal notranslate"><span class="pre">__isinstance__</span></code> and
+<code class="docutils literal notranslate"><span class="pre">__issubclass__</span></code>; this is because the reversal of the arguments
+could cause confusion, especially for the <code class="docutils literal notranslate"><span class="pre">issubclass()</span></code> overloader.</p>
+<p>A prototype implementation of this is given in <a class="footnote-reference brackets" href="#id24" id="id3">12</a>.</p>
+<p>Here is an example with (naively simple) implementations of
+<code class="docutils literal notranslate"><span class="pre">__instancecheck__</span></code> and <code class="docutils literal notranslate"><span class="pre">__subclasscheck__</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">ABCMeta</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__instancecheck__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">inst</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Implement isinstance(inst, cls).&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="fm">__subclasscheck__</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+                   <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">{</span><span class="nb">type</span><span class="p">(</span><span class="n">inst</span><span class="p">),</span> <span class="n">inst</span><span class="o">.</span><span class="vm">__class__</span><span class="p">})</span>
+
+    <span class="k">def</span> <span class="fm">__subclasscheck__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">sub</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Implement issubclass(sub, cls).&quot;&quot;&quot;</span>
+        <span class="n">candidates</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;__subclass__&quot;</span><span class="p">,</span> <span class="nb">set</span><span class="p">())</span> <span class="o">|</span> <span class="p">{</span><span class="bp">cls</span><span class="p">}</span>
+        <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">c</span> <span class="ow">in</span> <span class="n">candidates</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">sub</span><span class="o">.</span><span class="n">mro</span><span class="p">())</span>
+
+<span class="k">class</span> <span class="nc">Sequence</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
+    <span class="n">__subclass__</span> <span class="o">=</span> <span class="p">{</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">}</span>
+
+<span class="k">assert</span> <span class="nb">issubclass</span><span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">)</span>
+<span class="k">assert</span> <span class="nb">issubclass</span><span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">AppendableSequence</span><span class="p">(</span><span class="n">Sequence</span><span class="p">):</span>
+    <span class="n">__subclass__</span> <span class="o">=</span> <span class="p">{</span><span class="nb">list</span><span class="p">}</span>
+
+<span class="k">assert</span> <span class="nb">issubclass</span><span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">AppendableSequence</span><span class="p">)</span>
+<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">([],</span> <span class="n">AppendableSequence</span><span class="p">)</span>
+
+<span class="k">assert</span> <span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="n">AppendableSequence</span><span class="p">)</span>
+<span class="k">assert</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">((),</span> <span class="n">AppendableSequence</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The next section proposes a full-fledged implementation.</p>
+</div>
+<div class="section" id="the-abc-module-an-abc-support-framework">
+<h3><a class="toc-backref" href="#id34">The <code class="docutils literal notranslate"><span class="pre">abc</span></code> Module: an ABC Support Framework</a><a class="headerlink" href="#the-abc-module-an-abc-support-framework" title="Permalink to this headline">¶</a></h3>
+<p>The new standard library module <code class="docutils literal notranslate"><span class="pre">abc</span></code>, written in pure Python,
+serves as an ABC support framework.  It defines a metaclass
+<code class="docutils literal notranslate"><span class="pre">ABCMeta</span></code> and decorators <code class="docutils literal notranslate"><span class="pre">&#64;abstractmethod</span></code> and
+<code class="docutils literal notranslate"><span class="pre">&#64;abstractproperty</span></code>.  A sample implementation is given by <a class="footnote-reference brackets" href="#id25" id="id4">13</a>.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">ABCMeta</span></code> class overrides <code class="docutils literal notranslate"><span class="pre">__instancecheck__</span></code> and
+<code class="docutils literal notranslate"><span class="pre">__subclasscheck__</span></code> and defines a <code class="docutils literal notranslate"><span class="pre">register</span></code> method.  The
+<code class="docutils literal notranslate"><span class="pre">register</span></code> method takes one argument, which must be a class; after
+the call <code class="docutils literal notranslate"><span class="pre">B.register(C)</span></code>, the call <code class="docutils literal notranslate"><span class="pre">issubclass(C,</span> <span class="pre">B)</span></code> will return
+True, by virtue of <code class="docutils literal notranslate"><span class="pre">B.__subclasscheck__(C)</span></code> returning True.
+Also, <code class="docutils literal notranslate"><span class="pre">isinstance(x,</span> <span class="pre">B)</span></code> is equivalent to <code class="docutils literal notranslate"><span class="pre">issubclass(x.__class__,</span>
+<span class="pre">B)</span> <span class="pre">or</span> <span class="pre">issubclass(type(x),</span> <span class="pre">B)</span></code>.  (It is possible <code class="docutils literal notranslate"><span class="pre">type(x)</span></code> and
+<code class="docutils literal notranslate"><span class="pre">x.__class__</span></code> are not the same object, e.g. when x is a proxy
+object.)</p>
+<p>These methods are intended to be called on classes whose metaclass
+is (derived from) <code class="docutils literal notranslate"><span class="pre">ABCMeta</span></code>; for example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABCMeta</span>
+
+<span class="k">class</span> <span class="nc">MyABC</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+<span class="n">MyABC</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="nb">tuple</span><span class="p">)</span>
+
+<span class="k">assert</span> <span class="nb">issubclass</span><span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="n">MyABC</span><span class="p">)</span>
+<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">((),</span> <span class="n">MyABC</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The last two asserts are equivalent to the following two:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">assert</span> <span class="n">MyABC</span><span class="o">.</span><span class="fm">__subclasscheck__</span><span class="p">(</span><span class="nb">tuple</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">MyABC</span><span class="o">.</span><span class="fm">__instancecheck__</span><span class="p">(())</span>
+</pre></div>
+</div>
+<p>Of course, you can also directly subclass MyABC:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyClass</span><span class="p">(</span><span class="n">MyABC</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+<span class="k">assert</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">MyClass</span><span class="p">,</span> <span class="n">MyABC</span><span class="p">)</span>
+<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">MyClass</span><span class="p">(),</span> <span class="n">MyABC</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Also, of course, a tuple is not a <code class="docutils literal notranslate"><span class="pre">MyClass</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">assert</span> <span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="n">MyClass</span><span class="p">)</span>
+<span class="k">assert</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">((),</span> <span class="n">MyClass</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>You can register another class as a subclass of <code class="docutils literal notranslate"><span class="pre">MyClass</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">MyClass</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+
+<span class="k">assert</span> <span class="nb">issubclass</span><span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">MyClass</span><span class="p">)</span>
+<span class="k">assert</span> <span class="nb">issubclass</span><span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">MyABC</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>You can also register another ABC:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">AnotherClass</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+<span class="n">AnotherClass</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">basestring</span><span class="p">)</span>
+
+<span class="n">MyClass</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">AnotherClass</span><span class="p">)</span>
+
+<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">MyABC</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>That last assert requires tracing the following superclass-subclass
+relationships:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">MyABC</span> <span class="o">-&gt;</span> <span class="n">MyClass</span> <span class="p">(</span><span class="n">using</span> <span class="n">regular</span> <span class="n">subclassing</span><span class="p">)</span>
+<span class="n">MyClass</span> <span class="o">-&gt;</span> <span class="n">AnotherClass</span> <span class="p">(</span><span class="n">using</span> <span class="n">registration</span><span class="p">)</span>
+<span class="n">AnotherClass</span> <span class="o">-&gt;</span> <span class="n">basestring</span> <span class="p">(</span><span class="n">using</span> <span class="n">registration</span><span class="p">)</span>
+<span class="n">basestring</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="p">(</span><span class="n">using</span> <span class="n">regular</span> <span class="n">subclassing</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">abc</span></code> module also defines a new decorator, <code class="docutils literal notranslate"><span class="pre">&#64;abstractmethod</span></code>,
+to be used to declare abstract methods.  A class containing at least
+one method declared with this decorator that hasn’t been overridden
+yet cannot be instantiated.  Such methods may be called from the
+overriding method in the subclass (using <code class="docutils literal notranslate"><span class="pre">super</span></code> or direct
+invocation).  For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABCMeta</span><span class="p">,</span> <span class="n">abstractmethod</span>
+
+<span class="k">class</span> <span class="nc">A</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">pass</span>
+
+<span class="n">A</span><span class="p">()</span>  <span class="c1"># raises TypeError</span>
+
+<span class="k">class</span> <span class="nc">B</span><span class="p">(</span><span class="n">A</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+<span class="n">B</span><span class="p">()</span>  <span class="c1"># raises TypeError</span>
+
+<span class="k">class</span> <span class="nc">C</span><span class="p">(</span><span class="n">A</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="nb">print</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+
+<span class="n">C</span><span class="p">()</span>  <span class="c1"># works</span>
+</pre></div>
+</div>
+<p><strong>Note:</strong> The <code class="docutils literal notranslate"><span class="pre">&#64;abstractmethod</span></code> decorator should only be used
+inside a class body, and only for classes whose metaclass is (derived
+from) <code class="docutils literal notranslate"><span class="pre">ABCMeta</span></code>.  Dynamically adding abstract methods to a class, or
+attempting to modify the abstraction status of a method or class once
+it is created, are not supported.  The <code class="docutils literal notranslate"><span class="pre">&#64;abstractmethod</span></code> only
+affects subclasses derived using regular inheritance; “virtual
+subclasses” registered with the <code class="docutils literal notranslate"><span class="pre">register()</span></code> method are not affected.</p>
+<p><strong>Implementation:</strong> The <code class="docutils literal notranslate"><span class="pre">&#64;abstractmethod</span></code> decorator sets the
+function attribute <code class="docutils literal notranslate"><span class="pre">__isabstractmethod__</span></code> to the value <code class="docutils literal notranslate"><span class="pre">True</span></code>.
+The <code class="docutils literal notranslate"><span class="pre">ABCMeta.__new__</span></code> method computes the type attribute
+<code class="docutils literal notranslate"><span class="pre">__abstractmethods__</span></code> as the set of all method names that have an
+<code class="docutils literal notranslate"><span class="pre">__isabstractmethod__</span></code> attribute whose value is true.  It does this
+by combining the <code class="docutils literal notranslate"><span class="pre">__abstractmethods__</span></code> attributes of the base
+classes, adding the names of all methods in the new class dict that
+have a true <code class="docutils literal notranslate"><span class="pre">__isabstractmethod__</span></code> attribute, and removing the names
+of all methods in the new class dict that don’t have a true
+<code class="docutils literal notranslate"><span class="pre">__isabstractmethod__</span></code> attribute.  If the resulting
+<code class="docutils literal notranslate"><span class="pre">__abstractmethods__</span></code> set is non-empty, the class is considered
+abstract, and attempts to instantiate it will raise <code class="docutils literal notranslate"><span class="pre">TypeError</span></code>.
+(If this were implemented in CPython, an internal flag
+<code class="docutils literal notranslate"><span class="pre">Py_TPFLAGS_ABSTRACT</span></code> could be used to speed up this check <a class="footnote-reference brackets" href="#id18" id="id5">6</a>.)</p>
+<p><strong>Discussion:</strong> Unlike Java’s abstract methods or C++’s pure abstract
+methods, abstract methods as defined here may have an implementation.
+This implementation can be called via the <code class="docutils literal notranslate"><span class="pre">super</span></code> mechanism from the
+class that overrides it.  This could be useful as an end-point for a
+super-call in framework using cooperative multiple-inheritance <a class="footnote-reference brackets" href="#id19" id="id6">7</a>,
+<a class="footnote-reference brackets" href="#id20" id="id7">8</a>.</p>
+<p>A second decorator, <code class="docutils literal notranslate"><span class="pre">&#64;abstractproperty</span></code>, is defined in order to
+define abstract data attributes.  Its implementation is a subclass of
+the built-in <code class="docutils literal notranslate"><span class="pre">property</span></code> class that adds an <code class="docutils literal notranslate"><span class="pre">__isabstractmethod__</span></code>
+attribute:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">abstractproperty</span><span class="p">(</span><span class="nb">property</span><span class="p">):</span>
+    <span class="n">__isabstractmethod__</span> <span class="o">=</span> <span class="kc">True</span>
+</pre></div>
+</div>
+<p>It can be used in two ways:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">C</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
+
+    <span class="c1"># A read-only property:</span>
+
+    <span class="nd">@abstractproperty</span>
+    <span class="k">def</span> <span class="nf">readonly</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__x</span>
+
+    <span class="c1"># A read-write property (cannot use decorator syntax):</span>
+
+    <span class="k">def</span> <span class="nf">getx</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__x</span>
+    <span class="k">def</span> <span class="nf">setx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__x</span> <span class="o">=</span> <span class="n">value</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">abstractproperty</span><span class="p">(</span><span class="n">getx</span><span class="p">,</span> <span class="n">setx</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Similar to abstract methods, a subclass inheriting an abstract
+property (declared using either the decorator syntax or the longer
+form) cannot be instantiated unless it overrides that abstract
+property with a concrete property.</p>
+</div>
+<div class="section" id="abcs-for-containers-and-iterators">
+<h3><a class="toc-backref" href="#id35">ABCs for Containers and Iterators</a><a class="headerlink" href="#abcs-for-containers-and-iterators" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">collections</span></code> module will define ABCs necessary and sufficient
+to work with sets, mappings, sequences, and some helper types such as
+iterators and dictionary views.  All ABCs have the above-mentioned
+<code class="docutils literal notranslate"><span class="pre">ABCMeta</span></code> as their metaclass.</p>
+<p>The ABCs provide implementations of their abstract methods that are
+technically valid but fairly useless; e.g. <code class="docutils literal notranslate"><span class="pre">__hash__</span></code> returns 0, and
+<code class="docutils literal notranslate"><span class="pre">__iter__</span></code> returns an empty iterator.  In general, the abstract
+methods represent the behavior of an empty container of the indicated
+type.</p>
+<p>Some ABCs also provide concrete (i.e. non-abstract) methods; for
+example, the <code class="docutils literal notranslate"><span class="pre">Iterator</span></code> class has an <code class="docutils literal notranslate"><span class="pre">__iter__</span></code> method returning
+itself, fulfilling an important invariant of iterators (which in
+Python 2 has to be implemented anew by each iterator class).  These
+ABCs can be considered “mix-in” classes.</p>
+<p>No ABCs defined in the PEP override <code class="docutils literal notranslate"><span class="pre">__init__</span></code>, <code class="docutils literal notranslate"><span class="pre">__new__</span></code>,
+<code class="docutils literal notranslate"><span class="pre">__str__</span></code> or <code class="docutils literal notranslate"><span class="pre">__repr__</span></code>.  Defining a standard constructor
+signature would unnecessarily constrain custom container types, for
+example Patricia trees or gdbm files.  Defining a specific string
+representation for a collection is similarly left up to individual
+implementations.</p>
+<p><strong>Note:</strong> There are no ABCs for ordering operations (<code class="docutils literal notranslate"><span class="pre">__lt__</span></code>,
+<code class="docutils literal notranslate"><span class="pre">__le__</span></code>, <code class="docutils literal notranslate"><span class="pre">__ge__</span></code>, <code class="docutils literal notranslate"><span class="pre">__gt__</span></code>).  Defining these in a base class
+(abstract or not) runs into problems with the accepted type for the
+second operand.  For example, if class <code class="docutils literal notranslate"><span class="pre">Ordering</span></code> defined
+<code class="docutils literal notranslate"><span class="pre">__lt__</span></code>, one would assume that for any <code class="docutils literal notranslate"><span class="pre">Ordering</span></code> instances <code class="docutils literal notranslate"><span class="pre">x</span></code>
+and <code class="docutils literal notranslate"><span class="pre">y</span></code>, <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">&lt;</span> <span class="pre">y</span></code> would be defined (even if it just defines a
+partial ordering).  But this cannot be the case: If both <code class="docutils literal notranslate"><span class="pre">list</span></code> and
+<code class="docutils literal notranslate"><span class="pre">str</span></code> derived from <code class="docutils literal notranslate"><span class="pre">Ordering</span></code>, this would imply that <code class="docutils literal notranslate"><span class="pre">[1,</span> <span class="pre">2]</span> <span class="pre">&lt;</span>
+<span class="pre">(1,</span> <span class="pre">2)</span></code> should be defined (and presumably return False), while in
+fact (in Python 3000!)  such “mixed-mode comparisons” operations are
+explicitly forbidden and raise <code class="docutils literal notranslate"><span class="pre">TypeError</span></code>.  See PEP 3100 and <a class="footnote-reference brackets" href="#id26" id="id8">14</a>
+for more information.  (This is a special case of a more general issue
+with operations that take another argument of the same type).</p>
+<div class="section" id="one-trick-ponies">
+<h4><a class="toc-backref" href="#id36">One Trick Ponies</a><a class="headerlink" href="#one-trick-ponies" title="Permalink to this headline">¶</a></h4>
+<p>These abstract classes represent single methods like <code class="docutils literal notranslate"><span class="pre">__iter__</span></code> or
+<code class="docutils literal notranslate"><span class="pre">__len__</span></code>.</p>
+<dl>
+<dt><code class="docutils literal notranslate"><span class="pre">Hashable</span></code></dt><dd><p>The base class for classes defining <code class="docutils literal notranslate"><span class="pre">__hash__</span></code>.  The
+<code class="docutils literal notranslate"><span class="pre">__hash__</span></code> method should return an integer.  The abstract
+<code class="docutils literal notranslate"><span class="pre">__hash__</span></code> method always returns 0, which is a valid (albeit
+inefficient) implementation.  <strong>Invariant:</strong> If classes <code class="docutils literal notranslate"><span class="pre">C1</span></code> and
+<code class="docutils literal notranslate"><span class="pre">C2</span></code> both derive from <code class="docutils literal notranslate"><span class="pre">Hashable</span></code>, the condition <code class="docutils literal notranslate"><span class="pre">o1</span> <span class="pre">==</span> <span class="pre">o2</span></code>
+must imply <code class="docutils literal notranslate"><span class="pre">hash(o1)</span> <span class="pre">==</span> <span class="pre">hash(o2)</span></code> for all instances <code class="docutils literal notranslate"><span class="pre">o1</span></code> of
+<code class="docutils literal notranslate"><span class="pre">C1</span></code> and all instances <code class="docutils literal notranslate"><span class="pre">o2</span></code> of <code class="docutils literal notranslate"><span class="pre">C2</span></code>.  In other words, two
+objects should never compare equal if they have different hash
+values.</p>
+<p>Another constraint is that hashable objects, once created, should
+never change their value (as compared by <code class="docutils literal notranslate"><span class="pre">==</span></code>) or their hash
+value.  If a class cannot guarantee this, it should not derive
+from <code class="docutils literal notranslate"><span class="pre">Hashable</span></code>; if it cannot guarantee this for certain
+instances, <code class="docutils literal notranslate"><span class="pre">__hash__</span></code> for those instances should raise a
+<code class="docutils literal notranslate"><span class="pre">TypeError</span></code> exception.</p>
+<p><strong>Note:</strong> being an instance of this class does not imply that an
+object is immutable; e.g. a tuple containing a list as a member is
+not immutable; its <code class="docutils literal notranslate"><span class="pre">__hash__</span></code> method raises <code class="docutils literal notranslate"><span class="pre">TypeError</span></code>.
+(This is because it recursively tries to compute the hash of each
+member; if a member is unhashable it raises <code class="docutils literal notranslate"><span class="pre">TypeError</span></code>.)</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">Iterable</span></code></dt><dd>The base class for classes defining <code class="docutils literal notranslate"><span class="pre">__iter__</span></code>.  The
+<code class="docutils literal notranslate"><span class="pre">__iter__</span></code> method should always return an instance of
+<code class="docutils literal notranslate"><span class="pre">Iterator</span></code> (see below).  The abstract <code class="docutils literal notranslate"><span class="pre">__iter__</span></code> method
+returns an empty iterator.</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">Iterator</span></code></dt><dd>The base class for classes defining <code class="docutils literal notranslate"><span class="pre">__next__</span></code>.  This derives
+from <code class="docutils literal notranslate"><span class="pre">Iterable</span></code>.  The abstract <code class="docutils literal notranslate"><span class="pre">__next__</span></code> method raises
+<code class="docutils literal notranslate"><span class="pre">StopIteration</span></code>.  The concrete <code class="docutils literal notranslate"><span class="pre">__iter__</span></code> method returns
+<code class="docutils literal notranslate"><span class="pre">self</span></code>.  Note the distinction between <code class="docutils literal notranslate"><span class="pre">Iterable</span></code> and
+<code class="docutils literal notranslate"><span class="pre">Iterator</span></code>: an <code class="docutils literal notranslate"><span class="pre">Iterable</span></code> can be iterated over, i.e. supports
+the <code class="docutils literal notranslate"><span class="pre">__iter__</span></code> methods; an <code class="docutils literal notranslate"><span class="pre">Iterator</span></code> is what the built-in
+function <code class="docutils literal notranslate"><span class="pre">iter()</span></code> returns, i.e. supports the <code class="docutils literal notranslate"><span class="pre">__next__</span></code>
+method.</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">Sized</span></code></dt><dd>The base class for classes defining <code class="docutils literal notranslate"><span class="pre">__len__</span></code>.  The <code class="docutils literal notranslate"><span class="pre">__len__</span></code>
+method should return an <code class="docutils literal notranslate"><span class="pre">Integer</span></code> (see “Numbers” below) &gt;= 0.
+The abstract <code class="docutils literal notranslate"><span class="pre">__len__</span></code> method returns 0.  <strong>Invariant:</strong> If a
+class <code class="docutils literal notranslate"><span class="pre">C</span></code> derives from <code class="docutils literal notranslate"><span class="pre">Sized</span></code> as well as from <code class="docutils literal notranslate"><span class="pre">Iterable</span></code>,
+the invariant <code class="docutils literal notranslate"><span class="pre">sum(1</span> <span class="pre">for</span> <span class="pre">x</span> <span class="pre">in</span> <span class="pre">c)</span> <span class="pre">==</span> <span class="pre">len(c)</span></code> should hold for any
+instance <code class="docutils literal notranslate"><span class="pre">c</span></code> of <code class="docutils literal notranslate"><span class="pre">C</span></code>.</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">Container</span></code></dt><dd>The base class for classes defining <code class="docutils literal notranslate"><span class="pre">__contains__</span></code>.  The
+<code class="docutils literal notranslate"><span class="pre">__contains__</span></code> method should return a <code class="docutils literal notranslate"><span class="pre">bool</span></code>.  The abstract
+<code class="docutils literal notranslate"><span class="pre">__contains__</span></code> method returns <code class="docutils literal notranslate"><span class="pre">False</span></code>.  <strong>Invariant:</strong> If a
+class <code class="docutils literal notranslate"><span class="pre">C</span></code> derives from <code class="docutils literal notranslate"><span class="pre">Container</span></code> as well as from
+<code class="docutils literal notranslate"><span class="pre">Iterable</span></code>, then <code class="docutils literal notranslate"><span class="pre">(x</span> <span class="pre">in</span> <span class="pre">c</span> <span class="pre">for</span> <span class="pre">x</span> <span class="pre">in</span> <span class="pre">c)</span></code> should be a generator
+yielding only True values for any instance <code class="docutils literal notranslate"><span class="pre">c</span></code> of <code class="docutils literal notranslate"><span class="pre">C</span></code>.</dd>
+</dl>
+<p><strong>Open issues:</strong> Conceivably, instead of using the ABCMeta metaclass,
+these classes could override <code class="docutils literal notranslate"><span class="pre">__instancecheck__</span></code> and
+<code class="docutils literal notranslate"><span class="pre">__subclasscheck__</span></code> to check for the presence of the applicable
+special method; for example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Sized</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mi">0</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="fm">__instancecheck__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s2">&quot;__len__&quot;</span><span class="p">)</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="fm">__subclasscheck__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">C</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="s2">&quot;__bases__&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="s2">&quot;__len__&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This has the advantage of not requiring explicit registration.
+However, the semantics are hard to get exactly right given the confusing
+semantics of instance attributes vs. class attributes, and that a
+class is an instance of its metaclass; the check for <code class="docutils literal notranslate"><span class="pre">__bases__</span></code> is
+only an approximation of the desired semantics.  <strong>Strawman:</strong> Let’s
+do it, but let’s arrange it in such a way that the registration API
+also works.</p>
+</div>
+<div class="section" id="sets">
+<h4><a class="toc-backref" href="#id37">Sets</a><a class="headerlink" href="#sets" title="Permalink to this headline">¶</a></h4>
+<p>These abstract classes represent read-only sets and mutable sets.  The
+most fundamental set operation is the membership test, written as <code class="docutils literal notranslate"><span class="pre">x</span>
+<span class="pre">in</span> <span class="pre">s</span></code> and implemented by <code class="docutils literal notranslate"><span class="pre">s.__contains__(x)</span></code>.  This operation is
+already defined by the <code class="docutils literal notranslate"><span class="pre">Container</span></code> class defined above.  Therefore,
+we define a set as a sized, iterable container for which certain
+invariants from mathematical set theory hold.</p>
+<p>The built-in type <code class="docutils literal notranslate"><span class="pre">set</span></code> derives from <code class="docutils literal notranslate"><span class="pre">MutableSet</span></code>.  The built-in
+type <code class="docutils literal notranslate"><span class="pre">frozenset</span></code> derives from <code class="docutils literal notranslate"><span class="pre">Set</span></code> and <code class="docutils literal notranslate"><span class="pre">Hashable</span></code>.</p>
+<dl>
+<dt><code class="docutils literal notranslate"><span class="pre">Set</span></code></dt><dd><p>This is a sized, iterable container, i.e., a subclass of
+<code class="docutils literal notranslate"><span class="pre">Sized</span></code>, <code class="docutils literal notranslate"><span class="pre">Iterable</span></code> and <code class="docutils literal notranslate"><span class="pre">Container</span></code>.  Not every subclass of
+those three classes is a set though!  Sets have the additional
+invariant that each element occurs only once (as can be determined
+by iteration), and in addition sets define concrete operators that
+implement the inequality operations as subclass/superclass tests.
+In general, the invariants for finite sets in mathematics
+hold. <a class="footnote-reference brackets" href="#id23" id="id9">11</a></p>
+<p>Sets with different implementations can be compared safely,
+(usually) efficiently and correctly using the mathematical
+definitions of the subclass/superclass operations for finite sets.
+The ordering operations have concrete implementations; subclasses
+may override these for speed but should maintain the semantics.
+Because <code class="docutils literal notranslate"><span class="pre">Set</span></code> derives from <code class="docutils literal notranslate"><span class="pre">Sized</span></code>, <code class="docutils literal notranslate"><span class="pre">__eq__</span></code> may take a
+shortcut and return <code class="docutils literal notranslate"><span class="pre">False</span></code> immediately if two sets of unequal
+length are compared.  Similarly, <code class="docutils literal notranslate"><span class="pre">__le__</span></code> may return <code class="docutils literal notranslate"><span class="pre">False</span></code>
+immediately if the first set has more members than the second set.
+Note that set inclusion implements only a partial ordering;
+e.g. <code class="docutils literal notranslate"><span class="pre">{1,</span> <span class="pre">2}</span></code> and <code class="docutils literal notranslate"><span class="pre">{1,</span> <span class="pre">3}</span></code> are not ordered (all three of
+<code class="docutils literal notranslate"><span class="pre">&lt;</span></code>, <code class="docutils literal notranslate"><span class="pre">==</span></code> and <code class="docutils literal notranslate"><span class="pre">&gt;</span></code> return <code class="docutils literal notranslate"><span class="pre">False</span></code> for these arguments).
+Sets cannot be ordered relative to mappings or sequences, but they
+can be compared to those for equality (and then they always
+compare unequal).</p>
+<p>This class also defines concrete operators to compute union,
+intersection, symmetric and asymmetric difference, respectively
+<code class="docutils literal notranslate"><span class="pre">__or__</span></code>, <code class="docutils literal notranslate"><span class="pre">__and__</span></code>, <code class="docutils literal notranslate"><span class="pre">__xor__</span></code> and <code class="docutils literal notranslate"><span class="pre">__sub__</span></code>.  These
+operators should return instances of <code class="docutils literal notranslate"><span class="pre">Set</span></code>.  The default
+implementations call the overridable class method
+<code class="docutils literal notranslate"><span class="pre">_from_iterable()</span></code> with an iterable argument.  This factory
+method’s default implementation returns a <code class="docutils literal notranslate"><span class="pre">frozenset</span></code> instance;
+it may be overridden to return another appropriate <code class="docutils literal notranslate"><span class="pre">Set</span></code>
+subclass.</p>
+<p>Finally, this class defines a concrete method <code class="docutils literal notranslate"><span class="pre">_hash</span></code> which
+computes the hash value from the elements.  Hashable subclasses of
+<code class="docutils literal notranslate"><span class="pre">Set</span></code> can implement <code class="docutils literal notranslate"><span class="pre">__hash__</span></code> by calling <code class="docutils literal notranslate"><span class="pre">_hash</span></code> or they
+can reimplement the same algorithm more efficiently; but the
+algorithm implemented should be the same.  Currently the algorithm
+is fully specified only by the source code <a class="footnote-reference brackets" href="#id27" id="id10">15</a>.</p>
+<p><strong>Note:</strong> the <code class="docutils literal notranslate"><span class="pre">issubset</span></code> and <code class="docutils literal notranslate"><span class="pre">issuperset</span></code> methods found on the
+set type in Python 2 are not supported, as these are mostly just
+aliases for <code class="docutils literal notranslate"><span class="pre">__le__</span></code> and <code class="docutils literal notranslate"><span class="pre">__ge__</span></code>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">MutableSet</span></code></dt><dd><p>This is a subclass of <code class="docutils literal notranslate"><span class="pre">Set</span></code> implementing additional operations
+to add and remove elements.  The supported methods have the
+semantics known from the <code class="docutils literal notranslate"><span class="pre">set</span></code> type in Python 2 (except for
+<code class="docutils literal notranslate"><span class="pre">discard</span></code>, which is modeled after Java):</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">.add(x)</span></code></dt><dd>Abstract method returning a <code class="docutils literal notranslate"><span class="pre">bool</span></code> that adds the element
+<code class="docutils literal notranslate"><span class="pre">x</span></code> if it isn’t already in the set.  It should return
+<code class="docutils literal notranslate"><span class="pre">True</span></code> if <code class="docutils literal notranslate"><span class="pre">x</span></code> was added, <code class="docutils literal notranslate"><span class="pre">False</span></code> if it was already
+there. The abstract implementation raises
+<code class="docutils literal notranslate"><span class="pre">NotImplementedError</span></code>.</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">.discard(x)</span></code></dt><dd>Abstract method returning a <code class="docutils literal notranslate"><span class="pre">bool</span></code> that removes the element
+<code class="docutils literal notranslate"><span class="pre">x</span></code> if present.  It should return <code class="docutils literal notranslate"><span class="pre">True</span></code> if the element
+was present and <code class="docutils literal notranslate"><span class="pre">False</span></code> if it wasn’t.  The abstract
+implementation raises <code class="docutils literal notranslate"><span class="pre">NotImplementedError</span></code>.</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">.pop()</span></code></dt><dd>Concrete method that removes and returns an arbitrary item.
+If the set is empty, it raises <code class="docutils literal notranslate"><span class="pre">KeyError</span></code>.  The default
+implementation removes the first item returned by the set’s
+iterator.</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">.toggle(x)</span></code></dt><dd>Concrete method returning a <code class="docutils literal notranslate"><span class="pre">bool</span></code> that adds x to the set if
+it wasn’t there, but removes it if it was there.  It should
+return <code class="docutils literal notranslate"><span class="pre">True</span></code> if <code class="docutils literal notranslate"><span class="pre">x</span></code> was added, <code class="docutils literal notranslate"><span class="pre">False</span></code> if it was
+removed.</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">.clear()</span></code></dt><dd>Concrete method that empties the set.  The default
+implementation repeatedly calls <code class="docutils literal notranslate"><span class="pre">self.pop()</span></code> until
+<code class="docutils literal notranslate"><span class="pre">KeyError</span></code> is caught.  (<strong>Note:</strong> this is likely much slower
+than simply creating a new set, even if an implementation
+overrides it with a faster approach; but in some cases object
+identity is important.)</dd>
+</dl>
+<p>This also supports the in-place mutating operations <code class="docutils literal notranslate"><span class="pre">|=</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&amp;=</span></code>, <code class="docutils literal notranslate"><span class="pre">^=</span></code>, <code class="docutils literal notranslate"><span class="pre">-=</span></code>.  These are concrete methods whose right
+operand can be an arbitrary <code class="docutils literal notranslate"><span class="pre">Iterable</span></code>, except for <code class="docutils literal notranslate"><span class="pre">&amp;=</span></code>, whose
+right operand must be a <code class="docutils literal notranslate"><span class="pre">Container</span></code>.  This ABC does not provide
+the named methods present on the built-in concrete <code class="docutils literal notranslate"><span class="pre">set</span></code> type
+that perform (almost) the same operations.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="mappings">
+<h4><a class="toc-backref" href="#id38">Mappings</a><a class="headerlink" href="#mappings" title="Permalink to this headline">¶</a></h4>
+<p>These abstract classes represent read-only mappings and mutable
+mappings.  The <code class="docutils literal notranslate"><span class="pre">Mapping</span></code> class represents the most common read-only
+mapping API.</p>
+<p>The built-in type <code class="docutils literal notranslate"><span class="pre">dict</span></code> derives from <code class="docutils literal notranslate"><span class="pre">MutableMapping</span></code>.</p>
+<dl>
+<dt><code class="docutils literal notranslate"><span class="pre">Mapping</span></code></dt><dd><p>A subclass of <code class="docutils literal notranslate"><span class="pre">Container</span></code>, <code class="docutils literal notranslate"><span class="pre">Iterable</span></code> and <code class="docutils literal notranslate"><span class="pre">Sized</span></code>.  The keys
+of a mapping naturally form a set.  The (key, value) pairs (which
+must be tuples) are also referred to as items.  The items also
+form a set.  Methods:</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">.__getitem__(key)</span></code></dt><dd>Abstract method that returns the value corresponding to
+<code class="docutils literal notranslate"><span class="pre">key</span></code>, or raises <code class="docutils literal notranslate"><span class="pre">KeyError</span></code>.  The implementation always
+raises <code class="docutils literal notranslate"><span class="pre">KeyError</span></code>.</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">.get(key,</span> <span class="pre">default=None)</span></code></dt><dd>Concrete method returning <code class="docutils literal notranslate"><span class="pre">self[key]</span></code> if this does not raise
+<code class="docutils literal notranslate"><span class="pre">KeyError</span></code>, and the <code class="docutils literal notranslate"><span class="pre">default</span></code> value if it does.</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">.__contains__(key)</span></code></dt><dd>Concrete method returning <code class="docutils literal notranslate"><span class="pre">True</span></code> if <code class="docutils literal notranslate"><span class="pre">self[key]</span></code> does not
+raise <code class="docutils literal notranslate"><span class="pre">KeyError</span></code>, and <code class="docutils literal notranslate"><span class="pre">False</span></code> if it does.</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">.__len__()</span></code></dt><dd>Abstract method returning the number of distinct keys (i.e.,
+the length of the key set).</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">.__iter__()</span></code></dt><dd>Abstract method returning each key in the key set exactly once.</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">.keys()</span></code></dt><dd>Concrete method returning the key set as a <code class="docutils literal notranslate"><span class="pre">Set</span></code>.  The
+default concrete implementation returns a “view” on the key
+set (meaning if the underlying mapping is modified, the view’s
+value changes correspondingly); subclasses are not required to
+return a view but they should return a <code class="docutils literal notranslate"><span class="pre">Set</span></code>.</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">.items()</span></code></dt><dd>Concrete method returning the items as a <code class="docutils literal notranslate"><span class="pre">Set</span></code>.  The default
+concrete implementation returns a “view” on the item set;
+subclasses are not required to return a view but they should
+return a <code class="docutils literal notranslate"><span class="pre">Set</span></code>.</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">.values()</span></code></dt><dd>Concrete method returning the values as a sized, iterable
+container (not a set!).  The default concrete implementation
+returns a “view” on the values of the mapping; subclasses are
+not required to return a view but they should return a sized,
+iterable container.</dd>
+</dl>
+<p>The following invariants should hold for any mapping <code class="docutils literal notranslate"><span class="pre">m</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">values</span><span class="p">())</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">items</span><span class="p">())</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="p">[</span><span class="n">value</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span> <span class="o">==</span> <span class="p">[</span><span class="n">m</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
+<span class="p">[</span><span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span> <span class="o">==</span> <span class="p">[(</span><span class="n">key</span><span class="p">,</span> <span class="n">m</span><span class="p">[</span><span class="n">key</span><span class="p">])</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
+</pre></div>
+</div>
+<p>i.e. iterating over the items, keys and values should return
+results in the same order.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">MutableMapping</span></code></dt><dd>A subclass of <code class="docutils literal notranslate"><span class="pre">Mapping</span></code> that also implements some standard
+mutating methods.  Abstract methods include <code class="docutils literal notranslate"><span class="pre">__setitem__</span></code>,
+<code class="docutils literal notranslate"><span class="pre">__delitem__</span></code>.  Concrete methods include <code class="docutils literal notranslate"><span class="pre">pop</span></code>, <code class="docutils literal notranslate"><span class="pre">popitem</span></code>,
+<code class="docutils literal notranslate"><span class="pre">clear</span></code>, <code class="docutils literal notranslate"><span class="pre">update</span></code>.  <strong>Note:</strong> <code class="docutils literal notranslate"><span class="pre">setdefault</span></code> is <em>not</em> included.
+<strong>Open issues:</strong> Write out the specs for the methods.</dd>
+</dl>
+</div>
+<div class="section" id="sequences">
+<h4><a class="toc-backref" href="#id39">Sequences</a><a class="headerlink" href="#sequences" title="Permalink to this headline">¶</a></h4>
+<p>These abstract classes represent read-only sequences and mutable
+sequences.</p>
+<p>The built-in <code class="docutils literal notranslate"><span class="pre">list</span></code> and <code class="docutils literal notranslate"><span class="pre">bytes</span></code> types derive from
+<code class="docutils literal notranslate"><span class="pre">MutableSequence</span></code>.  The built-in <code class="docutils literal notranslate"><span class="pre">tuple</span></code> and <code class="docutils literal notranslate"><span class="pre">str</span></code> types derive
+from <code class="docutils literal notranslate"><span class="pre">Sequence</span></code> and <code class="docutils literal notranslate"><span class="pre">Hashable</span></code>.</p>
+<dl>
+<dt><code class="docutils literal notranslate"><span class="pre">Sequence</span></code></dt><dd><p>A subclass of <code class="docutils literal notranslate"><span class="pre">Iterable</span></code>, <code class="docutils literal notranslate"><span class="pre">Sized</span></code>, <code class="docutils literal notranslate"><span class="pre">Container</span></code>.  It
+defines a new abstract method <code class="docutils literal notranslate"><span class="pre">__getitem__</span></code> that has a somewhat
+complicated signature: when called with an integer, it returns an
+element of the sequence or raises <code class="docutils literal notranslate"><span class="pre">IndexError</span></code>; when called with
+a <code class="docutils literal notranslate"><span class="pre">slice</span></code> object, it returns another <code class="docutils literal notranslate"><span class="pre">Sequence</span></code>.  The concrete
+<code class="docutils literal notranslate"><span class="pre">__iter__</span></code> method iterates over the elements using
+<code class="docutils literal notranslate"><span class="pre">__getitem__</span></code> with integer arguments 0, 1, and so on, until
+<code class="docutils literal notranslate"><span class="pre">IndexError</span></code> is raised.  The length should be equal to the
+number of values returned by the iterator.</p>
+<p><strong>Open issues:</strong> Other candidate methods, which can all have
+default concrete implementations that only depend on <code class="docutils literal notranslate"><span class="pre">__len__</span></code>
+and <code class="docutils literal notranslate"><span class="pre">__getitem__</span></code> with an integer argument: <code class="docutils literal notranslate"><span class="pre">__reversed__</span></code>,
+<code class="docutils literal notranslate"><span class="pre">index</span></code>, <code class="docutils literal notranslate"><span class="pre">count</span></code>, <code class="docutils literal notranslate"><span class="pre">__add__</span></code>, <code class="docutils literal notranslate"><span class="pre">__mul__</span></code>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">MutableSequence</span></code></dt><dd>A subclass of <code class="docutils literal notranslate"><span class="pre">Sequence</span></code> adding some standard mutating methods.
+Abstract mutating methods: <code class="docutils literal notranslate"><span class="pre">__setitem__</span></code> (for integer indices as
+well as slices), <code class="docutils literal notranslate"><span class="pre">__delitem__</span></code> (ditto), <code class="docutils literal notranslate"><span class="pre">insert</span></code>.  Concrete
+mutating methods: <code class="docutils literal notranslate"><span class="pre">append</span></code>, <code class="docutils literal notranslate"><span class="pre">reverse</span></code>, <code class="docutils literal notranslate"><span class="pre">extend</span></code>, <code class="docutils literal notranslate"><span class="pre">pop</span></code>,
+<code class="docutils literal notranslate"><span class="pre">remove</span></code>.  Concrete mutating operators: <code class="docutils literal notranslate"><span class="pre">+=</span></code>, <code class="docutils literal notranslate"><span class="pre">*=</span></code> (these
+mutate the object in place).  <strong>Note:</strong> this does not define
+<code class="docutils literal notranslate"><span class="pre">sort()</span></code> – that is only required to exist on genuine <code class="docutils literal notranslate"><span class="pre">list</span></code>
+instances.</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="strings">
+<h3><a class="toc-backref" href="#id40">Strings</a><a class="headerlink" href="#strings" title="Permalink to this headline">¶</a></h3>
+<p>Python 3000 will likely have at least two built-in string types: byte
+strings (<code class="docutils literal notranslate"><span class="pre">bytes</span></code>), deriving from <code class="docutils literal notranslate"><span class="pre">MutableSequence</span></code>, and (Unicode)
+character strings (<code class="docutils literal notranslate"><span class="pre">str</span></code>), deriving from <code class="docutils literal notranslate"><span class="pre">Sequence</span></code> and
+<code class="docutils literal notranslate"><span class="pre">Hashable</span></code>.</p>
+<p><strong>Open issues:</strong> define the base interfaces for these so alternative
+implementations and subclasses know what they are in for.  This may be
+the subject of a new PEP or PEPs (PEP 358 should be co-opted for the
+<code class="docutils literal notranslate"><span class="pre">bytes</span></code> type).</p>
+</div>
+</div>
+<div class="section" id="abcs-vs-alternatives">
+<h2><a class="toc-backref" href="#id41">ABCs vs. Alternatives</a><a class="headerlink" href="#abcs-vs-alternatives" title="Permalink to this headline">¶</a></h2>
+<p>In this section I will attempt to compare and contrast ABCs to other
+approaches that have been proposed.</p>
+<div class="section" id="abcs-vs-duck-typing">
+<h3><a class="toc-backref" href="#id42">ABCs vs. Duck Typing</a><a class="headerlink" href="#abcs-vs-duck-typing" title="Permalink to this headline">¶</a></h3>
+<p>Does the introduction of ABCs mean the end of Duck Typing?  I don’t
+think so.  Python will not require that a class derives from
+<code class="docutils literal notranslate"><span class="pre">BasicMapping</span></code> or <code class="docutils literal notranslate"><span class="pre">Sequence</span></code> when it defines a <code class="docutils literal notranslate"><span class="pre">__getitem__</span></code>
+method, nor will the <code class="docutils literal notranslate"><span class="pre">x[y]</span></code> syntax require that <code class="docutils literal notranslate"><span class="pre">x</span></code> is an instance
+of either ABC.  You will still be able to assign any “file-like”
+object to <code class="docutils literal notranslate"><span class="pre">sys.stdout</span></code>, as long as it has a <code class="docutils literal notranslate"><span class="pre">write</span></code> method.</p>
+<p>Of course, there will be some carrots to encourage users to derive
+from the appropriate base classes; these vary from default
+implementations for certain functionality to an improved ability to
+distinguish between mappings and sequences.  But there are no sticks.
+If <code class="docutils literal notranslate"><span class="pre">hasattr(x,</span> <span class="pre">&quot;__len__&quot;)</span></code> works for you, great!  ABCs are intended to
+solve problems that don’t have a good solution at all in Python 2,
+such as distinguishing between mappings and sequences.</p>
+</div>
+<div class="section" id="abcs-vs-generic-functions">
+<h3><a class="toc-backref" href="#id43">ABCs vs. Generic Functions</a><a class="headerlink" href="#abcs-vs-generic-functions" title="Permalink to this headline">¶</a></h3>
+<p>ABCs are compatible with Generic Functions (GFs).  For example, my own
+Generic Functions implementation <a class="footnote-reference brackets" href="#id16" id="id11">4</a> uses the classes (types) of the
+arguments as the dispatch key, allowing derived classes to override
+base classes.  Since (from Python’s perspective) ABCs are quite
+ordinary classes, using an ABC in the default implementation for a GF
+can be quite appropriate.  For example, if I have an overloaded
+<code class="docutils literal notranslate"><span class="pre">prettyprint</span></code> function, it would make total sense to define
+pretty-printing of sets like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@prettyprint</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">Set</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">pp_set</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="k">return</span> <span class="s2">&quot;{&quot;</span> <span class="o">+</span> <span class="o">...</span> <span class="o">+</span> <span class="s2">&quot;}&quot;</span>  <span class="c1"># Details left as an exercise</span>
+</pre></div>
+</div>
+<p>and implementations for specific subclasses of Set could be added
+easily.</p>
+<p>I believe ABCs also won’t present any problems for RuleDispatch,
+Phillip Eby’s GF implementation in PEAK <a class="footnote-reference brackets" href="#id17" id="id12">5</a>.</p>
+<p>Of course, GF proponents might claim that GFs (and concrete, or
+implementation, classes) are all you need.  But even they will not
+deny the usefulness of inheritance; and one can easily consider the
+ABCs proposed in this PEP as optional implementation base classes;
+there is no requirement that all user-defined mappings derive from
+<code class="docutils literal notranslate"><span class="pre">BasicMapping</span></code>.</p>
+</div>
+<div class="section" id="abcs-vs-interfaces">
+<h3><a class="toc-backref" href="#id44">ABCs vs. Interfaces</a><a class="headerlink" href="#abcs-vs-interfaces" title="Permalink to this headline">¶</a></h3>
+<p>ABCs are not intrinsically incompatible with Interfaces, but there is
+considerable overlap.  For now, I’ll leave it to proponents of
+Interfaces to explain why Interfaces are better.  I expect that much
+of the work that went into e.g. defining the various shades of
+“mapping-ness” and the nomenclature could easily be adapted for a
+proposal to use Interfaces instead of ABCs.</p>
+<p>“Interfaces” in this context refers to a set of proposals for
+additional metadata elements attached to a class which are not part of
+the regular class hierarchy, but do allow for certain types of
+inheritance testing.</p>
+<p>Such metadata would be designed, at least in some proposals, so as to
+be easily mutable by an application, allowing application writers to
+override the normal classification of an object.</p>
+<p>The drawback to this idea of attaching mutable metadata to a class is
+that classes are shared state, and mutating them may lead to conflicts
+of intent.  Additionally, the need to override the classification of
+an object can be done more cleanly using generic functions: In the
+simplest case, one can define a “category membership” generic function
+that simply returns False in the base implementation, and then provide
+overrides that return True for any classes of interest.</p>
+</div>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id45">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id13"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>An Introduction to ABC’s, by Talin
+(<a class="reference external" href="https://mail.python.org/pipermail/python-3000/2007-April/006614.html">https://mail.python.org/pipermail/python-3000/2007-April/006614.html</a>)</dd>
+<dt class="label" id="id14"><span class="brackets">2</span></dt>
+<dd>Incomplete implementation prototype, by GvR
+(<a class="reference external" href="http://svn.python.org/view/sandbox/trunk/abc/">http://svn.python.org/view/sandbox/trunk/abc/</a>)</dd>
+<dt class="label" id="id15"><span class="brackets">3</span></dt>
+<dd>Possible Python 3K Class Tree?, wiki page created by Bill Janssen
+(<a class="reference external" href="http://wiki.python.org/moin/AbstractBaseClasses">http://wiki.python.org/moin/AbstractBaseClasses</a>)</dd>
+<dt class="label" id="id16"><span class="brackets"><a class="fn-backref" href="#id11">4</a></span></dt>
+<dd>Generic Functions implementation, by GvR
+(<a class="reference external" href="http://svn.python.org/view/sandbox/trunk/overload/">http://svn.python.org/view/sandbox/trunk/overload/</a>)</dd>
+<dt class="label" id="id17"><span class="brackets"><a class="fn-backref" href="#id12">5</a></span></dt>
+<dd>Charming Python: Scaling a new PEAK, by David Mertz
+(<a class="reference external" href="http://www-128.ibm.com/developerworks/library/l-cppeak2/">http://www-128.ibm.com/developerworks/library/l-cppeak2/</a>)</dd>
+<dt class="label" id="id18"><span class="brackets"><a class="fn-backref" href="#id5">6</a></span></dt>
+<dd>Implementation of &#64;abstractmethod
+(<a class="reference external" href="https://bugs.python.org/issue1706989">https://bugs.python.org/issue1706989</a>)</dd>
+<dt class="label" id="id19"><span class="brackets"><a class="fn-backref" href="#id6">7</a></span></dt>
+<dd>Unifying types and classes in Python 2.2, by GvR
+(<a class="reference external" href="http://www.python.org/download/releases/2.2.3/descrintro/">http://www.python.org/download/releases/2.2.3/descrintro/</a>)</dd>
+<dt class="label" id="id20"><span class="brackets"><a class="fn-backref" href="#id7">8</a></span></dt>
+<dd>Putting Metaclasses to Work: A New Dimension in Object-Oriented
+Programming, by Ira R. Forman and Scott H. Danforth
+(<a class="reference external" href="http://www.amazon.com/gp/product/0201433052">http://www.amazon.com/gp/product/0201433052</a>)</dd>
+<dt class="label" id="id21"><span class="brackets">9</span></dt>
+<dd>Partial order, in Wikipedia
+(<a class="reference external" href="http://en.wikipedia.org/wiki/Partial_order">http://en.wikipedia.org/wiki/Partial_order</a>)</dd>
+<dt class="label" id="id22"><span class="brackets">10</span></dt>
+<dd>Total order, in Wikipedia
+(<a class="reference external" href="http://en.wikipedia.org/wiki/Total_order">http://en.wikipedia.org/wiki/Total_order</a>)</dd>
+<dt class="label" id="id23"><span class="brackets"><a class="fn-backref" href="#id9">11</a></span></dt>
+<dd>Finite set, in Wikipedia
+(<a class="reference external" href="http://en.wikipedia.org/wiki/Finite_set">http://en.wikipedia.org/wiki/Finite_set</a>)</dd>
+<dt class="label" id="id24"><span class="brackets"><a class="fn-backref" href="#id3">12</a></span></dt>
+<dd>Make isinstance/issubclass overloadable
+(<a class="reference external" href="https://bugs.python.org/issue1708353">https://bugs.python.org/issue1708353</a>)</dd>
+<dt class="label" id="id25"><span class="brackets"><a class="fn-backref" href="#id4">13</a></span></dt>
+<dd>ABCMeta sample implementation
+(<a class="reference external" href="http://svn.python.org/view/sandbox/trunk/abc/xyz.py">http://svn.python.org/view/sandbox/trunk/abc/xyz.py</a>)</dd>
+<dt class="label" id="id26"><span class="brackets"><a class="fn-backref" href="#id8">14</a></span></dt>
+<dd>python-dev email (“Comparing heterogeneous types”)
+<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2004-June/045111.html">https://mail.python.org/pipermail/python-dev/2004-June/045111.html</a></dd>
+<dt class="label" id="id27"><span class="brackets"><a class="fn-backref" href="#id10">15</a></span></dt>
+<dd>Function <code class="docutils literal notranslate"><span class="pre">frozenset_hash()</span></code> in Object/setobject.c
+(<a class="reference external" href="http://svn.python.org/view/python/trunk/Objects/setobject.c">http://svn.python.org/view/python/trunk/Objects/setobject.c</a>)</dd>
+<dt class="label" id="id28"><span class="brackets"><a class="fn-backref" href="#id2">16</a></span></dt>
+<dd>Multiple interpreters in mod_python
+(<a class="reference external" href="http://www.modpython.org/live/current/doc-html/pyapi-interps.html">http://www.modpython.org/live/current/doc-html/pyapi-interps.html</a>)</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id46">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-3119.txt">https://github.com/python/peps/blob/master/pep-3119.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-3119.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-3118.html">PEP 3118</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-3120.html">PEP 3120</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 3119 – Introducing Abstract Base Classes</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a><ul>
+<li><a class="reference internal" href="#acknowledgements">Acknowledgements</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#overloading-isinstance-and-issubclass">Overloading <code class="docutils literal notranslate"><span class="pre">isinstance()</span></code> and <code class="docutils literal notranslate"><span class="pre">issubclass()</span></code></a></li>
+<li><a class="reference internal" href="#the-abc-module-an-abc-support-framework">The <code class="docutils literal notranslate"><span class="pre">abc</span></code> Module: an ABC Support Framework</a></li>
+<li><a class="reference internal" href="#abcs-for-containers-and-iterators">ABCs for Containers and Iterators</a><ul>
+<li><a class="reference internal" href="#one-trick-ponies">One Trick Ponies</a></li>
+<li><a class="reference internal" href="#sets">Sets</a></li>
+<li><a class="reference internal" href="#mappings">Mappings</a></li>
+<li><a class="reference internal" href="#sequences">Sequences</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#strings">Strings</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#abcs-vs-alternatives">ABCs vs. Alternatives</a><ul>
+<li><a class="reference internal" href="#abcs-vs-duck-typing">ABCs vs. Duck Typing</a></li>
+<li><a class="reference internal" href="#abcs-vs-generic-functions">ABCs vs. Generic Functions</a></li>
+<li><a class="reference internal" href="#abcs-vs-interfaces">ABCs vs. Interfaces</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

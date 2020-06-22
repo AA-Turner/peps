@@ -1,0 +1,584 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 510 – Specialize functions with guards &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 511 – API for code transformers" href="pep-0511.html" />
+    <link rel="prev" title="PEP 509 – Add a private version to dict" href="pep-0509.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 510 – Specialize functions with guards</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-510-specialize-functions-with-guards">
+<h1 class="page-title">PEP 510 – Specialize functions with guards<a class="headerlink" href="#pep-510-specialize-functions-with-guards" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">510</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Specialize functions with guards</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Victor Stinner &lt;vstinner&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Rejected</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">4-January-2016</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.6</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#rejection-notice" id="id2">Rejection Notice</a></li>
+<li><a class="reference internal" href="#abstract" id="id3">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id4">Rationale</a><ul>
+<li><a class="reference internal" href="#python-semantics" id="id5">Python semantics</a></li>
+<li><a class="reference internal" href="#why-not-a-jit-compiler" id="id6">Why not a JIT compiler?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#examples" id="id7">Examples</a><ul>
+<li><a class="reference internal" href="#hypothetical-myoptimizer-module" id="id8">Hypothetical myoptimizer module</a></li>
+<li><a class="reference internal" href="#using-bytecode" id="id9">Using bytecode</a></li>
+<li><a class="reference internal" href="#using-builtin-function" id="id10">Using builtin function</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#choose-the-specialized-code" id="id11">Choose the specialized code</a></li>
+<li><a class="reference internal" href="#changes" id="id12">Changes</a><ul>
+<li><a class="reference internal" href="#function-guard" id="id13">Function guard</a></li>
+<li><a class="reference internal" href="#specialized-code" id="id14">Specialized code</a></li>
+<li><a class="reference internal" href="#function-methods" id="id15">Function methods</a><ul>
+<li><a class="reference internal" href="#pyfunction-specialize" id="id16">PyFunction_Specialize</a></li>
+<li><a class="reference internal" href="#pyfunction-getspecializedcodes" id="id17">PyFunction_GetSpecializedCodes</a></li>
+<li><a class="reference internal" href="#pyfunction-getspecializedcode" id="id18">PyFunction_GetSpecializedCode</a></li>
+<li><a class="reference internal" href="#pyfunction-removespecialized" id="id19">PyFunction_RemoveSpecialized</a></li>
+<li><a class="reference internal" href="#pyfunction-removeallspecialized" id="id20">PyFunction_RemoveAllSpecialized</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#benchmark" id="id21">Benchmark</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation" id="id22">Implementation</a></li>
+<li><a class="reference internal" href="#other-implementations-of-python" id="id23">Other implementations of Python</a></li>
+<li><a class="reference internal" href="#discussion" id="id24">Discussion</a></li>
+<li><a class="reference internal" href="#copyright" id="id25">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="rejection-notice">
+<h2><a class="toc-backref" href="#id2">Rejection Notice</a><a class="headerlink" href="#rejection-notice" title="Permalink to this headline">¶</a></h2>
+<p>This PEP was rejected by its author since the design didn’t show any
+significant speedup, but also because of the lack of time to implement
+the most advanced and complex optimizations.</p>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id3">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Add functions to the Python C API to specialize pure Python functions:
+add specialized codes with guards. It allows to implement static
+optimizers respecting the Python semantics.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id4">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="python-semantics">
+<h3><a class="toc-backref" href="#id5">Python semantics</a><a class="headerlink" href="#python-semantics" title="Permalink to this headline">¶</a></h3>
+<p>Python is hard to optimize because almost everything is mutable: builtin
+functions, function code, global variables, local variables, … can be
+modified at runtime. Implement optimizations respecting the Python
+semantics requires to detect when “something changes”, we will call these
+checks “guards”.</p>
+<p>This PEP proposes to add a public API to the Python C API to add
+specialized codes with guards to a function. When the function is
+called, a specialized code is used if nothing changed, otherwise use the
+original bytecode.</p>
+<p>Even if guards help to respect most parts of the Python semantics, it’s
+hard to optimize Python without making subtle changes on the exact
+behaviour. CPython has a long history and many applications rely on
+implementation details. A compromise must be found between “everything
+is mutable” and performance.</p>
+<p>Writing an optimizer is out of the scope of this PEP.</p>
+</div>
+<div class="section" id="why-not-a-jit-compiler">
+<h3><a class="toc-backref" href="#id6">Why not a JIT compiler?</a><a class="headerlink" href="#why-not-a-jit-compiler" title="Permalink to this headline">¶</a></h3>
+<p>There are multiple JIT compilers for Python actively developed:</p>
+<ul class="simple">
+<li><a class="reference external" href="http://pypy.org/">PyPy</a></li>
+<li><a class="reference external" href="https://github.com/dropbox/pyston">Pyston</a></li>
+<li><a class="reference external" href="http://numba.pydata.org/">Numba</a></li>
+<li><a class="reference external" href="https://github.com/microsoft/pyjion">Pyjion</a></li>
+</ul>
+<p>Numba is specific to numerical computation.  Pyston and Pyjion are still
+young.  PyPy is the most complete Python interpreter, it is generally
+faster than CPython in micro- and many macro-benchmarks and has a very
+good compatibility with CPython (it respects the Python semantics).
+There are still issues with Python JIT compilers which avoid them to be
+widely used instead of CPython.</p>
+<p>Many popular libraries like numpy, PyGTK, PyQt, PySide and wxPython are
+implemented in C or C++ and use the Python C API. To have a small memory
+footprint and better performances, Python JIT compilers do not use
+reference counting to use a faster garbage collector, do not use C
+structures of CPython objects and manage memory allocations differently.
+PyPy has a <code class="docutils literal notranslate"><span class="pre">cpyext</span></code> module which emulates the Python C API but it has
+worse performances than CPython and does not support the full Python C
+API.</p>
+<p>New features are first developed in CPython. In January 2016, the
+latest CPython stable version is 3.5, whereas PyPy only supports Python
+2.7 and 3.2, and Pyston only supports Python 2.7.</p>
+<p>Even if PyPy has a very good compatibility with Python, some modules are
+still not compatible with PyPy: see <a class="reference external" href="https://bitbucket.org/pypy/compatibility/wiki/Home">PyPy Compatibility Wiki</a>. The incomplete
+support of the Python C API is part of this problem. There are also
+subtle differences between PyPy and CPython like reference counting:
+object destructors are always called in PyPy, but can be called “later”
+than in CPython. Using context managers helps to control when resources
+are released.</p>
+<p>Even if PyPy is much faster than CPython in a wide range of benchmarks,
+some users still report worse performances than CPython on some specific
+use cases or unstable performances.</p>
+<p>When Python is used as a scripting program for programs running less
+than 1 minute, JIT compilers can be slower because their startup time is
+higher and the JIT compiler takes time to optimize the code. For
+example, most Mercurial commands take a few seconds.</p>
+<p>Numba now supports ahead of time compilation, but it requires decorator
+to specify arguments types and it only supports numerical types.</p>
+<p>CPython 3.5 has almost no optimization: the peephole optimizer only
+implements basic optimizations. A static compiler is a compromise
+between CPython 3.5 and PyPy.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>There was also the Unladen Swallow project, but it was abandoned in
+2011.</p>
+</div>
+</div>
+</div>
+<div class="section" id="examples">
+<h2><a class="toc-backref" href="#id7">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<p>Following examples are not written to show powerful optimizations
+promising important speedup, but to be short and easy to understand,
+just to explain the principle.</p>
+<div class="section" id="hypothetical-myoptimizer-module">
+<h3><a class="toc-backref" href="#id8">Hypothetical myoptimizer module</a><a class="headerlink" href="#hypothetical-myoptimizer-module" title="Permalink to this headline">¶</a></h3>
+<p>Examples in this PEP uses a hypothetical <code class="docutils literal notranslate"><span class="pre">myoptimizer</span></code> module which
+provides the following functions and types:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">specialize(func,</span> <span class="pre">code,</span> <span class="pre">guards)</span></code>: add the specialized code <cite>code</cite>
+with guards <cite>guards</cite> to the function <cite>func</cite></li>
+<li><code class="docutils literal notranslate"><span class="pre">get_specialized(func)</span></code>: get the list of specialized codes as a list
+of <code class="docutils literal notranslate"><span class="pre">(code,</span> <span class="pre">guards)</span></code> tuples where <cite>code</cite> is a callable or code object
+and <cite>guards</cite> is a list of a guards</li>
+<li><code class="docutils literal notranslate"><span class="pre">GuardBuiltins(name)</span></code>: guard watching for
+<code class="docutils literal notranslate"><span class="pre">builtins.__dict__[name]</span></code> and <code class="docutils literal notranslate"><span class="pre">globals()[name]</span></code>. The guard fails
+if <code class="docutils literal notranslate"><span class="pre">builtins.__dict__[name]</span></code> is replaced, or if <code class="docutils literal notranslate"><span class="pre">globals()[name]</span></code>
+is set.</li>
+</ul>
+</div>
+<div class="section" id="using-bytecode">
+<h3><a class="toc-backref" href="#id9">Using bytecode</a><a class="headerlink" href="#using-bytecode" title="Permalink to this headline">¶</a></h3>
+<p>Add specialized bytecode where the call to the pure builtin function
+<code class="docutils literal notranslate"><span class="pre">chr(65)</span></code> is replaced with its result <code class="docutils literal notranslate"><span class="pre">&quot;A&quot;</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">myoptimizer</span>
+
+<span class="k">def</span> <span class="nf">func</span><span class="p">():</span>
+    <span class="k">return</span> <span class="nb">chr</span><span class="p">(</span><span class="mi">65</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">fast_func</span><span class="p">():</span>
+    <span class="k">return</span> <span class="s2">&quot;A&quot;</span>
+
+<span class="n">myoptimizer</span><span class="o">.</span><span class="n">specialize</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">fast_func</span><span class="o">.</span><span class="vm">__code__</span><span class="p">,</span>
+                       <span class="p">[</span><span class="n">myoptimizer</span><span class="o">.</span><span class="n">GuardBuiltins</span><span class="p">(</span><span class="s2">&quot;chr&quot;</span><span class="p">)])</span>
+<span class="k">del</span> <span class="n">fast_func</span>
+</pre></div>
+</div>
+<p>Example showing the behaviour of the guard:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;func(): </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">func</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;#specialized: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">myoptimizer</span><span class="o">.</span><span class="n">get_specialized</span><span class="p">(</span><span class="n">func</span><span class="p">)))</span>
+<span class="nb">print</span><span class="p">()</span>
+
+<span class="kn">import</span> <span class="nn">builtins</span>
+<span class="n">builtins</span><span class="o">.</span><span class="n">chr</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">obj</span><span class="p">:</span> <span class="s2">&quot;mock&quot;</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;func(): </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">func</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;#specialized: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">myoptimizer</span><span class="o">.</span><span class="n">get_specialized</span><span class="p">(</span><span class="n">func</span><span class="p">)))</span>
+</pre></div>
+</div>
+<p>Output:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">func</span><span class="p">():</span> <span class="n">A</span>
+<span class="c1">#specialized: 1</span>
+
+<span class="n">func</span><span class="p">():</span> <span class="n">mock</span>
+<span class="c1">#specialized: 0</span>
+</pre></div>
+</div>
+<p>The first call uses the specialized bytecode which returns the string
+<code class="docutils literal notranslate"><span class="pre">&quot;A&quot;</span></code>. The second call removes the specialized code because the
+builtin <code class="docutils literal notranslate"><span class="pre">chr()</span></code> function was replaced, and executes the original
+bytecode calling <code class="docutils literal notranslate"><span class="pre">chr(65)</span></code>.</p>
+<p>On a microbenchmark, calling the specialized bytecode takes 88 ns,
+whereas the original function takes 145 ns (+57 ns): 1.6 times as fast.</p>
+</div>
+<div class="section" id="using-builtin-function">
+<h3><a class="toc-backref" href="#id10">Using builtin function</a><a class="headerlink" href="#using-builtin-function" title="Permalink to this headline">¶</a></h3>
+<p>Add the C builtin <code class="docutils literal notranslate"><span class="pre">chr()</span></code> function as the specialized code instead of
+a bytecode calling <code class="docutils literal notranslate"><span class="pre">chr(obj)</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">myoptimizer</span>
+
+<span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">arg</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">chr</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+
+<span class="n">myoptimizer</span><span class="o">.</span><span class="n">specialize</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="nb">chr</span><span class="p">,</span>
+                       <span class="p">[</span><span class="n">myoptimizer</span><span class="o">.</span><span class="n">GuardBuiltins</span><span class="p">(</span><span class="s2">&quot;chr&quot;</span><span class="p">)])</span>
+</pre></div>
+</div>
+<p>Example showing the behaviour of the guard:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;func(65): </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">func</span><span class="p">(</span><span class="mi">65</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;#specialized: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">myoptimizer</span><span class="o">.</span><span class="n">get_specialized</span><span class="p">(</span><span class="n">func</span><span class="p">)))</span>
+<span class="nb">print</span><span class="p">()</span>
+
+<span class="kn">import</span> <span class="nn">builtins</span>
+<span class="n">builtins</span><span class="o">.</span><span class="n">chr</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">obj</span><span class="p">:</span> <span class="s2">&quot;mock&quot;</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;func(65): </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">func</span><span class="p">(</span><span class="mi">65</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;#specialized: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">myoptimizer</span><span class="o">.</span><span class="n">get_specialized</span><span class="p">(</span><span class="n">func</span><span class="p">)))</span>
+</pre></div>
+</div>
+<p>Output:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">func</span><span class="p">():</span> <span class="n">A</span>
+<span class="c1">#specialized: 1</span>
+
+<span class="n">func</span><span class="p">():</span> <span class="n">mock</span>
+<span class="c1">#specialized: 0</span>
+</pre></div>
+</div>
+<p>The first call calls the C builtin <code class="docutils literal notranslate"><span class="pre">chr()</span></code> function (without creating
+a Python frame). The second call removes the specialized code because
+the builtin <code class="docutils literal notranslate"><span class="pre">chr()</span></code> function was replaced, and executes the original
+bytecode.</p>
+<p>On a microbenchmark, calling the C builtin takes 95 ns, whereas the
+original bytecode takes 155 ns (+60 ns): 1.6 times as fast. Calling
+directly <code class="docutils literal notranslate"><span class="pre">chr(65)</span></code> takes 76 ns.</p>
+</div>
+</div>
+<div class="section" id="choose-the-specialized-code">
+<h2><a class="toc-backref" href="#id11">Choose the specialized code</a><a class="headerlink" href="#choose-the-specialized-code" title="Permalink to this headline">¶</a></h2>
+<p>Pseudo-code to choose the specialized code to call a pure Python
+function:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">call_func</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
+    <span class="n">specialized</span> <span class="o">=</span> <span class="n">myoptimizer</span><span class="o">.</span><span class="n">get_specialized</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+    <span class="n">nspecialized</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">specialized</span><span class="p">)</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="n">nspecialized</span><span class="p">:</span>
+        <span class="n">specialized_code</span><span class="p">,</span> <span class="n">guards</span> <span class="o">=</span> <span class="n">specialized</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">guard</span> <span class="ow">in</span> <span class="n">guards</span><span class="p">:</span>
+            <span class="n">check</span> <span class="o">=</span> <span class="n">guard</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">check</span><span class="p">:</span>
+                <span class="k">break</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">check</span><span class="p">:</span>
+            <span class="c1"># all guards succeeded:</span>
+            <span class="c1"># use the specialized code</span>
+            <span class="k">return</span> <span class="n">specialized_code</span>
+        <span class="k">elif</span> <span class="n">check</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="c1"># a guard failed temporarely:</span>
+            <span class="c1"># try the next specialized code</span>
+            <span class="n">index</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">check</span> <span class="o">==</span> <span class="mi">2</span>
+            <span class="c1"># a guard will always fail:</span>
+            <span class="c1"># remove the specialized code</span>
+            <span class="k">del</span> <span class="n">specialized</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+
+    <span class="c1"># if a guard of each specialized code failed, or if the function</span>
+    <span class="c1"># has no specialized code, use original bytecode</span>
+    <span class="n">code</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="vm">__code__</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="changes">
+<h2><a class="toc-backref" href="#id12">Changes</a><a class="headerlink" href="#changes" title="Permalink to this headline">¶</a></h2>
+<p>Changes to the Python C API:</p>
+<ul>
+<li><p>Add a <code class="docutils literal notranslate"><span class="pre">PyFuncGuardObject</span></code> object and a <code class="docutils literal notranslate"><span class="pre">PyFuncGuard_Type</span></code> type</p>
+</li>
+<li><p>Add a <code class="docutils literal notranslate"><span class="pre">PySpecializedCode</span></code> structure</p>
+</li>
+<li><p>Add the following fields to the <code class="docutils literal notranslate"><span class="pre">PyFunctionObject</span></code> structure:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Py_ssize_t</span> <span class="n">nb_specialized</span><span class="p">;</span>
+<span class="n">PySpecializedCode</span> <span class="o">*</span><span class="n">specialized</span><span class="p">;</span>
+</pre></div>
+</div>
+</li>
+<li><p>Add function methods:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">PyFunction_Specialize()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyFunction_GetSpecializedCodes()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyFunction_GetSpecializedCode()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyFunction_RemoveSpecialized()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyFunction_RemoveAllSpecialized()</span></code></li>
+</ul>
+</li>
+</ul>
+<p>None of these function and types are exposed at the Python level.</p>
+<p>All these additions are explicitly excluded of the stable ABI.</p>
+<p>When a function code is replaced (<code class="docutils literal notranslate"><span class="pre">func.__code__</span> <span class="pre">=</span> <span class="pre">new_code</span></code>), all
+specialized codes and guards are removed.</p>
+<div class="section" id="function-guard">
+<h3><a class="toc-backref" href="#id13">Function guard</a><a class="headerlink" href="#function-guard" title="Permalink to this headline">¶</a></h3>
+<p>Add a function guard object:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">typedef</span> <span class="n">struct</span> <span class="p">{</span>
+    <span class="n">PyObject</span> <span class="n">ob_base</span><span class="p">;</span>
+    <span class="nb">int</span> <span class="p">(</span><span class="o">*</span><span class="n">init</span><span class="p">)</span> <span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="n">guard</span><span class="p">,</span> <span class="n">PyObject</span> <span class="o">*</span><span class="n">func</span><span class="p">);</span>
+    <span class="nb">int</span> <span class="p">(</span><span class="o">*</span><span class="n">check</span><span class="p">)</span> <span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="n">guard</span><span class="p">,</span> <span class="n">PyObject</span> <span class="o">**</span><span class="n">stack</span><span class="p">,</span> <span class="nb">int</span> <span class="n">na</span><span class="p">,</span> <span class="nb">int</span> <span class="n">nk</span><span class="p">);</span>
+<span class="p">}</span> <span class="n">PyFuncGuardObject</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">init()</span></code> function initializes a guard:</p>
+<ul class="simple">
+<li>Return <code class="docutils literal notranslate"><span class="pre">0</span></code> on success</li>
+<li>Return <code class="docutils literal notranslate"><span class="pre">1</span></code> if the guard will always fail: <code class="docutils literal notranslate"><span class="pre">PyFunction_Specialize()</span></code>
+must ignore the specialized code</li>
+<li>Raise an exception and return <code class="docutils literal notranslate"><span class="pre">-1</span></code> on error</li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">check()</span></code> function checks a guard:</p>
+<ul class="simple">
+<li>Return <code class="docutils literal notranslate"><span class="pre">0</span></code> on success</li>
+<li>Return <code class="docutils literal notranslate"><span class="pre">1</span></code> if the guard failed temporarely</li>
+<li>Return <code class="docutils literal notranslate"><span class="pre">2</span></code> if the guard will always fail: the specialized code must
+be removed</li>
+<li>Raise an exception and return <code class="docutils literal notranslate"><span class="pre">-1</span></code> on error</li>
+</ul>
+<p><em>stack</em> is an array of arguments: indexed arguments followed by (<em>key</em>,
+<em>value</em>) pairs of keyword arguments. <em>na</em> is the number of indexed
+arguments. <em>nk</em> is the number of keyword arguments: the number of (<em>key</em>,
+<em>value</em>) pairs. <cite>stack</cite> contains <code class="docutils literal notranslate"><span class="pre">na</span> <span class="pre">+</span> <span class="pre">nk</span> <span class="pre">*</span> <span class="pre">2</span></code> objects.</p>
+</div>
+<div class="section" id="specialized-code">
+<h3><a class="toc-backref" href="#id14">Specialized code</a><a class="headerlink" href="#specialized-code" title="Permalink to this headline">¶</a></h3>
+<p>Add a specialized code structure:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">typedef</span> <span class="n">struct</span> <span class="p">{</span>
+    <span class="n">PyObject</span> <span class="o">*</span><span class="n">code</span><span class="p">;</span>        <span class="o">/*</span> <span class="n">callable</span> <span class="ow">or</span> <span class="n">code</span> <span class="nb">object</span> <span class="o">*/</span>
+    <span class="n">Py_ssize_t</span> <span class="n">nb_guard</span><span class="p">;</span>
+    <span class="n">PyObject</span> <span class="o">**</span><span class="n">guards</span><span class="p">;</span>     <span class="o">/*</span> <span class="n">PyFuncGuardObject</span> <span class="n">objects</span> <span class="o">*/</span>
+<span class="p">}</span> <span class="n">PySpecializedCode</span><span class="p">;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="function-methods">
+<h3><a class="toc-backref" href="#id15">Function methods</a><a class="headerlink" href="#function-methods" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="pyfunction-specialize">
+<h4><a class="toc-backref" href="#id16">PyFunction_Specialize</a><a class="headerlink" href="#pyfunction-specialize" title="Permalink to this headline">¶</a></h4>
+<p>Add a function method to specialize the function, add a specialized code
+with guards:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">int</span> <span class="n">PyFunction_Specialize</span><span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="n">func</span><span class="p">,</span>
+                          <span class="n">PyObject</span> <span class="o">*</span><span class="n">code</span><span class="p">,</span> <span class="n">PyObject</span> <span class="o">*</span><span class="n">guards</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If <em>code</em> is a Python function, the code object of the <em>code</em> function
+is used as the specialized code. The specialized Python function must
+have the same parameter defaults, the same keyword parameter defaults,
+and must not have specialized code.</p>
+<p>If <em>code</em> is a Python function or a code object, a new code object is
+created and the code name and first line number of the code object of
+<em>func</em> are copied. The specialized code must have the same cell
+variables and the same free variables.</p>
+<p>Result:</p>
+<ul class="simple">
+<li>Return <code class="docutils literal notranslate"><span class="pre">0</span></code> on success</li>
+<li>Return <code class="docutils literal notranslate"><span class="pre">1</span></code> if the specialization has been ignored</li>
+<li>Raise an exception and return <code class="docutils literal notranslate"><span class="pre">-1</span></code> on error</li>
+</ul>
+</div>
+<div class="section" id="pyfunction-getspecializedcodes">
+<h4><a class="toc-backref" href="#id17">PyFunction_GetSpecializedCodes</a><a class="headerlink" href="#pyfunction-getspecializedcodes" title="Permalink to this headline">¶</a></h4>
+<p>Add a function method to get the list of specialized codes:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyObject</span><span class="o">*</span> <span class="n">PyFunction_GetSpecializedCodes</span><span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="n">func</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Return a list of (<em>code</em>, <em>guards</em>) tuples where <em>code</em> is a callable or
+code object and <em>guards</em> is a list of <code class="docutils literal notranslate"><span class="pre">PyFuncGuard</span></code> objects. Raise an
+exception and return <code class="docutils literal notranslate"><span class="pre">NULL</span></code> on error.</p>
+</div>
+<div class="section" id="pyfunction-getspecializedcode">
+<h4><a class="toc-backref" href="#id18">PyFunction_GetSpecializedCode</a><a class="headerlink" href="#pyfunction-getspecializedcode" title="Permalink to this headline">¶</a></h4>
+<p>Add a function method checking guards to choose a specialized code:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyObject</span><span class="o">*</span> <span class="n">PyFunction_GetSpecializedCode</span><span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="n">func</span><span class="p">,</span>
+                                        <span class="n">PyObject</span> <span class="o">**</span><span class="n">stack</span><span class="p">,</span>
+                                        <span class="nb">int</span> <span class="n">na</span><span class="p">,</span> <span class="nb">int</span> <span class="n">nk</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>See <code class="docutils literal notranslate"><span class="pre">check()</span></code> function of guards for <em>stack</em>, <em>na</em> and <em>nk</em> arguments.
+Return a callable or a code object on success. Raise an exception and
+return <code class="docutils literal notranslate"><span class="pre">NULL</span></code> on error.</p>
+</div>
+<div class="section" id="pyfunction-removespecialized">
+<h4><a class="toc-backref" href="#id19">PyFunction_RemoveSpecialized</a><a class="headerlink" href="#pyfunction-removespecialized" title="Permalink to this headline">¶</a></h4>
+<p>Add a function method to remove a specialized code with its guards by
+its index:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">int</span> <span class="n">PyFunction_RemoveSpecialized</span><span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="n">func</span><span class="p">,</span> <span class="n">Py_ssize_t</span> <span class="n">index</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Return <code class="docutils literal notranslate"><span class="pre">0</span></code> on success or if the index does not exist. Raise an exception and
+return <code class="docutils literal notranslate"><span class="pre">-1</span></code> on error.</p>
+</div>
+<div class="section" id="pyfunction-removeallspecialized">
+<h4><a class="toc-backref" href="#id20">PyFunction_RemoveAllSpecialized</a><a class="headerlink" href="#pyfunction-removeallspecialized" title="Permalink to this headline">¶</a></h4>
+<p>Add a function method to remove all specialized codes and guards of a
+function:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">int</span> <span class="n">PyFunction_RemoveAllSpecialized</span><span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="n">func</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Return <code class="docutils literal notranslate"><span class="pre">0</span></code> on success. Raise an exception and return <code class="docutils literal notranslate"><span class="pre">-1</span></code> if <em>func</em> is not
+a function.</p>
+</div>
+</div>
+<div class="section" id="benchmark">
+<h3><a class="toc-backref" href="#id21">Benchmark</a><a class="headerlink" href="#benchmark" title="Permalink to this headline">¶</a></h3>
+<p>Microbenchmark on <code class="docutils literal notranslate"><span class="pre">python3.6</span> <span class="pre">-m</span> <span class="pre">timeit</span> <span class="pre">-s</span> <span class="pre">'def</span> <span class="pre">f():</span> <span class="pre">pass'</span> <span class="pre">'f()'</span></code> (best
+of 3 runs):</p>
+<ul class="simple">
+<li>Original Python: 79 ns</li>
+<li>Patched Python: 79 ns</li>
+</ul>
+<p>According to this microbenchmark, the changes has no overhead on calling
+a Python function without specialization.</p>
+</div>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id22">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>The <a class="reference external" href="http://bugs.python.org/issue26098">issue #26098: PEP 510: Specialize functions with guards</a> contains a patch which implements
+this PEP.</p>
+</div>
+<div class="section" id="other-implementations-of-python">
+<h2><a class="toc-backref" href="#id23">Other implementations of Python</a><a class="headerlink" href="#other-implementations-of-python" title="Permalink to this headline">¶</a></h2>
+<p>This PEP only contains changes to the Python C API, the Python API is
+unchanged. Other implementations of Python are free to not implement new
+additions, or implement added functions as no-op:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">PyFunction_Specialize()</span></code>: always return <code class="docutils literal notranslate"><span class="pre">1</span></code> (the specialization
+has been ignored)</li>
+<li><code class="docutils literal notranslate"><span class="pre">PyFunction_GetSpecializedCodes()</span></code>: always return an empty list</li>
+<li><code class="docutils literal notranslate"><span class="pre">PyFunction_GetSpecializedCode()</span></code>: return the function code object,
+as the existing <code class="docutils literal notranslate"><span class="pre">PyFunction_GET_CODE()</span></code> macro</li>
+</ul>
+</div>
+<div class="section" id="discussion">
+<h2><a class="toc-backref" href="#id24">Discussion</a><a class="headerlink" href="#discussion" title="Permalink to this headline">¶</a></h2>
+<p>Thread on the python-ideas mailing list: <a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2016-January/037703.html">RFC: PEP: Specialized
+functions with guards</a>.</p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id25">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0510.txt">https://github.com/python/peps/blob/master/pep-0510.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0510.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0509.html">PEP 0509</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0511.html">PEP 0511</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 510 – Specialize functions with guards</a><ul>
+<li><a class="reference internal" href="#rejection-notice">Rejection Notice</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a><ul>
+<li><a class="reference internal" href="#python-semantics">Python semantics</a></li>
+<li><a class="reference internal" href="#why-not-a-jit-compiler">Why not a JIT compiler?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#examples">Examples</a><ul>
+<li><a class="reference internal" href="#hypothetical-myoptimizer-module">Hypothetical myoptimizer module</a></li>
+<li><a class="reference internal" href="#using-bytecode">Using bytecode</a></li>
+<li><a class="reference internal" href="#using-builtin-function">Using builtin function</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#choose-the-specialized-code">Choose the specialized code</a></li>
+<li><a class="reference internal" href="#changes">Changes</a><ul>
+<li><a class="reference internal" href="#function-guard">Function guard</a></li>
+<li><a class="reference internal" href="#specialized-code">Specialized code</a></li>
+<li><a class="reference internal" href="#function-methods">Function methods</a><ul>
+<li><a class="reference internal" href="#pyfunction-specialize">PyFunction_Specialize</a></li>
+<li><a class="reference internal" href="#pyfunction-getspecializedcodes">PyFunction_GetSpecializedCodes</a></li>
+<li><a class="reference internal" href="#pyfunction-getspecializedcode">PyFunction_GetSpecializedCode</a></li>
+<li><a class="reference internal" href="#pyfunction-removespecialized">PyFunction_RemoveSpecialized</a></li>
+<li><a class="reference internal" href="#pyfunction-removeallspecialized">PyFunction_RemoveAllSpecialized</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#benchmark">Benchmark</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#other-implementations-of-python">Other implementations of Python</a></li>
+<li><a class="reference internal" href="#discussion">Discussion</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

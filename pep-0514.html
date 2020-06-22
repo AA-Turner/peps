@@ -1,0 +1,579 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 514 – Python registration in the Windows registry &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 515 – Underscores in Numeric Literals" href="pep-0515.html" />
+    <link rel="prev" title="PEP 513 – A Platform Tag for Portable Linux Built Distributions" href="pep-0513.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 514 – Python registration in the Windows registry</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-514-python-registration-in-the-windows-registry">
+<h1 class="page-title">PEP 514 – Python registration in the Windows registry<a class="headerlink" href="#pep-514-python-registration-in-the-windows-registry" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">514</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Python registration in the Windows registry</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Steve Dower &lt;steve.dower&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even">Paul Moore &lt;p.f.moore&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd">Active</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even">Informational</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">02-Feb-2016</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">02-Feb-2016, 01-Mar-2016, 18-Jul-2016</dd>
+<dt class="field-odd">Resolution</dt>
+<dd class="field-odd"><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2016-July/145697.html">https://mail.python.org/pipermail/python-dev/2016-July/145697.html</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id3">Abstract</a></li>
+<li><a class="reference internal" href="#motivation" id="id4">Motivation</a></li>
+<li><a class="reference internal" href="#definitions" id="id5">Definitions</a></li>
+<li><a class="reference internal" href="#structure" id="id6">Structure</a><ul>
+<li><a class="reference internal" href="#backwards-compatibility" id="id7">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#company" id="id8">Company</a></li>
+<li><a class="reference internal" href="#tag" id="id9">Tag</a></li>
+<li><a class="reference internal" href="#installpath" id="id10">InstallPath</a></li>
+<li><a class="reference internal" href="#help" id="id11">Help</a></li>
+<li><a class="reference internal" href="#other-keys" id="id12">Other Keys</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#sample-code" id="id13">Sample Code</a></li>
+<li><a class="reference internal" href="#references" id="id14">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id15">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id3">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP defines a schema for the Python registry key to allow third-party
+installers to register their installation, and to allow tools and applications
+to detect and correctly display all Python environments on a user’s machine. No
+implementation changes to Python are proposed with this PEP.</p>
+<p>Python environments are not required to be registered unless they want to be
+automatically discoverable by external tools. As this relates to Windows only,
+these tools are expected to be predominantly GUI applications. However, console
+applications may also make use of the registered information. This PEP covers
+the information that may be made available, but the actual presentation and use
+of this information is left to the tool designers.</p>
+<p>The schema matches the registry values that have been used by the official
+installer since at least Python 2.5, and the resolution behaviour matches the
+behaviour of the official Python releases. Some backwards compatibility rules
+are provided to ensure tools can correctly detect versions of CPython that do
+not register full information.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id4">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>When installed on Windows, the official Python installer creates a registry key
+for discovery and detection by other applications. This allows tools such as
+installers or IDEs to automatically detect and display a user’s Python
+installations. For example, the PEP 397 <code class="docutils literal notranslate"><span class="pre">py.exe</span></code> launcher and editors such as
+PyCharm and Visual Studio already make use of this information.</p>
+<p>Third-party installers, such as those used by distributions, typically create
+identical keys for the same purpose. Most tools that use the registry to detect
+Python installations only inspect the keys used by the official installer. As a
+result, third-party installations that wish to be discoverable will overwrite
+these values, often causing users to “lose” their original Python installation.</p>
+<p>By describing a layout for registry keys that allows third-party installations
+to register themselves uniquely, as well as providing tool developers guidance
+for discovering all available Python installations, these collisions should be
+prevented. We also take the opportunity to add some well-known metadata so that
+more information can be presented to users.</p>
+</div>
+<div class="section" id="definitions">
+<h2><a class="toc-backref" href="#id5">Definitions</a><a class="headerlink" href="#definitions" title="Permalink to this headline">¶</a></h2>
+<p>A “registry key” is the equivalent of a file-system path into the registry. Each
+key may contain “subkeys” (keys nested within keys) and “values” (named and
+typed attributes attached to a key). These are used on Windows to store settings
+in much the same way that directories containing configuration files would work.</p>
+<p><code class="docutils literal notranslate"><span class="pre">HKEY_CURRENT_USER</span></code> is the root of settings for the currently logged-in user,
+and this user can generally read and write all settings under this root.</p>
+<p><code class="docutils literal notranslate"><span class="pre">HKEY_LOCAL_MACHINE</span></code> is the root of settings for all users. Generally, any
+user can read these settings but only administrators can modify them. It is
+typical for values under <code class="docutils literal notranslate"><span class="pre">HKEY_CURRENT_USER</span></code> to take precedence over those in
+<code class="docutils literal notranslate"><span class="pre">HKEY_LOCAL_MACHINE</span></code>.</p>
+<p>On 64-bit Windows, <code class="docutils literal notranslate"><span class="pre">HKEY_LOCAL_MACHINE\Software\Wow6432Node</span></code> is a special key
+that 32-bit processes transparently read and write to rather than accessing the
+<code class="docutils literal notranslate"><span class="pre">Software</span></code> key directly.</p>
+<p>Further documentation regarding registry redirection on Windows is available
+from the MSDN Library <a class="footnote-reference brackets" href="#id2" id="id1">1</a>.</p>
+</div>
+<div class="section" id="structure">
+<h2><a class="toc-backref" href="#id6">Structure</a><a class="headerlink" href="#structure" title="Permalink to this headline">¶</a></h2>
+<p>We consider there to be a single collection of Python environments on a machine,
+where the collection may be different for each user of the machine. There are
+three potential registry locations where the collection may be stored based on
+the installation options of each environment:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">HKEY_CURRENT_USER</span>\<span class="n">Software</span>\<span class="n">Python</span>\<span class="o">&lt;</span><span class="n">Company</span><span class="o">&gt;</span>\<span class="o">&lt;</span><span class="n">Tag</span><span class="o">&gt;</span>
+<span class="n">HKEY_LOCAL_MACHINE</span>\<span class="n">Software</span>\<span class="n">Python</span>\<span class="o">&lt;</span><span class="n">Company</span><span class="o">&gt;</span>\<span class="o">&lt;</span><span class="n">Tag</span><span class="o">&gt;</span>
+<span class="n">HKEY_LOCAL_MACHINE</span>\<span class="n">Software</span>\<span class="n">Wow6432Node</span>\<span class="n">Python</span>\<span class="o">&lt;</span><span class="n">Company</span><span class="o">&gt;</span>\<span class="o">&lt;</span><span class="n">Tag</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Official Python releases use <code class="docutils literal notranslate"><span class="pre">PythonCore</span></code> for Company, and the value of
+<code class="docutils literal notranslate"><span class="pre">sys.winver</span></code> for Tag. The Company <code class="docutils literal notranslate"><span class="pre">PyLauncher</span></code> is reserved. Other registered
+environments may use any values for Company and Tag. Recommendations are made
+later in this document.</p>
+<p>Company-Tag pairs are case-insensitive, and uniquely identify each environment.
+Depending on the purpose and intended use of a tool, there are two suggested
+approaches for resolving conflicts between Company-Tag pairs.</p>
+<p>Tools that list every installed environment may choose to include those
+even where the Company-Tag pairs match. They should ensure users can easily
+identify whether the registration was per-user or per-machine, and which
+registration has the higher priority.</p>
+<p>Tools that aim to select a single installed environment from all registered
+environments based on the Company-Tag pair, such as the <code class="docutils literal notranslate"><span class="pre">py.exe</span></code> launcher,
+should always select the environment registered in <code class="docutils literal notranslate"><span class="pre">HKEY_CURRENT_USER</span></code> when
+than the matching one in <code class="docutils literal notranslate"><span class="pre">HKEY_LOCAL_MACHINE</span></code>.</p>
+<p>Conflicts between <code class="docutils literal notranslate"><span class="pre">HKEY_LOCAL_MACHINE\Software\Python</span></code> and
+<code class="docutils literal notranslate"><span class="pre">HKEY_LOCAL_MACHINE\Software\Wow6432Node\Python</span></code> should only occur when both
+64-bit and 32-bit versions of an interpreter have the same Tag. In this case,
+the tool should select whichever is more appropriate for its use.</p>
+<p>If a tool is able to determine from the provided information (or lack thereof)
+that it cannot use a registered environment, there is no obligation to present
+it to users.</p>
+<p>Except as discussed in the section on backwards compatibility, Company and Tag
+values are considered opaque to tools, and no information about the interpreter
+should be inferred from the text. However, some tools may display the Company
+and Tag values to users, so ideally the Tag will be able to help users identify
+the associated environment.</p>
+<p>Python environments are not required to register themselves unless they want to
+be automatically discoverable by external tools.</p>
+<div class="section" id="backwards-compatibility">
+<h3><a class="toc-backref" href="#id7">Backwards Compatibility</a><a class="headerlink" href="#backwards-compatibility" title="Permalink to this headline">¶</a></h3>
+<p>Python 3.4 and earlier did not distinguish between 32-bit and 64-bit builds in
+<code class="docutils literal notranslate"><span class="pre">sys.winver</span></code>. As a result, it is not possible to have valid side-by-side
+installations of both 32-bit and 64-bit interpreters under this scheme since it
+would result in duplicate Tags.</p>
+<p>To ensure backwards compatibility, applications should treat environments listed
+under the following two registry keys as distinct, even when the Tag matches:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">HKEY_LOCAL_MACHINE</span>\<span class="n">Software</span>\<span class="n">Python</span>\<span class="n">PythonCore</span>\<span class="o">&lt;</span><span class="n">Tag</span><span class="o">&gt;</span>
+<span class="n">HKEY_LOCAL_MACHINE</span>\<span class="n">Software</span>\<span class="n">Wow6432Node</span>\<span class="n">Python</span>\<span class="n">PythonCore</span>\<span class="o">&lt;</span><span class="n">Tag</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Environments listed under <code class="docutils literal notranslate"><span class="pre">HKEY_CURRENT_USER</span></code> may be treated as distinct from
+both of the above keys, potentially resulting in three environments discovered
+using the same Tag. Alternatively, a tool may determine whether the per-user
+environment is 64-bit or 32-bit and give it priority over the per-machine
+environment, resulting in a maximum of two discovered environments.</p>
+<p>It is not possible to detect side-by-side installations of both 64-bit and
+32-bit versions of Python prior to 3.5 when they have been installed for the
+current user. Python 3.5 and later always uses different Tags for 64-bit and
+32-bit versions.</p>
+<p>The following section describe user-visible information that may be registered.
+For Python 3.5 and earlier, none of this information is available, but
+alternative defaults are specified for the <code class="docutils literal notranslate"><span class="pre">PythonCore</span></code> key.</p>
+<p>Environments registered under other Company names have no backward compatibility
+requirements and must use distinct Tags to support side-by-side installations.
+Tools consuming these registrations are not required to disambiguate tags other
+than by preferring the user’s setting.</p>
+</div>
+<div class="section" id="company">
+<h3><a class="toc-backref" href="#id8">Company</a><a class="headerlink" href="#company" title="Permalink to this headline">¶</a></h3>
+<p>The Company part of the key is intended to group related environments and to
+ensure that Tags are namespaced appropriately. The key name should be
+alphanumeric without spaces and likely to be unique. For example, a trademarked
+name (preferred), a hostname, or as a last resort, a UUID would be appropriate:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">HKEY_CURRENT_USER</span>\<span class="n">Software</span>\<span class="n">Python</span>\<span class="n">ExampleCorp</span>
+<span class="n">HKEY_CURRENT_USER</span>\<span class="n">Software</span>\<span class="n">Python</span>\<span class="n">www</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">com</span>
+<span class="n">HKEY_CURRENT_USER</span>\<span class="n">Software</span>\<span class="n">Python</span>\<span class="mi">6</span><span class="n">C465E66</span><span class="o">-</span><span class="mi">5</span><span class="n">A8C</span><span class="o">-</span><span class="mi">4942</span><span class="o">-</span><span class="mf">9E6</span><span class="n">A</span><span class="o">-</span><span class="n">D29159480C60</span>
+</pre></div>
+</div>
+<p>The company name <code class="docutils literal notranslate"><span class="pre">PyLauncher</span></code> is reserved for the PEP 397 launcher
+(<code class="docutils literal notranslate"><span class="pre">py.exe</span></code>). It does not follow this convention and should be ignored by tools.</p>
+<p>If a string value named <code class="docutils literal notranslate"><span class="pre">DisplayName</span></code> exists, it should be used to identify
+the environment manufacturer/developer/distributor to users. Otherwise, the name
+of the key should be used. (For <code class="docutils literal notranslate"><span class="pre">PythonCore</span></code>, the default display name is
+“Python Software Foundation”.)</p>
+<p>If a string value named <code class="docutils literal notranslate"><span class="pre">SupportUrl</span></code> exists, it may be displayed or otherwise
+used to direct users to a web site related to the environment. (For
+<code class="docutils literal notranslate"><span class="pre">PythonCore</span></code>, the default support URL is “<a class="reference external" href="http://www.python.org/">http://www.python.org/</a>”.)</p>
+<p>A complete example may look like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">HKEY_CURRENT_USER</span>\<span class="n">Software</span>\<span class="n">Python</span>\<span class="n">ExampleCorp</span>
+    <span class="p">(</span><span class="n">Default</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">value</span> <span class="ow">not</span> <span class="nb">set</span><span class="p">)</span>
+    <span class="n">DisplayName</span> <span class="o">=</span> <span class="s2">&quot;Example Corp&quot;</span>
+    <span class="n">SupportUrl</span> <span class="o">=</span> <span class="s2">&quot;http://www.example.com&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="tag">
+<h3><a class="toc-backref" href="#id9">Tag</a><a class="headerlink" href="#tag" title="Permalink to this headline">¶</a></h3>
+<p>The Tag part of the key is intended to uniquely identify an environment within
+those provided by a single company. The key name should be alphanumeric without
+spaces and stable across installations. For example, the Python language
+version, a UUID or a partial/complete hash would be appropriate, while a Tag
+based on the install directory or some aspect of the current machine may not.
+For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">HKEY_CURRENT_USER</span>\<span class="n">Software</span>\<span class="n">Python</span>\<span class="n">ExampleCorp</span>\<span class="n">examplepy</span>
+<span class="n">HKEY_CURRENT_USER</span>\<span class="n">Software</span>\<span class="n">Python</span>\<span class="n">ExampleCorp</span>\<span class="mf">3.6</span>
+<span class="n">HKEY_CURRENT_USER</span>\<span class="n">Software</span>\<span class="n">Python</span>\<span class="n">ExampleCorp</span>\<span class="mi">6</span><span class="n">C465E66</span>
+</pre></div>
+</div>
+<p>It is expected that some tools will require users to type the Tag into a command
+line, and that the Company may be optional provided the Tag is unique across all
+Python installations. Short, human-readable and easy to type Tags are
+recommended, and if possible, select a value likely to be unique across all
+other Companies.</p>
+<p>If a string value named <code class="docutils literal notranslate"><span class="pre">DisplayName</span></code> exists, it should be used to identify
+the environment to users. Otherwise, the name of the key should be used. (For
+<code class="docutils literal notranslate"><span class="pre">PythonCore</span></code>, the default is “Python ” followed by the Tag.)</p>
+<p>If a string value named <code class="docutils literal notranslate"><span class="pre">SupportUrl</span></code> exists, it may be displayed or otherwise
+used to direct users to a web site related to the environment. (For
+<code class="docutils literal notranslate"><span class="pre">PythonCore</span></code>, the default is “<a class="reference external" href="http://www.python.org/">http://www.python.org/</a>”.)</p>
+<p>If a string value named <code class="docutils literal notranslate"><span class="pre">Version</span></code> exists, it should be used to identify the
+version of the environment. This is independent from the version of Python
+implemented by the environment. (For <code class="docutils literal notranslate"><span class="pre">PythonCore</span></code>, the default is the first
+three characters of the Tag.)</p>
+<p>If a string value named <code class="docutils literal notranslate"><span class="pre">SysVersion</span></code> exists, it must be in <code class="docutils literal notranslate"><span class="pre">x.y</span></code> or
+<code class="docutils literal notranslate"><span class="pre">x.y.z</span></code> format matching the version returned by <code class="docutils literal notranslate"><span class="pre">sys.version_info</span></code> in the
+interpreter. If omitted, the Python version is unknown. (For <code class="docutils literal notranslate"><span class="pre">PythonCore</span></code>,
+the default is the first three characters of the Tag.)</p>
+<p>If a string value named <code class="docutils literal notranslate"><span class="pre">SysArchitecture</span></code> exists, it must match the first
+element of the tuple returned by <code class="docutils literal notranslate"><span class="pre">platform.architecture()</span></code>. Typically, this
+will be “32bit” or “64bit”. If omitted, the architecture is unknown. (For
+<code class="docutils literal notranslate"><span class="pre">PythonCore</span></code>, the architecture is “32bit” when registered under
+<code class="docutils literal notranslate"><span class="pre">HKEY_LOCAL_MACHINE\Software\Wow6432Node\Python</span></code> <em>or</em> anywhere on a 32-bit
+operating system, “64bit” when registered under
+<code class="docutils literal notranslate"><span class="pre">HKEY_LOCAL_MACHINE\Software\Python</span></code> on a 64-bit machine, and unknown when
+registered under <code class="docutils literal notranslate"><span class="pre">HKEY_CURRENT_USER</span></code>.)</p>
+<p>Note that each of these values is recommended, but optional. Omitting
+<code class="docutils literal notranslate"><span class="pre">SysVersion</span></code> or <code class="docutils literal notranslate"><span class="pre">SysArchitecture</span></code> may prevent some tools from correctly
+supporting the environment. A complete example may look like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">HKEY_CURRENT_USER</span>\<span class="n">Software</span>\<span class="n">Python</span>\<span class="n">ExampleCorp</span>\<span class="n">examplepy</span>
+    <span class="p">(</span><span class="n">Default</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">value</span> <span class="ow">not</span> <span class="nb">set</span><span class="p">)</span>
+    <span class="n">DisplayName</span> <span class="o">=</span> <span class="s2">&quot;Example Py Distro 3&quot;</span>
+    <span class="n">SupportUrl</span> <span class="o">=</span> <span class="s2">&quot;http://www.example.com/distro-3&quot;</span>
+    <span class="n">Version</span> <span class="o">=</span> <span class="s2">&quot;3.0.12345.0&quot;</span>
+    <span class="n">SysVersion</span> <span class="o">=</span> <span class="s2">&quot;3.6.0&quot;</span>
+    <span class="n">SysArchitecture</span> <span class="o">=</span> <span class="s2">&quot;64bit&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="installpath">
+<h3><a class="toc-backref" href="#id10">InstallPath</a><a class="headerlink" href="#installpath" title="Permalink to this headline">¶</a></h3>
+<p>Beneath the environment key, an <code class="docutils literal notranslate"><span class="pre">InstallPath</span></code> key must be created. This key is
+always named <code class="docutils literal notranslate"><span class="pre">InstallPath</span></code>, and the default value must match <code class="docutils literal notranslate"><span class="pre">sys.prefix</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">HKEY_CURRENT_USER</span>\<span class="n">Software</span>\<span class="n">Python</span>\<span class="n">ExampleCorp</span>\<span class="mf">3.6</span>\<span class="n">InstallPath</span>
+    <span class="p">(</span><span class="n">Default</span><span class="p">)</span> <span class="o">=</span> <span class="s2">&quot;C:\ExampleCorpPy36&quot;</span>
+</pre></div>
+</div>
+<p>If a string value named <code class="docutils literal notranslate"><span class="pre">ExecutablePath</span></code> exists, it must be the full path to
+the <code class="docutils literal notranslate"><span class="pre">python.exe</span></code> (or equivalent) executable. If omitted, the environment is
+not executable. (For <code class="docutils literal notranslate"><span class="pre">PythonCore</span></code>, the default is the <code class="docutils literal notranslate"><span class="pre">python.exe</span></code> file in
+the directory referenced by the <code class="docutils literal notranslate"><span class="pre">(Default)</span></code> value.)</p>
+<p>If a string value named <code class="docutils literal notranslate"><span class="pre">ExecutableArguments</span></code> exists, tools should use the
+value as the first arguments when executing <code class="docutils literal notranslate"><span class="pre">ExecutablePath</span></code>. Tools may add
+other arguments following these, and will reasonably expect standard Python
+command line options to be available.</p>
+<p>If a string value named <code class="docutils literal notranslate"><span class="pre">WindowedExecutablePath</span></code> exists, it must be a path to
+the <code class="docutils literal notranslate"><span class="pre">pythonw.exe</span></code> (or equivalent) executable. If omitted, the default is the
+value of <code class="docutils literal notranslate"><span class="pre">ExecutablePath</span></code>, and if that is omitted the environment is not
+executable. (For <code class="docutils literal notranslate"><span class="pre">PythonCore</span></code>, the default is the <code class="docutils literal notranslate"><span class="pre">pythonw.exe</span></code> file in the
+directory referenced by the <code class="docutils literal notranslate"><span class="pre">(Default)</span></code> value.)</p>
+<p>If a string value named <code class="docutils literal notranslate"><span class="pre">WindowedExecutableArguments</span></code> exists, tools should use
+the value as the first arguments when executing <code class="docutils literal notranslate"><span class="pre">WindowedExecutablePath</span></code>.
+Tools may add other arguments following these, and will reasonably expect
+standard Python command line options to be available.</p>
+<p>A complete example may look like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">HKEY_CURRENT_USER</span>\<span class="n">Software</span>\<span class="n">Python</span>\<span class="n">ExampleCorp</span>\<span class="n">examplepy</span>\<span class="n">InstallPath</span>
+    <span class="p">(</span><span class="n">Default</span><span class="p">)</span> <span class="o">=</span> <span class="s2">&quot;C:\ExampleDistro30&quot;</span>
+    <span class="n">ExecutablePath</span> <span class="o">=</span> <span class="s2">&quot;C:\ExampleDistro30\ex_python.exe&quot;</span>
+    <span class="n">ExecutableArguments</span> <span class="o">=</span> <span class="s2">&quot;--arg1&quot;</span>
+    <span class="n">WindowedExecutablePath</span> <span class="o">=</span> <span class="s2">&quot;C:\ExampleDistro30\ex_pythonw.exe&quot;</span>
+    <span class="n">WindowedExecutableArguments</span> <span class="o">=</span> <span class="s2">&quot;--arg1&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="help">
+<h3><a class="toc-backref" href="#id11">Help</a><a class="headerlink" href="#help" title="Permalink to this headline">¶</a></h3>
+<p>Beneath the environment key, a <code class="docutils literal notranslate"><span class="pre">Help</span></code> key may be created. This key is always
+named <code class="docutils literal notranslate"><span class="pre">Help</span></code> if present and has no default value.</p>
+<p>Each subkey of <code class="docutils literal notranslate"><span class="pre">Help</span></code> specifies a documentation file, tool, or URL associated
+with the environment. The subkey may have any name, and the default value is a
+string appropriate for passing to <code class="docutils literal notranslate"><span class="pre">os.startfile</span></code> or equivalent.</p>
+<p>If a string value named <code class="docutils literal notranslate"><span class="pre">DisplayName</span></code> exists, it should be used to identify
+the help file to users. Otherwise, the key name should be used.</p>
+<p>A complete example may look like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">HKEY_CURRENT_USER</span>\<span class="n">Software</span>\<span class="n">Python</span>\<span class="n">ExampleCorp</span>\<span class="mi">6</span><span class="n">C465E66</span>\<span class="n">Help</span>
+    <span class="n">Python</span>\
+        <span class="p">(</span><span class="n">Default</span><span class="p">)</span> <span class="o">=</span> <span class="s2">&quot;C:\ExampleDistro30\python36.chm&quot;</span>
+        <span class="n">DisplayName</span> <span class="o">=</span> <span class="s2">&quot;Python Documentation&quot;</span>
+    <span class="n">Extras</span>\
+        <span class="p">(</span><span class="n">Default</span><span class="p">)</span> <span class="o">=</span> <span class="s2">&quot;http://www.example.com/tutorial&quot;</span>
+        <span class="n">DisplayName</span> <span class="o">=</span> <span class="s2">&quot;Example Distro Online Tutorial&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="other-keys">
+<h3><a class="toc-backref" href="#id12">Other Keys</a><a class="headerlink" href="#other-keys" title="Permalink to this headline">¶</a></h3>
+<p>All other subkeys under a Company-Tag pair are available for private use.</p>
+<p>Official CPython releases have traditionally used certain keys in this space to
+determine the location of the Python standard library and other installed
+modules. This behaviour is retained primarily for backward compatibility.
+However, as the code that reads these values is embedded into the interpreter,
+third-party distributions may be affected by values written into <code class="docutils literal notranslate"><span class="pre">PythonCore</span></code>
+if using an unmodified interpreter.</p>
+</div>
+</div>
+<div class="section" id="sample-code">
+<h2><a class="toc-backref" href="#id13">Sample Code</a><a class="headerlink" href="#sample-code" title="Permalink to this headline">¶</a></h2>
+<p>This sample code enumerates the registry and displays the available Company-Tag
+pairs that could be used to launch an environment and the target executable. It
+only shows the most-preferred target for the tag. Backwards-compatible handling
+of <code class="docutils literal notranslate"><span class="pre">PythonCore</span></code> is omitted but shown in a later example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Display most-preferred environments.</span>
+<span class="c1"># Assumes a 64-bit operating system</span>
+<span class="c1"># Does not correctly handle PythonCore compatibility</span>
+
+<span class="kn">import</span> <span class="nn">winreg</span>
+
+<span class="k">def</span> <span class="nf">enum_keys</span><span class="p">(</span><span class="n">key</span><span class="p">):</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">winreg</span><span class="o">.</span><span class="n">EnumKey</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+            <span class="k">break</span>
+        <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+
+<span class="k">def</span> <span class="nf">get_value</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value_name</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">winreg</span><span class="o">.</span><span class="n">QueryValue</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value_name</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+<span class="n">seen</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">hive</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">flags</span> <span class="ow">in</span> <span class="p">[</span>
+    <span class="p">(</span><span class="n">winreg</span><span class="o">.</span><span class="n">HKEY_CURRENT_USER</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;Software\Python&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+    <span class="p">(</span><span class="n">winreg</span><span class="o">.</span><span class="n">HKEY_LOCAL_MACHINE</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;Software\Python&#39;</span><span class="p">,</span> <span class="n">winreg</span><span class="o">.</span><span class="n">KEY_WOW64_64KEY</span><span class="p">),</span>
+    <span class="p">(</span><span class="n">winreg</span><span class="o">.</span><span class="n">HKEY_LOCAL_MACHINE</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;Software\Python&#39;</span><span class="p">,</span> <span class="n">winreg</span><span class="o">.</span><span class="n">KEY_WOW64_32KEY</span><span class="p">),</span>
+<span class="p">]:</span>
+    <span class="k">with</span> <span class="n">winreg</span><span class="o">.</span><span class="n">OpenKeyEx</span><span class="p">(</span><span class="n">hive</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">access</span><span class="o">=</span><span class="n">winreg</span><span class="o">.</span><span class="n">KEY_READ</span> <span class="o">|</span> <span class="n">flags</span><span class="p">)</span> <span class="k">as</span> <span class="n">root_key</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">company</span> <span class="ow">in</span> <span class="n">enum_keys</span><span class="p">(</span><span class="n">root_key</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">company</span> <span class="o">==</span> <span class="s1">&#39;PyLauncher&#39;</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="k">with</span> <span class="n">winreg</span><span class="o">.</span><span class="n">OpenKey</span><span class="p">(</span><span class="n">root_key</span><span class="p">,</span> <span class="n">company</span><span class="p">)</span> <span class="k">as</span> <span class="n">company_key</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">enum_keys</span><span class="p">(</span><span class="n">company_key</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="n">company</span><span class="p">,</span> <span class="n">tag</span><span class="p">)</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">company</span> <span class="o">==</span> <span class="s1">&#39;PythonCore&#39;</span><span class="p">:</span>
+                            <span class="c1"># TODO: Backwards compatibility handling</span>
+                            <span class="k">pass</span>
+                        <span class="k">continue</span>
+                    <span class="n">seen</span><span class="o">.</span><span class="n">add</span><span class="p">((</span><span class="n">company</span><span class="p">,</span> <span class="n">tag</span><span class="p">))</span>
+
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="k">with</span> <span class="n">winreg</span><span class="o">.</span><span class="n">OpenKey</span><span class="p">(</span><span class="n">company_key</span><span class="p">,</span> <span class="n">tag</span> <span class="o">+</span> <span class="sa">r</span><span class="s1">&#39;\InstallPath&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">ip_key</span><span class="p">:</span>
+                            <span class="n">exec_path</span> <span class="o">=</span> <span class="n">get_value</span><span class="p">(</span><span class="n">ip_key</span><span class="p">,</span> <span class="s1">&#39;ExecutablePath&#39;</span><span class="p">)</span>
+                            <span class="n">exec_args</span> <span class="o">=</span> <span class="n">get_value</span><span class="p">(</span><span class="n">ip_key</span><span class="p">,</span> <span class="s1">&#39;ExecutableArguments&#39;</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">company</span> <span class="o">==</span> <span class="s1">&#39;PythonCore&#39;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">exec_path</span><span class="p">:</span>
+                                <span class="c1"># TODO: Backwards compatibility handling</span>
+                                <span class="k">pass</span>
+                    <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+                        <span class="n">exec_path</span><span class="p">,</span> <span class="n">exec_args</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
+                    <span class="k">if</span> <span class="n">exec_path</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="se">\\</span><span class="si">{}</span><span class="s1"> - </span><span class="si">{}</span><span class="s1"> </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">company</span><span class="p">,</span> <span class="n">tag</span><span class="p">,</span> <span class="n">exec_path</span><span class="p">,</span> <span class="n">exec_args</span> <span class="ow">or</span> <span class="s1">&#39;&#39;</span><span class="p">))</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="se">\\</span><span class="si">{}</span><span class="s1"> - (not executable)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">company</span><span class="p">,</span> <span class="n">tag</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>This example only scans <code class="docutils literal notranslate"><span class="pre">PythonCore</span></code> entries for the current user. Where data
+is missing, the defaults as described earlier in the PEP are substituted. Note
+that these defaults are only for use under <code class="docutils literal notranslate"><span class="pre">PythonCore</span></code>; other registrations
+do not have any default values:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Only lists per-user PythonCore registrations</span>
+<span class="c1"># Uses fallback values as described in PEP 514</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">winreg</span>
+
+<span class="k">def</span> <span class="nf">enum_keys</span><span class="p">(</span><span class="n">key</span><span class="p">):</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">winreg</span><span class="o">.</span><span class="n">EnumKey</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+            <span class="k">break</span>
+        <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+
+<span class="k">def</span> <span class="nf">get_value</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value_name</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">winreg</span><span class="o">.</span><span class="n">QueryValue</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value_name</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+<span class="k">with</span> <span class="n">winreg</span><span class="o">.</span><span class="n">OpenKey</span><span class="p">(</span><span class="n">winreg</span><span class="o">.</span><span class="n">HKEY_CURRENT_USER</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;Software\Python\PythonCore&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">company_key</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Company:&#39;</span><span class="p">,</span> <span class="n">get_value</span><span class="p">(</span><span class="n">company_key</span><span class="p">,</span> <span class="s1">&#39;DisplayName&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="s1">&#39;Python Software Foundation&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Support:&#39;</span><span class="p">,</span> <span class="n">get_value</span><span class="p">(</span><span class="n">company_key</span><span class="p">,</span> <span class="s1">&#39;SupportUrl&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="s1">&#39;http://www.python.org/&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">enum_keys</span><span class="p">(</span><span class="n">company_key</span><span class="p">):</span>
+        <span class="k">with</span> <span class="n">winreg</span><span class="o">.</span><span class="n">OpenKey</span><span class="p">(</span><span class="n">company_key</span><span class="p">,</span> <span class="n">tag</span><span class="p">)</span> <span class="k">as</span> <span class="n">tag_key</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;PythonCore</span><span class="se">\\</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="n">tag</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Name:&#39;</span><span class="p">,</span> <span class="n">get_value</span><span class="p">(</span><span class="n">tag_key</span><span class="p">,</span> <span class="s1">&#39;DisplayName&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="s1">&#39;Python &#39;</span> <span class="o">+</span> <span class="n">tag</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Support:&#39;</span><span class="p">,</span> <span class="n">get_value</span><span class="p">(</span><span class="n">tag_key</span><span class="p">,</span> <span class="s1">&#39;SupportUrl&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="s1">&#39;http://www.python.org/&#39;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Version:&#39;</span><span class="p">,</span> <span class="n">get_value</span><span class="p">(</span><span class="n">tag_key</span><span class="p">,</span> <span class="s1">&#39;Version&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">tag</span><span class="p">[:</span><span class="mi">3</span><span class="p">])</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;SysVersion:&#39;</span><span class="p">,</span> <span class="n">get_value</span><span class="p">(</span><span class="n">tag_key</span><span class="p">,</span> <span class="s1">&#39;SysVersion&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">tag</span><span class="p">[:</span><span class="mi">3</span><span class="p">])</span>
+            <span class="c1"># Architecture is unknown because we are in HKCU</span>
+            <span class="c1"># Tools may use alternate approaches to determine architecture when</span>
+            <span class="c1"># the registration does not specify it.</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;SysArchitecture:&#39;</span><span class="p">,</span> <span class="n">get_value</span><span class="p">(</span><span class="n">tag_key</span><span class="p">,</span> <span class="s1">&#39;SysArchitecture&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="s1">&#39;(unknown)&#39;</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ip_key</span> <span class="o">=</span> <span class="n">winreg</span><span class="o">.</span><span class="n">OpenKey</span><span class="p">(</span><span class="n">company_key</span><span class="p">,</span> <span class="n">tag</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\\</span><span class="s1">InstallPath&#39;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">ip_key</span><span class="p">:</span>
+                <span class="n">ip</span> <span class="o">=</span> <span class="n">get_value</span><span class="p">(</span><span class="n">ip_key</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+                <span class="n">exe</span> <span class="o">=</span> <span class="n">get_value</span><span class="p">(</span><span class="n">ip_key</span><span class="p">,</span> <span class="s1">&#39;ExecutablePath&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ip</span><span class="p">,</span> <span class="s1">&#39;python.exe&#39;</span><span class="p">)</span>
+                <span class="n">exew</span> <span class="o">=</span> <span class="n">get_value</span><span class="p">(</span><span class="n">ip_key</span><span class="p">,</span> <span class="s1">&#39;WindowedExecutablePath&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ip</span><span class="p">,</span> <span class="s1">&#39;python.exe&#39;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;InstallPath:&#39;</span><span class="p">,</span> <span class="n">ip</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;ExecutablePath:&#39;</span><span class="p">,</span> <span class="n">exe</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;WindowedExecutablePath:&#39;</span><span class="p">,</span> <span class="n">exew</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>This example shows a subset of the registration that will be created by a
+just-for-me install of 64-bit Python 3.6.0. Other keys may also be created:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">HKEY_CURRENT_USER</span>\<span class="n">Software</span>\<span class="n">Python</span>\<span class="n">PythonCore</span>
+    <span class="p">(</span><span class="n">Default</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">value</span> <span class="ow">not</span> <span class="nb">set</span><span class="p">)</span>
+    <span class="n">DisplayName</span> <span class="o">=</span> <span class="s2">&quot;Python Software Foundation&quot;</span>
+    <span class="n">SupportUrl</span> <span class="o">=</span> <span class="s2">&quot;http://www.python.org/&quot;</span>
+
+<span class="n">HKEY_CURRENT_USER</span>\<span class="n">Software</span>\<span class="n">Python</span>\<span class="n">PythonCore</span>\<span class="mf">3.6</span>
+    <span class="p">(</span><span class="n">Default</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">value</span> <span class="ow">not</span> <span class="nb">set</span><span class="p">)</span>
+    <span class="n">DisplayName</span> <span class="o">=</span> <span class="s2">&quot;Python 3.6 (64-bit)&quot;</span>
+    <span class="n">SupportUrl</span> <span class="o">=</span> <span class="s2">&quot;http://www.python.org/&quot;</span>
+    <span class="n">Version</span> <span class="o">=</span> <span class="s2">&quot;3.6.0&quot;</span>
+    <span class="n">SysVersion</span> <span class="o">=</span> <span class="s2">&quot;3.6&quot;</span>
+    <span class="n">SysArchitecture</span> <span class="o">=</span> <span class="s2">&quot;64bit&quot;</span>
+
+<span class="n">HKEY_CURRENT_USER</span>\<span class="n">Software</span>\<span class="n">Python</span>\<span class="n">PythonCore</span>\<span class="mf">3.6</span>\<span class="n">Help</span>\<span class="n">Main</span> <span class="n">Python</span> <span class="n">Documentation</span>
+    <span class="p">(</span><span class="n">Default</span><span class="p">)</span> <span class="o">=</span> <span class="s2">&quot;C:\Users\Me\AppData\Local\Programs\Python\Python36\Doc\python360.chm&quot;</span>
+    <span class="n">DisplayName</span> <span class="o">=</span> <span class="s2">&quot;Python 3.6.0 Documentation&quot;</span>
+
+<span class="n">HKEY_CURRENT_USER</span>\<span class="n">Software</span>\<span class="n">Python</span>\<span class="n">PythonCore</span>\<span class="mf">3.6</span>\<span class="n">InstallPath</span>
+    <span class="p">(</span><span class="n">Default</span><span class="p">)</span> <span class="o">=</span> <span class="s2">&quot;C:\Users\Me\AppData\Local\Programs\Python\Python36</span><span class="se">\&quot;</span>
+    <span class="n">ExecutablePath</span> <span class="o">=</span> <span class="s2">&quot;C:\Users\Me\AppData\Local\Programs\Python\Python36\python.exe&quot;</span>
+    <span class="n">WindowedExecutablePath</span> <span class="o">=</span> <span class="s2">&quot;C:\Users\Me\AppData\Local\Programs\Python\Python36\pythonw.exe&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id14">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>Registry Redirector (Windows)
+(<a class="reference external" href="https://msdn.microsoft.com/en-us/library/windows/desktop/aa384232.aspx">https://msdn.microsoft.com/en-us/library/windows/desktop/aa384232.aspx</a>)</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id15">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0514.txt">https://github.com/python/peps/blob/master/pep-0514.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0514.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0513.html">PEP 0513</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0515.html">PEP 0515</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 514 – Python registration in the Windows registry</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#definitions">Definitions</a></li>
+<li><a class="reference internal" href="#structure">Structure</a><ul>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#company">Company</a></li>
+<li><a class="reference internal" href="#tag">Tag</a></li>
+<li><a class="reference internal" href="#installpath">InstallPath</a></li>
+<li><a class="reference internal" href="#help">Help</a></li>
+<li><a class="reference internal" href="#other-keys">Other Keys</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#sample-code">Sample Code</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

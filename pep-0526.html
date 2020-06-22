@@ -1,0 +1,815 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 526 – Syntax for Variable Annotations &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 527 – Removing Un(der)used file types/extensions on PyPI" href="pep-0527.html" />
+    <link rel="prev" title="PEP 525 – Asynchronous Generators" href="pep-0525.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 526 – Syntax for Variable Annotations</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-526-syntax-for-variable-annotations">
+<h1 class="page-title">PEP 526 – Syntax for Variable Annotations<a class="headerlink" href="#pep-526-syntax-for-variable-annotations" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">526</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Syntax for Variable Annotations</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Ryan Gonzalez &lt;rymg19&#32;&#97;t&#32;gmail.com&gt;, Philip House &lt;phouse512&#32;&#97;t&#32;gmail.com&gt;, Ivan Levkivskyi &lt;levkivskyi&#32;&#97;t&#32;gmail.com&gt;, Lisa Roach &lt;lisaroach14&#32;&#97;t&#32;gmail.com&gt;, Guido van Rossum &lt;guido&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">09-Aug-2016</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.6</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">30-Aug-2016, 02-Sep-2016</dd>
+<dt class="field-odd">Resolution</dt>
+<dd class="field-odd"><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2016-September/146282.html">https://mail.python.org/pipermail/python-dev/2016-September/146282.html</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#status" id="id2">Status</a></li>
+<li><a class="reference internal" href="#notice-for-reviewers" id="id3">Notice for Reviewers</a></li>
+<li><a class="reference internal" href="#abstract" id="id4">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id5">Rationale</a><ul>
+<li><a class="reference internal" href="#non-goals" id="id6">Non-goals</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#specification" id="id7">Specification</a><ul>
+<li><a class="reference internal" href="#global-and-local-variable-annotations" id="id8">Global and local variable annotations</a></li>
+<li><a class="reference internal" href="#class-and-instance-variable-annotations" id="id9">Class and instance variable annotations</a></li>
+<li><a class="reference internal" href="#annotating-expressions" id="id10">Annotating expressions</a></li>
+<li><a class="reference internal" href="#where-annotations-aren-t-allowed" id="id11">Where annotations aren’t allowed</a></li>
+<li><a class="reference internal" href="#variable-annotations-in-stub-files" id="id12">Variable annotations in stub files</a></li>
+<li><a class="reference internal" href="#preferred-coding-style-for-variable-annotations" id="id13">Preferred coding style for variable annotations</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#changes-to-standard-library-and-documentation" id="id14">Changes to Standard Library and Documentation</a></li>
+<li><a class="reference internal" href="#runtime-effects-of-type-annotations" id="id15">Runtime Effects of Type Annotations</a><ul>
+<li><a class="reference internal" href="#other-uses-of-annotations" id="id16">Other uses of annotations</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rejected-postponed-proposals" id="id17">Rejected/Postponed Proposals</a></li>
+<li><a class="reference internal" href="#backwards-compatibility" id="id18">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#implementation" id="id19">Implementation</a></li>
+<li><a class="reference internal" href="#copyright" id="id20">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="status">
+<h2><a class="toc-backref" href="#id2">Status</a><a class="headerlink" href="#status" title="Permalink to this headline">¶</a></h2>
+<p>This PEP has been provisionally accepted by the BDFL.
+See the acceptance message for more color:
+<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2016-September/146282.html">https://mail.python.org/pipermail/python-dev/2016-September/146282.html</a></p>
+</div>
+<div class="section" id="notice-for-reviewers">
+<h2><a class="toc-backref" href="#id3">Notice for Reviewers</a><a class="headerlink" href="#notice-for-reviewers" title="Permalink to this headline">¶</a></h2>
+<p>This PEP was drafted in a separate repo:
+<a class="reference external" href="https://github.com/phouse512/peps/tree/pep-0526">https://github.com/phouse512/peps/tree/pep-0526</a>.</p>
+<p>There was preliminary discussion on python-ideas and at
+<a class="reference external" href="https://github.com/python/typing/issues/258">https://github.com/python/typing/issues/258</a>.</p>
+<p>Before you bring up an objection in a public forum please at least
+read the summary of <a class="reference internal" href="#rejected">rejected</a> ideas listed at the end of this PEP.</p>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id4">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>PEP 484 introduced type hints, a.k.a. type annotations.  While its
+main focus was function annotations, it also introduced the notion of
+type comments to annotate variables:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># &#39;primes&#39; is a list of integers</span>
+<span class="n">primes</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># type: List[int]</span>
+
+<span class="c1"># &#39;captain&#39; is a string (Note: initial value is a problem)</span>
+<span class="n">captain</span> <span class="o">=</span> <span class="o">...</span>  <span class="c1"># type: str</span>
+
+<span class="k">class</span> <span class="nc">Starship</span><span class="p">:</span>
+    <span class="c1"># &#39;stats&#39; is a class variable</span>
+    <span class="n">stats</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># type: Dict[str, int]</span>
+</pre></div>
+</div>
+<p>This PEP aims at adding syntax to Python for annotating the types of variables
+(including class variables and instance variables),
+instead of expressing them through comments:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">primes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="n">captain</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># Note: no initial value!</span>
+
+<span class="k">class</span> <span class="nc">Starship</span><span class="p">:</span>
+    <span class="n">stats</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+</pre></div>
+</div>
+<p>PEP 484 explicitly states that type comments are intended to help with
+type inference in complex cases, and this PEP does not change this
+intention.  However, since in practice type comments have also been
+adopted for class variables and instance variables, this PEP also
+discusses the use of type annotations for those variables.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id5">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Although type comments work well enough, the fact that they’re
+expressed through comments has some downsides:</p>
+<ul>
+<li><p>Text editors often highlight comments differently from type annotations.</p>
+</li>
+<li><p>There’s no way to annotate the type of an undefined variable; one needs to
+initialize it to <code class="docutils literal notranslate"><span class="pre">None</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">a</span> <span class="pre">=</span> <span class="pre">None</span> <span class="pre">#</span> <span class="pre">type:</span> <span class="pre">int</span></code>).</p>
+</li>
+<li><p>Variables annotated in a conditional branch are difficult to read:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">some_value</span><span class="p">:</span>
+    <span class="n">my_var</span> <span class="o">=</span> <span class="n">function</span><span class="p">()</span> <span class="c1"># type: Logger</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">my_var</span> <span class="o">=</span> <span class="n">another_function</span><span class="p">()</span> <span class="c1"># Why isn&#39;t there a type here?</span>
+</pre></div>
+</div>
+</li>
+<li><p>Since type comments aren’t actually part of the language, if a Python script
+wants to parse them, it requires a custom parser instead of just using
+<code class="docutils literal notranslate"><span class="pre">ast</span></code>.</p>
+</li>
+<li><p>Type comments are used a lot in typeshed. Migrating typeshed to use
+the variable annotation syntax instead of type comments would improve
+readability of stubs.</p>
+</li>
+<li><p>In situations where normal comments and type comments are used together, it is
+difficult to distinguish them:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">path</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># type: Optional[str]  # Path to module source</span>
+</pre></div>
+</div>
+</li>
+<li><p>It’s impossible to retrieve the annotations at runtime outside of
+attempting to find the module’s source code and parse it at runtime,
+which is inelegant, to say the least.</p>
+</li>
+</ul>
+<p>The majority of these issues can be alleviated by making the syntax
+a core part of the language. Moreover, having a dedicated annotation syntax
+for class and instance variables (in addition to method annotations) will
+pave the way to static duck-typing as a complement to nominal typing defined
+by PEP 484.</p>
+<div class="section" id="non-goals">
+<h3><a class="toc-backref" href="#id6">Non-goals</a><a class="headerlink" href="#non-goals" title="Permalink to this headline">¶</a></h3>
+<p>While the proposal is accompanied by an extension of the <code class="docutils literal notranslate"><span class="pre">typing.get_type_hints</span></code>
+standard library function for runtime retrieval of annotations, variable
+annotations are not designed for runtime type checking. Third party packages
+will have to be developed to implement such functionality.</p>
+<p>It should also be emphasized that <strong>Python will remain a dynamically typed
+language, and the authors have no desire to ever make type hints mandatory,
+even by convention.</strong> Type annotations should not be confused with variable
+declarations in statically typed languages. The goal of annotation syntax is
+to provide an easy way to specify structured type metadata
+for third party tools.</p>
+<p>This PEP does not require type checkers to change their type checking
+rules. It merely provides a more readable syntax to replace type
+comments.</p>
+</div>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id7">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>Type annotation can be added to an assignment statement or to a single
+expression indicating the desired type of the annotation target to a third
+party type checker:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">my_var</span><span class="p">:</span> <span class="nb">int</span>
+<span class="n">my_var</span> <span class="o">=</span> <span class="mi">5</span>  <span class="c1"># Passes type check.</span>
+<span class="n">other_var</span><span class="p">:</span> <span class="nb">int</span>  <span class="o">=</span> <span class="s1">&#39;a&#39;</span>  <span class="c1"># Flagged as error by type checker,</span>
+                       <span class="c1"># but OK at runtime.</span>
+</pre></div>
+</div>
+<p>This syntax does not introduce any new semantics beyond PEP 484, so that
+the following three statements are equivalent:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">var</span> <span class="o">=</span> <span class="n">value</span> <span class="c1"># type: annotation</span>
+<span class="n">var</span><span class="p">:</span> <span class="n">annotation</span><span class="p">;</span> <span class="n">var</span> <span class="o">=</span> <span class="n">value</span>
+<span class="n">var</span><span class="p">:</span> <span class="n">annotation</span> <span class="o">=</span> <span class="n">value</span>
+</pre></div>
+</div>
+<p>Below we specify the syntax of type annotations
+in different contexts and their runtime effects.</p>
+<p>We also suggest how type checkers might interpret annotations, but
+compliance to these suggestions is not mandatory.  (This is in line
+with the attitude towards compliance in PEP 484.)</p>
+<div class="section" id="global-and-local-variable-annotations">
+<h3><a class="toc-backref" href="#id8">Global and local variable annotations</a><a class="headerlink" href="#global-and-local-variable-annotations" title="Permalink to this headline">¶</a></h3>
+<p>The types of locals and globals can be annotated as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">some_number</span><span class="p">:</span> <span class="nb">int</span>           <span class="c1"># variable without initial value</span>
+<span class="n">some_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># variable with initial value</span>
+</pre></div>
+</div>
+<p>Being able to omit the initial value allows for easier typing of variables
+assigned in conditional branches:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sane_world</span><span class="p">:</span> <span class="nb">bool</span>
+<span class="k">if</span> <span class="mi">2</span><span class="o">+</span><span class="mi">2</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+    <span class="n">sane_world</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">sane_world</span> <span class="o">=</span> <span class="kc">False</span>
+</pre></div>
+</div>
+<p>Note that, although the syntax does allow tuple packing, it does <em>not</em> allow
+one to annotate the types of variables when tuple unpacking is used:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Tuple packing with variable annotation syntax</span>
+<span class="n">t</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="c1"># or</span>
+<span class="n">t</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span>  <span class="c1"># This only works in Python 3.8+</span>
+
+<span class="c1"># Tuple unpacking with variable annotation syntax</span>
+<span class="n">header</span><span class="p">:</span> <span class="nb">str</span>
+<span class="n">kind</span><span class="p">:</span> <span class="nb">int</span>
+<span class="n">body</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
+<span class="n">header</span><span class="p">,</span> <span class="n">kind</span><span class="p">,</span> <span class="n">body</span> <span class="o">=</span> <span class="n">message</span>
+</pre></div>
+</div>
+<p>Omitting the initial value leaves the variable uninitialized:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>  <span class="c1"># raises NameError</span>
+</pre></div>
+</div>
+<p>However, annotating a local variable will cause the interpreter to always make
+it a local:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">f</span><span class="p">():</span>
+    <span class="n">a</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>  <span class="c1"># raises UnboundLocalError</span>
+    <span class="c1"># Commenting out the a: int makes it a NameError.</span>
+</pre></div>
+</div>
+<p>as if the code were:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">f</span><span class="p">():</span>
+    <span class="k">if</span> <span class="kc">False</span><span class="p">:</span> <span class="n">a</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>  <span class="c1"># raises UnboundLocalError</span>
+</pre></div>
+</div>
+<p>Duplicate type annotations will be ignored. However, static type
+checkers may issue a warning for annotations of the same variable
+by a different type:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span>
+<span class="n">a</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># Static type checker may or may not warn about this.</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="class-and-instance-variable-annotations">
+<span id="classvar"></span><h3><a class="toc-backref" href="#id9">Class and instance variable annotations</a><a class="headerlink" href="#class-and-instance-variable-annotations" title="Permalink to this headline">¶</a></h3>
+<p>Type annotations can also be used to annotate class and instance variables
+in class bodies and methods. In particular, the value-less notation <code class="docutils literal notranslate"><span class="pre">a:</span> <span class="pre">int</span></code>
+allows one to annotate instance variables that should be initialized
+in <code class="docutils literal notranslate"><span class="pre">__init__</span></code> or <code class="docutils literal notranslate"><span class="pre">__new__</span></code>. The proposed syntax is as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">BasicStarship</span><span class="p">:</span>
+    <span class="n">captain</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;Picard&#39;</span>               <span class="c1"># instance variable with default</span>
+    <span class="n">damage</span><span class="p">:</span> <span class="nb">int</span>                           <span class="c1"># instance variable without default</span>
+    <span class="n">stats</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># class variable</span>
+</pre></div>
+</div>
+<p>Here <code class="docutils literal notranslate"><span class="pre">ClassVar</span></code> is a special class defined by the typing module that
+indicates to the static type checker that this variable should not be
+set on instances.</p>
+<p>Note that a <code class="docutils literal notranslate"><span class="pre">ClassVar</span></code> parameter cannot include any type variables, regardless
+of the level of nesting: <code class="docutils literal notranslate"><span class="pre">ClassVar[T]</span></code> and <code class="docutils literal notranslate"><span class="pre">ClassVar[List[Set[T]]]</span></code> are
+both invalid if <code class="docutils literal notranslate"><span class="pre">T</span></code> is a type variable.</p>
+<p>This could be illustrated with a more detailed example. In this class:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Starship</span><span class="p">:</span>
+    <span class="n">captain</span> <span class="o">=</span> <span class="s1">&#39;Picard&#39;</span>
+    <span class="n">stats</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">damage</span><span class="p">,</span> <span class="n">captain</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">damage</span> <span class="o">=</span> <span class="n">damage</span>
+        <span class="k">if</span> <span class="n">captain</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">captain</span> <span class="o">=</span> <span class="n">captain</span>  <span class="c1"># Else keep the default</span>
+
+    <span class="k">def</span> <span class="nf">hit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">Starship</span><span class="o">.</span><span class="n">stats</span><span class="p">[</span><span class="s1">&#39;hits&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Starship</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;hits&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">stats</span></code> is intended to be a class variable (keeping track of many different
+per-game statistics), while <code class="docutils literal notranslate"><span class="pre">captain</span></code> is an instance variable with a default
+value set in the class. This difference might not be seen by a type
+checker: both get initialized in the class, but <code class="docutils literal notranslate"><span class="pre">captain</span></code> serves only
+as a convenient default value for the instance variable, while <code class="docutils literal notranslate"><span class="pre">stats</span></code>
+is truly a class variable – it is intended to be shared by all instances.</p>
+<p>Since both variables happen to be initialized at the class level, it is
+useful to distinguish them by marking class variables as annotated with
+types wrapped in <code class="docutils literal notranslate"><span class="pre">ClassVar[...]</span></code>. In this way a type checker may flag
+accidental assignments to attributes with the same name on instances.</p>
+<p>For example, annotating the discussed class:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Starship</span><span class="p">:</span>
+    <span class="n">captain</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;Picard&#39;</span>
+    <span class="n">damage</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">stats</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">damage</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">captain</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">damage</span> <span class="o">=</span> <span class="n">damage</span>
+        <span class="k">if</span> <span class="n">captain</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">captain</span> <span class="o">=</span> <span class="n">captain</span>  <span class="c1"># Else keep the default</span>
+
+    <span class="k">def</span> <span class="nf">hit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">Starship</span><span class="o">.</span><span class="n">stats</span><span class="p">[</span><span class="s1">&#39;hits&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Starship</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;hits&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+
+<span class="n">enterprise_d</span> <span class="o">=</span> <span class="n">Starship</span><span class="p">(</span><span class="mi">3000</span><span class="p">)</span>
+<span class="n">enterprise_d</span><span class="o">.</span><span class="n">stats</span> <span class="o">=</span> <span class="p">{}</span> <span class="c1"># Flagged as error by a type checker</span>
+<span class="n">Starship</span><span class="o">.</span><span class="n">stats</span> <span class="o">=</span> <span class="p">{}</span> <span class="c1"># This is OK</span>
+</pre></div>
+</div>
+<p>As a matter of convenience (and convention), instance variables can be
+annotated in <code class="docutils literal notranslate"><span class="pre">__init__</span></code> or other methods, rather than in the class:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Generic</span><span class="p">,</span> <span class="n">TypeVar</span>
+<span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s1">&#39;T&#39;</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">Box</span><span class="p">(</span><span class="n">Generic</span><span class="p">[</span><span class="n">T</span><span class="p">]):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">content</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">content</span><span class="p">:</span> <span class="n">T</span> <span class="o">=</span> <span class="n">content</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="annotating-expressions">
+<h3><a class="toc-backref" href="#id10">Annotating expressions</a><a class="headerlink" href="#annotating-expressions" title="Permalink to this headline">¶</a></h3>
+<p>The target of the annotation can be any valid single assignment
+target, at least syntactically (it is up to the type checker what to
+do with this):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Cls</span><span class="p">:</span>
+    <span class="k">pass</span>
+
+<span class="n">c</span> <span class="o">=</span> <span class="n">Cls</span><span class="p">()</span>
+<span class="n">c</span><span class="o">.</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># Annotates c.x with int.</span>
+<span class="n">c</span><span class="o">.</span><span class="n">y</span><span class="p">:</span> <span class="nb">int</span>      <span class="c1"># Annotates c.y with int.</span>
+
+<span class="n">d</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">d</span><span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">]:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># Annotates d[&#39;a&#39;] with int.</span>
+<span class="n">d</span><span class="p">[</span><span class="s1">&#39;b&#39;</span><span class="p">]:</span> <span class="nb">int</span>      <span class="c1"># Annotates d[&#39;b&#39;] with int.</span>
+</pre></div>
+</div>
+<p>Note that even a parenthesized name is considered an expression,
+not a simple name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">x</span><span class="p">):</span> <span class="nb">int</span>      <span class="c1"># Annotates x with int, (x) treated as expression by compiler.</span>
+<span class="p">(</span><span class="n">y</span><span class="p">):</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># Same situation here.</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="where-annotations-aren-t-allowed">
+<h3><a class="toc-backref" href="#id11">Where annotations aren’t allowed</a><a class="headerlink" href="#where-annotations-aren-t-allowed" title="Permalink to this headline">¶</a></h3>
+<p>It is illegal to attempt to annotate variables subject to <code class="docutils literal notranslate"><span class="pre">global</span></code>
+or <code class="docutils literal notranslate"><span class="pre">nonlocal</span></code> in the same function scope:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">f</span><span class="p">():</span>
+    <span class="k">global</span> <span class="n">x</span><span class="p">:</span> <span class="nb">int</span>  <span class="c1"># SyntaxError</span>
+
+<span class="k">def</span> <span class="nf">g</span><span class="p">():</span>
+    <span class="n">x</span><span class="p">:</span> <span class="nb">int</span>  <span class="c1"># Also a SyntaxError</span>
+    <span class="k">global</span> <span class="n">x</span>
+</pre></div>
+</div>
+<p>The reason is that <code class="docutils literal notranslate"><span class="pre">global</span></code> and <code class="docutils literal notranslate"><span class="pre">nonlocal</span></code> don’t own variables;
+therefore, the type annotations belong in the scope owning the variable.</p>
+<p>Only single assignment targets and single right hand side values are allowed.
+In addition, one cannot annotate variables used in a <code class="docutils literal notranslate"><span class="pre">for</span></code> or <code class="docutils literal notranslate"><span class="pre">with</span></code>
+statement; they can be annotated ahead of time, in a similar manner to tuple
+unpacking:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span>
+<span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">my_iter</span><span class="p">:</span>
+    <span class="o">...</span>
+
+<span class="n">f</span><span class="p">:</span> <span class="n">MyFile</span>
+<span class="k">with</span> <span class="n">myfunc</span><span class="p">()</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="variable-annotations-in-stub-files">
+<h3><a class="toc-backref" href="#id12">Variable annotations in stub files</a><a class="headerlink" href="#variable-annotations-in-stub-files" title="Permalink to this headline">¶</a></h3>
+<p>As variable annotations are more readable than type comments, they are
+preferred in stub files for all versions of Python, including Python 2.7.
+Note that stub files are not executed by Python interpreters, and therefore
+using variable annotations will not lead to errors. Type checkers should
+support variable annotations in stubs for all versions of Python. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># file lib.pyi</span>
+
+<span class="n">ADDRESS</span><span class="p">:</span> <span class="n">unicode</span> <span class="o">=</span> <span class="o">...</span>
+
+<span class="k">class</span> <span class="nc">Error</span><span class="p">:</span>
+    <span class="n">cause</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">unicode</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="preferred-coding-style-for-variable-annotations">
+<h3><a class="toc-backref" href="#id13">Preferred coding style for variable annotations</a><a class="headerlink" href="#preferred-coding-style-for-variable-annotations" title="Permalink to this headline">¶</a></h3>
+<p>Annotations for module level variables, class and instance variables,
+and local variables should have a single space after corresponding colon.
+There should be no space before the colon. If an assignment has right hand
+side, then the equality sign should have exactly one space on both sides.
+Examples:</p>
+<ul>
+<li><p>Yes:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">code</span><span class="p">:</span> <span class="nb">int</span>
+
+<span class="k">class</span> <span class="nc">Point</span><span class="p">:</span>
+    <span class="n">coords</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
+    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&lt;unknown&gt;&#39;</span>
+</pre></div>
+</div>
+</li>
+<li><p>No:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">code</span><span class="p">:</span><span class="nb">int</span>  <span class="c1"># No space after colon</span>
+<span class="n">code</span> <span class="p">:</span> <span class="nb">int</span>  <span class="c1"># Space before colon</span>
+
+<span class="k">class</span> <span class="nc">Test</span><span class="p">:</span>
+    <span class="n">result</span><span class="p">:</span> <span class="nb">int</span><span class="o">=</span><span class="mi">0</span>  <span class="c1"># No spaces around equality sign</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="changes-to-standard-library-and-documentation">
+<h2><a class="toc-backref" href="#id14">Changes to Standard Library and Documentation</a><a class="headerlink" href="#changes-to-standard-library-and-documentation" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>A new covariant type <code class="docutils literal notranslate"><span class="pre">ClassVar[T_co]</span></code> is added to the <code class="docutils literal notranslate"><span class="pre">typing</span></code>
+module. It accepts only a single argument that should be a valid type,
+and is used to annotate class variables that should not be set on class
+instances. This restriction is ensured by static checkers,
+but not at runtime. See the
+<a class="reference internal" href="#classvar">classvar</a> section for examples and explanations for the usage of
+<code class="docutils literal notranslate"><span class="pre">ClassVar</span></code>, and see the <a class="reference internal" href="#rejected">rejected</a> section for more information on
+the reasoning behind <code class="docutils literal notranslate"><span class="pre">ClassVar</span></code>.</li>
+<li>Function <code class="docutils literal notranslate"><span class="pre">get_type_hints</span></code> in the <code class="docutils literal notranslate"><span class="pre">typing</span></code> module will be extended,
+so that one can retrieve type annotations at runtime from modules
+and classes as well as functions.
+Annotations are returned as a dictionary mapping from variable or arguments
+to their type hints with forward references evaluated.
+For classes it returns a mapping (perhaps <code class="docutils literal notranslate"><span class="pre">collections.ChainMap</span></code>)
+constructed from annotations in method resolution order.</li>
+<li>Recommended guidelines for using annotations will be added to the
+documentation, containing a pedagogical recapitulation of specifications
+described in this PEP and in PEP 484. In addition, a helper script for
+translating type comments into type annotations will be published
+separately from the standard library.</li>
+</ul>
+</div>
+<div class="section" id="runtime-effects-of-type-annotations">
+<h2><a class="toc-backref" href="#id15">Runtime Effects of Type Annotations</a><a class="headerlink" href="#runtime-effects-of-type-annotations" title="Permalink to this headline">¶</a></h2>
+<p>Annotating a local variable will cause
+the interpreter to treat it as a local, even if it was never assigned to.
+Annotations for local variables will not be evaluated:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">f</span><span class="p">():</span>
+    <span class="n">x</span><span class="p">:</span> <span class="n">NonexistentName</span>  <span class="c1"># No error.</span>
+</pre></div>
+</div>
+<p>However, if it is at a module or class level, then the type <em>will</em> be
+evaluated:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">x</span><span class="p">:</span> <span class="n">NonexistentName</span>  <span class="c1"># Error!</span>
+<span class="k">class</span> <span class="nc">X</span><span class="p">:</span>
+    <span class="n">var</span><span class="p">:</span> <span class="n">NonexistentName</span>  <span class="c1"># Error!</span>
+</pre></div>
+</div>
+<p>In addition, at the module or class level, if the item being annotated is a
+<em>simple name</em>, then it and the annotation will be stored in the
+<code class="docutils literal notranslate"><span class="pre">__annotations__</span></code> attribute of that module or class (mangled if private)
+as an ordered mapping from names to evaluated annotations.
+Here is an example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span>
+<span class="k">class</span> <span class="nc">Player</span><span class="p">:</span>
+    <span class="o">...</span>
+<span class="n">players</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Player</span><span class="p">]</span>
+<span class="n">__points</span><span class="p">:</span> <span class="nb">int</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="vm">__annotations__</span><span class="p">)</span>
+<span class="c1"># prints: {&#39;players&#39;: typing.Dict[str, __main__.Player],</span>
+<span class="c1">#          &#39;_Player__points&#39;: &lt;class &#39;int&#39;&gt;}</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">__annotations__</span></code> is writable, so this is permitted:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="vm">__annotations__</span><span class="p">[</span><span class="s1">&#39;s&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span>
+</pre></div>
+</div>
+<p>But attempting to update <code class="docutils literal notranslate"><span class="pre">__annotations__</span></code> to something other than an
+ordered mapping may result in a TypeError:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">C</span><span class="p">:</span>
+    <span class="vm">__annotations__</span> <span class="o">=</span> <span class="mi">42</span>
+    <span class="n">x</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span>  <span class="c1"># raises TypeError</span>
+</pre></div>
+</div>
+<p>(Note that the assignment to <code class="docutils literal notranslate"><span class="pre">__annotations__</span></code>, which is the
+culprit, is accepted by the Python interpreter without questioning it
+– but the subsequent type annotation expects it to be a
+<code class="docutils literal notranslate"><span class="pre">MutableMapping</span></code> and will fail.)</p>
+<p>The recommended way of getting annotations at runtime is by using
+<code class="docutils literal notranslate"><span class="pre">typing.get_type_hints</span></code> function; as with all dunder attributes,
+any undocummented use of <code class="docutils literal notranslate"><span class="pre">__annotations__</span></code> is subject to breakage
+without warning:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">ClassVar</span><span class="p">,</span> <span class="n">get_type_hints</span>
+<span class="k">class</span> <span class="nc">Starship</span><span class="p">:</span>
+    <span class="n">hitpoints</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span>
+    <span class="n">stats</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">shield</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span>
+    <span class="n">captain</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">captain</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="o">...</span>
+
+<span class="k">assert</span> <span class="n">get_type_hints</span><span class="p">(</span><span class="n">Starship</span><span class="p">)</span> <span class="o">==</span> <span class="p">{</span><span class="s1">&#39;hitpoints&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                                    <span class="s1">&#39;stats&#39;</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]],</span>
+                                    <span class="s1">&#39;shield&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                                    <span class="s1">&#39;captain&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">}</span>
+
+<span class="k">assert</span> <span class="n">get_type_hints</span><span class="p">(</span><span class="n">Starship</span><span class="o">.</span><span class="fm">__init__</span><span class="p">)</span> <span class="o">==</span> <span class="p">{</span><span class="s1">&#39;captain&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                                             <span class="s1">&#39;return&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>Note that if annotations are not found statically, then the
+<code class="docutils literal notranslate"><span class="pre">__annotations__</span></code> dictionary is not created at all. Also the
+value of having annotations available locally does not offset
+the cost of having to create and populate the annotations dictionary
+on every function call. Therefore annotations at function level are
+not evaluated and not stored.</p>
+<div class="section" id="other-uses-of-annotations">
+<h3><a class="toc-backref" href="#id16">Other uses of annotations</a><a class="headerlink" href="#other-uses-of-annotations" title="Permalink to this headline">¶</a></h3>
+<p>While Python with this PEP will not object to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">alice</span><span class="p">:</span> <span class="s1">&#39;well done&#39;</span> <span class="o">=</span> <span class="s1">&#39;A+&#39;</span>
+<span class="n">bob</span><span class="p">:</span> <span class="s1">&#39;what a shame&#39;</span> <span class="o">=</span> <span class="s1">&#39;F-&#39;</span>
+</pre></div>
+</div>
+<p>since it will not care about the type annotation beyond “it evaluates
+without raising”, a type checker that encounters it will flag it,
+unless disabled with <code class="docutils literal notranslate"><span class="pre">#</span> <span class="pre">type:</span> <span class="pre">ignore</span></code> or <code class="docutils literal notranslate"><span class="pre">&#64;no_type_check</span></code>.</p>
+<p>However, since Python won’t care what the “type” is,
+if the above snippet is at the global level or in a class, <code class="docutils literal notranslate"><span class="pre">__annotations__</span></code>
+will include <code class="docutils literal notranslate"><span class="pre">{'alice':</span> <span class="pre">'well</span> <span class="pre">done',</span> <span class="pre">'bob':</span> <span class="pre">'what</span> <span class="pre">a</span> <span class="pre">shame'}</span></code>.</p>
+<p>These stored annotations might be used for other purposes,
+but with this PEP we explicitly recommend type hinting as the
+preferred use of annotations.</p>
+</div>
+</div>
+<div class="section" id="rejected-postponed-proposals">
+<span id="rejected"></span><h2><a class="toc-backref" href="#id17">Rejected/Postponed Proposals</a><a class="headerlink" href="#rejected-postponed-proposals" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p><strong>Should we introduce variable annotations at all?</strong>
+Variable annotations have <em>already</em> been around for almost two years
+in the form of type comments, sanctioned by PEP 484.  They are
+extensively used by third party type checkers (mypy, pytype,
+PyCharm, etc.) and by projects using the type checkers. However, the
+comment syntax has many downsides listed in Rationale. This PEP is
+not about the need for type annotations, it is about what should be
+the syntax for such annotations.</p>
+</li>
+<li><p><strong>Introduce a new keyword:</strong>
+The choice of a good keyword is hard,
+e.g. it can’t be <code class="docutils literal notranslate"><span class="pre">var</span></code> because that is way too common a variable name,
+and it can’t be <code class="docutils literal notranslate"><span class="pre">local</span></code> if we want to use it for class variables or
+globals. Second, no matter what we choose, we’d still need
+a <code class="docutils literal notranslate"><span class="pre">__future__</span></code> import.</p>
+</li>
+<li><p><strong>Use</strong> <code class="docutils literal notranslate"><span class="pre">def</span></code> <strong>as a keyword:</strong>
+The proposal would be:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">primes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">def</span> <span class="nf">captain</span><span class="p">:</span> <span class="nb">str</span>
+</pre></div>
+</div>
+<p>The problem with this is that <code class="docutils literal notranslate"><span class="pre">def</span></code> means “define a function” to
+generations of Python programmers (and tools!), and using it also to
+define variables does not increase clarity.  (Though this is of
+course subjective.)</p>
+</li>
+<li><p><strong>Use function based syntax</strong>:
+It was proposed to annotate types of variables using
+<code class="docutils literal notranslate"><span class="pre">var</span> <span class="pre">=</span> <span class="pre">cast(annotation[,</span> <span class="pre">value])</span></code>. Although this syntax
+alleviates some problems with type comments like absence of the annotation
+in AST, it does not solve other problems such as readability
+and it introduces possible runtime overhead.</p>
+</li>
+<li><p><strong>Allow type annotations for tuple unpacking:</strong>
+This causes ambiguity: it’s not clear what this statement means:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">T</span>
+</pre></div>
+</div>
+<p>Are <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> both of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, or do we expect <code class="docutils literal notranslate"><span class="pre">T</span></code> to be
+a tuple type of two items that are distributed over <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code>,
+or perhaps <code class="docutils literal notranslate"><span class="pre">x</span></code> has type <code class="docutils literal notranslate"><span class="pre">Any</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> has type <code class="docutils literal notranslate"><span class="pre">T</span></code>? (The
+latter is what this would mean if this occurred in a function
+signature.)  Rather than leave the (human) reader guessing, we
+forbid this, at least for now.</p>
+</li>
+<li><p><strong>Parenthesized form</strong> <code class="docutils literal notranslate"><span class="pre">(var:</span> <span class="pre">type)</span></code> <strong>for annotations:</strong>
+It was brought up on python-ideas as a remedy for the above-mentioned
+ambiguity, but it was rejected since such syntax would be hairy,
+the benefits are slight, and the readability would be poor.</p>
+</li>
+<li><p><strong>Allow annotations in chained assignments:</strong>
+This has problems of ambiguity and readability similar to tuple
+unpacking, for example in:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">y</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">z</span> <span class="o">=</span> <span class="n">w</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<p>it is ambiguous, what should the types of <code class="docutils literal notranslate"><span class="pre">y</span></code> and  <code class="docutils literal notranslate"><span class="pre">z</span></code> be?
+Also the second line is difficult to parse.</p>
+</li>
+<li><p><strong>Allow annotations in</strong> <code class="docutils literal notranslate"><span class="pre">with</span></code> <strong>and</strong> <code class="docutils literal notranslate"><span class="pre">for</span></code> <strong>statement:</strong>
+This was rejected because in <code class="docutils literal notranslate"><span class="pre">for</span></code> it would make it hard to spot the actual
+iterable, and in <code class="docutils literal notranslate"><span class="pre">with</span></code> it would confuse the CPython’s LL(1) parser.</p>
+</li>
+<li><p><strong>Evaluate local annotations at function definition time:</strong>
+This has been rejected by Guido because the placement of the annotation
+strongly suggests that it’s in the same scope as the surrounding code.</p>
+</li>
+<li><p><strong>Store variable annotations also in function scope:</strong>
+The value of having the annotations available locally is just not enough
+to significantly offset the cost of creating and populating the dictionary
+on <em>each</em> function call.</p>
+</li>
+<li><p><strong>Initialize variables annotated without assignment:</strong>
+It was proposed on python-ideas to initialize <code class="docutils literal notranslate"><span class="pre">x</span></code> in <code class="docutils literal notranslate"><span class="pre">x:</span> <span class="pre">int</span></code> to
+<code class="docutils literal notranslate"><span class="pre">None</span></code> or to an additional special constant like Javascript’s
+<code class="docutils literal notranslate"><span class="pre">undefined</span></code>. However, adding yet another singleton value to the language
+would needed to be checked for everywhere in the code. Therefore,
+Guido just said plain “No” to this.</p>
+</li>
+<li><p><strong>Add also</strong> <code class="docutils literal notranslate"><span class="pre">InstanceVar</span></code> <strong>to the typing module:</strong>
+This is redundant because instance variables are way more common than
+class variables. The more common usage deserves to be the default.</p>
+</li>
+<li><p><strong>Allow instance variable annotations only in methods:</strong>
+The problem is that many <code class="docutils literal notranslate"><span class="pre">__init__</span></code> methods do a lot of things besides
+initializing instance variables, and it would be harder (for a human)
+to find all the instance variable annotations.
+And sometimes <code class="docutils literal notranslate"><span class="pre">__init__</span></code> is factored into more helper methods
+so it’s even harder to chase them down. Putting the instance variable
+annotations together in the class makes it easier to find them,
+and helps a first-time reader of the code.</p>
+</li>
+<li><p><strong>Use syntax</strong> <code class="docutils literal notranslate"><span class="pre">x:</span> <span class="pre">class</span> <span class="pre">t</span> <span class="pre">=</span> <span class="pre">v</span></code> <strong>for class variables:</strong>
+This would require a more complicated parser and the <code class="docutils literal notranslate"><span class="pre">class</span></code>
+keyword would confuse simple-minded syntax highlighters. Anyway we
+need to have <code class="docutils literal notranslate"><span class="pre">ClassVar</span></code> store class variables to
+<code class="docutils literal notranslate"><span class="pre">__annotations__</span></code>, so a simpler syntax was chosen.</p>
+</li>
+<li><p><strong>Forget about</strong> <code class="docutils literal notranslate"><span class="pre">ClassVar</span></code> <strong>altogether:</strong>
+This was proposed since mypy seems to be getting along fine without a way
+to distinguish between class and instance variables. But a type checker
+can do useful things with the extra information, for example flag
+accidental assignments to a class variable via the instance
+(which would create an instance variable shadowing the class variable).
+It could also flag instance variables with mutable defaults,
+a well-known hazard.</p>
+</li>
+<li><p><strong>Use</strong> <code class="docutils literal notranslate"><span class="pre">ClassAttr</span></code> <strong>instead of</strong> <code class="docutils literal notranslate"><span class="pre">ClassVar</span></code>:
+The main reason why <code class="docutils literal notranslate"><span class="pre">ClassVar</span></code> is better is following: many things are
+class attributes, e.g. methods, descriptors, etc. But only specific
+attributes are conceptually class variables (or maybe constants).</p>
+</li>
+<li><p><strong>Do not evaluate annotations, treat them as strings:</strong>
+This would be inconsistent with the behavior of function annotations that
+are always evaluated. Although this might be reconsidered in future,
+it was decided in PEP 484 that this would have to be a separate PEP.</p>
+</li>
+<li><p><strong>Annotate variable types in class docstring:</strong>
+Many projects already use various docstring conventions, often without
+much consistency and generally without conforming to the PEP 484 annotation
+syntax yet. Also this would require a special sophisticated parser.
+This, in turn, would defeat the purpose of the PEP –
+collaborating with the third party type checking tools.</p>
+</li>
+<li><p><strong>Implement</strong> <code class="docutils literal notranslate"><span class="pre">__annotations__</span></code> <strong>as a descriptor:</strong>
+This was proposed to prohibit setting <code class="docutils literal notranslate"><span class="pre">__annotations__</span></code> to something
+non-dictionary or non-None. Guido has rejected this idea as unnecessary;
+instead a TypeError will be raised if an attempt is made to update
+<code class="docutils literal notranslate"><span class="pre">__annotations__</span></code> when it is anything other than a mapping.</p>
+</li>
+<li><p><strong>Treating bare annotations the same as global or nonlocal:</strong>
+The rejected proposal would prefer that the presence of an
+annotation without assignment in a function body should not involve
+<em>any</em> evaluation.  In contrast, the PEP implies that if the target
+is more complex than a single name, its “left-hand part” should be
+evaluated at the point where it occurs in the function body, just to
+enforce that it is defined.  For example, in this example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="n">slef</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+</pre></div>
+</div>
+<p>the name <code class="docutils literal notranslate"><span class="pre">slef</span></code> should be evaluated, just so that if it is not
+defined (as is likely in this example :-), the error will be caught
+at runtime.  This is more in line with what happens when there <em>is</em>
+an initial value, and thus is expected to lead to fewer surprises.
+(Also note that if the target was <code class="docutils literal notranslate"><span class="pre">self.name</span></code> (this time correctly
+spelled :-), an optimizing compiler has no obligation to evaluate
+<code class="docutils literal notranslate"><span class="pre">self</span></code> as long as it can prove that it will definitely be
+defined.)</p>
+</li>
+</ul>
+</div>
+<div class="section" id="backwards-compatibility">
+<h2><a class="toc-backref" href="#id18">Backwards Compatibility</a><a class="headerlink" href="#backwards-compatibility" title="Permalink to this headline">¶</a></h2>
+<p>This PEP is fully backwards compatible.</p>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id19">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>An implementation for Python 3.6 is found on GitHub repo at
+<a class="reference external" href="https://github.com/ilevkivskyi/cpython/tree/pep-526">https://github.com/ilevkivskyi/cpython/tree/pep-526</a></p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id20">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0526.txt">https://github.com/python/peps/blob/master/pep-0526.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0526.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0525.html">PEP 0525</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0527.html">PEP 0527</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 526 – Syntax for Variable Annotations</a><ul>
+<li><a class="reference internal" href="#status">Status</a></li>
+<li><a class="reference internal" href="#notice-for-reviewers">Notice for Reviewers</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a><ul>
+<li><a class="reference internal" href="#non-goals">Non-goals</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#global-and-local-variable-annotations">Global and local variable annotations</a></li>
+<li><a class="reference internal" href="#class-and-instance-variable-annotations">Class and instance variable annotations</a></li>
+<li><a class="reference internal" href="#annotating-expressions">Annotating expressions</a></li>
+<li><a class="reference internal" href="#where-annotations-aren-t-allowed">Where annotations aren’t allowed</a></li>
+<li><a class="reference internal" href="#variable-annotations-in-stub-files">Variable annotations in stub files</a></li>
+<li><a class="reference internal" href="#preferred-coding-style-for-variable-annotations">Preferred coding style for variable annotations</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#changes-to-standard-library-and-documentation">Changes to Standard Library and Documentation</a></li>
+<li><a class="reference internal" href="#runtime-effects-of-type-annotations">Runtime Effects of Type Annotations</a><ul>
+<li><a class="reference internal" href="#other-uses-of-annotations">Other uses of annotations</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rejected-postponed-proposals">Rejected/Postponed Proposals</a></li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

@@ -1,0 +1,386 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 3109 – Raising Exceptions in Python 3000 &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 3110 – Catching Exceptions in Python 3000" href="pep-3110.html" />
+    <link rel="prev" title="PEP 3108 – Standard Library Reorganization" href="pep-3108.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 3109 – Raising Exceptions in Python 3000</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-3109-raising-exceptions-in-python-3000">
+<h1 class="page-title">PEP 3109 – Raising Exceptions in Python 3000<a class="headerlink" href="#pep-3109-raising-exceptions-in-python-3000" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">3109</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Raising Exceptions in Python 3000</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Collin Winter &lt;collinwinter&#32;&#97;t&#32;google.com&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">19-Jan-2006</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.0</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id13">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id14">Rationale</a></li>
+<li><a class="reference internal" href="#grammar-changes" id="id15">Grammar Changes</a></li>
+<li><a class="reference internal" href="#changes-to-builtin-types" id="id16">Changes to Builtin Types</a></li>
+<li><a class="reference internal" href="#semantic-changes" id="id17">Semantic Changes</a></li>
+<li><a class="reference internal" href="#compatibility-issues" id="id18">Compatibility Issues</a></li>
+<li><a class="reference internal" href="#implementation" id="id19">Implementation</a></li>
+<li><a class="reference internal" href="#references" id="id20">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id21">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id13">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP introduces changes to Python’s mechanisms for raising
+exceptions intended to reduce both line noise and the size of the
+language.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id14">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>One of Python’s guiding maxims is “there should be one – and
+preferably only one – obvious way to do it” <a class="footnote-reference brackets" href="#zen" id="id1">1</a>. Python 2.x’s
+<code class="docutils literal notranslate"><span class="pre">raise</span></code> statement violates this principle, permitting multiple
+ways of expressing the same thought. For example, these statements
+are equivalent:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">raise</span> <span class="n">E</span><span class="p">,</span> <span class="n">V</span>
+
+<span class="k">raise</span> <span class="n">E</span><span class="p">(</span><span class="n">V</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>There is a third form of the <code class="docutils literal notranslate"><span class="pre">raise</span></code> statement, allowing arbitrary
+tracebacks to be attached to an exception <a class="footnote-reference brackets" href="#grammar" id="id2">2</a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">raise</span> <span class="n">E</span><span class="p">,</span> <span class="n">V</span><span class="p">,</span> <span class="n">T</span>
+</pre></div>
+</div>
+<p>where T is a traceback. As specified in PEP 344 <a class="footnote-reference brackets" href="#pep344" id="id3">4</a>,
+exception objects in Python 3.x will possess a <code class="docutils literal notranslate"><span class="pre">__traceback__</span></code>
+attribute, admitting this translation of the three-expression
+<code class="docutils literal notranslate"><span class="pre">raise</span></code> statement:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">raise</span> <span class="n">E</span><span class="p">,</span> <span class="n">V</span><span class="p">,</span> <span class="n">T</span>
+</pre></div>
+</div>
+<p>is translated to</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">e</span> <span class="o">=</span> <span class="n">E</span><span class="p">(</span><span class="n">V</span><span class="p">)</span>
+<span class="n">e</span><span class="o">.</span><span class="n">__traceback__</span> <span class="o">=</span> <span class="n">T</span>
+<span class="k">raise</span> <span class="n">e</span>
+</pre></div>
+</div>
+<p>Using these translations, we can reduce the <code class="docutils literal notranslate"><span class="pre">raise</span></code> statement from
+four forms to two:</p>
+<ol class="arabic">
+<li><code class="docutils literal notranslate"><span class="pre">raise</span></code> (with no arguments) is used to re-raise the active
+exception in an <code class="docutils literal notranslate"><span class="pre">except</span></code> suite.</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">raise</span> <span class="pre">EXCEPTION</span></code> is used to raise a new exception. This form has
+two sub-variants: <code class="docutils literal notranslate"><span class="pre">EXCEPTION</span></code> may be an exception class or an
+instance of an exception class; valid exception classes are
+BaseException and its subclasses <a class="footnote-reference brackets" href="#pep352" id="id4">5</a>. If <code class="docutils literal notranslate"><span class="pre">EXCEPTION</span></code>
+is a subclass, it will be called with no arguments to obtain
+an exception instance.</p>
+<p>To raise anything else is an error.</p>
+</li>
+</ol>
+<p>There is a further, more tangible benefit to be obtained through this
+consolidation, as noted by A.M. Kuchling <a class="footnote-reference brackets" href="#amk-line-noise" id="id5">6</a>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PEP</span> <span class="mi">8</span> <span class="n">doesn</span><span class="s1">&#39;t express any preference between the</span>
+<span class="n">two</span> <span class="n">forms</span> <span class="n">of</span> <span class="k">raise</span> <span class="n">statements</span><span class="p">:</span>
+<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="s1">&#39;blah&#39;</span>
+<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;blah&quot;</span><span class="p">)</span>
+
+<span class="n">I</span> <span class="n">like</span> <span class="n">the</span> <span class="n">second</span> <span class="n">form</span> <span class="n">better</span><span class="p">,</span> <span class="n">because</span> <span class="k">if</span> <span class="n">the</span> <span class="n">exception</span> <span class="n">arguments</span>
+<span class="n">are</span> <span class="n">long</span> <span class="ow">or</span> <span class="n">include</span> <span class="n">string</span> <span class="n">formatting</span><span class="p">,</span> <span class="n">you</span> <span class="n">don</span><span class="s1">&#39;t need to use line</span>
+<span class="n">continuation</span> <span class="n">characters</span> <span class="n">because</span> <span class="n">of</span> <span class="n">the</span> <span class="n">containing</span> <span class="n">parens</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>The BDFL has concurred <a class="footnote-reference brackets" href="#guido-declaration" id="id6">7</a> and endorsed the
+consolidation of the several <code class="docutils literal notranslate"><span class="pre">raise</span></code> forms.</p>
+</div>
+<div class="section" id="grammar-changes">
+<h2><a class="toc-backref" href="#id15">Grammar Changes</a><a class="headerlink" href="#grammar-changes" title="Permalink to this headline">¶</a></h2>
+<p>In Python 3, the grammar for <code class="docutils literal notranslate"><span class="pre">raise</span></code> statements will change
+from <a class="footnote-reference brackets" href="#grammar" id="id7">2</a></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">raise_stmt</span><span class="p">:</span> <span class="s1">&#39;raise&#39;</span> <span class="p">[</span><span class="n">test</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span> <span class="n">test</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span> <span class="n">test</span><span class="p">]]]</span>
+</pre></div>
+</div>
+<p>to</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">raise_stmt</span><span class="p">:</span> <span class="s1">&#39;raise&#39;</span> <span class="p">[</span><span class="n">test</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="changes-to-builtin-types">
+<h2><a class="toc-backref" href="#id16">Changes to Builtin Types</a><a class="headerlink" href="#changes-to-builtin-types" title="Permalink to this headline">¶</a></h2>
+<p>Because of its relation to exception raising, the signature for the
+<code class="docutils literal notranslate"><span class="pre">throw()</span></code> method on generator objects will change, dropping the
+optional second and third parameters. The signature thus changes
+from <a class="footnote-reference brackets" href="#throw-sig" id="id8">3</a></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">generator</span><span class="o">.</span><span class="n">throw</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="p">[</span><span class="n">V</span><span class="p">,</span> <span class="p">[</span><span class="n">T</span><span class="p">]])</span>
+</pre></div>
+</div>
+<p>to</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">generator</span><span class="o">.</span><span class="n">throw</span><span class="p">(</span><span class="n">EXCEPTION</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Where <code class="docutils literal notranslate"><span class="pre">EXCEPTION</span></code> is either a subclass of <code class="docutils literal notranslate"><span class="pre">BaseException</span></code> or an
+instance of a subclass of <code class="docutils literal notranslate"><span class="pre">BaseException</span></code>.</p>
+</div>
+<div class="section" id="semantic-changes">
+<h2><a class="toc-backref" href="#id17">Semantic Changes</a><a class="headerlink" href="#semantic-changes" title="Permalink to this headline">¶</a></h2>
+<p>In Python 2, the following <code class="docutils literal notranslate"><span class="pre">raise</span></code> statement is legal</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">raise</span> <span class="p">((</span><span class="n">E1</span><span class="p">,</span> <span class="p">(</span><span class="n">E2</span><span class="p">,</span> <span class="n">E3</span><span class="p">)),</span> <span class="n">E4</span><span class="p">),</span> <span class="n">V</span>
+</pre></div>
+</div>
+<p>The interpreter will take the tuple’s first element as the exception
+type (recursively), making the above fully equivalent to</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">raise</span> <span class="n">E1</span><span class="p">,</span> <span class="n">V</span>
+</pre></div>
+</div>
+<p>As of Python 3.0, support for raising tuples like this will be
+dropped. This change will bring <code class="docutils literal notranslate"><span class="pre">raise</span></code> statements into line with
+the <code class="docutils literal notranslate"><span class="pre">throw()</span></code> method on generator objects, which already disallows
+this.</p>
+</div>
+<div class="section" id="compatibility-issues">
+<h2><a class="toc-backref" href="#id18">Compatibility Issues</a><a class="headerlink" href="#compatibility-issues" title="Permalink to this headline">¶</a></h2>
+<p>All two- and three-expression <code class="docutils literal notranslate"><span class="pre">raise</span></code> statements will require
+modification, as will all two- and three-expression <code class="docutils literal notranslate"><span class="pre">throw()</span></code> calls
+on generators. Fortunately, the translation from Python 2.x to
+Python 3.x in this case is simple and can be handled mechanically
+by Guido van Rossum’s 2to3 utility <a class="footnote-reference brackets" href="#to3" id="id9">8</a> using the <code class="docutils literal notranslate"><span class="pre">raise</span></code> and
+<code class="docutils literal notranslate"><span class="pre">throw</span></code> fixers (<a class="footnote-reference brackets" href="#raise-fixer" id="id10">9</a>, <a class="footnote-reference brackets" href="#throw-fixer" id="id11">10</a>).</p>
+<p>The following translations will be performed:</p>
+<ol class="arabic">
+<li>Zero- and one-expression <code class="docutils literal notranslate"><span class="pre">raise</span></code> statements will be left
+intact.</li>
+<li><p>Two-expression <code class="docutils literal notranslate"><span class="pre">raise</span></code> statements will be converted from</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">raise</span> <span class="n">E</span><span class="p">,</span> <span class="n">V</span>
+</pre></div>
+</div>
+<p>to</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">raise</span> <span class="n">E</span><span class="p">(</span><span class="n">V</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Two-expression <code class="docutils literal notranslate"><span class="pre">throw()</span></code> calls will be converted from</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">generator</span><span class="o">.</span><span class="n">throw</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">V</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>to</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">generator</span><span class="o">.</span><span class="n">throw</span><span class="p">(</span><span class="n">E</span><span class="p">(</span><span class="n">V</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>See point #5 for a caveat to this transformation.</p>
+</li>
+<li><p>Three-expression <code class="docutils literal notranslate"><span class="pre">raise</span></code> statements will be converted from</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">raise</span> <span class="n">E</span><span class="p">,</span> <span class="n">V</span><span class="p">,</span> <span class="n">T</span>
+</pre></div>
+</div>
+<p>to</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">e</span> <span class="o">=</span> <span class="n">E</span><span class="p">(</span><span class="n">V</span><span class="p">)</span>
+<span class="n">e</span><span class="o">.</span><span class="n">__traceback__</span> <span class="o">=</span> <span class="n">T</span>
+<span class="k">raise</span> <span class="n">e</span>
+</pre></div>
+</div>
+<p>Three-expression <code class="docutils literal notranslate"><span class="pre">throw()</span></code> calls will be converted from</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">generator</span><span class="o">.</span><span class="n">throw</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">V</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>to</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">e</span> <span class="o">=</span> <span class="n">E</span><span class="p">(</span><span class="n">V</span><span class="p">)</span>
+<span class="n">e</span><span class="o">.</span><span class="n">__traceback__</span> <span class="o">=</span> <span class="n">T</span>
+<span class="n">generator</span><span class="o">.</span><span class="n">throw</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>See point #5 for a caveat to this transformation.</p>
+</li>
+<li>Two- and three-expression <code class="docutils literal notranslate"><span class="pre">raise</span></code> statements where <code class="docutils literal notranslate"><span class="pre">E</span></code> is a
+tuple literal can be converted automatically using <code class="docutils literal notranslate"><span class="pre">2to3</span></code>’s
+<code class="docutils literal notranslate"><span class="pre">raise</span></code> fixer. <code class="docutils literal notranslate"><span class="pre">raise</span></code> statements where <code class="docutils literal notranslate"><span class="pre">E</span></code> is a non-literal
+tuple, e.g., the result of a function call, will need to be
+converted manually.</li>
+<li><p>Two- and three-expression <code class="docutils literal notranslate"><span class="pre">raise</span></code> statements where <code class="docutils literal notranslate"><span class="pre">E</span></code> is an
+exception class and <code class="docutils literal notranslate"><span class="pre">V</span></code> is an exception instance will need
+special attention. These cases break down into two camps:</p>
+<ol class="arabic">
+<li><p><code class="docutils literal notranslate"><span class="pre">raise</span> <span class="pre">E,</span> <span class="pre">V</span></code> as a long-hand version of the zero-argument
+<code class="docutils literal notranslate"><span class="pre">raise</span></code> statement. As an example, assuming F is a subclass
+of E</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="n">something</span><span class="p">()</span>
+<span class="k">except</span> <span class="n">F</span> <span class="k">as</span> <span class="n">V</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="n">F</span><span class="p">(</span><span class="n">V</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">E</span> <span class="k">as</span> <span class="n">V</span><span class="p">:</span>
+    <span class="n">handle</span><span class="p">(</span><span class="n">V</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This would be better expressed as</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="n">something</span><span class="p">()</span>
+<span class="k">except</span> <span class="n">F</span><span class="p">:</span>
+    <span class="k">raise</span>
+<span class="k">except</span> <span class="n">E</span> <span class="k">as</span> <span class="n">V</span><span class="p">:</span>
+    <span class="n">handle</span><span class="p">(</span><span class="n">V</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">raise</span> <span class="pre">E,</span> <span class="pre">V</span></code> as a way of “casting” an exception to another
+class. Taking an example from
+distutils.compiler.unixcompiler</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">spawn</span><span class="p">(</span><span class="n">pp_args</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">DistutilsExecError</span> <span class="k">as</span> <span class="n">msg</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="n">CompileError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This would be better expressed as</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">spawn</span><span class="p">(</span><span class="n">pp_args</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">DistutilsExecError</span> <span class="k">as</span> <span class="n">msg</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="n">CompileError</span> <span class="kn">from</span> <span class="nn">msg</span>
+</pre></div>
+</div>
+<p>Using the <code class="docutils literal notranslate"><span class="pre">raise</span> <span class="pre">...</span> <span class="pre">from</span> <span class="pre">...</span></code> syntax introduced in
+PEP 344.</p>
+</li>
+</ol>
+</li>
+</ol>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id19">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>This PEP was implemented in revision 57783 <a class="footnote-reference brackets" href="#r57783" id="id12">11</a>.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id20">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="zen"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><a class="reference external" href="http://www.python.org/dev/peps/pep-0020/">http://www.python.org/dev/peps/pep-0020/</a></dd>
+<dt class="label" id="grammar"><span class="brackets">2</span><span class='fn-backref'><em> (<a href="#id2">1</a>, <a href="#id7">2</a>) </em></span></dt>
+<dd><a class="reference external" href="http://docs.python.org/reference/simple_stmts.html#raise">http://docs.python.org/reference/simple_stmts.html#raise</a></dd>
+<dt class="label" id="throw-sig"><span class="brackets"><a class="fn-backref" href="#id8">3</a></span></dt>
+<dd><a class="reference external" href="http://www.python.org/dev/peps/pep-0342/">http://www.python.org/dev/peps/pep-0342/</a></dd>
+<dt class="label" id="pep344"><span class="brackets"><a class="fn-backref" href="#id3">4</a></span></dt>
+<dd><a class="reference external" href="http://www.python.org/dev/peps/pep-0344/">http://www.python.org/dev/peps/pep-0344/</a></dd>
+<dt class="label" id="pep352"><span class="brackets"><a class="fn-backref" href="#id4">5</a></span></dt>
+<dd><a class="reference external" href="http://www.python.org/dev/peps/pep-0352/">http://www.python.org/dev/peps/pep-0352/</a></dd>
+<dt class="label" id="amk-line-noise"><span class="brackets"><a class="fn-backref" href="#id5">6</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2005-August/055187.html">https://mail.python.org/pipermail/python-dev/2005-August/055187.html</a></dd>
+<dt class="label" id="guido-declaration"><span class="brackets"><a class="fn-backref" href="#id6">7</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2005-August/055190.html">https://mail.python.org/pipermail/python-dev/2005-August/055190.html</a></dd>
+<dt class="label" id="to3"><span class="brackets"><a class="fn-backref" href="#id9">8</a></span></dt>
+<dd><a class="reference external" href="http://svn.python.org/view/sandbox/trunk/2to3/">http://svn.python.org/view/sandbox/trunk/2to3/</a></dd>
+<dt class="label" id="raise-fixer"><span class="brackets"><a class="fn-backref" href="#id10">9</a></span></dt>
+<dd><a class="reference external" href="http://svn.python.org/view/sandbox/trunk/2to3/fixes/fix_raise.py">http://svn.python.org/view/sandbox/trunk/2to3/fixes/fix_raise.py</a></dd>
+<dt class="label" id="throw-fixer"><span class="brackets"><a class="fn-backref" href="#id11">10</a></span></dt>
+<dd><a class="reference external" href="http://svn.python.org/view/sandbox/trunk/2to3/fixes/fix_throw.py">http://svn.python.org/view/sandbox/trunk/2to3/fixes/fix_throw.py</a></dd>
+<dt class="label" id="r57783"><span class="brackets"><a class="fn-backref" href="#id12">11</a></span></dt>
+<dd><a class="reference external" href="http://svn.python.org/view/python/branches/py3k/Include/?rev=57783&amp;view=rev">http://svn.python.org/view/python/branches/py3k/Include/?rev=57783&amp;view=rev</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id21">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-3109.txt">https://github.com/python/peps/blob/master/pep-3109.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-3109.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-3108.html">PEP 3108</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-3110.html">PEP 3110</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 3109 – Raising Exceptions in Python 3000</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#grammar-changes">Grammar Changes</a></li>
+<li><a class="reference internal" href="#changes-to-builtin-types">Changes to Builtin Types</a></li>
+<li><a class="reference internal" href="#semantic-changes">Semantic Changes</a></li>
+<li><a class="reference internal" href="#compatibility-issues">Compatibility Issues</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

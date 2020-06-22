@@ -1,0 +1,354 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 364 – Transitioning to the Py3K Standard Library &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 365 – Adding the pkg_resources module" href="pep-0365.html" />
+    <link rel="prev" title="PEP 363 – Syntax For Dynamic Attribute Access" href="pep-0363.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 364 – Transitioning to the Py3K Standard Library</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-364-transitioning-to-the-py3k-standard-library">
+<h1 class="page-title">PEP 364 – Transitioning to the Py3K Standard Library<a class="headerlink" href="#pep-364-transitioning-to-the-py3k-standard-library" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">364</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Transitioning to the Py3K Standard Library</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Barry Warsaw &lt;barry&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Withdrawn</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">01-Mar-2007</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.6</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id9">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id10">Rationale</a></li>
+<li><a class="reference internal" href="#supported-renamings" id="id11">Supported Renamings</a></li>
+<li><a class="reference internal" href="#mv-files" id="id12">.mv files</a></li>
+<li><a class="reference internal" href="#implementation-specification" id="id13">Implementation Specification</a></li>
+<li><a class="reference internal" href="#programmatic-interface" id="id14">Programmatic Interface</a></li>
+<li><a class="reference internal" href="#open-issues" id="id15">Open Issues</a></li>
+<li><a class="reference internal" href="#reference-implementation" id="id16">Reference Implementation</a></li>
+<li><a class="reference internal" href="#references" id="id17">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id18">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id9">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>PEP 3108 describes the reorganization of the Python standard library
+for the Python 3.0 release <a class="footnote-reference brackets" href="#id5" id="id1">1</a>.  This PEP describes a
+mechanism for transitioning from the Python 2.x standard library to
+the Python 3.0 standard library.  This transition will allow and
+encourage Python programmers to use the new Python 3.0 library names
+starting with Python 2.6, while maintaining the old names for backward
+compatibility.  In this way, a Python programmer will be able to write
+forward compatible code without sacrificing interoperability with
+existing Python programs.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id10">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>PEP 3108 presents a rationale for Python standard library (stdlib)
+reorganization.  The reader is encouraged to consult that PEP for
+details about why and how the library will be reorganized.  Should
+PEP 3108 be accepted in part or in whole, then it is advantageous to
+allow Python programmers to begin the transition to the new stdlib
+module names in Python 2.x, so that they can write forward compatible
+code starting with Python 2.6.</p>
+<p>Note that PEP 3108 proposes to remove some “silly old stuff”,
+i.e. modules that are no longer useful or necessary.  The PEP you are
+reading does not address this because there are no forward
+compatibility issues for modules that are to be removed, except to
+stop using such modules.</p>
+<p>This PEP concerns only the mechanism by which mappings from old stdlib
+names to new stdlib names are maintained.  Please consult PEP 3108 for
+all specific module renaming proposals.  Specifically see the section
+titled <code class="docutils literal notranslate"><span class="pre">Modules</span> <span class="pre">to</span> <span class="pre">Rename</span></code> for guidelines on the old name to new
+name mappings.  The few examples in this PEP are given for
+illustrative purposes only and should not be used for specific
+renaming recommendations.</p>
+</div>
+<div class="section" id="supported-renamings">
+<h2><a class="toc-backref" href="#id11">Supported Renamings</a><a class="headerlink" href="#supported-renamings" title="Permalink to this headline">¶</a></h2>
+<p>There are at least 4 use cases explicitly supported by this PEP:</p>
+<ul class="simple">
+<li>Simple top-level package name renamings, such as <code class="docutils literal notranslate"><span class="pre">StringIO</span></code> to
+<code class="docutils literal notranslate"><span class="pre">stringio</span></code>;</li>
+<li>Sub-package renamings where the package name may or may not be
+renamed, such as <code class="docutils literal notranslate"><span class="pre">email.MIMEText</span></code> to <code class="docutils literal notranslate"><span class="pre">email.mime.text</span></code>;</li>
+<li>Extension module renaming, such as <code class="docutils literal notranslate"><span class="pre">cStringIO</span></code> to <code class="docutils literal notranslate"><span class="pre">cstringio</span></code>;</li>
+<li>Third party renaming of any of the above.</li>
+</ul>
+<p>Two use cases supported by this PEP include renaming simple top-level
+modules, such as <code class="docutils literal notranslate"><span class="pre">StringIO</span></code>, as well as modules within packages,
+such as <code class="docutils literal notranslate"><span class="pre">email.MIMEText</span></code>.</p>
+<p>In the former case, PEP 3108 currently recommends <code class="docutils literal notranslate"><span class="pre">StringIO</span></code> be
+renamed to <code class="docutils literal notranslate"><span class="pre">stringio</span></code>, following PEP 8 recommendations <a class="footnote-reference brackets" href="#id6" id="id2">2</a>.</p>
+<p>In the latter case, the email 4.0 package distributed with Python 2.5
+already renamed <code class="docutils literal notranslate"><span class="pre">email.MIMEText</span></code> to <code class="docutils literal notranslate"><span class="pre">email.mime.text</span></code>, although it
+did so in a one-off, uniquely hackish way inside the email package.
+The mechanism described in this PEP is general enough to handle all
+module renamings, obviating the need for the Python 2.5 hack (except
+for backward compatibility with earlier Python versions).</p>
+<p>An additional use case is to support the renaming of C extension
+modules.  As long as the new name for the C module is importable, it
+can be remapped to the new name.  E.g. <code class="docutils literal notranslate"><span class="pre">cStringIO</span></code> renamed to
+<code class="docutils literal notranslate"><span class="pre">cstringio</span></code>.</p>
+<p>Third party package renaming is also supported, via several public
+interfaces accessible by any Python module.</p>
+<p>Remappings are not performed recursively.</p>
+</div>
+<div class="section" id="mv-files">
+<h2><a class="toc-backref" href="#id12">.mv files</a><a class="headerlink" href="#mv-files" title="Permalink to this headline">¶</a></h2>
+<p>Remapping files are called <code class="docutils literal notranslate"><span class="pre">.mv</span></code> files; the suffix was chosen to be
+evocative of the Unix mv(1) command.  An <code class="docutils literal notranslate"><span class="pre">.mv</span></code> file is a simple
+line-oriented text file.  All blank lines and lines that start with a
+# are ignored.  All other lines must contain two whitespace separated
+fields.  The first field is the old module name, and the second field
+is the new module name.  Both module names must be specified using
+their full dotted-path names.  Here is an example <code class="docutils literal notranslate"><span class="pre">.mv</span></code> file from
+Python 2.6:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Map the various string i/o libraries to their new names</span>
+<span class="n">StringIO</span>    <span class="n">stringio</span>
+<span class="n">cStringIO</span>   <span class="n">cstringio</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">.mv</span></code> files can appear anywhere in the file system, and there is a
+programmatic interface provided to parse them, and register the
+remappings inside them.  By default, when Python starts up, all the
+<code class="docutils literal notranslate"><span class="pre">.mv</span></code> files in the <code class="docutils literal notranslate"><span class="pre">oldlib</span></code> package are read, and their remappings
+are automatically registered.  This is where all the module remappings
+should be specified for top-level Python 2.x standard library modules.</p>
+</div>
+<div class="section" id="implementation-specification">
+<h2><a class="toc-backref" href="#id13">Implementation Specification</a><a class="headerlink" href="#implementation-specification" title="Permalink to this headline">¶</a></h2>
+<p>This section provides the full specification for how module renamings
+in Python 2.x are implemented.  The central mechanism relies on
+various import hooks as described in PEP 302 <a class="footnote-reference brackets" href="#id7" id="id3">3</a>.  Specifically
+<code class="docutils literal notranslate"><span class="pre">sys.path_importer_cache</span></code>, <code class="docutils literal notranslate"><span class="pre">sys.path</span></code>, and <code class="docutils literal notranslate"><span class="pre">sys.meta_path</span></code> are
+all employed to provide the necessary functionality.</p>
+<p>When Python’s import machinery is initialized, the oldlib package is
+imported.  Inside oldlib there is a class called <code class="docutils literal notranslate"><span class="pre">OldStdlibLoader</span></code>.
+This class implements the PEP 302 interface and is automatically
+instantiated, with zero arguments.  The constructor reads all the
+<code class="docutils literal notranslate"><span class="pre">.mv</span></code> files from the oldlib package directory, automatically
+registering all the remappings found in those <code class="docutils literal notranslate"><span class="pre">.mv</span></code> files.  This is
+how the Python 2.x standard library is remapped.</p>
+<p>The OldStdlibLoader class should not be instantiated by other Python
+modules.  Instead, you can access the global OldStdlibLoader instance
+via the <code class="docutils literal notranslate"><span class="pre">sys.stdlib_remapper</span></code> instance.  Use this instance if you want
+programmatic access to the remapping machinery.</p>
+<p>One important implementation detail: as needed by the PEP 302 API, a
+magic string is added to sys.path, and module __path__ attributes in
+order to hook in our remapping loader.  This magic string is currently
+<code class="docutils literal notranslate"><span class="pre">&lt;oldlib&gt;</span></code> and some changes were necessary to Python’s site.py file
+in order to treat all sys.path entries starting with <code class="docutils literal notranslate"><span class="pre">&lt;</span></code> as
+special.  Specifically, no attempt is made to make them absolute file
+names (since they aren’t file names at all).</p>
+<p>In order for the remapping import hooks to work, the module or package
+must be physically located under its new name.  This is because the
+import hooks catch only modules that are not already imported, and
+cannot be imported by Python’s built-in import rules.  Thus, if a
+module has been moved, say from Lib/StringIO.py to Lib/stringio.py,
+and the former’s <code class="docutils literal notranslate"><span class="pre">.pyc</span></code> file has been removed, then without the
+remapper, this would fail:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">StringIO</span>
+</pre></div>
+</div>
+<p>Instead, with the remapper, this failing import will be caught, the
+old name will be looked up in the registered remappings, and in this
+case, the new name <code class="docutils literal notranslate"><span class="pre">stringio</span></code> will be found.  The remapper then
+attempts to import the new name, and if that succeeds, it binds the
+resulting module into sys.modules, under both the old and new names.
+Thus, the above import will result in entries in sys.modules for
+‘StringIO’ and ‘stringio’, and both will point to the exact same
+module object.</p>
+<p>Note that no way to disable the remapping machinery is proposed, short
+of moving all the <code class="docutils literal notranslate"><span class="pre">.mv</span></code> files away or programmatically removing them
+in some custom start up code.  In Python 3.0, the remappings will be
+eliminated, leaving only the “new” names.</p>
+</div>
+<div class="section" id="programmatic-interface">
+<h2><a class="toc-backref" href="#id14">Programmatic Interface</a><a class="headerlink" href="#programmatic-interface" title="Permalink to this headline">¶</a></h2>
+<p>Several methods are added to the <code class="docutils literal notranslate"><span class="pre">sys.stdlib_remapper</span></code> object, which
+third party packages can use to register their own remappings.  Note
+however that in all cases, there is one and only one mapping from an
+old name to a new name.  If two <code class="docutils literal notranslate"><span class="pre">.mv</span></code> files contain different
+mappings for an old name, or if a programmatic call is made with an
+old name that is already remapped, the previous mapping is lost.  This
+will not affect any already imported modules.</p>
+<p>The following methods are available on the <code class="docutils literal notranslate"><span class="pre">sys.stdlib_remapper</span></code>
+object:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">read_mv_file(filename)</span></code> – Read the given file and register all
+remappings found in the file.</li>
+<li><code class="docutils literal notranslate"><span class="pre">read_directory_mv_files(dirname,</span> <span class="pre">suffix='.mv')</span></code> – List the given
+directory, reading all files in that directory that have the
+matching suffix (<code class="docutils literal notranslate"><span class="pre">.mv</span></code> by default).  For each parsed file,
+register all the remappings found in that file.</li>
+<li><code class="docutils literal notranslate"><span class="pre">set_mapping(oldname,</span> <span class="pre">newname)</span></code> – Register a new mapping from an
+old module name to a new module name.  Both must be the full
+dotted-path name to the module.  newname may be <code class="docutils literal notranslate"><span class="pre">None</span></code> in which
+case any existing mapping for oldname will be removed (it is not an
+error if there is no existing mapping).</li>
+<li><code class="docutils literal notranslate"><span class="pre">get_mapping(oldname,</span> <span class="pre">default=None)</span></code> – Return any registered
+newname for the given oldname.  If there is no registered remapping,
+default is returned.</li>
+</ul>
+</div>
+<div class="section" id="open-issues">
+<h2><a class="toc-backref" href="#id15">Open Issues</a><a class="headerlink" href="#open-issues" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p>Should there be a command line switch and/or environment variable to
+disable all remappings?</p>
+</li>
+<li><p>Should remappings occur recursively?</p>
+</li>
+<li><p>Should we automatically parse package directories for .mv files when
+the package’s __init__.py is loaded?  This would allow packages to
+easily include .mv files for their own remappings.  Compare what the
+email package currently has to do if we place its <code class="docutils literal notranslate"><span class="pre">.mv</span></code> file in
+the email package instead of in the oldlib package:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Expose old names</span>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">stdlib_remapper</span><span class="o">.</span><span class="n">read_directory_mv_files</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>I think we should automatically read a package’s directory for any
+<code class="docutils literal notranslate"><span class="pre">.mv</span></code> files it might contain.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="reference-implementation">
+<h2><a class="toc-backref" href="#id16">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>A reference implementation, in the form of a patch against the current
+(as of this writing) state of the Python 2.6 svn trunk, is available
+as SourceForge patch #1675334 <a class="footnote-reference brackets" href="#id8" id="id4">4</a>.  Note that this patch includes a
+rename of <code class="docutils literal notranslate"><span class="pre">cStringIO</span></code> to <code class="docutils literal notranslate"><span class="pre">cstringio</span></code>, but this is primarily for
+illustrative and unit testing purposes.  Should the patch be accepted,
+we might want to split this change off into other PEP 3108 changes.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id17">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id5"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>PEP 3108, Standard Library Reorganization, Cannon
+(<a class="reference external" href="http://www.python.org/dev/peps/pep-3108">http://www.python.org/dev/peps/pep-3108</a>)</dd>
+<dt class="label" id="id6"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>PEP 8, Style Guide for Python Code, GvR, Warsaw
+(<a class="reference external" href="http://www.python.org/dev/peps/pep-0008">http://www.python.org/dev/peps/pep-0008</a>)</dd>
+<dt class="label" id="id7"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd>PEP 302, New Import Hooks, JvR, Moore
+(<a class="reference external" href="http://www.python.org/dev/peps/pep-0302">http://www.python.org/dev/peps/pep-0302</a>)</dd>
+<dt class="label" id="id8"><span class="brackets"><a class="fn-backref" href="#id4">4</a></span></dt>
+<dd>Reference implementation
+(<a class="reference external" href="http://bugs.python.org/issue1675334">http://bugs.python.org/issue1675334</a>)</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id18">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0364.txt">https://github.com/python/peps/blob/master/pep-0364.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0364.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0363.html">PEP 0363</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0365.html">PEP 0365</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 364 – Transitioning to the Py3K Standard Library</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#supported-renamings">Supported Renamings</a></li>
+<li><a class="reference internal" href="#mv-files">.mv files</a></li>
+<li><a class="reference internal" href="#implementation-specification">Implementation Specification</a></li>
+<li><a class="reference internal" href="#programmatic-interface">Programmatic Interface</a></li>
+<li><a class="reference internal" href="#open-issues">Open Issues</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

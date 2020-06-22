@@ -1,0 +1,364 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 232 – Function Attributes &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 233 – Python Online Help" href="pep-0233.html" />
+    <link rel="prev" title="PEP 231 – __findattr__()" href="pep-0231.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 232 – Function Attributes</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-232-function-attributes">
+<h1 class="page-title">PEP 232 – Function Attributes<a class="headerlink" href="#pep-232-function-attributes" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">232</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Function Attributes</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Barry Warsaw &lt;barry&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">02-Dec-2000</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.1</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">20-Feb-2001</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#introduction" id="id10">Introduction</a></li>
+<li><a class="reference internal" href="#background" id="id11">Background</a></li>
+<li><a class="reference internal" href="#proposal" id="id12">Proposal</a></li>
+<li><a class="reference internal" href="#examples" id="id13">Examples</a><ul>
+<li><a class="reference internal" href="#other-uses" id="id14">Other Uses</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#future-directions" id="id15">Future Directions</a></li>
+<li><a class="reference internal" href="#dissenting-opinion" id="id16">Dissenting Opinion</a></li>
+<li><a class="reference internal" href="#reference-implementation" id="id17">Reference Implementation</a></li>
+<li><a class="reference internal" href="#references" id="id18">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id19">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="introduction">
+<h2><a class="toc-backref" href="#id10">Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>This PEP describes an extension to Python, adding attribute
+dictionaries to functions and methods.  This PEP tracks the status
+and ownership of this feature.  It contains a description of the
+feature and outlines changes necessary to support the feature.
+This PEP summarizes discussions held in mailing list forums, and
+provides URLs for further information, where appropriate.  The CVS
+revision history of this file contains the definitive historical
+record.</p>
+</div>
+<div class="section" id="background">
+<h2><a class="toc-backref" href="#id11">Background</a><a class="headerlink" href="#background" title="Permalink to this headline">¶</a></h2>
+<p>Functions already have a number of attributes, some of which are
+writable, e.g. <code class="docutils literal notranslate"><span class="pre">func_doc</span></code>, a.k.a. <code class="docutils literal notranslate"><span class="pre">func.__doc__</span></code>.  <code class="docutils literal notranslate"><span class="pre">func_doc</span></code>
+has the interesting property that there is special syntax in
+function (and method) definitions for implicitly setting the
+attribute.  This convenience has been exploited over and over again,
+overloading docstrings with additional semantics.</p>
+<p>For example, John Aycock has written a system where docstrings are
+used to define parsing rules. <a class="footnote-reference brackets" href="#id3" id="id1">1</a>  Zope’s ZPublisher ORB <a class="footnote-reference brackets" href="#id4" id="id2">2</a> uses
+docstrings to signal publishable methods, i.e. methods that can
+be called through the web.</p>
+<p>The problem with this approach is that the overloaded semantics
+may conflict with each other.  For example, if we wanted to add a
+doctest unit test to a Zope method that should not be publishable
+through the web.</p>
+</div>
+<div class="section" id="proposal">
+<h2><a class="toc-backref" href="#id12">Proposal</a><a class="headerlink" href="#proposal" title="Permalink to this headline">¶</a></h2>
+<p>This proposal adds a new dictionary to function objects, called
+<code class="docutils literal notranslate"><span class="pre">func_dict</span></code> (a.k.a. <code class="docutils literal notranslate"><span class="pre">__dict__</span></code>).  This dictionary can be set
+and get using ordinary attribute set and get syntax.</p>
+<p>Methods also gain getter syntax, and they currently access the
+attribute through the dictionary of the underlying function
+object.  It is not possible to set attributes on bound or unbound
+methods, except by doing so explicitly on the underlying function
+object.  See the <a class="reference internal" href="#future-directions">Future Directions</a> discussion below for
+approaches in subsequent versions of Python.</p>
+<p>A function object’s <code class="docutils literal notranslate"><span class="pre">__dict__</span></code> can also be set, but only to a
+dictionary object.  Deleting a function’s <code class="docutils literal notranslate"><span class="pre">__dict__</span></code>, or setting
+it to anything other than a concrete dictionary object results in a
+<code class="docutils literal notranslate"><span class="pre">TypeError</span></code>.  If no function attributes have ever been set, the
+function’s <code class="docutils literal notranslate"><span class="pre">__dict__</span></code> will be empty.</p>
+</div>
+<div class="section" id="examples">
+<h2><a class="toc-backref" href="#id13">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<p>Here are some examples of what you can do with this feature.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">a</span><span class="p">():</span>
+    <span class="k">pass</span>
+
+<span class="n">a</span><span class="o">.</span><span class="n">publish</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">a</span><span class="o">.</span><span class="n">unittest</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;...&#39;&#39;&#39;</span>
+
+<span class="k">if</span> <span class="n">a</span><span class="o">.</span><span class="n">publish</span><span class="p">:</span>
+    <span class="nb">print</span> <span class="n">a</span><span class="p">()</span>
+
+<span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="s1">&#39;unittest&#39;</span><span class="p">):</span>
+    <span class="n">testframework</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">unittest</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">C</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">a</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s1">&#39;just a docstring&#39;</span>
+        <span class="n">a</span><span class="o">.</span><span class="n">publish</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="n">c</span> <span class="o">=</span> <span class="n">C</span><span class="p">()</span>
+<span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">a</span><span class="o">.</span><span class="n">publish</span><span class="p">:</span>
+    <span class="n">publish</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">a</span><span class="p">())</span>
+</pre></div>
+</div>
+<div class="section" id="other-uses">
+<h3><a class="toc-backref" href="#id14">Other Uses</a><a class="headerlink" href="#other-uses" title="Permalink to this headline">¶</a></h3>
+<p>Paul Prescod enumerated a bunch of other uses on the <a class="reference external" href="https://mail.python.org/pipermail/python-dev/2000-April/003364.html">python-dev thread</a> <a class="footnote-reference brackets" href="#id6" id="id7">4</a>.</p>
+</div>
+</div>
+<div class="section" id="future-directions">
+<h2><a class="toc-backref" href="#id15">Future Directions</a><a class="headerlink" href="#future-directions" title="Permalink to this headline">¶</a></h2>
+<p>Here are a number of future directions to consider.  Any adoption
+of these ideas would require a new PEP, which referenced this one,
+and would have to be targeted at a Python version subsequent to
+the 2.1 release.</p>
+<ul>
+<li><p>A previous version of this PEP allowed for both setter and
+getter of attributes on unbound methods, and only getter on
+bound methods.  A number of problems were discovered with this
+policy.</p>
+<p>Because method attributes were stored in the underlying
+function, this caused several potentially surprising results:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">C</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">a</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">pass</span>
+
+<span class="n">c1</span> <span class="o">=</span> <span class="n">C</span><span class="p">()</span>
+<span class="n">c2</span> <span class="o">=</span> <span class="n">C</span><span class="p">()</span>
+<span class="n">c1</span><span class="o">.</span><span class="n">a</span><span class="o">.</span><span class="n">publish</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="c1"># c2.a.publish would now be == 1 also!</span>
+</pre></div>
+</div>
+<p>Because a change to <code class="docutils literal notranslate"><span class="pre">a</span></code> bound <code class="docutils literal notranslate"><span class="pre">c1</span></code> also caused a change to
+<code class="docutils literal notranslate"><span class="pre">a</span></code> bound to <code class="docutils literal notranslate"><span class="pre">c2</span></code>, setting of attributes on bound methods
+was disallowed.  However, even allowing setting of attributes on
+unbound methods has its ambiguities:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">D</span><span class="p">(</span><span class="n">C</span><span class="p">):</span> <span class="k">pass</span>
+<span class="k">class</span> <span class="nc">E</span><span class="p">(</span><span class="n">C</span><span class="p">):</span> <span class="k">pass</span>
+
+<span class="n">D</span><span class="o">.</span><span class="n">a</span><span class="o">.</span><span class="n">publish</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="c1"># E.a.publish would now be == 1 also!</span>
+</pre></div>
+</div>
+<p>For this reason, the current PEP disallows setting attributes on
+either bound or unbound methods, but does allow for getting
+attributes on either – both return the attribute value on the
+underlying function object.</p>
+<p>A future PEP might propose to implement setting (bound or
+unbound) method attributes by setting attributes on the instance
+or class, using special naming conventions.  I.e.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">C</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">a</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">pass</span>
+
+<span class="n">C</span><span class="o">.</span><span class="n">a</span><span class="o">.</span><span class="n">publish</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">C</span><span class="o">.</span><span class="n">__a_publish__</span> <span class="o">==</span> <span class="mi">1</span> <span class="c1"># true</span>
+
+<span class="n">c</span> <span class="o">=</span> <span class="n">C</span><span class="p">()</span>
+<span class="n">c</span><span class="o">.</span><span class="n">a</span><span class="o">.</span><span class="n">publish</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">c</span><span class="o">.</span><span class="n">__a_publish__</span> <span class="o">==</span> <span class="mi">2</span> <span class="c1"># true</span>
+
+<span class="n">d</span> <span class="o">=</span> <span class="n">C</span><span class="p">()</span>
+<span class="n">d</span><span class="o">.</span><span class="n">__a_publish__</span> <span class="o">==</span> <span class="mi">1</span> <span class="c1"># true</span>
+</pre></div>
+</div>
+<p>Here, a lookup on the instance would look to the instance’s
+dictionary first, followed by a lookup on the class’s
+dictionary, and finally a lookup on the function object’s
+dictionary.</p>
+</li>
+<li><p>Currently, Python supports function attributes only on Python
+functions (i.e. those that are written in Python, not those that
+are built-in).  Should it be worthwhile, a separate patch can be
+crafted that will add function attributes to built-ins.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">__doc__</span></code> is the only function attribute that currently has
+syntactic support for conveniently setting.  It may be
+worthwhile to eventually enhance the language for supporting
+easy function attribute setting.  Here are some syntaxes
+suggested by PEP reviewers:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">a</span> <span class="p">{</span>
+    <span class="s1">&#39;publish&#39;</span> <span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s1">&#39;unittest&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;&#39;...&#39;&#39;&#39;</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="p">(</span><span class="n">args</span><span class="p">):</span>
+    <span class="c1"># ...</span>
+
+<span class="k">def</span> <span class="nf">a</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;The usual docstring.&quot;&quot;&quot;</span>
+    <span class="p">{</span><span class="s1">&#39;publish&#39;</span> <span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+     <span class="s1">&#39;unittest&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;&#39;...&#39;&#39;&#39;</span><span class="p">,</span>
+     <span class="c1"># etc.</span>
+     <span class="p">}</span>
+
+<span class="k">def</span> <span class="nf">a</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="n">having</span> <span class="p">(</span><span class="n">publish</span> <span class="o">=</span> <span class="mi">1</span><span class="p">):</span>
+    <span class="c1"># see reference [3]</span>
+    <span class="k">pass</span>
+</pre></div>
+</div>
+<p>The BDFL is currently against any such special syntactic support
+for setting arbitrary function attributes.  Any syntax proposals
+would have to be outlined in new PEPs.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="dissenting-opinion">
+<h2><a class="toc-backref" href="#id16">Dissenting Opinion</a><a class="headerlink" href="#dissenting-opinion" title="Permalink to this headline">¶</a></h2>
+<p>When this was discussed on the python-dev mailing list in April
+2000, a number of dissenting opinions were voiced.  For
+completeness, the discussion thread starts on <a class="reference external" href="https://mail.python.org/pipermail/python-dev/2000-April/003361.html">python-dev</a> <a class="footnote-reference brackets" href="#id8" id="id9">5</a>.</p>
+<p>The dissenting arguments appear to fall under the following
+categories:</p>
+<ul class="simple">
+<li>no clear purpose (what does it buy you?)</li>
+<li>other ways to do it (e.g. mappings as class attributes)</li>
+<li>useless until syntactic support is included</li>
+</ul>
+<p>Countering some of these arguments is the observation that with
+vanilla Python 2.0, <code class="docutils literal notranslate"><span class="pre">__doc__</span></code> can in fact be set to any type of
+object, so some semblance of writable function attributes are
+already feasible.  But that approach is yet another corruption of
+<code class="docutils literal notranslate"><span class="pre">__doc__</span></code>.</p>
+<p>And while it is of course possible to add mappings to class
+objects (or in the case of function attributes, to the function’s
+module), it is more difficult and less obvious how to extract the
+attribute values for inspection.</p>
+<p>Finally, it may be desirable to add syntactic support, much the
+same way that <code class="docutils literal notranslate"><span class="pre">__doc__</span></code> syntactic support exists.  This can be
+considered separately from the ability to actually set and get
+function attributes.</p>
+</div>
+<div class="section" id="reference-implementation">
+<h2><a class="toc-backref" href="#id17">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>This PEP has been accepted and the implementation has been
+integrated into Python 2.1.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id18">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id3"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>Aycock, “Compiling Little Languages in Python”,
+<a class="reference external" href="http://www.foretec.com/python/workshops/1998-11/proceedings/papers/aycock-little/aycock-little.html">http://www.foretec.com/python/workshops/1998-11/proceedings/papers/aycock-little/aycock-little.html</a></dd>
+<dt class="label" id="id4"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd><a class="reference external" href="http://classic.zope.org:8080/Documentation/Reference/ORB">http://classic.zope.org:8080/Documentation/Reference/ORB</a></dd>
+<dt class="label" id="id5"><span class="brackets">3</span></dt>
+<dd>Hudson, Michael, SourceForge patch implementing this syntax,
+<a class="reference external" href="http://sourceforge.net/tracker/index.php?func=detail&amp;aid=403441&amp;group_id=5470&amp;atid=305470">http://sourceforge.net/tracker/index.php?func=detail&amp;aid=403441&amp;group_id=5470&amp;atid=305470</a></dd>
+<dt class="label" id="id6"><span class="brackets"><a class="fn-backref" href="#id7">4</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2000-April/003364.html">https://mail.python.org/pipermail/python-dev/2000-April/003364.html</a></dd>
+<dt class="label" id="id8"><span class="brackets"><a class="fn-backref" href="#id9">5</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2000-April/003361.html">https://mail.python.org/pipermail/python-dev/2000-April/003361.html</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id19">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0232.txt">https://github.com/python/peps/blob/master/pep-0232.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0232.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0231.html">PEP 0231</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0233.html">PEP 0233</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 232 – Function Attributes</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#background">Background</a></li>
+<li><a class="reference internal" href="#proposal">Proposal</a></li>
+<li><a class="reference internal" href="#examples">Examples</a><ul>
+<li><a class="reference internal" href="#other-uses">Other Uses</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#future-directions">Future Directions</a></li>
+<li><a class="reference internal" href="#dissenting-opinion">Dissenting Opinion</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

@@ -1,0 +1,473 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 565 – Show DeprecationWarning in __main__ &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 566 – Metadata for Python Software Packages 2.1" href="pep-0566.html" />
+    <link rel="prev" title="PEP 564 – Add new time functions with nanosecond resolution" href="pep-0564.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 565 – Show DeprecationWarning in __main__</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-565-show-deprecationwarning-in-main">
+<h1 class="page-title">PEP 565 – Show DeprecationWarning in __main__<a class="headerlink" href="#pep-565-show-deprecationwarning-in-main" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">565</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Show DeprecationWarning in __main__</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Nick Coghlan &lt;ncoghlan&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">12-Nov-2017</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.7</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">12-Nov-2017, 25-Nov-2017</dd>
+<dt class="field-odd">Resolution</dt>
+<dd class="field-odd"><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2017-December/151224.html">https://mail.python.org/pipermail/python-dev/2017-December/151224.html</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id10">Abstract</a></li>
+<li><a class="reference internal" href="#specification" id="id11">Specification</a><ul>
+<li><a class="reference internal" href="#new-default-warnings-filter-entry" id="id12">New default warnings filter entry</a></li>
+<li><a class="reference internal" href="#additional-use-case-for-futurewarning" id="id13">Additional use case for <code class="docutils literal notranslate"><span class="pre">FutureWarning</span></code></a></li>
+<li><a class="reference internal" href="#recommended-filter-settings-for-test-runners" id="id14">Recommended filter settings for test runners</a></li>
+<li><a class="reference internal" href="#recommended-filter-settings-for-interactive-shells" id="id15">Recommended filter settings for interactive shells</a></li>
+<li><a class="reference internal" href="#other-documentation-updates" id="id16">Other documentation updates</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#reference-implementation" id="id17">Reference Implementation</a></li>
+<li><a class="reference internal" href="#motivation" id="id18">Motivation</a></li>
+<li><a class="reference internal" href="#limitations-on-pep-scope" id="id19">Limitations on PEP Scope</a></li>
+<li><a class="reference internal" href="#references" id="id20">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id21">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id10">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>In Python 2.7 and Python 3.2, the default warning filters were updated to hide
+DeprecationWarning by default, such that deprecation warnings in development
+tools that were themselves written in Python (e.g. linters, static analysers,
+test runners, code generators), as well as any other applications that merely
+happened to be written in Python, wouldn’t be visible to their users unless
+those users explicitly opted in to seeing them.</p>
+<p>However, this change has had the unfortunate side effect of making
+DeprecationWarning markedly less effective at its primary intended purpose:
+providing advance notice of breaking changes in APIs (whether in CPython, the
+standard library, or in third party libraries) to users of those APIs.</p>
+<p>To improve this situation, this PEP proposes a single adjustment to the
+default warnings filter: displaying deprecation warnings attributed to the main
+module by default.</p>
+<p>This change will mean that code entered at the interactive prompt and code in
+single file scripts will revert to reporting these warnings by default, while
+they will continue to be silenced by default for packaged code distributed as
+part of an importable module.</p>
+<p>The PEP also proposes a number of small adjustments to the reference
+interpreter and standard library documentation to help make the warnings
+subsystem more approachable for new Python developers.</p>
+<p>As part of the documentation updates, it will be made clearer that the
+<code class="docutils literal notranslate"><span class="pre">unittest</span></code> test runner displays all warnings by default when executing
+test cases, and that other test runners are advised to follow that example.</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id11">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="new-default-warnings-filter-entry">
+<h3><a class="toc-backref" href="#id12">New default warnings filter entry</a><a class="headerlink" href="#new-default-warnings-filter-entry" title="Permalink to this headline">¶</a></h3>
+<p>The current set of default warnings filters consists of:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ignore</span><span class="p">::</span><span class="ne">DeprecationWarning</span>
+<span class="n">ignore</span><span class="p">::</span><span class="ne">PendingDeprecationWarning</span>
+<span class="n">ignore</span><span class="p">::</span><span class="ne">ImportWarning</span>
+<span class="n">ignore</span><span class="p">::</span><span class="ne">BytesWarning</span>
+<span class="n">ignore</span><span class="p">::</span><span class="ne">ResourceWarning</span>
+</pre></div>
+</div>
+<p>The default <code class="docutils literal notranslate"><span class="pre">unittest</span></code> test runner then uses <code class="docutils literal notranslate"><span class="pre">warnings.catch_warnings()</span></code>
+<code class="docutils literal notranslate"><span class="pre">warnings.simplefilter('default')</span></code> to override the default filters while
+running test cases.</p>
+<p>The change proposed in this PEP is to update the default warning filter list
+to be:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">default</span><span class="p">::</span><span class="ne">DeprecationWarning</span><span class="p">:</span><span class="n">__main__</span>
+<span class="n">ignore</span><span class="p">::</span><span class="ne">DeprecationWarning</span>
+<span class="n">ignore</span><span class="p">::</span><span class="ne">PendingDeprecationWarning</span>
+<span class="n">ignore</span><span class="p">::</span><span class="ne">ImportWarning</span>
+<span class="n">ignore</span><span class="p">::</span><span class="ne">BytesWarning</span>
+<span class="n">ignore</span><span class="p">::</span><span class="ne">ResourceWarning</span>
+</pre></div>
+</div>
+<p>This means that in cases where the nominal location of the warning (as
+determined by the <code class="docutils literal notranslate"><span class="pre">stacklevel</span></code> parameter to <code class="docutils literal notranslate"><span class="pre">warnings.warn</span></code>) is in the
+<code class="docutils literal notranslate"><span class="pre">__main__</span></code> module, the first occurrence of each DeprecationWarning will once
+again be reported.</p>
+<p>This change will lead to DeprecationWarning being displayed by default for:</p>
+<ul class="simple">
+<li>code executed directly at the interactive prompt</li>
+<li>code executed directly as part of a single-file script</li>
+</ul>
+<p>While continuing to be hidden by default for:</p>
+<ul class="simple">
+<li>code imported from another module in a <code class="docutils literal notranslate"><span class="pre">zipapp</span></code> archive’s <code class="docutils literal notranslate"><span class="pre">__main__.py</span></code>
+file</li>
+<li>code imported from another module in an executable package’s <code class="docutils literal notranslate"><span class="pre">__main__</span></code>
+submodule</li>
+<li>code imported from an executable script wrapper generated at installation time
+based on a <code class="docutils literal notranslate"><span class="pre">console_scripts</span></code> or <code class="docutils literal notranslate"><span class="pre">gui_scripts</span></code> entry point definition</li>
+</ul>
+<p>This means that tool developers that create an installable or executable
+artifact (such as a <code class="docutils literal notranslate"><span class="pre">zipapp</span></code> archive) for distribution to their users
+shouldn’t see any change from the status quo, while users of more ad hoc
+personal or locally distributed scripts are likely to start seeing relevant
+deprecation warnings again (as they did in Python 2.6 and earlier).</p>
+</div>
+<div class="section" id="additional-use-case-for-futurewarning">
+<h3><a class="toc-backref" href="#id13">Additional use case for <code class="docutils literal notranslate"><span class="pre">FutureWarning</span></code></a><a class="headerlink" href="#additional-use-case-for-futurewarning" title="Permalink to this headline">¶</a></h3>
+<p>The standard library documentation will be updated to explicitly recommend the
+use of <code class="docutils literal notranslate"><span class="pre">FutureWarning</span></code> (rather than <code class="docutils literal notranslate"><span class="pre">DeprecationWarning</span></code>) for backwards
+compatibility warnings that are intended to be seen by <em>users</em> of an
+application. (This will be in addition to the existing use of <code class="docutils literal notranslate"><span class="pre">FutureWarning</span></code>
+to warn about constructs that will remain valid code in the future,
+but will have different semantics).</p>
+<p>This will give the following three distinct categories of backwards
+compatibility warning, with three different intended audiences:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">PendingDeprecationWarning</span></code>: hidden by default for all code.
+The intended audience is Python developers that take an active interest in
+ensuring the future compatibility of their software (e.g. professional
+Python application developers with specific support obligations).</li>
+<li><code class="docutils literal notranslate"><span class="pre">DeprecationWarning</span></code>: reported by default for code that runs directly in
+the <code class="docutils literal notranslate"><span class="pre">__main__</span></code> module (as such code is considered relatively unlikely to
+have a dedicated test suite), but hidden by default for code in other modules.
+The intended audience is Python developers that are at risk of upgrades to
+their dependencies (including upgrades to Python itself) breaking their
+software (e.g. developers using Python to script environments where someone
+else is in control of the timing of dependency upgrades).</li>
+<li><code class="docutils literal notranslate"><span class="pre">FutureWarning</span></code>: reported by default for all code.
+The intended audience is users of applications written in Python, rather than
+other Python developers (e.g. warning about use of a deprecated setting in a
+configuration file format).</li>
+</ul>
+<p>For library and framework authors that want to ensure their API compatibility
+warnings are more reliably seen by their users, the recommendation is to use a
+custom warning class that derives from <code class="docutils literal notranslate"><span class="pre">DeprecationWarning</span></code> in Python 3.7+,
+and from <code class="docutils literal notranslate"><span class="pre">FutureWarning</span></code> in earlier versions.</p>
+</div>
+<div class="section" id="recommended-filter-settings-for-test-runners">
+<h3><a class="toc-backref" href="#id14">Recommended filter settings for test runners</a><a class="headerlink" href="#recommended-filter-settings-for-test-runners" title="Permalink to this headline">¶</a></h3>
+<p>Developers of test runners are advised to implement logic equivalent to the
+following when determining their default warnings filters:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="ow">not</span> <span class="n">sys</span><span class="o">.</span><span class="n">warnoptions</span><span class="p">:</span>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;default&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This effectively enables all warnings by default, as if the <code class="docutils literal notranslate"><span class="pre">-Wd</span></code> command
+line option had been passed.</p>
+<p>Note that actually enabling <code class="docutils literal notranslate"><span class="pre">BytesWarning</span></code> in a test suite still requires
+passing the <code class="docutils literal notranslate"><span class="pre">-b</span></code> option to the interpreter at the command line. For implicit
+bytes conversion and bytes comparison warnings, the warnings filter machinery
+is only used to determine whether they should be printed as warnings or raised
+as exceptions - when the command line flag isn’t set, the interpreter doesn’t
+even emit the warning in the first place.</p>
+</div>
+<div class="section" id="recommended-filter-settings-for-interactive-shells">
+<h3><a class="toc-backref" href="#id15">Recommended filter settings for interactive shells</a><a class="headerlink" href="#recommended-filter-settings-for-interactive-shells" title="Permalink to this headline">¶</a></h3>
+<p>Developers of interactive shells are advised to add a filter that enables
+<code class="docutils literal notranslate"><span class="pre">DeprecationWarning</span></code> in the namespace where user code is entered and executed.</p>
+<p>If that namespace is <code class="docutils literal notranslate"><span class="pre">__main__</span></code> (as it is for the default CPython REPL), then
+no changes are needed beyond those in this PEP.</p>
+<p>Interactive shell implementations which use a namespace other than
+<code class="docutils literal notranslate"><span class="pre">__main__</span></code> will need to add their own filter. For example, IPython uses the
+following command ([<a class="reference internal" href="#id8">8</a>]) to set up a suitable filter:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;default&quot;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="ne">DeprecationWarning</span><span class="p">,</span>
+                                   <span class="n">module</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">user_ns</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;__name__&quot;</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="other-documentation-updates">
+<h3><a class="toc-backref" href="#id16">Other documentation updates</a><a class="headerlink" href="#other-documentation-updates" title="Permalink to this headline">¶</a></h3>
+<p>The current reference documentation for the warnings system is relatively short
+on specific <em>examples</em> of possible settings for the <code class="docutils literal notranslate"><span class="pre">-W</span></code> command line option
+or the <code class="docutils literal notranslate"><span class="pre">PYTHONWARNINGS</span></code> environment variably that achieve particular end
+results.</p>
+<p>The following improvements are proposed as part of the implementation of this
+PEP:</p>
+<ul>
+<li><p>Explicitly list the following entries under the description of the
+<code class="docutils literal notranslate"><span class="pre">PYTHONWARNINGS</span></code> environment variable:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PYTHONWARNINGS</span><span class="o">=</span><span class="n">error</span> <span class="c1"># Convert to exceptions</span>
+<span class="n">PYTHONWARNINGS</span><span class="o">=</span><span class="n">always</span> <span class="c1"># Warn every time</span>
+<span class="n">PYTHONWARNINGS</span><span class="o">=</span><span class="n">default</span> <span class="c1"># Warn once per call location</span>
+<span class="n">PYTHONWARNINGS</span><span class="o">=</span><span class="n">module</span> <span class="c1"># Warn once per calling module</span>
+<span class="n">PYTHONWARNINGS</span><span class="o">=</span><span class="n">once</span> <span class="c1"># Warn once per Python process</span>
+<span class="n">PYTHONWARNINGS</span><span class="o">=</span><span class="n">ignore</span> <span class="c1"># Never warn</span>
+</pre></div>
+</div>
+</li>
+<li><p>Explicitly list the corresponding short options
+(<code class="docutils literal notranslate"><span class="pre">-We</span></code>, <code class="docutils literal notranslate"><span class="pre">-Wa</span></code>, <code class="docutils literal notranslate"><span class="pre">-Wd</span></code>, <code class="docutils literal notranslate"><span class="pre">-Wm</span></code>, <code class="docutils literal notranslate"><span class="pre">-Wo</span></code>, <code class="docutils literal notranslate"><span class="pre">-Wi</span></code>) for each of the
+warning actions listed under the <code class="docutils literal notranslate"><span class="pre">-W</span></code> command line switch documentation</p>
+</li>
+<li><p>Explicitly list the default filter set in the <code class="docutils literal notranslate"><span class="pre">warnings</span></code> module
+documentation, using the <code class="docutils literal notranslate"><span class="pre">action::category</span></code> and <code class="docutils literal notranslate"><span class="pre">action::category:module</span></code>
+notation</p>
+</li>
+<li><p>Explicitly list the following snippet in the <code class="docutils literal notranslate"><span class="pre">warnings.simplefilter</span></code>
+documentation as a recommended approach to turning off all warnings by
+default in a Python application while still allowing them to be turned
+back on via <code class="docutils literal notranslate"><span class="pre">PYTHONWARNINGS</span></code> or the <code class="docutils literal notranslate"><span class="pre">-W</span></code> command line switch:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="ow">not</span> <span class="n">sys</span><span class="o">.</span><span class="n">warnoptions</span><span class="p">:</span>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<p>None of these are <em>new</em> (they already work in all still supported Python
+versions), but they’re not especially obvious given the current structure
+of the related documentation.</p>
+</div>
+</div>
+<div class="section" id="reference-implementation">
+<h2><a class="toc-backref" href="#id17">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>A reference implementation is available in the PR [<a class="reference internal" href="#id4">4</a>] linked from the
+related tracker issue for this PEP [<a class="reference internal" href="#id5">5</a>].</p>
+<p>As a side-effect of implementing this PEP, the internal warnings filter list
+will start allowing the use of plain strings as part of filter definitions (in
+addition to the existing use of compiled regular expressions). When present,
+the plain strings will be compared for exact matches only. This approach allows
+the new default filter to be added during interpreter startup without requiring
+early access to the <code class="docutils literal notranslate"><span class="pre">re</span></code> module.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id18">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>As discussed in [<a class="reference internal" href="#id1">1</a>] and mentioned in [<a class="reference internal" href="#id2">2</a>], Python 2.7 and Python 3.2 changed
+the default handling of <code class="docutils literal notranslate"><span class="pre">DeprecationWarning</span></code> such that:</p>
+<ul class="simple">
+<li>the warning was hidden by default during normal code execution</li>
+<li>the <code class="docutils literal notranslate"><span class="pre">unittest</span></code> test runner was updated to re-enable it when running tests</li>
+</ul>
+<p>The intent was to avoid cases of tooling output like the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ devtool mycode/
+/usr/lib/python3.6/site-packages/devtool/cli.py:1: DeprecationWarning: &#39;async&#39; and &#39;await&#39; will become reserved keywords in Python 3.7
+  async = True
+... actual tool output ...
+</pre></div>
+</div>
+<p>Even when <cite>devtool</cite> is a tool specifically for Python programmers, this is not
+a particularly useful warning, as it will be shown on every invocation, even
+though the main helpful step an end user can take is to report a bug to the
+developers of <code class="docutils literal notranslate"><span class="pre">devtool</span></code>.</p>
+<p>The warning is even less helpful for general purpose developer tools that are
+used across more languages than just Python, and almost entirely *un*helpful
+for applications that simply happen to be written in Python, and aren’t
+necessarily intended for a developer audience at all.</p>
+<p>However, this change proved to have unintended consequences for the following
+audiences:</p>
+<ul class="simple">
+<li>anyone using a test runner other than the default one built into <code class="docutils literal notranslate"><span class="pre">unittest</span></code>
+(the request for third party test runners to change their default warnings
+filters was never made explicitly, so many of them still rely on the
+interpreter defaults that are designed to suit deployed applications)</li>
+<li>anyone using the default <code class="docutils literal notranslate"><span class="pre">unittest</span></code> test runner to test their Python code
+in a subprocess (since even <code class="docutils literal notranslate"><span class="pre">unittest</span></code> only adjusts the warnings settings
+in the current process)</li>
+<li>anyone writing Python code at the interactive prompt or as part of a directly
+executed script that didn’t have a Python level test suite at all</li>
+</ul>
+<p>In these cases, <code class="docutils literal notranslate"><span class="pre">DeprecationWarning</span></code> ended up become almost entirely
+equivalent to <code class="docutils literal notranslate"><span class="pre">PendingDeprecationWarning</span></code>: it was simply never seen at all.</p>
+</div>
+<div class="section" id="limitations-on-pep-scope">
+<h2><a class="toc-backref" href="#id19">Limitations on PEP Scope</a><a class="headerlink" href="#limitations-on-pep-scope" title="Permalink to this headline">¶</a></h2>
+<p>This PEP exists specifically to explain both the proposed addition to the
+default warnings filter for 3.7, <em>and</em> to more clearly articulate the rationale
+for the original change to the handling of DeprecationWarning back in Python 2.7
+and 3.2.</p>
+<p>This PEP does not solve all known problems with the current approach to handling
+deprecation warnings. Most notably:</p>
+<ul class="simple">
+<li>The default <code class="docutils literal notranslate"><span class="pre">unittest</span></code> test runner does not currently report deprecation
+warnings emitted at module import time, as the warnings filter override is only
+put in place during test execution, not during test discovery and loading.</li>
+<li>The default <code class="docutils literal notranslate"><span class="pre">unittest</span></code> test runner does not currently report deprecation
+warnings in subprocesses, as the warnings filter override is applied directly
+to the loaded <code class="docutils literal notranslate"><span class="pre">warnings</span></code> module, not to the <code class="docutils literal notranslate"><span class="pre">PYTHONWARNINGS</span></code> environment
+variable.</li>
+<li>The standard library doesn’t provide a straightforward way to opt-in to seeing
+all warnings emitted <em>by</em> a particular dependency prior to upgrading it
+(the third-party <code class="docutils literal notranslate"><span class="pre">warn</span></code> module [<a class="reference internal" href="#id3">3</a>] does provide this, but enabling it
+involves monkeypatching the standard library’s <code class="docutils literal notranslate"><span class="pre">warnings</span></code> module).</li>
+<li>When software has been factored out into support modules, but those modules
+have little or no automated test coverage, re-enabling deprecation warnings
+by default in <code class="docutils literal notranslate"><span class="pre">__main__</span></code> isn’t likely to help find API compatibility
+problems. Near term, the best currently available answer is to run affected
+applications with <code class="docutils literal notranslate"><span class="pre">PYTHONWARNINGS=default::DeprecationWarning</span></code> or
+<code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-W</span> <span class="pre">default::DeprecationWarning</span></code> and pay attention to their
+<code class="docutils literal notranslate"><span class="pre">stderr</span></code> output. Longer term, this is really a question for researchers
+working on static analysis of Python code: how to reliably find usage of
+deprecated APIs, and how to infer that an API or parameter is deprecated
+based on <code class="docutils literal notranslate"><span class="pre">warnings.warn</span></code> calls, without actually running either the code
+providing the API or the code accessing it.</li>
+</ul>
+<p>While these are real problems with the status quo, they’re excluded from
+consideration in this PEP because they’re going to require more complex
+solutions than a single additional entry in the default warnings filter,
+and resolving them at least potentially won’t require going through the PEP
+process.</p>
+<p>For anyone interested in pursuing them further, the first two would be
+<code class="docutils literal notranslate"><span class="pre">unittest</span></code> module enhancement requests, the third would be a <code class="docutils literal notranslate"><span class="pre">warnings</span></code>
+module enhancement request, while the last would only require a PEP if
+inferring API deprecations from their contents was deemed to be an intractable
+code analysis problem, and an explicit function and parameter marker syntax in
+annotations was proposed instead.</p>
+<p>The CPython reference implementation will also include the following related
+changes in 3.7:</p>
+<ul class="simple">
+<li>a new <code class="docutils literal notranslate"><span class="pre">-X</span> <span class="pre">dev</span></code> command line option that combines several developer centric
+settings (including <code class="docutils literal notranslate"><span class="pre">-Wd</span></code>) into one command line flag:
+<a class="reference external" href="https://bugs.python.org/issue32043">https://bugs.python.org/issue32043</a></li>
+<li>changing the behaviour in debug builds to show more of the warnings that are
+off by default in regular interpeter builds: <a class="reference external" href="https://bugs.python.org/issue32088">https://bugs.python.org/issue32088</a></li>
+</ul>
+<p>Independently of the proposed changes to the default filters in this PEP,
+issue 32229 [<a class="reference internal" href="#id9">9</a>] is a proposal to add a <code class="docutils literal notranslate"><span class="pre">warnings.hide_warnings</span></code> API to
+make it simpler for application developers to hide warnings during normal
+operation, while easily making them visible when testing.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id20">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id1"><span class="brackets">1</span></dt>
+<dd>stdlib-sig thread proposing the original default filter change
+(<a class="reference external" href="https://mail.python.org/pipermail/stdlib-sig/2009-November/000789.html">https://mail.python.org/pipermail/stdlib-sig/2009-November/000789.html</a>)</dd>
+<dt class="label" id="id2"><span class="brackets">2</span></dt>
+<dd>Python 2.7 notification of the default warnings filter change
+(<a class="reference external" href="https://docs.python.org/3/whatsnew/2.7.html#changes-to-the-handling-of-deprecation-warnings">https://docs.python.org/3/whatsnew/2.7.html#changes-to-the-handling-of-deprecation-warnings</a>)</dd>
+<dt class="label" id="id3"><span class="brackets">3</span></dt>
+<dd>Emitting warnings based on the location of the warning itself
+(<a class="reference external" href="https://pypi.org/project/warn/">https://pypi.org/project/warn/</a>)</dd>
+<dt class="label" id="id4"><span class="brackets">4</span></dt>
+<dd>GitHub PR for PEP 565 implementation
+(<a class="reference external" href="https://github.com/python/cpython/pull/4458">https://github.com/python/cpython/pull/4458</a>)</dd>
+<dt class="label" id="id5"><span class="brackets">5</span></dt>
+<dd>Tracker issue for PEP 565 implementation
+(<a class="reference external" href="https://bugs.python.org/issue31975">https://bugs.python.org/issue31975</a>)</dd>
+<dt class="label" id="id6"><span class="brackets">6</span></dt>
+<dd>First python-dev discussion thread
+(<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2017-November/150477.html">https://mail.python.org/pipermail/python-dev/2017-November/150477.html</a>)</dd>
+<dt class="label" id="id7"><span class="brackets">7</span></dt>
+<dd>Second python-dev discussion thread
+(<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2017-November/150819.html">https://mail.python.org/pipermail/python-dev/2017-November/150819.html</a>)</dd>
+<dt class="label" id="id8"><span class="brackets">8</span></dt>
+<dd>IPython’s DeprecationWarning auto-configuration
+(<a class="reference external" href="https://github.com/ipython/ipython/blob/6.2.x/IPython/core/interactiveshell.py#L619">https://github.com/ipython/ipython/blob/6.2.x/IPython/core/interactiveshell.py#L619</a>)</dd>
+<dt class="label" id="id9"><span class="brackets">9</span></dt>
+<dd><code class="docutils literal notranslate"><span class="pre">warnings.hide_warnings</span></code> API proposal
+(<a class="reference external" href="https://bugs.python.org/issue32229">https://bugs.python.org/issue32229</a>)</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id21">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0565.rst">https://github.com/python/peps/blob/master/pep-0565.rst</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0565.rst.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0564.html">PEP 0564</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0566.html">PEP 0566</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 565 – Show DeprecationWarning in __main__</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#new-default-warnings-filter-entry">New default warnings filter entry</a></li>
+<li><a class="reference internal" href="#additional-use-case-for-futurewarning">Additional use case for <code class="docutils literal notranslate"><span class="pre">FutureWarning</span></code></a></li>
+<li><a class="reference internal" href="#recommended-filter-settings-for-test-runners">Recommended filter settings for test runners</a></li>
+<li><a class="reference internal" href="#recommended-filter-settings-for-interactive-shells">Recommended filter settings for interactive shells</a></li>
+<li><a class="reference internal" href="#other-documentation-updates">Other documentation updates</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#limitations-on-pep-scope">Limitations on PEP Scope</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

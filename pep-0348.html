@@ -1,0 +1,638 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 348 – Exception Reorganization for Python 3.0 &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 349 – Allow str() to return unicode strings" href="pep-0349.html" />
+    <link rel="prev" title="PEP 347 – Migrating the Python CVS to Subversion" href="pep-0347.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 348 – Exception Reorganization for Python 3.0</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-348-exception-reorganization-for-python-3-0">
+<h1 class="page-title">PEP 348 – Exception Reorganization for Python 3.0<a class="headerlink" href="#pep-348-exception-reorganization-for-python-3-0" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">348</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Exception Reorganization for Python 3.0</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Brett Cannon &lt;brett&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Rejected</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">28-Jul-2005</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id25">Abstract</a></li>
+<li><a class="reference internal" href="#rationale-for-wanting-change" id="id26">Rationale For Wanting Change</a></li>
+<li><a class="reference internal" href="#philosophy-of-reorganization" id="id27">Philosophy of Reorganization</a></li>
+<li><a class="reference internal" href="#new-hierarchy" id="id28">New Hierarchy</a></li>
+<li><a class="reference internal" href="#differences-compared-to-python-2-4" id="id29">Differences Compared to Python 2.4</a><ul>
+<li><a class="reference internal" href="#baseexception" id="id30">BaseException</a></li>
+<li><a class="reference internal" href="#keyboardinterrupt-and-systemexit" id="id31">KeyboardInterrupt and SystemExit</a></li>
+<li><a class="reference internal" href="#notimplementederror" id="id32">NotImplementedError</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#required-superclass-for-raise" id="id33">Required Superclass for <code class="docutils literal notranslate"><span class="pre">raise</span></code></a><ul>
+<li><a class="reference internal" href="#implementation" id="id34">Implementation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#bare-except-clauses-catch-exception" id="id35">Bare <code class="docutils literal notranslate"><span class="pre">except</span></code> Clauses Catch Exception</a><ul>
+<li><a class="reference internal" href="#id15" id="id36">Implementation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#transition-plan" id="id37">Transition Plan</a></li>
+<li><a class="reference internal" href="#rejected-ideas" id="id38">Rejected Ideas</a><ul>
+<li><a class="reference internal" href="#deprecationwarning-inheriting-from-pendingdeprecationwarning" id="id39">DeprecationWarning Inheriting From PendingDeprecationWarning</a></li>
+<li><a class="reference internal" href="#attributeerror-inheriting-from-typeerror-or-nameerror" id="id40">AttributeError Inheriting From TypeError or NameError</a></li>
+<li><a class="reference internal" href="#removal-of-environmenterror" id="id41">Removal of EnvironmentError</a></li>
+<li><a class="reference internal" href="#introduction-of-macerror-and-unixerror" id="id42">Introduction of MacError and UnixError</a></li>
+<li><a class="reference internal" href="#systemerror-subclassing-systemexit" id="id43">SystemError Subclassing SystemExit</a></li>
+<li><a class="reference internal" href="#controlflowexception-under-exception" id="id44">ControlFlowException Under Exception</a></li>
+<li><a class="reference internal" href="#rename-nameerror-to-namespaceerror" id="id45">Rename NameError to NamespaceError</a><ul>
+<li><a class="reference internal" href="#renaming-runtimeerror-or-introducing-simpleerror" id="id46">Renaming RuntimeError or Introducing SimpleError</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#renaming-existing-exceptions" id="id47">Renaming Existing Exceptions</a></li>
+<li><a class="reference internal" href="#have-eoferror-subclass-ioerror" id="id48">Have EOFError Subclass IOError</a></li>
+<li><a class="reference internal" href="#have-memoryerror-and-systemerror-have-a-common-superclass" id="id49">Have MemoryError and SystemError Have a Common Superclass</a></li>
+<li><a class="reference internal" href="#common-superclass-for-pendingdeprecationwarning-and-deprecationwarning" id="id50">Common Superclass for PendingDeprecationWarning and DeprecationWarning</a></li>
+<li><a class="reference internal" href="#removing-windowserror" id="id51">Removing WindowsError</a></li>
+<li><a class="reference internal" href="#superclass-for-keyboardinterrupt-and-systemexit" id="id52">Superclass for KeyboardInterrupt and SystemExit</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#acknowledgements" id="id53">Acknowledgements</a></li>
+<li><a class="reference internal" href="#references" id="id54">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id55">Copyright</a></li>
+</ul>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This PEP has been rejected <a class="footnote-reference brackets" href="#rejected" id="id1">20</a>.</p>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id25">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Python, as of version 2.4, has 38 exceptions (including warnings) in
+the built-in namespace in a rather shallow hierarchy.  These
+classes have come about over the years without a chance to learn from
+experience.  This PEP proposes doing a reorganization of the hierarchy
+for Python 3.0 when backwards-compatibility is not as much of an
+issue.</p>
+<p>Along with this reorganization, adding a requirement that all
+objects passed to a <code class="docutils literal notranslate"><span class="pre">raise</span></code> statement must inherit from a specific
+superclass is proposed.  This is to have guarantees about the basic
+interface of exceptions and to further enhance the natural hierarchy
+of exceptions.</p>
+<p>Lastly, bare <code class="docutils literal notranslate"><span class="pre">except</span></code> clauses will be changed to be semantically
+equivalent to <code class="docutils literal notranslate"><span class="pre">except</span> <span class="pre">Exception</span></code>.  Most people currently use bare
+<code class="docutils literal notranslate"><span class="pre">except</span></code> clause for this purpose and with the exception hierarchy
+reorganization becomes a viable default.</p>
+</div>
+<div class="section" id="rationale-for-wanting-change">
+<h2><a class="toc-backref" href="#id26">Rationale For Wanting Change</a><a class="headerlink" href="#rationale-for-wanting-change" title="Permalink to this headline">¶</a></h2>
+<p>Exceptions are a critical part of Python.  While exceptions are
+traditionally used to signal errors in a program, they have also grown
+to be used for flow control for things such as iterators.</p>
+<p>While their importance is great, there is a lack of structure to them.
+This stems from the fact that any object can be raised as an
+exception.  Because of this you have no guarantee in terms of what
+kind of object will be raised, destroying any possible hierarchy
+raised objects might adhere to.</p>
+<p>But exceptions do have a hierarchy, showing the severity of the
+exception.  The hierarchy also groups related exceptions together to
+simplify catching them in <code class="docutils literal notranslate"><span class="pre">except</span></code> clauses.  To allow people to
+be able to rely on this hierarchy, a common superclass that all
+raise objects must inherit from is being proposed.  It also allows
+guarantees about the interface to raised objects to be made (see
+PEP 344 <a class="footnote-reference brackets" href="#pep344" id="id2">2</a>).  A discussion about all of this has occurred
+before on python-dev <a class="footnote-reference brackets" href="#summary2004-08-01" id="id3">4</a>.</p>
+<p>As bare <code class="docutils literal notranslate"><span class="pre">except</span></code> clauses stand now, they catch <em>all</em> exceptions.
+While this can be handy, it is rather overreaching for the common
+case.  Thanks to having a required superclass, catching all
+exceptions is as easy as catching just one specific exception.
+This allows bare <code class="docutils literal notranslate"><span class="pre">except</span></code> clauses to be used for a more useful
+purpose.
+Once again, this has been discussed on python-dev <a class="footnote-reference brackets" href="#python-dev3" id="id4">5</a>.</p>
+<p>Finally, slight changes to the exception hierarchy will make it much
+more reasonable in terms of structure.  By minor rearranging
+exceptions
+that should not typically be caught can be allowed to propagate to the
+top of the execution stack, terminating the interpreter as intended.</p>
+</div>
+<div class="section" id="philosophy-of-reorganization">
+<h2><a class="toc-backref" href="#id27">Philosophy of Reorganization</a><a class="headerlink" href="#philosophy-of-reorganization" title="Permalink to this headline">¶</a></h2>
+<p>For the reorganization of the hierarchy, there was a general
+philosophy followed that developed from discussion of earlier drafts
+of this PEP <a class="footnote-reference brackets" href="#python-dev-thread1" id="id5">7</a>, <a class="footnote-reference brackets" href="#python-dev-thread2" id="id6">8</a>,
+<a class="footnote-reference brackets" href="#python-dev-thread3" id="id7">9</a>, <a class="footnote-reference brackets" href="#python-dev-thread4" id="id8">10</a>,
+<a class="footnote-reference brackets" href="#python-dev-thread5" id="id9">11</a>, <a class="footnote-reference brackets" href="#python-dev-thread6" id="id10">12</a>.
+First and foremost was to not break anything
+that works.  This meant that renaming exceptions was out of the
+question unless the name was deemed severely bad.  This
+also meant no removal of exceptions unless they were viewed as
+truly misplaced. The introduction of new exceptions were only done in
+situations where there might be a use for catching a superclass of a
+category of exceptions.  Lastly, existing exceptions would have their
+inheritance tree changed only if it was felt they were truly
+misplaced to begin with.</p>
+<p>For all new exceptions, the proper suffix had to be chosen.  For
+those that signal an error, “Error” is to be used.  If the exception
+is a warning, then “Warning”.  “Exception” is to be used when none
+of the other suffixes are proper to use and no specific suffix is
+a better fit.</p>
+<p>After that it came down to choosing which exceptions should and
+should not inherit from Exception.  This was for the purpose of
+making bare <code class="docutils literal notranslate"><span class="pre">except</span></code> clauses more useful.</p>
+<p>Lastly, the entire existing hierarchy had to inherit from the new
+exception meant to act as the required superclass for all exceptions
+to inherit from.</p>
+</div>
+<div class="section" id="new-hierarchy">
+<h2><a class="toc-backref" href="#id28">New Hierarchy</a><a class="headerlink" href="#new-hierarchy" title="Permalink to this headline">¶</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Exceptions flagged with “stricter inheritance” will no
+longer inherit from a certain class.  A “broader inheritance” flag
+means a class has been added to the exception’s inheritance tree.
+All comparisons are against the Python 2.4 exception hierarchy.</p>
+</div>
+<pre class="literal-block">+-- BaseException (new; broader inheritance for subclasses)
+    +-- Exception
+        +-- GeneratorExit (defined in PEP 342 <a class="footnote-reference brackets" href="#pep342" id="id11">1</a>)
+        +-- StandardError
+            +-- ArithmeticError
+                +-- DivideByZeroError
+                +-- FloatingPointError
+                +-- OverflowError
+            +-- AssertionError
+            +-- AttributeError
+            +-- EnvironmentError
+                +-- IOError
+                +-- EOFError
+                +-- OSError
+            +-- ImportError
+            +-- LookupError
+                +-- IndexError
+                +-- KeyError
+            +-- MemoryError
+            +-- NameError
+                +-- UnboundLocalError
+            +-- NotImplementedError (stricter inheritance)
+            +-- SyntaxError
+                +-- IndentationError
+                    +-- TabError
+            +-- TypeError
+            +-- RuntimeError
+            +-- UnicodeError
+                +-- UnicodeDecodeError
+                +-- UnicodeEncodeError
+                +-- UnicodeTranslateError
+            +-- ValueError
+            +-- ReferenceError
+        +-- StopIteration
+        +-- SystemError
+        +-- Warning
+            +-- DeprecationWarning
+            +-- FutureWarning
+            +-- PendingDeprecationWarning
+            +-- RuntimeWarning
+            +-- SyntaxWarning
+            +-- UserWarning
+        + -- WindowsError
+    +-- KeyboardInterrupt (stricter inheritance)
+    +-- SystemExit (stricter inheritance)</pre>
+</div>
+<div class="section" id="differences-compared-to-python-2-4">
+<h2><a class="toc-backref" href="#id29">Differences Compared to Python 2.4</a><a class="headerlink" href="#differences-compared-to-python-2-4" title="Permalink to this headline">¶</a></h2>
+<p>A more thorough explanation of terms is needed when discussing
+inheritance changes.  Inheritance changes result in either broader or
+more restrictive inheritance.  “Broader” is when a class has an
+inheritance tree like <code class="docutils literal notranslate"><span class="pre">cls,</span> <span class="pre">A</span></code> and then becomes <code class="docutils literal notranslate"><span class="pre">cls,</span> <span class="pre">B,</span> <span class="pre">A</span></code>.
+“Stricter” is the reverse.</p>
+<div class="section" id="baseexception">
+<h3><a class="toc-backref" href="#id30">BaseException</a><a class="headerlink" href="#baseexception" title="Permalink to this headline">¶</a></h3>
+<p>The superclass that all exceptions must inherit from.  It’s name was
+chosen to reflect that it is at the base of the exception hierarchy
+while being an exception itself.  “Raisable” was considered as a name,
+it was passed on because its name did not properly reflect the fact
+that it is an exception itself.</p>
+<p>Direct inheritance of BaseException is not expected, and will
+be discouraged for the general case.  Most user-defined
+exceptions should inherit from Exception instead.  This allows
+catching Exception to continue to work in the common case of catching
+all exceptions that should be caught.  Direct inheritance of
+BaseException should only be done in cases where an entirely new
+category of exception is desired.</p>
+<p>But, for cases where all
+exceptions should be caught blindly, <code class="docutils literal notranslate"><span class="pre">except</span> <span class="pre">BaseException</span></code> will
+work.</p>
+</div>
+<div class="section" id="keyboardinterrupt-and-systemexit">
+<h3><a class="toc-backref" href="#id31">KeyboardInterrupt and SystemExit</a><a class="headerlink" href="#keyboardinterrupt-and-systemexit" title="Permalink to this headline">¶</a></h3>
+<p>Both exceptions are no longer under Exception.  This is to allow bare
+<code class="docutils literal notranslate"><span class="pre">except</span></code> clauses to act as a more viable default case by catching
+exceptions that inherit from Exception.  With both KeyboardInterrupt
+and SystemExit acting as signals that the interpreter is expected to
+exit, catching them in the common case is the wrong semantics.</p>
+</div>
+<div class="section" id="notimplementederror">
+<h3><a class="toc-backref" href="#id32">NotImplementedError</a><a class="headerlink" href="#notimplementederror" title="Permalink to this headline">¶</a></h3>
+<p>Inherits from Exception instead of from RuntimeError.</p>
+<p>Originally inheriting from RuntimeError, NotImplementedError does not
+have any direct relation to the exception meant for use in user code
+as a quick-and-dirty exception.  Thus it now directly inherits from
+Exception.</p>
+</div>
+</div>
+<div class="section" id="required-superclass-for-raise">
+<h2><a class="toc-backref" href="#id33">Required Superclass for <code class="docutils literal notranslate"><span class="pre">raise</span></code></a><a class="headerlink" href="#required-superclass-for-raise" title="Permalink to this headline">¶</a></h2>
+<p>By requiring all objects passed to a <code class="docutils literal notranslate"><span class="pre">raise</span></code> statement to inherit
+from a specific superclass, all exceptions are guaranteed to have
+certain attributes.  If PEP 344 <a class="footnote-reference brackets" href="#pep344" id="id12">2</a> is accepted, the attributes
+outlined there will be guaranteed to be on all exceptions raised.
+This should help facilitate debugging by making the querying of
+information from exceptions much easier.</p>
+<p>The proposed hierarchy has BaseException as the required base class.</p>
+<div class="section" id="implementation">
+<h3><a class="toc-backref" href="#id34">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h3>
+<p>Enforcement is straightforward.  Modifying <code class="docutils literal notranslate"><span class="pre">RAISE_VARARGS</span></code> to do an
+inheritance check first before raising an exception should be enough.
+For the C API, all functions that set an exception will have the same
+inheritance check applied.</p>
+</div>
+</div>
+<div class="section" id="bare-except-clauses-catch-exception">
+<h2><a class="toc-backref" href="#id35">Bare <code class="docutils literal notranslate"><span class="pre">except</span></code> Clauses Catch Exception</a><a class="headerlink" href="#bare-except-clauses-catch-exception" title="Permalink to this headline">¶</a></h2>
+<p>In most existing Python 2.4 code, bare <code class="docutils literal notranslate"><span class="pre">except</span></code> clauses are too
+broad in the exceptions they catch.  Typically only exceptions that
+signal an error are desired to be caught.  This means that exceptions
+that are used to signify that the interpreter should exit should not
+be caught in the common case.</p>
+<p>With KeyboardInterrupt and SystemExit moved to inherit from
+BaseException instead of Exception, changing bare <code class="docutils literal notranslate"><span class="pre">except</span></code> clauses
+to act as <code class="docutils literal notranslate"><span class="pre">except</span> <span class="pre">Exception</span></code> becomes a much more reasonable
+default.  This change also will break very little code since these
+semantics are what most people want for bare <code class="docutils literal notranslate"><span class="pre">except</span></code> clauses.</p>
+<p>The complete removal of bare <code class="docutils literal notranslate"><span class="pre">except</span></code> clauses has been argued for.
+The case has been made that they violate both Only One Way To Do It
+(OOWTDI) and Explicit Is Better Than Implicit (EIBTI) as listed in the
+Zen of Python <a class="footnote-reference brackets" href="#zen" id="id13">18</a>.  But Practicality Beats Purity (PBP), also in
+the Zen of Python, trumps both of these in this case.  The BDFL has
+stated that bare <code class="docutils literal notranslate"><span class="pre">except</span></code> clauses will work this way
+<a class="footnote-reference brackets" href="#python-dev8" id="id14">17</a>.</p>
+<div class="section" id="id15">
+<h3><a class="toc-backref" href="#id36">Implementation</a><a class="headerlink" href="#id15" title="Permalink to this headline">¶</a></h3>
+<p>The compiler will emit the bytecode for <code class="docutils literal notranslate"><span class="pre">except</span> <span class="pre">Exception</span></code> whenever
+a bare <code class="docutils literal notranslate"><span class="pre">except</span></code> clause is reached.</p>
+</div>
+</div>
+<div class="section" id="transition-plan">
+<h2><a class="toc-backref" href="#id37">Transition Plan</a><a class="headerlink" href="#transition-plan" title="Permalink to this headline">¶</a></h2>
+<p>Because of the complexity and clutter that would be required to add
+all features planned in this PEP, the transition plan is very simple.
+In Python 2.5 BaseException is added.  In Python 3.0, all remaining
+features (required superclass, change in inheritance, bare <code class="docutils literal notranslate"><span class="pre">except</span></code>
+clauses becoming the same as <code class="docutils literal notranslate"><span class="pre">except</span> <span class="pre">Exception</span></code>) will go into
+affect.  In order to make all of this work in a backwards-compatible
+way in Python 2.5 would require very deep hacks in the exception
+machinery which could be error-prone and lead to a slowdown in
+performance for little benefit.</p>
+<p>To help with the transition, the documentation will be changed to
+reflect several programming guidelines:</p>
+<ul class="simple">
+<li>When one wants to catch <em>all</em> exceptions, catch BaseException</li>
+<li>To catch all exceptions that do not represent the termination of
+the interpreter, catch Exception explicitly</li>
+<li>Explicitly catch KeyboardInterrupt and SystemExit; don’t rely on
+inheritance from Exception to lead to the capture</li>
+<li>Always catch NotImplementedError explicitly instead of relying on
+the inheritance from RuntimeError</li>
+</ul>
+<p>The documentation for the ‘exceptions’ module <a class="footnote-reference brackets" href="#exceptions-stdlib" id="id16">6</a>,
+tutorial <a class="footnote-reference brackets" href="#tutorial" id="id17">19</a>, and PEP 290 <a class="footnote-reference brackets" href="#pep290" id="id18">3</a> will all require
+updating.</p>
+</div>
+<div class="section" id="rejected-ideas">
+<h2><a class="toc-backref" href="#id38">Rejected Ideas</a><a class="headerlink" href="#rejected-ideas" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="deprecationwarning-inheriting-from-pendingdeprecationwarning">
+<h3><a class="toc-backref" href="#id39">DeprecationWarning Inheriting From PendingDeprecationWarning</a><a class="headerlink" href="#deprecationwarning-inheriting-from-pendingdeprecationwarning" title="Permalink to this headline">¶</a></h3>
+<p>This was originally proposed because a DeprecationWarning can be
+viewed as a PendingDeprecationWarning that is being removed in the
+next version.  But since enough people thought the inheritance could
+logically work the other way around, the idea was dropped.</p>
+</div>
+<div class="section" id="attributeerror-inheriting-from-typeerror-or-nameerror">
+<h3><a class="toc-backref" href="#id40">AttributeError Inheriting From TypeError or NameError</a><a class="headerlink" href="#attributeerror-inheriting-from-typeerror-or-nameerror" title="Permalink to this headline">¶</a></h3>
+<p>Viewing attributes as part of the interface of a type caused the idea
+of inheriting from TypeError.  But that partially defeats the thinking
+of duck typing and thus the idea was dropped.</p>
+<p>Inheriting from NameError was suggested because objects can be viewed
+as having their own namespace where the attributes live and when an
+attribute is not found it is a namespace failure.  This was also
+dropped as a possibility since not everyone shared this view.</p>
+</div>
+<div class="section" id="removal-of-environmenterror">
+<h3><a class="toc-backref" href="#id41">Removal of EnvironmentError</a><a class="headerlink" href="#removal-of-environmenterror" title="Permalink to this headline">¶</a></h3>
+<p>Originally proposed based on the idea that EnvironmentError was an
+unneeded distinction, the BDFL overruled this idea <a class="footnote-reference brackets" href="#python-dev4" id="id19">13</a>.</p>
+</div>
+<div class="section" id="introduction-of-macerror-and-unixerror">
+<h3><a class="toc-backref" href="#id42">Introduction of MacError and UnixError</a><a class="headerlink" href="#introduction-of-macerror-and-unixerror" title="Permalink to this headline">¶</a></h3>
+<p>Proposed to add symmetry to WindowsError, the BDFL said they won’t be
+used enough <a class="footnote-reference brackets" href="#python-dev4" id="id20">13</a>.  The idea of then removing WindowsError
+was proposed and accepted as reasonable, thus completely negating the
+idea of adding these exceptions.</p>
+</div>
+<div class="section" id="systemerror-subclassing-systemexit">
+<h3><a class="toc-backref" href="#id43">SystemError Subclassing SystemExit</a><a class="headerlink" href="#systemerror-subclassing-systemexit" title="Permalink to this headline">¶</a></h3>
+<p>Proposed because a SystemError is meant to lead to a system exit, the
+idea was removed since CriticalError indicates this better.</p>
+</div>
+<div class="section" id="controlflowexception-under-exception">
+<h3><a class="toc-backref" href="#id44">ControlFlowException Under Exception</a><a class="headerlink" href="#controlflowexception-under-exception" title="Permalink to this headline">¶</a></h3>
+<p>It has been suggested that ControlFlowException should inherit from
+Exception.  This idea has been rejected based on the thinking that
+control flow exceptions typically do not all need to be caught by a
+single <code class="docutils literal notranslate"><span class="pre">except</span></code> clause.</p>
+</div>
+<div class="section" id="rename-nameerror-to-namespaceerror">
+<h3><a class="toc-backref" href="#id45">Rename NameError to NamespaceError</a><a class="headerlink" href="#rename-nameerror-to-namespaceerror" title="Permalink to this headline">¶</a></h3>
+<p>NameError is considered more succinct and leaves open no possible
+mistyping of
+the capitalization of “Namespace” <a class="footnote-reference brackets" href="#python-dev5" id="id21">14</a>.</p>
+<div class="section" id="renaming-runtimeerror-or-introducing-simpleerror">
+<h4><a class="toc-backref" href="#id46">Renaming RuntimeError or Introducing SimpleError</a><a class="headerlink" href="#renaming-runtimeerror-or-introducing-simpleerror" title="Permalink to this headline">¶</a></h4>
+<p>The thinking was that RuntimeError was in no way an obvious name for
+an exception meant to be used when a situation did not call for the
+creation of a new exception.  The renaming was rejected on the basis
+that the exception is already used throughout the interpreter
+<a class="footnote-reference brackets" href="#python-dev6" id="id22">15</a>.
+Rejection of SimpleError was founded on the thought that people
+should be free to use whatever exception they choose and not have one
+so blatantly suggested <a class="footnote-reference brackets" href="#python-dev7" id="id23">16</a>.</p>
+</div>
+</div>
+<div class="section" id="renaming-existing-exceptions">
+<h3><a class="toc-backref" href="#id47">Renaming Existing Exceptions</a><a class="headerlink" href="#renaming-existing-exceptions" title="Permalink to this headline">¶</a></h3>
+<p>Various renamings were suggested but non garnered more than a +0 vote
+(renaming ReferenceError to WeakReferenceError).  The thinking was
+that the existing names were fine and no one had actively complained
+about them ever.  To minimize backwards-compatibility issues and
+causing existing Python programmers extra pain, the renamings were
+removed.</p>
+</div>
+<div class="section" id="have-eoferror-subclass-ioerror">
+<h3><a class="toc-backref" href="#id48">Have EOFError Subclass IOError</a><a class="headerlink" href="#have-eoferror-subclass-ioerror" title="Permalink to this headline">¶</a></h3>
+<p>The original thought was that since EOFError deals directly with I/O,
+it should
+subclass IOError.  But since EOFError is used more as a signal that an
+event
+has occurred (the exhaustion of an I/O port), it should not subclass
+such a specific error exception.</p>
+</div>
+<div class="section" id="have-memoryerror-and-systemerror-have-a-common-superclass">
+<h3><a class="toc-backref" href="#id49">Have MemoryError and SystemError Have a Common Superclass</a><a class="headerlink" href="#have-memoryerror-and-systemerror-have-a-common-superclass" title="Permalink to this headline">¶</a></h3>
+<p>Both classes deal with the interpreter, so why not have them have a
+common
+superclass?  Because one of them means that the interpreter is in a
+state that it should not recover from while the other does not.</p>
+</div>
+<div class="section" id="common-superclass-for-pendingdeprecationwarning-and-deprecationwarning">
+<h3><a class="toc-backref" href="#id50">Common Superclass for PendingDeprecationWarning and DeprecationWarning</a><a class="headerlink" href="#common-superclass-for-pendingdeprecationwarning-and-deprecationwarning" title="Permalink to this headline">¶</a></h3>
+<p>Grouping the deprecation warning exceptions together makes intuitive
+sense.
+But this sensical idea does not extend well when one considers how
+rarely either warning is used, let along at the same time.</p>
+</div>
+<div class="section" id="removing-windowserror">
+<h3><a class="toc-backref" href="#id51">Removing WindowsError</a><a class="headerlink" href="#removing-windowserror" title="Permalink to this headline">¶</a></h3>
+<p>Originally proposed based on the idea that having such a
+platform-specific exception should not be in the built-in namespace.
+It turns out, though, enough code exists that uses the exception to
+warrant it staying.</p>
+</div>
+<div class="section" id="superclass-for-keyboardinterrupt-and-systemexit">
+<h3><a class="toc-backref" href="#id52">Superclass for KeyboardInterrupt and SystemExit</a><a class="headerlink" href="#superclass-for-keyboardinterrupt-and-systemexit" title="Permalink to this headline">¶</a></h3>
+<p>Proposed to make catching non-Exception inheriting exceptions easier
+along with easing the transition to the new hierarchy, the idea was
+rejected by the BDFL <a class="footnote-reference brackets" href="#python-dev8" id="id24">17</a>.  The argument that existing
+code did not show enough instances of the pair of exceptions being
+caught and thus did not justify cluttering the built-in namespace
+was used.</p>
+</div>
+</div>
+<div class="section" id="acknowledgements">
+<h2><a class="toc-backref" href="#id53">Acknowledgements</a><a class="headerlink" href="#acknowledgements" title="Permalink to this headline">¶</a></h2>
+<p>Thanks to Robert Brewer, Josiah Carlson, Nick Coghlan, Timothy
+Delaney, Jack Diedrich, Fred L. Drake, Jr., Philip J. Eby, Greg Ewing,
+James Y. Knight, MA Lemburg, Guido van Rossum, Stephen J. Turnbull,
+Raymond Hettinger, and everyone else I missed for participating in the
+discussion.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id54">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="pep342"><span class="brackets"><a class="fn-backref" href="#id11">1</a></span></dt>
+<dd>PEP 342 (Coroutines via Enhanced Generators)
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0342/">http://www.python.org/dev/peps/pep-0342/</a></dd>
+<dt class="label" id="pep344"><span class="brackets">2</span><span class='fn-backref'><em> (<a href="#id2">1</a>, <a href="#id12">2</a>) </em></span></dt>
+<dd>PEP 344 (Exception Chaining and Embedded Tracebacks)
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0344/">http://www.python.org/dev/peps/pep-0344/</a></dd>
+<dt class="label" id="pep290"><span class="brackets"><a class="fn-backref" href="#id18">3</a></span></dt>
+<dd>PEP 290 (Code Migration and Modernization)
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0290/">http://www.python.org/dev/peps/pep-0290/</a></dd>
+<dt class="label" id="summary2004-08-01"><span class="brackets"><a class="fn-backref" href="#id3">4</a></span></dt>
+<dd>python-dev Summary (An exception is an
+exception, unless it doesn’t inherit from Exception)
+<a class="reference external" href="http://www.python.org/dev/summary/2004-08-01_2004-08-15.html#an-exception-is-an-exception-unless-it-doesn-t-inherit-from-exception">http://www.python.org/dev/summary/2004-08-01_2004-08-15.html#an-exception-is-an-exception-unless-it-doesn-t-inherit-from-exception</a></dd>
+<dt class="label" id="python-dev3"><span class="brackets"><a class="fn-backref" href="#id4">5</a></span></dt>
+<dd>python-dev email (PEP, take 2: Exception
+Reorganization for Python 3.0)
+<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2005-August/055116.html">https://mail.python.org/pipermail/python-dev/2005-August/055116.html</a></dd>
+<dt class="label" id="exceptions-stdlib"><span class="brackets"><a class="fn-backref" href="#id16">6</a></span></dt>
+<dd>exceptions module
+<a class="reference external" href="http://docs.python.org/library/exceptions.html">http://docs.python.org/library/exceptions.html</a></dd>
+<dt class="label" id="python-dev-thread1"><span class="brackets"><a class="fn-backref" href="#id5">7</a></span></dt>
+<dd>python-dev thread (Pre-PEP: Exception
+Reorganization for Python 3.0)
+<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2005-July/055020.html">https://mail.python.org/pipermail/python-dev/2005-July/055020.html</a>,
+<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2005-August/055065.html">https://mail.python.org/pipermail/python-dev/2005-August/055065.html</a></dd>
+<dt class="label" id="python-dev-thread2"><span class="brackets"><a class="fn-backref" href="#id6">8</a></span></dt>
+<dd>python-dev thread (PEP, take 2: Exception
+Reorganization for Python 3.0)
+<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2005-August/055103.html">https://mail.python.org/pipermail/python-dev/2005-August/055103.html</a></dd>
+<dt class="label" id="python-dev-thread3"><span class="brackets"><a class="fn-backref" href="#id7">9</a></span></dt>
+<dd>python-dev thread (Reorg PEP checked in)
+<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2005-August/055138.html">https://mail.python.org/pipermail/python-dev/2005-August/055138.html</a></dd>
+<dt class="label" id="python-dev-thread4"><span class="brackets"><a class="fn-backref" href="#id8">10</a></span></dt>
+<dd>python-dev thread (Major revision of PEP 348 committed)
+<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2005-August/055199.html">https://mail.python.org/pipermail/python-dev/2005-August/055199.html</a></dd>
+<dt class="label" id="python-dev-thread5"><span class="brackets"><a class="fn-backref" href="#id9">11</a></span></dt>
+<dd>python-dev thread (Exception Reorg PEP revised yet again)
+<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2005-August/055292.html">https://mail.python.org/pipermail/python-dev/2005-August/055292.html</a></dd>
+<dt class="label" id="python-dev-thread6"><span class="brackets"><a class="fn-backref" href="#id10">12</a></span></dt>
+<dd>python-dev thread (PEP 348 (exception reorg) revised again)
+<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2005-August/055412.html">https://mail.python.org/pipermail/python-dev/2005-August/055412.html</a></dd>
+<dt class="label" id="python-dev4"><span class="brackets">13</span><span class='fn-backref'><em> (<a href="#id19">1</a>, <a href="#id20">2</a>) </em></span></dt>
+<dd>python-dev email (Pre-PEP: Exception Reorganization
+for Python 3.0)
+<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2005-July/055019.html">https://mail.python.org/pipermail/python-dev/2005-July/055019.html</a></dd>
+<dt class="label" id="python-dev5"><span class="brackets"><a class="fn-backref" href="#id21">14</a></span></dt>
+<dd>python-dev email (PEP, take 2: Exception Reorganization for
+Python 3.0)
+<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2005-August/055159.html">https://mail.python.org/pipermail/python-dev/2005-August/055159.html</a></dd>
+<dt class="label" id="python-dev6"><span class="brackets"><a class="fn-backref" href="#id22">15</a></span></dt>
+<dd>python-dev email (Exception Reorg PEP checked in)
+<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2005-August/055149.html">https://mail.python.org/pipermail/python-dev/2005-August/055149.html</a></dd>
+<dt class="label" id="python-dev7"><span class="brackets"><a class="fn-backref" href="#id23">16</a></span></dt>
+<dd>python-dev email (Exception Reorg PEP checked in)
+<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2005-August/055175.html">https://mail.python.org/pipermail/python-dev/2005-August/055175.html</a></dd>
+<dt class="label" id="python-dev8"><span class="brackets">17</span><span class='fn-backref'><em> (<a href="#id14">1</a>, <a href="#id24">2</a>) </em></span></dt>
+<dd>python-dev email (PEP 348 (exception reorg) revised again)
+<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2005-August/055423.html">https://mail.python.org/pipermail/python-dev/2005-August/055423.html</a></dd>
+<dt class="label" id="zen"><span class="brackets"><a class="fn-backref" href="#id13">18</a></span></dt>
+<dd>PEP 20 (The Zen of Python)
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0020/">http://www.python.org/dev/peps/pep-0020/</a></dd>
+<dt class="label" id="tutorial"><span class="brackets"><a class="fn-backref" href="#id17">19</a></span></dt>
+<dd>Python Tutorial
+<a class="reference external" href="http://docs.python.org/tutorial/">http://docs.python.org/tutorial/</a></dd>
+<dt class="label" id="rejected"><span class="brackets"><a class="fn-backref" href="#id1">20</a></span></dt>
+<dd>python-dev email (Bare except clauses in PEP 348)
+<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2005-August/055676.html">https://mail.python.org/pipermail/python-dev/2005-August/055676.html</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id55">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0348.txt">https://github.com/python/peps/blob/master/pep-0348.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0348.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0347.html">PEP 0347</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0349.html">PEP 0349</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 348 – Exception Reorganization for Python 3.0</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale-for-wanting-change">Rationale For Wanting Change</a></li>
+<li><a class="reference internal" href="#philosophy-of-reorganization">Philosophy of Reorganization</a></li>
+<li><a class="reference internal" href="#new-hierarchy">New Hierarchy</a></li>
+<li><a class="reference internal" href="#differences-compared-to-python-2-4">Differences Compared to Python 2.4</a><ul>
+<li><a class="reference internal" href="#baseexception">BaseException</a></li>
+<li><a class="reference internal" href="#keyboardinterrupt-and-systemexit">KeyboardInterrupt and SystemExit</a></li>
+<li><a class="reference internal" href="#notimplementederror">NotImplementedError</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#required-superclass-for-raise">Required Superclass for <code class="docutils literal notranslate"><span class="pre">raise</span></code></a><ul>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#bare-except-clauses-catch-exception">Bare <code class="docutils literal notranslate"><span class="pre">except</span></code> Clauses Catch Exception</a><ul>
+<li><a class="reference internal" href="#id15">Implementation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#transition-plan">Transition Plan</a></li>
+<li><a class="reference internal" href="#rejected-ideas">Rejected Ideas</a><ul>
+<li><a class="reference internal" href="#deprecationwarning-inheriting-from-pendingdeprecationwarning">DeprecationWarning Inheriting From PendingDeprecationWarning</a></li>
+<li><a class="reference internal" href="#attributeerror-inheriting-from-typeerror-or-nameerror">AttributeError Inheriting From TypeError or NameError</a></li>
+<li><a class="reference internal" href="#removal-of-environmenterror">Removal of EnvironmentError</a></li>
+<li><a class="reference internal" href="#introduction-of-macerror-and-unixerror">Introduction of MacError and UnixError</a></li>
+<li><a class="reference internal" href="#systemerror-subclassing-systemexit">SystemError Subclassing SystemExit</a></li>
+<li><a class="reference internal" href="#controlflowexception-under-exception">ControlFlowException Under Exception</a></li>
+<li><a class="reference internal" href="#rename-nameerror-to-namespaceerror">Rename NameError to NamespaceError</a><ul>
+<li><a class="reference internal" href="#renaming-runtimeerror-or-introducing-simpleerror">Renaming RuntimeError or Introducing SimpleError</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#renaming-existing-exceptions">Renaming Existing Exceptions</a></li>
+<li><a class="reference internal" href="#have-eoferror-subclass-ioerror">Have EOFError Subclass IOError</a></li>
+<li><a class="reference internal" href="#have-memoryerror-and-systemerror-have-a-common-superclass">Have MemoryError and SystemError Have a Common Superclass</a></li>
+<li><a class="reference internal" href="#common-superclass-for-pendingdeprecationwarning-and-deprecationwarning">Common Superclass for PendingDeprecationWarning and DeprecationWarning</a></li>
+<li><a class="reference internal" href="#removing-windowserror">Removing WindowsError</a></li>
+<li><a class="reference internal" href="#superclass-for-keyboardinterrupt-and-systemexit">Superclass for KeyboardInterrupt and SystemExit</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#acknowledgements">Acknowledgements</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

@@ -1,0 +1,298 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 434 – IDLE Enhancement Exception for All Branches &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 435 – Adding an Enum type to the Python standard library" href="pep-0435.html" />
+    <link rel="prev" title="PEP 433 – Easier suppression of file descriptor inheritance" href="pep-0433.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 434 – IDLE Enhancement Exception for All Branches</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-434-idle-enhancement-exception-for-all-branches">
+<h1 class="page-title">PEP 434 – IDLE Enhancement Exception for All Branches<a class="headerlink" href="#pep-434-idle-enhancement-exception-for-all-branches" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">434</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">IDLE Enhancement Exception for All Branches</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Todd Rovito &lt;rovitotv&#32;&#97;t&#32;gmail.com&gt;,
+Terry Reedy &lt;tjreedy&#32;&#97;t&#32;udel.edu&gt;</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even">Nick Coghlan</dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd">Active</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even">Informational</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">16-Feb-2013</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">16-Feb-2013
+03-Mar-2013
+21-Mar-2013
+30-Mar-2013</dd>
+<dt class="field-odd">Resolution</dt>
+<dd class="field-odd"><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2013-March/125003.html">https://mail.python.org/pipermail/python-dev/2013-March/125003.html</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id15">Abstract</a></li>
+<li><a class="reference internal" href="#motivation" id="id16">Motivation</a></li>
+<li><a class="reference internal" href="#rationale" id="id17">Rationale</a></li>
+<li><a class="reference internal" href="#backwards-compatibility" id="id18">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#references" id="id19">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id20">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id15">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Most CPython tracker issues are classified as behavior or enhancement.
+Most behavior patches are backported to branches for existing
+versions.  Enhancement patches are restricted to the default branch
+that becomes the next Python version.</p>
+<p>This PEP proposes that the restriction on applying enhancements be
+relaxed for IDLE code, residing in …/Lib/idlelib/.  In practice,
+this would mean that IDLE developers would not have to classify or
+agree on the classification of a patch but could instead focus on what
+is best for IDLE users and future IDLE development.  It would also
+mean that IDLE patches would not necessarily have to be split into
+‘bugfix’ changes and enhancement changes.</p>
+<p>The PEP would apply to changes in existing features and addition of
+small features, such as would require a new menu entry, but not
+necessarily to possible major re-writes such as switching to themed
+widgets or tabbed windows.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id16">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>This PEP was prompted by controversy on both the tracker and pydev
+list over adding Cut, Copy, and Paste to right-click context menus
+(Issue 1207589, opened in 2005 <a class="footnote-reference brackets" href="#id8" id="id1">1</a>; pydev thread <a class="footnote-reference brackets" href="#id9" id="id2">2</a>).  The features
+were available as keyboard shortcuts but not on the context menu.  It
+is standard, at least on Windows, that they should be when applicable
+(a read-only window would only have Copy), so users do not have to
+shift to the keyboard after selecting text for cutting or copying or a
+slice point for pasting.  The context menu was not documented until 10
+days before the new options were added (Issue 10405 <a class="footnote-reference brackets" href="#id12" id="id3">5</a>).</p>
+<p>Normally, behavior is called a bug if it conflicts with documentation
+judged to be correct.  But if there is no doc, what is the standard?
+If the code is its own documentation, most IDLE issues on the tracker
+are enhancement issues.  If we substitute reasonable user expectation,
+(which can, of course, be its own subject of disagreement), many more
+issues are behavior issues.</p>
+<p>For context menus, people disagreed on the status of the additions –
+bugfix or enhancement.  Even people who called it an enhancement
+disagreed as to whether the patch should be backported.  This PEP
+proposes to make the status disagreement irrelevant by explicitly
+allowing more liberal backporting than for other stdlib modules.</p>
+<p>Python does have many advanced features yet Python is well known for
+being an easy computer language for beginners <a class="footnote-reference brackets" href="#id10" id="id4">3</a>.  A major Python
+philosophy is “batteries included” which is best demonstrated in
+Python’s standard library with many modules that are not typically
+included with other programming languages <a class="footnote-reference brackets" href="#id11" id="id5">4</a>.  IDLE is an important
+“battery” in the Python toolbox because it allows a beginner to get
+started quickly without downloading and configuring a third party IDE.
+IDLE represents a commitment by the Python community to encouage the
+use of Python as a teaching language both inside and outside of formal
+educational settings.  The recommended teaching experience is to have
+a learner start with IDLE.  This PEP and the work that it will enable
+will allow the Python community to make that learner’s experience with
+IDLE awesome by making IDLE a simple tool for beginners to get started
+with Python.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id17">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>People primarily use IDLE by running the graphical user interface
+(GUI) application, rather than by directly importing the effectively
+private (undocumented) implementation modules in idlelib.  Whether
+they use the shell, the editor, or both, we believe they will benefit
+more from consistency across the latest releases of current Python
+versions than from consistency within the bugfix releases for one
+Python version.  This is especially true when existing behavior is
+clearly unsatisfactory.</p>
+<p>When people use the standard interpreter, the OS-provided frame works
+the same for all Python versions.  If, for instance, Microsoft were to
+upgrade the Command Prompt GUI, the improvements would be present
+regardless of which Python were running within it.  Similarly, if one
+edits Python code with editor X, behaviors such as the right-click
+context menu and the search-replace box do not depend on the version
+of Python being edited or even the language being edited.</p>
+<p>The benefit for IDLE developers is mixed.  On the one hand, testing
+more versions and possibly having to adjust a patch, especially for
+2.7, is more work.  (There is, of course, the option on not
+backporting everything.  For issue 12510, some changes to calltips for
+classes were not included in the 2.7 patch because of issues with
+old-style classes <a class="footnote-reference brackets" href="#id13" id="id6">6</a>.)  On the other hand, bike-shedding can be an
+energy drain.  If the obvious fix for a bug looks like an enhancement,
+writing a separate bugfix-only patch is more work.  And making the
+code diverge between versions makes future multi-version patches more
+difficult.</p>
+<p>These issue are illustrated by the search-and-replace dialog box.  It
+used to raise an exception for certain user entries <a class="footnote-reference brackets" href="#id14" id="id7">7</a>.  The
+uncaught exception caused IDLE to exit.  At least on Windows, the exit
+was silent (no visible traceback) and looked like a crash if IDLE was
+started normally, from an icon.</p>
+<p>Was this a bug?  IDLE Help (on the current Help submenu) just says
+“Replace…  Open a search-and-replace dialog box”, and a box <em>was</em>
+opened.  It is not, in general, a bug for a library method to raise an
+exception.  And it is not, in general, a bug for a library method to
+ignore an exception raised by functions it calls.  So if we were to
+adopt the ‘code = doc’ philosophy in the absence of detailed docs, one
+might say ‘No’.</p>
+<p>However, IDLE exiting when it does not need to is definitely
+obnoxious.  So four of us agreed that it should be prevented.  But
+there was still the question of what to do instead?  Catch the
+exception?  Just not raise the exception?  Beep?  Display an error
+message box?  Or try to do something useful with the user’s entry?
+Would replacing a ‘crash’ with useful behavior be an enhancement,
+limited to future Python releases?  Should IDLE developers have to ask
+that?</p>
+</div>
+<div class="section" id="backwards-compatibility">
+<h2><a class="toc-backref" href="#id18">Backwards Compatibility</a><a class="headerlink" href="#backwards-compatibility" title="Permalink to this headline">¶</a></h2>
+<p>For IDLE, there are three types of users who might be concerned about
+back compatibility.  First are people who run IDLE as an application.
+We have already discussed them above.</p>
+<p>Second are people who import one of the idlelib modules.  As far as we
+know, this is only done to start the IDLE application, and we do not
+propose breaking such use.  Otherwise, the modules are undocumented
+and effectively private implementations.  If an IDLE module were
+defined as public, documented, and perhaps moved to the tkinter
+package, it would then follow the normal rules.  (Documenting the
+private interfaces for the benefit of people working on the IDLE code
+is a separate issue.)</p>
+<p>Third are people who write IDLE extensions.  The guaranteed extension
+interface is given in idlelib/extension.txt.  This should be respected
+at least in existing versions, and not frivolously changed in future
+versions.  But there is a warning that “The extension cannot assume
+much about this [EditorWindow] argument.”  This guarantee should
+rarely be an issue with patches, and the issue is not specific to
+‘enhancement’ versus ‘bugfix’ patches.</p>
+<p>As is happens, after the context menu patch was applied, it came up
+that extensions that added items to the context menu (rare) would be
+broken because the patch a) added a new item to standard rmenu_specs
+and b) expected every rmenu_spec to be lengthened. It is not clear
+whether this violates the guarantee, but there is a second patch that
+fixes assumption b).  It should be applied when it is clear that the
+first patch will not have to be reverted.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id19">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id8"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>IDLE: Right Click Context Menu, Foord, Michael
+(<a class="reference external" href="http://bugs.python.org/issue1207589">http://bugs.python.org/issue1207589</a>)</dd>
+<dt class="label" id="id9"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>Cut/Copy/Paste items in IDLE right click context menu
+(<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2012-November/122514.html">https://mail.python.org/pipermail/python-dev/2012-November/122514.html</a>)</dd>
+<dt class="label" id="id10"><span class="brackets"><a class="fn-backref" href="#id4">3</a></span></dt>
+<dd>Getting Started with Python
+(<a class="reference external" href="http://www.python.org/about/gettingstarted/">http://www.python.org/about/gettingstarted/</a>)</dd>
+<dt class="label" id="id11"><span class="brackets"><a class="fn-backref" href="#id5">4</a></span></dt>
+<dd>Batteries Included
+(<a class="reference external" href="http://docs.python.org/2/tutorial/stdlib.html#batteries-included">http://docs.python.org/2/tutorial/stdlib.html#batteries-included</a>)</dd>
+<dt class="label" id="id12"><span class="brackets"><a class="fn-backref" href="#id3">5</a></span></dt>
+<dd>IDLE breakpoint facility undocumented, Deily, Ned
+(<a class="reference external" href="http://bugs.python.org/issue10405">http://bugs.python.org/issue10405</a>)</dd>
+<dt class="label" id="id13"><span class="brackets"><a class="fn-backref" href="#id6">6</a></span></dt>
+<dd>IDLE: calltips mishandle raw strings and other examples,
+Reedy, Terry (<a class="reference external" href="http://bugs.python.org/issue12510">http://bugs.python.org/issue12510</a>)</dd>
+<dt class="label" id="id14"><span class="brackets"><a class="fn-backref" href="#id7">7</a></span></dt>
+<dd>IDLE: replace ending with ‘' causes crash, Reedy, Terry
+(<a class="reference external" href="http://bugs.python.org/issue13052">http://bugs.python.org/issue13052</a>)</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id20">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0434.txt">https://github.com/python/peps/blob/master/pep-0434.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0434.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0433.html">PEP 0433</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0435.html">PEP 0435</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 434 – IDLE Enhancement Exception for All Branches</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

@@ -1,0 +1,249 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 349 – Allow str() to return unicode strings &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 350 – Codetags" href="pep-0350.html" />
+    <link rel="prev" title="PEP 348 – Exception Reorganization for Python 3.0" href="pep-0348.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 349 – Allow str() to return unicode strings</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-349-allow-str-to-return-unicode-strings">
+<h1 class="page-title">PEP 349 – Allow str() to return unicode strings<a class="headerlink" href="#pep-349-allow-str-to-return-unicode-strings" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">349</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Allow str() to return unicode strings</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Neil Schemenauer &lt;nas&#32;&#97;t&#32;arctrix.com&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Rejected</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">02-Aug-2005</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.5</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">06-Aug-2005</dd>
+<dt class="field-odd">Resolution</dt>
+<dd class="field-odd"><a class="reference external" href="https://mail.python.org/archives/list/python-dev&#64;python.org/message/M2Y3PUFLAE23NPRJPVBYF6P5LW5LVN6F/">https://mail.python.org/archives/list/python-dev&#64;python.org/message/M2Y3PUFLAE23NPRJPVBYF6P5LW5LVN6F/</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id3">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id4">Rationale</a></li>
+<li><a class="reference internal" href="#specification" id="id5">Specification</a></li>
+<li><a class="reference internal" href="#backwards-compatibility" id="id6">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#alternative-solutions" id="id7">Alternative Solutions</a></li>
+<li><a class="reference internal" href="#references" id="id8">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id9">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id3">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes to change the <code class="docutils literal notranslate"><span class="pre">str()</span></code> built-in function so that it
+can return unicode strings.  This change would make it easier to
+write code that works with either string type and would also make
+some existing code handle unicode strings.  The C function
+<code class="docutils literal notranslate"><span class="pre">PyObject_Str()</span></code> would remain unchanged and the function
+<code class="docutils literal notranslate"><span class="pre">PyString_New()</span></code> would be added instead.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id4">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Python has had a Unicode string type for some time now but use of
+it is not yet widespread.  There is a large amount of Python code
+that assumes that string data is represented as str instances.
+The long term plan for Python is to phase out the str type and use
+unicode for all string data.  Clearly, a smooth migration path
+must be provided.</p>
+<p>We need to upgrade existing libraries, written for str instances,
+to be made capable of operating in an all-unicode string world.
+We can’t change to an all-unicode world until all essential
+libraries are made capable for it.  Upgrading the libraries in one
+shot does not seem feasible.  A more realistic strategy is to
+individually make the libraries capable of operating on unicode
+strings while preserving their current all-str environment
+behaviour.</p>
+<p>First, we need to be able to write code that can accept unicode
+instances without attempting to coerce them to str instances.  Let
+us label such code as Unicode-safe.  Unicode-safe libraries can be
+used in an all-unicode world.</p>
+<p>Second, we need to be able to write code that, when provided only
+str instances, will not create unicode results.  Let us label such
+code as str-stable.  Libraries that are str-stable can be used by
+libraries and applications that are not yet Unicode-safe.</p>
+<p>Sometimes it is simple to write code that is both str-stable and
+Unicode-safe.  For example, the following function just works:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">appendx</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">s</span> <span class="o">+</span> <span class="s1">&#39;x&#39;</span>
+</pre></div>
+</div>
+<p>That’s not too surprising since the unicode type is designed to
+make the task easier.  The principle is that when str and unicode
+instances meet, the result is a unicode instance.  One notable
+difficulty arises when code requires a string representation of an
+object; an operation traditionally accomplished by using the <code class="docutils literal notranslate"><span class="pre">str()</span></code>
+built-in function.</p>
+<p>Using the current <code class="docutils literal notranslate"><span class="pre">str()</span></code> function makes the code not Unicode-safe.
+Replacing a <code class="docutils literal notranslate"><span class="pre">str()</span></code> call with a <code class="docutils literal notranslate"><span class="pre">unicode()</span></code> call makes the code not
+str-stable.  Changing <code class="docutils literal notranslate"><span class="pre">str()</span></code> so that it could return unicode
+instances would solve this problem.  As a further benefit, some code
+that is currently not Unicode-safe because it uses <code class="docutils literal notranslate"><span class="pre">str()</span></code> would
+become Unicode-safe.</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id5">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>A Python implementation of the <code class="docutils literal notranslate"><span class="pre">str()</span></code> built-in follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">str</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return a nice string representation of the object.  The</span>
+<span class="sd">    return value is a str or unicode instance.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">str</span> <span class="ow">or</span> <span class="nb">type</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="ow">is</span> <span class="n">unicode</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">s</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">unicode</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;__str__ returned non-string&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">r</span>
+</pre></div>
+</div>
+<p>The following function would be added to the C API and would be the
+equivalent to the <code class="docutils literal notranslate"><span class="pre">str()</span></code> built-in (ideally it be called <code class="docutils literal notranslate"><span class="pre">PyObject_Str</span></code>,
+but changing that function could cause a massive number of
+compatibility problems):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyObject</span> <span class="o">*</span><span class="n">PyString_New</span><span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>A reference implementation is available on Sourceforge <a class="footnote-reference brackets" href="#id2" id="id1">1</a> as a
+patch.</p>
+</div>
+<div class="section" id="backwards-compatibility">
+<h2><a class="toc-backref" href="#id6">Backwards Compatibility</a><a class="headerlink" href="#backwards-compatibility" title="Permalink to this headline">¶</a></h2>
+<p>Some code may require that <code class="docutils literal notranslate"><span class="pre">str()</span></code> returns a str instance.  In the
+standard library, only one such case has been found so far.  The
+function <code class="docutils literal notranslate"><span class="pre">email.header_decode()</span></code> requires a str instance and the
+<code class="docutils literal notranslate"><span class="pre">email.Header.decode_header()</span></code> function tries to ensure this by
+calling <code class="docutils literal notranslate"><span class="pre">str()</span></code> on its argument.  The code was fixed by changing
+the line “header = str(header)” to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">header</span><span class="p">,</span> <span class="n">unicode</span><span class="p">):</span>
+    <span class="n">header</span> <span class="o">=</span> <span class="n">header</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;ascii&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Whether this is truly a bug is questionable since <code class="docutils literal notranslate"><span class="pre">decode_header()</span></code>
+really operates on byte strings, not character strings.  Code that
+passes it a unicode instance could itself be considered buggy.</p>
+</div>
+<div class="section" id="alternative-solutions">
+<h2><a class="toc-backref" href="#id7">Alternative Solutions</a><a class="headerlink" href="#alternative-solutions" title="Permalink to this headline">¶</a></h2>
+<p>A new built-in function could be added instead of changing <code class="docutils literal notranslate"><span class="pre">str()</span></code>.
+Doing so would introduce virtually no backwards compatibility
+problems.  However, since the compatibility problems are expected to
+rare, changing <code class="docutils literal notranslate"><span class="pre">str()</span></code> seems preferable to adding a new built-in.</p>
+<p>The basestring type could be changed to have the proposed behaviour,
+rather than changing <code class="docutils literal notranslate"><span class="pre">str()</span></code>.  However, that would be confusing
+behaviour for an abstract base type.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id8">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><a class="reference external" href="https://bugs.python.org/issue1266570">https://bugs.python.org/issue1266570</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id9">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0349.txt">https://github.com/python/peps/blob/master/pep-0349.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0349.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0348.html">PEP 0348</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0350.html">PEP 0350</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 349 – Allow str() to return unicode strings</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#alternative-solutions">Alternative Solutions</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

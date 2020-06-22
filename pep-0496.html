@@ -1,0 +1,278 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 496 – Environment Markers &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 497 – A standard mechanism for backward compatibility" href="pep-0497.html" />
+    <link rel="prev" title="PEP 495 – Local Time Disambiguation" href="pep-0495.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 496 – Environment Markers</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-496-environment-markers">
+<h1 class="page-title">PEP 496 – Environment Markers<a class="headerlink" href="#pep-496-environment-markers" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">496</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Environment Markers</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">James Polley &lt;jp&#32;&#97;t&#32;jamezpolley.com&gt;</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even">Nick Coghlan &lt;ncoghlan&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd">Rejected</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even">Informational</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">03-Jul-2015</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#pep-status" id="id4">PEP Status</a></li>
+<li><a class="reference internal" href="#abstract" id="id5">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id6">Rationale</a></li>
+<li><a class="reference internal" href="#examples" id="id7">Examples</a></li>
+<li><a class="reference internal" href="#micro-language" id="id8">Micro-language</a><ul>
+<li><a class="reference internal" href="#strings" id="id9">Strings</a></li>
+<li><a class="reference internal" href="#version-numbers" id="id10">Version numbers</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references" id="id11">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id12">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="pep-status">
+<h2><a class="toc-backref" href="#id4">PEP Status</a><a class="headerlink" href="#pep-status" title="Permalink to this headline">¶</a></h2>
+<p>After this PEP was initially drafted, PEP 508 was developed and submitted to
+fully specify the dependency declaration syntax, including environment markers.
+As a result, this PEP ended up being rejected in favour of the more comprehensive
+PEP 508.</p>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id5">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>An <strong>environment marker</strong> describes a condition about the current execution
+environment. They are used to indicate when certain dependencies are only
+required in particular environments, and to indicate supported platforms
+for distributions with additional constraints beyond the availability of a
+Python runtime.</p>
+<p>Environment markers were first specified in PEP-0345 <a class="footnote-reference brackets" href="#pep345" id="id1">1</a>. PEP-0426
+<a class="footnote-reference brackets" href="#pep426" id="id2">2</a> (which would replace PEP-0345) proposed extensions to the markers.
+When 2.7.10 was released, even these extensions became insufficient due to
+their reliance on simple lexical comparisons, and thus this PEP has been born.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id6">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Many Python packages are written with portability in mind.</p>
+<p>For many packages this means they aim to support a wide range of
+Python releases. If they depend on libraries such as <code class="docutils literal notranslate"><span class="pre">argparse</span></code> -
+which started as external libraries, but later got incorporated into
+core - specifying a single set of requirements is difficult, as the
+set of required packages differs depending on the version of Python in
+use.</p>
+<p>For other packages, designing for portability means supporting
+multiple operating systems. However, the significant differences
+between them may mean that particular dependencies are only needed on
+particular platforms (relying on <code class="docutils literal notranslate"><span class="pre">pywin32</span></code> only on Windows, for
+example)”</p>
+<p>Environment Markers attempt to provide more flexibility in a list of
+requirements by allowing the developer to list requirements that are
+specific to a particular environment.</p>
+</div>
+<div class="section" id="examples">
+<h2><a class="toc-backref" href="#id7">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<p>Here are some examples of such markers inside a requirements.txt:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pywin32</span> <span class="o">&gt;=</span><span class="mf">1.0</span> <span class="p">;</span> <span class="n">sys_platform</span> <span class="o">==</span> <span class="s1">&#39;win32&#39;</span>
+<span class="n">unittest2</span> <span class="o">&gt;=</span><span class="mf">2.0</span><span class="p">,</span><span class="o">&lt;</span><span class="mf">3.0</span> <span class="p">;</span> <span class="n">python_version</span> <span class="o">==</span> <span class="s1">&#39;2.4&#39;</span> <span class="ow">or</span> <span class="n">python_version</span> <span class="o">==</span> <span class="s1">&#39;2.5&#39;</span>
+<span class="n">backports</span><span class="o">.</span><span class="n">ssl_match_hostname</span> <span class="o">&gt;=</span> <span class="mf">3.4</span> <span class="p">;</span> <span class="n">python_version</span> <span class="o">&lt;</span> <span class="s1">&#39;2.7.9&#39;</span> <span class="ow">or</span> <span class="p">(</span><span class="n">python_version</span> <span class="o">&gt;=</span> <span class="s1">&#39;3.0&#39;</span> <span class="ow">and</span> <span class="n">python_version</span> <span class="o">&lt;</span> <span class="s1">&#39;3.4&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>And here’s an example of some conditional metadata included in
+setup.py for a distribution that requires PyWin32 both at runtime and
+buildtime when using Windows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">setup</span><span class="p">(</span>
+  <span class="n">install_requires</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;pywin32 &gt; 1.0 : sys.platform == &#39;win32&#39;&quot;</span><span class="p">],</span>
+  <span class="n">setup_requires</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;pywin32 &gt; 1.0 : sys.platform == &#39;win32&#39;&quot;</span><span class="p">]</span>
+  <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="micro-language">
+<h2><a class="toc-backref" href="#id8">Micro-language</a><a class="headerlink" href="#micro-language" title="Permalink to this headline">¶</a></h2>
+<p>The micro-language behind this is as follows. It compares:</p>
+<ul class="simple">
+<li>strings with the <code class="docutils literal notranslate"><span class="pre">==</span></code> and <code class="docutils literal notranslate"><span class="pre">in</span></code> operators (and their opposites)</li>
+<li>version numbers with the <code class="docutils literal notranslate"><span class="pre">&lt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;=</span></code>, <code class="docutils literal notranslate"><span class="pre">&gt;=</span></code>, and <code class="docutils literal notranslate"><span class="pre">&lt;</span></code> operators
+in addition to those supported for strings</li>
+</ul>
+<p>The usual boolean operators <code class="docutils literal notranslate"><span class="pre">and</span></code> and <code class="docutils literal notranslate"><span class="pre">or</span></code> can be used to combine
+expressions, and parentheses are supported for grouping.</p>
+<p>The pseudo-grammar is</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">MARKER</span><span class="p">:</span> <span class="n">EXPR</span> <span class="p">[(</span><span class="ow">and</span><span class="o">|</span><span class="ow">or</span><span class="p">)</span> <span class="n">EXPR</span><span class="p">]</span><span class="o">*</span>
+<span class="n">EXPR</span><span class="p">:</span> <span class="p">(</span><span class="s2">&quot;(&quot;</span> <span class="n">MARKER</span> <span class="s2">&quot;)&quot;</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">STREXPR</span><span class="o">|</span><span class="n">VEREXPR</span><span class="p">)</span>
+<span class="n">STREXPR</span><span class="p">:</span> <span class="n">STRING</span> <span class="p">[</span><span class="n">STRCMPOP</span> <span class="n">STREXPR</span><span class="p">]</span>
+<span class="n">STRCMPOP</span><span class="p">:</span> <span class="o">==|!=|</span><span class="ow">in</span><span class="o">|</span><span class="ow">not</span> <span class="ow">in</span>
+<span class="n">VEREXPR</span><span class="p">:</span> <span class="n">VERSION</span> <span class="p">[</span><span class="n">VERCMPOP</span> <span class="n">VEREXPR</span><span class="p">]</span>
+<span class="n">VERCMPOP</span><span class="p">:</span> <span class="p">(</span><span class="o">==|!=|&lt;|&gt;|&lt;=|&gt;=</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">SUBEXPR</span></code> is either a Python string (such as <code class="docutils literal notranslate"><span class="pre">'win32'</span></code>) or one of
+the <code class="docutils literal notranslate"><span class="pre">Strings</span></code> marker variables listed below.</p>
+<p><code class="docutils literal notranslate"><span class="pre">VEREXPR</span></code> is a PEP-0440 <a class="footnote-reference brackets" href="#pep440" id="id3">3</a> version identifier, or one of the
+<code class="docutils literal notranslate"><span class="pre">Version</span> <span class="pre">number</span></code> marker variables listed below. Comparisons between
+version numbers are done using PEP-0440 semantics.</p>
+<div class="section" id="strings">
+<h3><a class="toc-backref" href="#id9">Strings</a><a class="headerlink" href="#strings" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">os_name</span></code>: <code class="docutils literal notranslate"><span class="pre">os.name</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">sys_platform</span></code>: <code class="docutils literal notranslate"><span class="pre">sys.platform</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">platform_release</span></code>: <code class="docutils literal notranslate"><span class="pre">platform.release()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">implementation_name</span></code>: <code class="docutils literal notranslate"><span class="pre">sys.implementation.name</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">platform_machine</span></code>: <code class="docutils literal notranslate"><span class="pre">platform.machine()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">platform_python_implementation</span></code>: <code class="docutils literal notranslate"><span class="pre">platform.python_implementation()</span></code></li>
+</ul>
+<p>If a particular string value is not available (such as <code class="docutils literal notranslate"><span class="pre">sys.implementation.name</span></code>
+in versions of Python prior to 3.3), the corresponding marker
+variable MUST be considered equivalent to the empty string.</p>
+<p>If a particular version number value is not available (such as
+<code class="docutils literal notranslate"><span class="pre">sys.implementation.version</span></code> in versions of Python prior to 3.3) the
+corresponding marker variable MUST be considered equivalent to <code class="docutils literal notranslate"><span class="pre">0</span></code></p>
+</div>
+<div class="section" id="version-numbers">
+<h3><a class="toc-backref" href="#id10">Version numbers</a><a class="headerlink" href="#version-numbers" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">python_version</span></code>: <code class="docutils literal notranslate"><span class="pre">platform.python_version()[:3]</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">python_full_version</span></code>: see definition below</li>
+<li><code class="docutils literal notranslate"><span class="pre">platform_version</span></code>: <code class="docutils literal notranslate"><span class="pre">platform.version()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">implementation_version</span></code>: see definition below</li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">python_full_version</span></code> and <code class="docutils literal notranslate"><span class="pre">implementation_version</span></code> marker variables
+are derived from <code class="docutils literal notranslate"><span class="pre">sys.version_info</span></code> and <code class="docutils literal notranslate"><span class="pre">sys.implementation.version</span></code>
+respectively, in accordance with the following algorithm:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">format_full_version</span><span class="p">(</span><span class="n">info</span><span class="p">):</span>
+    <span class="n">version</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{0.major}</span><span class="s1">.</span><span class="si">{0.minor}</span><span class="s1">.</span><span class="si">{0.micro}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">info</span><span class="p">)</span>
+    <span class="n">kind</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">releaselevel</span>
+    <span class="k">if</span> <span class="n">kind</span> <span class="o">!=</span> <span class="s1">&#39;final&#39;</span><span class="p">:</span>
+        <span class="n">version</span> <span class="o">+=</span> <span class="n">kind</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">serial</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">version</span>
+
+<span class="n">python_full_version</span> <span class="o">=</span> <span class="n">format_full_version</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="p">)</span>
+<span class="n">implementation_version</span> <span class="o">=</span> <span class="n">format_full_version</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">implementation</span><span class="o">.</span><span class="n">version</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">python_full_version</span></code> will typically correspond to <code class="docutils literal notranslate"><span class="pre">sys.version.split()[0]</span></code>.</p>
+</div>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id11">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="pep345"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>PEP 345, Metadata for Python Software Packages 1.2, Jones
+(<a class="reference external" href="http://www.python.org/dev/peps/pep-0345">http://www.python.org/dev/peps/pep-0345</a>)</dd>
+<dt class="label" id="pep426"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>PEP 426, Metadata for Python Software Packages 2.0, Coghlan, Holth, Stufft
+(<a class="reference external" href="http://www.python.org/dev/peps/pep-0426">http://www.python.org/dev/peps/pep-0426</a>)</dd>
+<dt class="label" id="pep440"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd>PEP 440, Version Identification and Dependency Specification, Coghlan, Stufft
+(<a class="reference external" href="https://www.python.org/dev/peps/pep-0440/">https://www.python.org/dev/peps/pep-0440/</a>)</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id12">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0496.txt">https://github.com/python/peps/blob/master/pep-0496.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0496.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0495.html">PEP 0495</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0497.html">PEP 0497</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 496 – Environment Markers</a><ul>
+<li><a class="reference internal" href="#pep-status">PEP Status</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#examples">Examples</a></li>
+<li><a class="reference internal" href="#micro-language">Micro-language</a><ul>
+<li><a class="reference internal" href="#strings">Strings</a></li>
+<li><a class="reference internal" href="#version-numbers">Version numbers</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

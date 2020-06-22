@@ -1,0 +1,364 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 3131 – Supporting Non-ASCII Identifiers &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 3132 – Extended Iterable Unpacking" href="pep-3132.html" />
+    <link rel="prev" title="PEP 3130 – Access to Current Module/Class/Function" href="pep-3130.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 3131 – Supporting Non-ASCII Identifiers</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-3131-supporting-non-ascii-identifiers">
+<h1 class="page-title">PEP 3131 – Supporting Non-ASCII Identifiers<a class="headerlink" href="#pep-3131-supporting-non-ascii-identifiers" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">3131</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Supporting Non-ASCII Identifiers</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Martin von Löwis &lt;martin&#32;&#97;t&#32;v.loewis.de&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">1-May-2007</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.0</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id13">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id14">Rationale</a></li>
+<li><a class="reference internal" href="#common-objections" id="id15">Common Objections</a></li>
+<li><a class="reference internal" href="#specification-of-language-changes" id="id16">Specification of Language Changes</a></li>
+<li><a class="reference internal" href="#policy-specification" id="id17">Policy Specification</a></li>
+<li><a class="reference internal" href="#implementation" id="id18">Implementation</a></li>
+<li><a class="reference internal" href="#open-issues" id="id19">Open Issues</a></li>
+<li><a class="reference internal" href="#discussion" id="id20">Discussion</a></li>
+<li><a class="reference internal" href="#references" id="id21">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id22">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id13">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP suggests to support non-ASCII letters (such as accented characters,
+Cyrillic, Greek, Kanji, etc.) in Python identifiers.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id14">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Python code is written by many people in the world who are not
+familiar with the English language, or even well-acquainted with the
+Latin writing system.  Such developers often desire to define classes
+and functions with names in their native languages, rather than having
+to come up with an (often incorrect) English translation of the
+concept they want to name. By using identifiers in their native
+language, code clarity and maintainability of the code among
+speakers of that language improves.</p>
+<p>For some languages, common transliteration systems exist (in particular, for the
+Latin-based writing systems).  For other languages, users have larger
+difficulties to use Latin to write their native words.</p>
+</div>
+<div class="section" id="common-objections">
+<h2><a class="toc-backref" href="#id15">Common Objections</a><a class="headerlink" href="#common-objections" title="Permalink to this headline">¶</a></h2>
+<p>Some objections are often raised against proposals similar to this one.</p>
+<p>People claim that they will not be able to use a library if to do so they have
+to use characters they cannot type on their keyboards.  However, it is the
+choice of the designer of the library to decide on various constraints for using
+the library: people may not be able to use the library because they cannot get
+physical access to the source code (because it is not published), or because
+licensing prohibits usage, or because the documentation is in a language they
+cannot understand.  A developer wishing to make a library widely available needs
+to make a number of explicit choices (such as publication, licensing, language
+of documentation, and language of identifiers).  It should always be the choice
+of the author to make these decisions - not the choice of the language
+designers.</p>
+<p>In particular, projects wishing to have wide usage probably might want to
+establish a policy that all identifiers, comments, and documentation is written
+in English (see the GNU coding style guide for an example of such a policy).
+Restricting the language to ASCII-only identifiers does not enforce comments and
+documentation to be English, or the identifiers actually to be English words, so
+an additional policy is necessary, anyway.</p>
+</div>
+<div class="section" id="specification-of-language-changes">
+<h2><a class="toc-backref" href="#id16">Specification of Language Changes</a><a class="headerlink" href="#specification-of-language-changes" title="Permalink to this headline">¶</a></h2>
+<p>The syntax of identifiers in Python will be based on the Unicode standard annex
+UAX-31 <a class="footnote-reference brackets" href="#id7" id="id1">1</a>, with elaboration and changes as defined below.</p>
+<p>Within the ASCII range (U+0001..U+007F), the valid characters for identifiers
+are the same as in Python 2.5.  This specification only introduces additional
+characters from outside the ASCII range.  For other characters, the
+classification uses the version of the Unicode Character Database as included in
+the <code class="docutils literal notranslate"><span class="pre">unicodedata</span></code> module.</p>
+<p>The identifier syntax is <code class="docutils literal notranslate"><span class="pre">&lt;XID_Start&gt;</span> <span class="pre">&lt;XID_Continue&gt;*</span></code>.</p>
+<p>The exact specification of what characters have the XID_Start or
+XID_Continue properties can be found in the DerivedCoreProperties
+file of the Unicode data in use by Python (4.1 at the time this
+PEP was written), see <a class="footnote-reference brackets" href="#id12" id="id2">6</a>. For reference, the construction rules
+for these sets are given below. The XID_* properties are derived
+from ID_Start/ID_Continue, which are derived themselves.</p>
+<p><code class="docutils literal notranslate"><span class="pre">ID_Start</span></code> is defined as all characters having one of the general
+categories uppercase letters (Lu), lowercase letters (Ll), titlecase
+letters (Lt), modifier letters (Lm), other letters (Lo), letter
+numbers (Nl), the underscore, and characters carrying the
+Other_ID_Start property. <code class="docutils literal notranslate"><span class="pre">XID_Start</span></code> then closes this set under
+normalization, by removing all characters whose NFKC normalization
+is not of the form ID_Start ID_Continue* anymore.</p>
+<p><code class="docutils literal notranslate"><span class="pre">ID_Continue</span></code> is defined as all characters in <code class="docutils literal notranslate"><span class="pre">ID_Start</span></code>, plus
+nonspacing marks (Mn), spacing combining marks (Mc), decimal number
+(Nd), connector punctuations (Pc), and characters carrying the
+Other_ID_Continue property. Again, <code class="docutils literal notranslate"><span class="pre">XID_Continue</span></code> closes this set
+under NFKC-normalization; it also adds U+00B7 to support Catalan.</p>
+<p>All identifiers are converted into the normal form NFKC while parsing;
+comparison of identifiers is based on NFKC.</p>
+<p>A non-normative HTML file listing all valid identifier characters for
+Unicode 4.1 can be found at
+<a class="reference external" href="http://www.dcl.hpi.uni-potsdam.de/home/loewis/table-3131.html">http://www.dcl.hpi.uni-potsdam.de/home/loewis/table-3131.html</a>.</p>
+</div>
+<div class="section" id="policy-specification">
+<h2><a class="toc-backref" href="#id17">Policy Specification</a><a class="headerlink" href="#policy-specification" title="Permalink to this headline">¶</a></h2>
+<p>As an addition to the Python Coding style, the following policy is
+prescribed: All identifiers in the Python standard library MUST use
+ASCII-only identifiers, and SHOULD use English words wherever feasible
+(in many cases, abbreviations and technical terms are used which
+aren’t English). In addition, string literals and comments must also
+be in ASCII. The only exceptions are (a) test cases testing the
+non-ASCII features, and (b) names of authors. Authors whose names are
+not based on the Latin alphabet MUST provide a Latin transliteration
+of their names.</p>
+<p>As an option, this specification can be applied to Python 2.x.  In
+that case, ASCII-only identifiers would continue to be represented as
+byte string objects in namespace dictionaries; identifiers with
+non-ASCII characters would be represented as Unicode strings.</p>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id18">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>The following changes will need to be made to the parser:</p>
+<ol class="arabic simple">
+<li>If a non-ASCII character is found in the UTF-8 representation of
+the source code, a forward scan is made to find the first ASCII
+non-identifier character (e.g. a space or punctuation character)</li>
+<li>The entire UTF-8 string is passed to a function to normalize the
+string to NFKC, and then verify that it follows the identifier
+syntax. No such callout is made for pure-ASCII identifiers, which
+continue to be parsed the way they are today. The Unicode database
+must start including the Other_ID_{Start|Continue} property.</li>
+<li>If this specification is implemented for 2.x, reflective libraries
+(such as pydoc) must be verified to continue to work when Unicode
+strings appear in <code class="docutils literal notranslate"><span class="pre">__dict__</span></code> slots as keys.</li>
+</ol>
+</div>
+<div class="section" id="open-issues">
+<h2><a class="toc-backref" href="#id19">Open Issues</a><a class="headerlink" href="#open-issues" title="Permalink to this headline">¶</a></h2>
+<p>John Nagle suggested consideration of Unicode Technical Standard #39,
+<a class="footnote-reference brackets" href="#id8" id="id3">2</a>, which discusses security mechanisms for Unicode identifiers.
+It’s not clear how that can precisely apply to this PEP; possible
+consequences are</p>
+<ul class="simple">
+<li>warn about characters listed as “restricted” in xidmodifications.txt</li>
+<li>warn about identifiers using mixed scripts</li>
+<li>somehow perform Confusable Detection</li>
+</ul>
+<p>In the latter two approaches, it’s not clear how precisely the
+algorithm should work. For mixed scripts, certain kinds of mixing
+should probably allowed - are these the “Common” and “Inherited”
+scripts mentioned in section 5? For Confusable Detection, it seems one
+needs two identifiers to compare them for confusion - is it possible
+to somehow apply it to a single identifier only, and warn?</p>
+<p>In follow-up discussion, it turns out that John Nagle actually
+meant to suggest UTR#36, level “Highly Restrictive”, <a class="footnote-reference brackets" href="#id9" id="id4">3</a>.</p>
+<p>Several people suggested to allow and ignore formatting control
+characters (general category Cf), as is done in Java, JavaScript, and
+C#. It’s not clear whether this would improve things (it might
+for RTL languages); if there is a need, these can be added
+later.</p>
+<p>Some people would like to see an option on selecting support
+for this PEP at run-time; opinions vary on what precisely
+that option should be, and what precisely its default value
+should be. Guido van Rossum commented in <a class="footnote-reference brackets" href="#id11" id="id5">5</a> that a global
+flag passed to the interpreter is not acceptable, as it would
+apply to all modules.</p>
+</div>
+<div class="section" id="discussion">
+<h2><a class="toc-backref" href="#id20">Discussion</a><a class="headerlink" href="#discussion" title="Permalink to this headline">¶</a></h2>
+<p>Ka-Ping Yee summarizes discussion and further objection
+in <a class="footnote-reference brackets" href="#id10" id="id6">4</a> as such:</p>
+<ol class="upperalpha">
+<li><p>Should identifiers be allowed to contain any Unicode letter?</p>
+<p>Drawbacks of allowing non-ASCII identifiers wholesale:</p>
+<ol class="arabic simple">
+<li>Python will lose the ability to make a reliable round trip to
+a human-readable display on screen or on paper.</li>
+<li>Python will become vulnerable to a new class of security exploits;
+code and submitted patches will be much harder to inspect.</li>
+<li>Humans will no longer be able to validate Python syntax.</li>
+<li>Unicode is young; its problems are not yet well understood and
+solved; tool support is weak.</li>
+<li>Languages with non-ASCII identifiers use different character sets
+and normalization schemes; PEP 3131’s choices are non-obvious.</li>
+<li>The Unicode bidi algorithm yields an extremely confusing display
+order for RTL text when digits or operators are nearby.</li>
+</ol>
+</li>
+<li><p>Should the default behaviour accept only ASCII identifiers, or
+should it accept identifiers containing non-ASCII characters?</p>
+<p>Arguments for ASCII only by default:</p>
+<ol class="arabic simple">
+<li>Non-ASCII identifiers by default makes common practice/assumptions
+subtly/unknowingly wrong; rarely wrong is worse than obviously wrong.</li>
+<li>Better to raise a warning than to fail silently when encountering
+a probably unexpected situation.</li>
+<li>All of current usage is ASCII-only; the vast majority of future
+usage will be ASCII-only.</li>
+</ol>
+<ol class="arabic simple" start="3">
+<li>It is the pockets of Unicode adoption that are parochial, not the
+ASCII advocates.</li>
+<li>Python should audit for ASCII-only identifiers for the same
+reasons that it audits for tab-space consistency</li>
+<li>Incremental change is safer.</li>
+<li>An ASCII-only default favors open-source development and sharing
+of source code.</li>
+<li>Existing projects won’t have to waste any brainpower worrying
+about the implications of Unicode identifiers.</li>
+</ol>
+</li>
+<li><p>Should non-ASCII identifiers be optional?</p>
+<p>Various voices in support of a flag (although there’s been debate
+over which should be the default, no one seems to be saying that
+there shouldn’t be an off switch)</p>
+</li>
+<li><p>Should the identifier character set be configurable?</p>
+<p>Various voices proposing and supporting a selectable character set,
+so that users can get all the benefits of using their own language
+without the drawbacks of confusable/unfamiliar characters</p>
+</li>
+<li><p>Which identifier characters should be allowed?</p>
+<ol class="arabic simple">
+<li>What to do about bidi format control characters?</li>
+<li>What about other ID_Continue characters?  What about characters
+that look like punctuation?  What about other recommendations
+in UTS #39?  What about mixed-script identifiers?</li>
+</ol>
+</li>
+<li>Which normalization form should be used, NFC or NFKC?</li>
+<li>Should source code be required to be in normalized form?</li>
+</ol>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id21">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id7"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><a class="reference external" href="http://www.unicode.org/reports/tr31/">http://www.unicode.org/reports/tr31/</a></dd>
+<dt class="label" id="id8"><span class="brackets"><a class="fn-backref" href="#id3">2</a></span></dt>
+<dd><a class="reference external" href="http://www.unicode.org/reports/tr39/">http://www.unicode.org/reports/tr39/</a></dd>
+<dt class="label" id="id9"><span class="brackets"><a class="fn-backref" href="#id4">3</a></span></dt>
+<dd><a class="reference external" href="http://www.unicode.org/reports/tr36/">http://www.unicode.org/reports/tr36/</a></dd>
+<dt class="label" id="id10"><span class="brackets"><a class="fn-backref" href="#id6">4</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-3000/2007-June/008161.html">https://mail.python.org/pipermail/python-3000/2007-June/008161.html</a></dd>
+<dt class="label" id="id11"><span class="brackets"><a class="fn-backref" href="#id5">5</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-3000/2007-May/007925.html">https://mail.python.org/pipermail/python-3000/2007-May/007925.html</a></dd>
+<dt class="label" id="id12"><span class="brackets"><a class="fn-backref" href="#id2">6</a></span></dt>
+<dd><a class="reference external" href="http://www.unicode.org/Public/4.1.0/ucd/DerivedCoreProperties.txt">http://www.unicode.org/Public/4.1.0/ucd/DerivedCoreProperties.txt</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id22">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-3131.txt">https://github.com/python/peps/blob/master/pep-3131.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-3131.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-3130.html">PEP 3130</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-3132.html">PEP 3132</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 3131 – Supporting Non-ASCII Identifiers</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#common-objections">Common Objections</a></li>
+<li><a class="reference internal" href="#specification-of-language-changes">Specification of Language Changes</a></li>
+<li><a class="reference internal" href="#policy-specification">Policy Specification</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#open-issues">Open Issues</a></li>
+<li><a class="reference internal" href="#discussion">Discussion</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

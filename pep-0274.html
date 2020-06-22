@@ -1,0 +1,241 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 274 – Dict Comprehensions &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 275 – Switching on Multiple Values" href="pep-0275.html" />
+    <link rel="prev" title="PEP 273 – Import Modules from Zip Archives" href="pep-0273.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 274 – Dict Comprehensions</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-274-dict-comprehensions">
+<h1 class="page-title">PEP 274 – Dict Comprehensions<a class="headerlink" href="#pep-274-dict-comprehensions" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">274</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Dict Comprehensions</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Barry Warsaw &lt;barry&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">25-Oct-2001</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.7, 3.0 (originally 2.3)</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">29-Oct-2001</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id2">Abstract</a></li>
+<li><a class="reference internal" href="#resolution" id="id3">Resolution</a></li>
+<li><a class="reference internal" href="#proposed-solution" id="id4">Proposed Solution</a></li>
+<li><a class="reference internal" href="#rationale" id="id5">Rationale</a></li>
+<li><a class="reference internal" href="#semantics" id="id6">Semantics</a></li>
+<li><a class="reference internal" href="#examples" id="id7">Examples</a></li>
+<li><a class="reference internal" href="#implementation" id="id8">Implementation</a></li>
+<li><a class="reference internal" href="#copyright" id="id9">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id2">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>PEP 202 introduces a syntactical extension to Python called the
+“list comprehension”.  This PEP proposes a similar syntactical
+extension called the “dictionary comprehension” or “dict
+comprehension” for short.  You can use dict comprehensions in ways
+very similar to list comprehensions, except that they produce
+Python dictionary objects instead of list objects.</p>
+</div>
+<div class="section" id="resolution">
+<h2><a class="toc-backref" href="#id3">Resolution</a><a class="headerlink" href="#resolution" title="Permalink to this headline">¶</a></h2>
+<p>This PEP was originally written for inclusion in Python 2.3.  It
+was withdrawn after observation that substantially all of its
+benefits were subsumed by generator expressions coupled with the
+<code class="docutils literal notranslate"><span class="pre">dict()</span></code> constructor.</p>
+<p>However, Python 2.7 and 3.0 introduces this exact feature, as well
+as the closely related set comprehensions.  On 2012-04-09, the PEP
+was changed to reflect this reality by updating its Status to
+Accepted, and updating the Python-Version field.  The Open
+Questions section was also removed since these have been long
+resolved by the current implementation.</p>
+</div>
+<div class="section" id="proposed-solution">
+<h2><a class="toc-backref" href="#id4">Proposed Solution</a><a class="headerlink" href="#proposed-solution" title="Permalink to this headline">¶</a></h2>
+<p>Dict comprehensions are just like list comprehensions, except that
+you group the expression using curly braces instead of square
+braces.  Also, the left part before the <code class="docutils literal notranslate"><span class="pre">for</span></code> keyword expresses
+both a key and a value, separated by a colon.  The notation is
+specifically designed to remind you of list comprehensions as
+applied to dictionaries.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id5">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>There are times when you have some data arranged as a sequences of
+length-2 sequences, and you want to turn that into a dictionary.
+In Python 2.2, the <code class="docutils literal notranslate"><span class="pre">dict()</span></code> constructor accepts an argument that is
+a sequence of length-2 sequences, used as (key, value) pairs to
+initialize a new dictionary object.</p>
+<p>However, the act of turning some data into a sequence of length-2
+sequences can be inconvenient or inefficient from a memory or
+performance standpoint.  Also, for some common operations, such as
+turning a list of things into a set of things for quick duplicate
+removal or set inclusion tests, a better syntax can help code
+clarity.</p>
+<p>As with list comprehensions, an explicit for loop can always be
+used (and in fact was the only way to do it in earlier versions of
+Python).  But as with list comprehensions, dict comprehensions can
+provide a more syntactically succinct idiom that the traditional
+for loop.</p>
+</div>
+<div class="section" id="semantics">
+<h2><a class="toc-backref" href="#id6">Semantics</a><a class="headerlink" href="#semantics" title="Permalink to this headline">¶</a></h2>
+<p>The semantics of dict comprehensions can actually be demonstrated
+in stock Python 2.2, by passing a list comprehension to the
+built-in dictionary constructor:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">dict</span><span class="p">([(</span><span class="n">i</span><span class="p">,</span> <span class="nb">chr</span><span class="p">(</span><span class="mi">65</span><span class="o">+</span><span class="n">i</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)])</span>
+</pre></div>
+</div>
+<p>is semantically equivalent to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">{</span><span class="n">i</span> <span class="p">:</span> <span class="nb">chr</span><span class="p">(</span><span class="mi">65</span><span class="o">+</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)}</span>
+</pre></div>
+</div>
+<p>The dictionary constructor approach has two distinct disadvantages
+from the proposed syntax though.  First, it isn’t as legible as a
+dict comprehension.  Second, it forces the programmer to create an
+in-core list object first, which could be expensive.</p>
+</div>
+<div class="section" id="examples">
+<h2><a class="toc-backref" href="#id7">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span> <span class="p">{</span><span class="n">i</span> <span class="p">:</span> <span class="nb">chr</span><span class="p">(</span><span class="mi">65</span><span class="o">+</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)}</span>
+<span class="go">{0 : &#39;A&#39;, 1 : &#39;B&#39;, 2 : &#39;C&#39;, 3 : &#39;D&#39;}</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span> <span class="p">{</span><span class="n">k</span> <span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">someDict</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()}</span> <span class="o">==</span> <span class="n">someDict</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="go">1</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span> <span class="p">{</span><span class="n">x</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="p">:</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">list_of_email_addrs</span><span class="p">}</span>
+<span class="go">{&#39;barry@zope.com&#39;   : 1, &#39;barry@python.org&#39; : 1, &#39;guido@python.org&#39; : 1}</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">invert</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="k">return</span> <span class="p">{</span><span class="n">v</span> <span class="p">:</span> <span class="n">k</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()}</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span> <span class="p">:</span> <span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="mi">1</span> <span class="p">:</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="mi">2</span> <span class="p">:</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="mi">3</span> <span class="p">:</span> <span class="s1">&#39;D&#39;</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span> <span class="n">invert</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+<span class="go">{&#39;A&#39; : 0, &#39;B&#39; : 1, &#39;C&#39; : 2, &#39;D&#39; : 3}</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">{(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span> <span class="n">k</span><span class="o">+</span><span class="n">v</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)}</span>
+<span class="gp">... </span><span class="p">{(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">):</span> <span class="mi">6</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span> <span class="mi">5</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span> <span class="mi">4</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span> <span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span> <span class="mi">3</span><span class="p">,</span>
+<span class="go">   (0, 2): 2, (3, 0): 3, (0, 3): 3, (1, 1): 2, (1, 0): 1,</span>
+<span class="go">   (0, 0): 0, (1, 2): 3, (2, 0): 2, (1, 3): 4, (2, 2): 4, (</span>
+<span class="go">   2, 3): 5}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id8">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>All implementation details were resolved in the Python 2.7 and 3.0
+time-frame.</p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id9">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0274.txt">https://github.com/python/peps/blob/master/pep-0274.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0274.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0273.html">PEP 0273</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0275.html">PEP 0275</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 274 – Dict Comprehensions</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#resolution">Resolution</a></li>
+<li><a class="reference internal" href="#proposed-solution">Proposed Solution</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#semantics">Semantics</a></li>
+<li><a class="reference internal" href="#examples">Examples</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

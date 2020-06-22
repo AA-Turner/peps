@@ -1,0 +1,288 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 243 – Module Repository Upload Mechanism &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 244 – The ``directive`` statement" href="pep-0244.html" />
+    <link rel="prev" title="PEP 242 – Numeric Kinds" href="pep-0242.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 243 – Module Repository Upload Mechanism</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-243-module-repository-upload-mechanism">
+<h1 class="page-title">PEP 243 – Module Repository Upload Mechanism<a class="headerlink" href="#pep-243-module-repository-upload-mechanism" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">243</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Module Repository Upload Mechanism</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">jafo-pep&#32;&#97;t&#32;tummy.com (Sean Reifschneider)</dd>
+<dt class="field-even">Discussions-To</dt>
+<dd class="field-even"><a class="reference external" href="mailto:distutils-sig&#37;&#52;&#48;python&#46;org?subject=PEP%20243">distutils-sig&#32;&#97;t&#32;python.org</a></dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd">Withdrawn</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even">Standards Track</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">18-Mar-2001</dd>
+<dt class="field-even">Python-Version</dt>
+<dd class="field-even">2.1</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd">20-Mar-2001, 24-Mar-2001</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id9">Abstract</a></li>
+<li><a class="reference internal" href="#upload-process" id="id10">Upload Process</a></li>
+<li><a class="reference internal" href="#return-data" id="id11">Return Data</a></li>
+<li><a class="reference internal" href="#sample-form" id="id12">Sample Form</a></li>
+<li><a class="reference internal" href="#platforms" id="id13">Platforms</a></li>
+<li><a class="reference internal" href="#status" id="id14">Status</a></li>
+<li><a class="reference internal" href="#references" id="id15">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id16">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id9">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>For a module repository system (such as Perl’s CPAN) to be
+successful, it must be as easy as possible for module authors to
+submit their work.  An obvious place for this submit to happen is
+in the Distutils tools after the distribution archive has been
+successfully created.  For example, after a module author has
+tested their software (verifying the results of <code class="docutils literal notranslate"><span class="pre">setup.py</span> <span class="pre">sdist</span></code>),
+they might type <code class="docutils literal notranslate"><span class="pre">setup.py</span> <span class="pre">sdist</span> <span class="pre">--submit</span></code>.  This would flag
+Distutils to submit the source distribution to the archive server
+for inclusion and distribution to the mirrors.</p>
+<p>This PEP only deals with the mechanism for submitting the software
+distributions to the archive, and does not deal with the actual
+archive/catalog server.</p>
+</div>
+<div class="section" id="upload-process">
+<h2><a class="toc-backref" href="#id10">Upload Process</a><a class="headerlink" href="#upload-process" title="Permalink to this headline">¶</a></h2>
+<p>The upload will include the Distutils <code class="docutils literal notranslate"><span class="pre">PKG-INFO</span></code> meta-data
+information (as specified in PEP 241 <a class="footnote-reference brackets" href="#id6" id="id1">1</a>), the actual software
+distribution, and other optional information.  This information
+will be uploaded as a multi-part form encoded the same as a
+regular HTML file upload request.  This form is posted using
+<code class="docutils literal notranslate"><span class="pre">ENCTYPE=&quot;multipart/form-data&quot;</span></code> encoding <a class="footnote-reference brackets" href="#id7" id="id2">2</a>.</p>
+<p>The upload will be made to the host “www.python.org” on port
+80/tcp (<code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">http://www.python.org:80/pypi</span></code>).  The form
+will consist of the following fields:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">distribution</span></code> – The file containing the module software (for
+example, a <code class="docutils literal notranslate"><span class="pre">.tar.gz</span></code> or <code class="docutils literal notranslate"><span class="pre">.zip</span></code> file).</li>
+<li><code class="docutils literal notranslate"><span class="pre">distmd5sum</span></code> – The MD5 hash of the uploaded distribution,
+encoded in ASCII representing the hexadecimal representation
+of the digest (<code class="docutils literal notranslate"><span class="pre">for</span> <span class="pre">byte</span> <span class="pre">in</span> <span class="pre">digest:</span> <span class="pre">s</span> <span class="pre">=</span> <span class="pre">s</span> <span class="pre">+</span> <span class="pre">('%02x'</span> <span class="pre">%</span>
+<span class="pre">ord(byte))</span></code>).</li>
+<li><code class="docutils literal notranslate"><span class="pre">pkginfo</span></code> (optional) – The file containing the distribution
+meta-data (as specified in PEP 241 <a class="footnote-reference brackets" href="#id6" id="id3">1</a>).  Note that if this is
+not included, the distribution file is expected to be in <code class="docutils literal notranslate"><span class="pre">.tar</span></code>
+format (gzipped and bzipped compressed are allowed) or <code class="docutils literal notranslate"><span class="pre">.zip</span></code>
+format, with a <code class="docutils literal notranslate"><span class="pre">PKG-INFO</span></code> file in the top-level directory it
+extracts (<code class="docutils literal notranslate"><span class="pre">package-1.00/PKG-INFO</span></code>).</li>
+<li><code class="docutils literal notranslate"><span class="pre">infomd5sum</span></code> (required if pkginfo field is present) – The MD5 hash
+of the uploaded meta-data, encoded in ASCII representing the
+hexadecimal representation of the digest (<code class="docutils literal notranslate"><span class="pre">for</span> <span class="pre">byte</span> <span class="pre">in</span> <span class="pre">digest:</span>
+<span class="pre">s</span> <span class="pre">=</span> <span class="pre">s</span> <span class="pre">+</span> <span class="pre">('%02x'</span> <span class="pre">%</span> <span class="pre">ord(byte))</span></code>).</li>
+<li><code class="docutils literal notranslate"><span class="pre">platform</span></code> (optional) – A string representing the target
+platform for this distribution.  This is only for binary
+distributions.  It is encoded as
+<code class="docutils literal notranslate"><span class="pre">&lt;os_name&gt;-&lt;os_version&gt;-&lt;platform</span> <span class="pre">architecture&gt;-&lt;python</span>
+<span class="pre">version&gt;</span></code>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">signature</span></code> (optional) – A OpenPGP-compatible signature <a class="footnote-reference brackets" href="#id8" id="id4">3</a> of
+the uploaded distribution as signed by the author.  This may
+be used by the cataloging system to automate acceptance of
+uploads.</li>
+<li><code class="docutils literal notranslate"><span class="pre">protocol_version</span></code> – A string indicating the protocol version that
+the client supports.  This document describes protocol version “1”.</li>
+</ul>
+</div>
+<div class="section" id="return-data">
+<h2><a class="toc-backref" href="#id11">Return Data</a><a class="headerlink" href="#return-data" title="Permalink to this headline">¶</a></h2>
+<p>The status of the upload will be reported using HTTP non-standard
+(<code class="docutils literal notranslate"><span class="pre">X-*</span></code>) headers.  The <code class="docutils literal notranslate"><span class="pre">X-Swalow-Status</span></code> header may have the following
+values:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">SUCCESS</span></code> – Indicates that the upload has succeeded.</li>
+<li><code class="docutils literal notranslate"><span class="pre">FAILURE</span></code> – The upload is, for some reason, unable to be
+processed.</li>
+<li><code class="docutils literal notranslate"><span class="pre">TRYAGAIN</span></code> – The server is unable to accept the upload at this
+time, but the client should try again at a later time.
+Potential causes of this are resource shortages on the server,
+administrative down-time, etc…</li>
+</ul>
+<p>Optionally, there may be a <code class="docutils literal notranslate"><span class="pre">X-Swalow-Reason</span></code> header which includes a
+human-readable string which provides more detailed information about
+the <code class="docutils literal notranslate"><span class="pre">X-Swalow-Status</span></code>.</p>
+<p>If there is no <code class="docutils literal notranslate"><span class="pre">X-Swalow-Status</span></code> header, or it does not contain one of
+the three strings above, it should be treated as a temporary failure.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">f</span> <span class="o">=</span> <span class="n">urllib</span><span class="o">.</span><span class="n">urlopen</span><span class="p">(</span><span class="s1">&#39;http://www.python.org:80/pypi&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">s</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s1">&#39;x-swalow-status&#39;</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">s</span> <span class="o">=</span> <span class="n">s</span> <span class="o">+</span> <span class="s1">&#39;: &#39;</span> <span class="o">+</span> <span class="n">f</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;x-swalow-reason&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;None&gt;&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span> <span class="n">s</span>
+<span class="go">FAILURE: Required field &quot;distribution&quot; missing.</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="sample-form">
+<h2><a class="toc-backref" href="#id12">Sample Form</a><a class="headerlink" href="#sample-form" title="Permalink to this headline">¶</a></h2>
+<p>The upload client must submit the page in the same form as
+Netscape Navigator version 4.76 for Linux produces when presented
+with the following form:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">H1</span><span class="o">&gt;</span><span class="n">Upload</span> <span class="n">file</span><span class="o">&lt;/</span><span class="n">H1</span><span class="o">&gt;</span>
+<span class="o">&lt;</span><span class="n">FORM</span> <span class="n">NAME</span><span class="o">=</span><span class="s2">&quot;fileupload&quot;</span> <span class="n">METHOD</span><span class="o">=</span><span class="s2">&quot;POST&quot;</span> <span class="n">ACTION</span><span class="o">=</span><span class="s2">&quot;pypi&quot;</span>
+    <span class="n">ENCTYPE</span><span class="o">=</span><span class="s2">&quot;multipart/form-data&quot;</span><span class="o">&gt;</span>
+<span class="o">&lt;</span><span class="n">INPUT</span> <span class="n">TYPE</span><span class="o">=</span><span class="s2">&quot;file&quot;</span> <span class="n">NAME</span><span class="o">=</span><span class="s2">&quot;distribution&quot;</span><span class="o">&gt;&lt;</span><span class="n">BR</span><span class="o">&gt;</span>
+<span class="o">&lt;</span><span class="n">INPUT</span> <span class="n">TYPE</span><span class="o">=</span><span class="s2">&quot;text&quot;</span> <span class="n">NAME</span><span class="o">=</span><span class="s2">&quot;distmd5sum&quot;</span><span class="o">&gt;&lt;</span><span class="n">BR</span><span class="o">&gt;</span>
+<span class="o">&lt;</span><span class="n">INPUT</span> <span class="n">TYPE</span><span class="o">=</span><span class="s2">&quot;file&quot;</span> <span class="n">NAME</span><span class="o">=</span><span class="s2">&quot;pkginfo&quot;</span><span class="o">&gt;&lt;</span><span class="n">BR</span><span class="o">&gt;</span>
+<span class="o">&lt;</span><span class="n">INPUT</span> <span class="n">TYPE</span><span class="o">=</span><span class="s2">&quot;text&quot;</span> <span class="n">NAME</span><span class="o">=</span><span class="s2">&quot;infomd5sum&quot;</span><span class="o">&gt;&lt;</span><span class="n">BR</span><span class="o">&gt;</span>
+<span class="o">&lt;</span><span class="n">INPUT</span> <span class="n">TYPE</span><span class="o">=</span><span class="s2">&quot;text&quot;</span> <span class="n">NAME</span><span class="o">=</span><span class="s2">&quot;platform&quot;</span><span class="o">&gt;&lt;</span><span class="n">BR</span><span class="o">&gt;</span>
+<span class="o">&lt;</span><span class="n">INPUT</span> <span class="n">TYPE</span><span class="o">=</span><span class="s2">&quot;text&quot;</span> <span class="n">NAME</span><span class="o">=</span><span class="s2">&quot;signature&quot;</span><span class="o">&gt;&lt;</span><span class="n">BR</span><span class="o">&gt;</span>
+<span class="o">&lt;</span><span class="n">INPUT</span> <span class="n">TYPE</span><span class="o">=</span><span class="s2">&quot;hidden&quot;</span> <span class="n">NAME</span><span class="o">=</span><span class="s2">&quot;protocol_version&quot;</span> <span class="n">VALUE</span><span class="o">=</span><span class="s2">&quot;1&quot;</span><span class="o">&gt;&lt;</span><span class="n">BR</span><span class="o">&gt;</span>
+<span class="o">&lt;</span><span class="n">INPUT</span> <span class="n">TYPE</span><span class="o">=</span><span class="s2">&quot;SUBMIT&quot;</span> <span class="n">VALUE</span><span class="o">=</span><span class="s2">&quot;Upload&quot;</span><span class="o">&gt;</span>
+<span class="o">&lt;/</span><span class="n">FORM</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="platforms">
+<h2><a class="toc-backref" href="#id13">Platforms</a><a class="headerlink" href="#platforms" title="Permalink to this headline">¶</a></h2>
+<p>The following are valid os names:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">aix</span> <span class="n">beos</span> <span class="n">debian</span> <span class="n">dos</span> <span class="n">freebsd</span> <span class="n">hpux</span> <span class="n">mac</span> <span class="n">macos</span> <span class="n">mandrake</span> <span class="n">netbsd</span>
+<span class="n">openbsd</span> <span class="n">qnx</span> <span class="n">redhat</span> <span class="n">solaris</span> <span class="n">suse</span> <span class="n">windows</span> <span class="n">yellowdog</span>
+</pre></div>
+</div>
+<p>The above include a number of different types of distributions of
+Linux.  Because of versioning issues these must be split out, and
+it is expected that when it makes sense for one system to use
+distributions made on other similar systems, the download client
+will make the distinction.</p>
+<p>Version is the official version string specified by the vendor for
+the particular release.  For example, “2000” and “nt” (Windows),
+“9.04” (HP-UX), “7.0” (RedHat, Mandrake).</p>
+<p>The following are valid architectures:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">alpha</span> <span class="n">hppa</span> <span class="n">ix86</span> <span class="n">powerpc</span> <span class="n">sparc</span> <span class="n">ultrasparc</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="status">
+<h2><a class="toc-backref" href="#id14">Status</a><a class="headerlink" href="#status" title="Permalink to this headline">¶</a></h2>
+<p>I currently have a proof-of-concept client and server implemented.
+I plan to have the Distutils patches ready for the 2.1 release.
+Combined with Andrew’s PEP 241 <a class="footnote-reference brackets" href="#id6" id="id5">1</a> for specifying distribution
+meta-data, I hope to have a platform which will allow us to gather
+real-world data for finalizing the catalog system for the 2.2
+release.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id15">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id6"><span class="brackets">1</span><span class='fn-backref'><em> (<a href="#id1">1</a>, <a href="#id3">2</a>, <a href="#id5">3</a>) </em></span></dt>
+<dd>Metadata for Python Software Package, Kuchling,
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0241/">http://www.python.org/dev/peps/pep-0241/</a></dd>
+<dt class="label" id="id7"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>RFC 1867, Form-based File Upload in HTML
+<a class="reference external" href="http://www.faqs.org/rfcs/rfc1867.html">http://www.faqs.org/rfcs/rfc1867.html</a></dd>
+<dt class="label" id="id8"><span class="brackets"><a class="fn-backref" href="#id4">3</a></span></dt>
+<dd>RFC 2440, OpenPGP Message Format
+<a class="reference external" href="http://www.faqs.org/rfcs/rfc2440.html">http://www.faqs.org/rfcs/rfc2440.html</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id16">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0243.txt">https://github.com/python/peps/blob/master/pep-0243.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0243.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0242.html">PEP 0242</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0244.html">PEP 0244</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 243 – Module Repository Upload Mechanism</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#upload-process">Upload Process</a></li>
+<li><a class="reference internal" href="#return-data">Return Data</a></li>
+<li><a class="reference internal" href="#sample-form">Sample Form</a></li>
+<li><a class="reference internal" href="#platforms">Platforms</a></li>
+<li><a class="reference internal" href="#status">Status</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

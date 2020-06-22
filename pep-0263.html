@@ -1,0 +1,397 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 263 – Defining Python Source Code Encodings &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 264 – Future statements in simulated shells" href="pep-0264.html" />
+    <link rel="prev" title="PEP 262 – A Database of Installed Python Packages" href="pep-0262.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 263 – Defining Python Source Code Encodings</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-263-defining-python-source-code-encodings">
+<h1 class="page-title">PEP 263 – Defining Python Source Code Encodings<a class="headerlink" href="#pep-263-defining-python-source-code-encodings" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">263</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Defining Python Source Code Encodings</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">mal&#32;&#97;t&#32;lemburg.com (Marc-André Lemburg),
+martin&#32;&#97;t&#32;v.loewis.de (Martin von Löwis)</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">06-Jun-2001</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.3</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id5">Abstract</a></li>
+<li><a class="reference internal" href="#problem" id="id6">Problem</a></li>
+<li><a class="reference internal" href="#proposed-solution" id="id7">Proposed Solution</a></li>
+<li><a class="reference internal" href="#defining-the-encoding" id="id8">Defining the Encoding</a></li>
+<li><a class="reference internal" href="#examples" id="id9">Examples</a></li>
+<li><a class="reference internal" href="#concepts" id="id10">Concepts</a></li>
+<li><a class="reference internal" href="#implementation" id="id11">Implementation</a></li>
+<li><a class="reference internal" href="#phases" id="id12">Phases</a></li>
+<li><a class="reference internal" href="#scope" id="id13">Scope</a></li>
+<li><a class="reference internal" href="#references" id="id14">References</a></li>
+<li><a class="reference internal" href="#history" id="id15">History</a></li>
+<li><a class="reference internal" href="#copyright" id="id16">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id5">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes to introduce a syntax to declare the encoding of
+a Python source file. The encoding information is then used by the
+Python parser to interpret the file using the given encoding. Most
+notably this enhances the interpretation of Unicode literals in
+the source code and makes it possible to write Unicode literals
+using e.g. UTF-8 directly in an Unicode aware editor.</p>
+</div>
+<div class="section" id="problem">
+<h2><a class="toc-backref" href="#id6">Problem</a><a class="headerlink" href="#problem" title="Permalink to this headline">¶</a></h2>
+<p>In Python 2.1, Unicode literals can only be written using the
+Latin-1 based encoding “unicode-escape”. This makes the
+programming environment rather unfriendly to Python users who live
+and work in non-Latin-1 locales such as many of the Asian
+countries. Programmers can write their 8-bit strings using the
+favorite encoding, but are bound to the “unicode-escape” encoding
+for Unicode literals.</p>
+</div>
+<div class="section" id="proposed-solution">
+<h2><a class="toc-backref" href="#id7">Proposed Solution</a><a class="headerlink" href="#proposed-solution" title="Permalink to this headline">¶</a></h2>
+<p>I propose to make the Python source code encoding both visible and
+changeable on a per-source file basis by using a special comment
+at the top of the file to declare the encoding.</p>
+<p>To make Python aware of this encoding declaration a number of
+concept changes are necessary with respect to the handling of
+Python source code data.</p>
+</div>
+<div class="section" id="defining-the-encoding">
+<h2><a class="toc-backref" href="#id8">Defining the Encoding</a><a class="headerlink" href="#defining-the-encoding" title="Permalink to this headline">¶</a></h2>
+<p>Python will default to ASCII as standard encoding if no other
+encoding hints are given.</p>
+<p>To define a source code encoding, a magic comment must
+be placed into the source files either as first or second
+line in the file, such as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># coding=&lt;encoding name&gt;</span>
+</pre></div>
+</div>
+<p>or (using formats recognized by popular editors):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/python</span>
+<span class="c1"># -*- coding: &lt;encoding name&gt; -*-</span>
+</pre></div>
+</div>
+<p>or:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/python</span>
+<span class="c1"># vim: set fileencoding=&lt;encoding name&gt; :</span>
+</pre></div>
+</div>
+<p>More precisely, the first or second line must match the following
+regular expression:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">^</span><span class="p">[</span> \<span class="n">t</span>\<span class="n">f</span><span class="p">]</span><span class="o">*</span><span class="c1">#.*?coding[:=][ \t]*([-_.a-zA-Z0-9]+)</span>
+</pre></div>
+</div>
+<p>The first group of this
+expression is then interpreted as encoding name. If the encoding
+is unknown to Python, an error is raised during compilation. There
+must not be any Python statement on the line that contains the
+encoding declaration.  If the first line matches the second line
+is ignored.</p>
+<p>To aid with platforms such as Windows, which add Unicode BOM marks
+to the beginning of Unicode files, the UTF-8 signature
+<code class="docutils literal notranslate"><span class="pre">\xef\xbb\xbf</span></code> will be interpreted as ‘utf-8’ encoding as well
+(even if no magic encoding comment is given).</p>
+<p>If a source file uses both the UTF-8 BOM mark signature and a
+magic encoding comment, the only allowed encoding for the comment
+is ‘utf-8’.  Any other encoding will cause an error.</p>
+</div>
+<div class="section" id="examples">
+<h2><a class="toc-backref" href="#id9">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<p>These are some examples to clarify the different styles for
+defining the source code encoding at the top of a Python source
+file:</p>
+<ol class="arabic">
+<li><p>With interpreter binary and using Emacs style file encoding
+comment:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/python</span>
+<span class="c1"># -*- coding: latin-1 -*-</span>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
+<span class="o">...</span>
+
+<span class="c1">#!/usr/bin/python</span>
+<span class="c1"># -*- coding: iso-8859-15 -*-</span>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
+<span class="o">...</span>
+
+<span class="c1">#!/usr/bin/python</span>
+<span class="c1"># -*- coding: ascii -*-</span>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+</li>
+<li><p>Without interpreter line, using plain text:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># This Python file uses the following encoding: utf-8</span>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+</li>
+<li><p>Text editors might have different ways of defining the file’s
+encoding, e.g.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/local/bin/python</span>
+<span class="c1"># coding: latin-1</span>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+</li>
+<li><p>Without encoding comment, Python’s parser will assume ASCII
+text:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/local/bin/python</span>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+</li>
+<li><p>Encoding comments which don’t work:</p>
+<ol class="arabic">
+<li><p>Missing “coding:” prefix:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/local/bin/python</span>
+<span class="c1"># latin-1</span>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+</li>
+<li><p>Encoding comment not on line 1 or 2:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/local/bin/python</span>
+<span class="c1">#</span>
+<span class="c1"># -*- coding: latin-1 -*-</span>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+</li>
+<li><p>Unsupported encoding:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/local/bin/python</span>
+<span class="c1"># -*- coding: utf-42 -*-</span>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+</div>
+<div class="section" id="concepts">
+<h2><a class="toc-backref" href="#id10">Concepts</a><a class="headerlink" href="#concepts" title="Permalink to this headline">¶</a></h2>
+<p>The PEP is based on the following concepts which would have to be
+implemented to enable usage of such a magic comment:</p>
+<ol class="arabic">
+<li><p>The complete Python source file should use a single encoding.
+Embedding of differently encoded data is not allowed and will
+result in a decoding error during compilation of the Python
+source code.</p>
+<p>Any encoding which allows processing the first two lines in the
+way indicated above is allowed as source code encoding, this
+includes ASCII compatible encodings as well as certain
+multi-byte encodings such as Shift_JIS. It does not include
+encodings which use two or more bytes for all characters like
+e.g. UTF-16. The reason for this is to keep the encoding
+detection algorithm in the tokenizer simple.</p>
+</li>
+<li>Handling of escape sequences should continue to work as it does
+now, but with all possible source code encodings, that is
+standard string literals (both 8-bit and Unicode) are subject to
+escape sequence expansion while raw string literals only expand
+a very small subset of escape sequences.</li>
+<li><p>Python’s tokenizer/compiler combo will need to be updated to
+work as follows:</p>
+<ol class="arabic simple">
+<li>read the file</li>
+<li>decode it into Unicode assuming a fixed per-file encoding</li>
+<li>convert it into a UTF-8 byte string</li>
+<li>tokenize the UTF-8 content</li>
+<li>compile it, creating Unicode objects from the given Unicode data
+and creating string objects from the Unicode literal data
+by first reencoding the UTF-8 data into 8-bit string data
+using the given file encoding</li>
+</ol>
+</li>
+</ol>
+<p>Note that Python identifiers are restricted to the ASCII
+subset of the encoding, and thus need no further conversion
+after step 4.</p>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id11">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>For backwards-compatibility with existing code which currently
+uses non-ASCII in string literals without declaring an encoding,
+the implementation will be introduced in two phases:</p>
+<ol class="arabic">
+<li><p>Allow non-ASCII in string literals and comments, by internally
+treating a missing encoding declaration as a declaration of
+“iso-8859-1”. This will cause arbitrary byte strings to
+correctly round-trip between step 2 and step 5 of the
+processing, and provide compatibility with Python 2.2 for
+Unicode literals that contain non-ASCII bytes.</p>
+<p>A warning will be issued if non-ASCII bytes are found in the
+input, once per improperly encoded input file.</p>
+</li>
+<li>Remove the warning, and change the default encoding to “ascii”.</li>
+</ol>
+<p>The builtin <code class="docutils literal notranslate"><span class="pre">compile()</span></code> API will be enhanced to accept Unicode as
+input.  8-bit string input is subject to the standard procedure for
+encoding detection as described above.</p>
+<p>If a Unicode string with a coding declaration is passed to <code class="docutils literal notranslate"><span class="pre">compile()</span></code>,
+a <code class="docutils literal notranslate"><span class="pre">SyntaxError</span></code> will be raised.</p>
+<p>SUZUKI Hisao is working on a patch; see <a class="footnote-reference brackets" href="#id4" id="id1">2</a> for details. A patch
+implementing only phase 1 is available at <a class="footnote-reference brackets" href="#id3" id="id2">1</a>.</p>
+</div>
+<div class="section" id="phases">
+<h2><a class="toc-backref" href="#id12">Phases</a><a class="headerlink" href="#phases" title="Permalink to this headline">¶</a></h2>
+<p>Implementation of steps 1 and 2 above were completed in 2.3,
+except for changing the default encoding to “ascii”.</p>
+<p>The default encoding was set to “ascii” in version 2.5.</p>
+</div>
+<div class="section" id="scope">
+<h2><a class="toc-backref" href="#id13">Scope</a><a class="headerlink" href="#scope" title="Permalink to this headline">¶</a></h2>
+<p>This PEP intends to provide an upgrade path from the current
+(more-or-less) undefined source code encoding situation to a more
+robust and portable definition.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id14">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id3"><span class="brackets"><a class="fn-backref" href="#id2">1</a></span></dt>
+<dd>Phase 1 implementation:
+<a class="reference external" href="https://bugs.python.org/issue526840">https://bugs.python.org/issue526840</a></dd>
+<dt class="label" id="id4"><span class="brackets"><a class="fn-backref" href="#id1">2</a></span></dt>
+<dd>Phase 2 implementation:
+<a class="reference external" href="https://bugs.python.org/issue534304">https://bugs.python.org/issue534304</a></dd>
+</dl>
+</div>
+<div class="section" id="history">
+<h2><a class="toc-backref" href="#id15">History</a><a class="headerlink" href="#history" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>1.10 and above: see CVS history</li>
+<li>1.8: Added ‘.’ to the coding RE.</li>
+<li>1.7: Added warnings to phase 1 implementation. Replaced the
+Latin-1 default encoding with the interpreter’s default
+encoding. Added tweaks to <code class="docutils literal notranslate"><span class="pre">compile()</span></code>.</li>
+<li>1.4 - 1.6: Minor tweaks</li>
+<li>1.3: Worked in comments by Martin v. Loewis:
+UTF-8 BOM mark detection, Emacs style magic comment,
+two phase approach to the implementation</li>
+</ul>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id16">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0263.txt">https://github.com/python/peps/blob/master/pep-0263.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0263.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0262.html">PEP 0262</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0264.html">PEP 0264</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 263 – Defining Python Source Code Encodings</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#problem">Problem</a></li>
+<li><a class="reference internal" href="#proposed-solution">Proposed Solution</a></li>
+<li><a class="reference internal" href="#defining-the-encoding">Defining the Encoding</a></li>
+<li><a class="reference internal" href="#examples">Examples</a></li>
+<li><a class="reference internal" href="#concepts">Concepts</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#phases">Phases</a></li>
+<li><a class="reference internal" href="#scope">Scope</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#history">History</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

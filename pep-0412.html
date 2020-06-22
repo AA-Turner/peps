@@ -1,0 +1,317 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 412 – Key-Sharing Dictionary &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 413 – Faster evolution of the Python Standard Library" href="pep-0413.html" />
+    <link rel="prev" title="PEP 411 – Provisional packages in the Python standard library" href="pep-0411.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 412 – Key-Sharing Dictionary</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-412-key-sharing-dictionary">
+<h1 class="page-title">PEP 412 – Key-Sharing Dictionary<a class="headerlink" href="#pep-412-key-sharing-dictionary" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">412</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Key-Sharing Dictionary</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Mark Shannon &lt;mark&#32;&#97;t&#32;hotpy.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">08-Feb-2012</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.3 or 3.4</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">08-Feb-2012</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id4">Abstract</a></li>
+<li><a class="reference internal" href="#motivation" id="id5">Motivation</a></li>
+<li><a class="reference internal" href="#behaviour" id="id6">Behaviour</a></li>
+<li><a class="reference internal" href="#performance" id="id7">Performance</a><ul>
+<li><a class="reference internal" href="#memory-usage" id="id8">Memory Usage</a></li>
+<li><a class="reference internal" href="#speed" id="id9">Speed</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation" id="id10">Implementation</a><ul>
+<li><a class="reference internal" href="#split-table-dictionaries" id="id11">Split-Table dictionaries</a></li>
+<li><a class="reference internal" href="#combined-table-dictionaries" id="id12">Combined-Table dictionaries</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id1" id="id13">Implementation</a></li>
+<li><a class="reference internal" href="#pros-and-cons" id="id14">Pros and Cons</a><ul>
+<li><a class="reference internal" href="#pros" id="id15">Pros</a></li>
+<li><a class="reference internal" href="#cons" id="id16">Cons</a></li>
+<li><a class="reference internal" href="#alternative-implementation" id="id17">Alternative Implementation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references" id="id18">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id19">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id4">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes a change in the implementation of the builtin
+dictionary type <code class="docutils literal notranslate"><span class="pre">dict</span></code>.  The new implementation allows dictionaries
+which are used as attribute dictionaries (the <code class="docutils literal notranslate"><span class="pre">__dict__</span></code> attribute
+of an object) to share keys with other attribute dictionaries of
+instances of the same class.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id5">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>The current dictionary implementation uses more memory than is
+necessary when used as a container for object attributes as the keys
+are replicated for each instance rather than being shared across many
+instances of the same class.  Despite this, the current dictionary
+implementation is finely tuned and performs very well as a
+general-purpose mapping object.</p>
+<p>By separating the keys (and hashes) from the values it is possible to
+share the keys between multiple dictionaries and improve memory use.
+By ensuring that keys are separated from the values only when
+beneficial, it is possible to retain the high-performance of the
+current dictionary implementation when used as a general-purpose
+mapping object.</p>
+</div>
+<div class="section" id="behaviour">
+<h2><a class="toc-backref" href="#id6">Behaviour</a><a class="headerlink" href="#behaviour" title="Permalink to this headline">¶</a></h2>
+<p>The new dictionary behaves in the same way as the old implementation.
+It fully conforms to the Python API, the C API and the ABI.</p>
+</div>
+<div class="section" id="performance">
+<h2><a class="toc-backref" href="#id7">Performance</a><a class="headerlink" href="#performance" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="memory-usage">
+<h3><a class="toc-backref" href="#id8">Memory Usage</a><a class="headerlink" href="#memory-usage" title="Permalink to this headline">¶</a></h3>
+<p>Reduction in memory use is directly related to the number of
+dictionaries with shared keys in existence at any time.  These
+dictionaries are typically half the size of the current dictionary
+implementation.</p>
+<p>Benchmarking shows that memory use is reduced by 10% to 20% for
+object-oriented programs with no significant change in memory use for
+other programs.</p>
+</div>
+<div class="section" id="speed">
+<h3><a class="toc-backref" href="#id9">Speed</a><a class="headerlink" href="#speed" title="Permalink to this headline">¶</a></h3>
+<p>The performance of the new implementation is dominated by memory
+locality effects.  When keys are not shared (for example in module
+dictionaries and dictionary explicitly created by <code class="docutils literal notranslate"><span class="pre">dict()</span></code> or
+<code class="docutils literal notranslate"><span class="pre">{}</span></code>) then performance is unchanged (within a percent or two) from
+the current implementation.</p>
+<p>For the shared keys case, the new implementation tends to separate
+keys from values, but reduces total memory usage.  This will improve
+performance in many cases as the effects of reduced memory usage
+outweigh the loss of locality, but some programs may show a small slow
+down.</p>
+<p>Benchmarking shows no significant change of speed for most benchmarks.
+Object-oriented benchmarks show small speed ups when they create large
+numbers of objects of the same class (the gcbench benchmark shows a
+10% speed up; this is likely to be an upper limit).</p>
+</div>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id10">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>Both the old and new dictionaries consist of a fixed-sized dict struct
+and a re-sizeable table.  In the new dictionary the table can be
+further split into a keys table and values array.  The keys table
+holds the keys and hashes and (for non-split tables) the values as
+well.  It differs only from the original implementation in that it
+contains a number of fields that were previously in the dict struct.
+If a table is split the values in the keys table are ignored, instead
+the values are held in a separate array.</p>
+<div class="section" id="split-table-dictionaries">
+<h3><a class="toc-backref" href="#id11">Split-Table dictionaries</a><a class="headerlink" href="#split-table-dictionaries" title="Permalink to this headline">¶</a></h3>
+<p>When dictionaries are created to fill the __dict__ slot of an object,
+they are created in split form.  The keys table is cached in the type,
+potentially allowing all attribute dictionaries of instances of one
+class to share keys.  In the event of the keys of these dictionaries
+starting to diverge, individual dictionaries will lazily convert to
+the combined-table form.  This ensures good memory use in the common
+case, and correctness in all cases.</p>
+<p>When resizing a split dictionary it is converted to a combined table.
+If resizing is as a result of storing an instance attribute, and there
+is only instance of a class, then the dictionary will be re-split
+immediately.  Since most OO code will set attributes in the __init__
+method, all attributes will be set before a second instance is created
+and no more resizing will be necessary as all further instance
+dictionaries will have the correct size.  For more complex use
+patterns, it is impossible to know what is the best approach, so the
+implementation allows extra insertions up to the point of a resize
+when it reverts to the combined table (non-shared keys).</p>
+<p>A deletion from a split dictionary does not change the keys table, it
+simply removes the value from the values array.</p>
+</div>
+<div class="section" id="combined-table-dictionaries">
+<h3><a class="toc-backref" href="#id12">Combined-Table dictionaries</a><a class="headerlink" href="#combined-table-dictionaries" title="Permalink to this headline">¶</a></h3>
+<p>Explicit dictionaries (<code class="docutils literal notranslate"><span class="pre">dict()</span></code> or <code class="docutils literal notranslate"><span class="pre">{}</span></code>), module dictionaries and
+most other dictionaries are created as combined-table dictionaries.  A
+combined-table dictionary never becomes a split-table dictionary.
+Combined tables are laid out in much the same way as the tables in the
+old dictionary, resulting in very similar performance.</p>
+</div>
+</div>
+<div class="section" id="id1">
+<h2><a class="toc-backref" href="#id13">Implementation</a><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<p>The new dictionary implementation is available at <a class="footnote-reference brackets" href="#id3" id="id2">1</a>.</p>
+</div>
+<div class="section" id="pros-and-cons">
+<h2><a class="toc-backref" href="#id14">Pros and Cons</a><a class="headerlink" href="#pros-and-cons" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="pros">
+<h3><a class="toc-backref" href="#id15">Pros</a><a class="headerlink" href="#pros" title="Permalink to this headline">¶</a></h3>
+<p>Significant memory savings for object-oriented applications.  Small
+improvement to speed for programs which create lots of similar
+objects.</p>
+</div>
+<div class="section" id="cons">
+<h3><a class="toc-backref" href="#id16">Cons</a><a class="headerlink" href="#cons" title="Permalink to this headline">¶</a></h3>
+<p>Change to data structures: Third party modules which meddle with the
+internals of the dictionary implementation will break.</p>
+<p>Changes to repr() output and iteration order: For most cases, this
+will be unchanged.  However, for some split-table dictionaries the
+iteration order will change.</p>
+<p>Neither of these cons should be a problem.  Modules which meddle with
+the internals of the dictionary implementation are already broken and
+should be fixed to use the API.  The iteration order of dictionaries
+was never defined and has always been arbitrary; it is different for
+Jython and PyPy.</p>
+</div>
+<div class="section" id="alternative-implementation">
+<h3><a class="toc-backref" href="#id17">Alternative Implementation</a><a class="headerlink" href="#alternative-implementation" title="Permalink to this headline">¶</a></h3>
+<p>An alternative implementation for split tables, which could save even
+more memory, is to store an index in the value field of the keys table
+(instead of ignoring the value field).  This index would explicitly
+state where in the value array to look.  The value array would then
+only require 1 field for each usable slot in the key table, rather
+than each slot in the key table.</p>
+<p>This “indexed” version would reduce the size of value array by about
+one third. The keys table would need an extra “values_size” field,
+increasing the size of combined dicts by one word.  The extra
+indirection adds more complexity to the code, potentially reducing
+performance a little.</p>
+<p>The “indexed” version will not be included in this implementation, but
+should be considered deferred rather than rejected, pending further
+experimentation.</p>
+</div>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id18">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id3"><span class="brackets"><a class="fn-backref" href="#id2">1</a></span></dt>
+<dd>Reference Implementation:
+<a class="reference external" href="https://bitbucket.org/markshannon/cpython_new_dict">https://bitbucket.org/markshannon/cpython_new_dict</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id19">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0412.txt">https://github.com/python/peps/blob/master/pep-0412.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0412.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0411.html">PEP 0411</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0413.html">PEP 0413</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 412 – Key-Sharing Dictionary</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#behaviour">Behaviour</a></li>
+<li><a class="reference internal" href="#performance">Performance</a><ul>
+<li><a class="reference internal" href="#memory-usage">Memory Usage</a></li>
+<li><a class="reference internal" href="#speed">Speed</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation">Implementation</a><ul>
+<li><a class="reference internal" href="#split-table-dictionaries">Split-Table dictionaries</a></li>
+<li><a class="reference internal" href="#combined-table-dictionaries">Combined-Table dictionaries</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id1">Implementation</a></li>
+<li><a class="reference internal" href="#pros-and-cons">Pros and Cons</a><ul>
+<li><a class="reference internal" href="#pros">Pros</a></li>
+<li><a class="reference internal" href="#cons">Cons</a></li>
+<li><a class="reference internal" href="#alternative-implementation">Alternative Implementation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

@@ -1,0 +1,458 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 304 – Controlling Generation of Bytecode Files &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 305 – CSV File API" href="pep-0305.html" />
+    <link rel="prev" title="PEP 303 – Extend divmod() for Multiple Divisors" href="pep-0303.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 304 – Controlling Generation of Bytecode Files</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-304-controlling-generation-of-bytecode-files">
+<h1 class="page-title">PEP 304 – Controlling Generation of Bytecode Files<a class="headerlink" href="#pep-304-controlling-generation-of-bytecode-files" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">304</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Controlling Generation of Bytecode Files</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Skip Montanaro</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Withdrawn</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">22-Jan-2003</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd">27-Jan-2003, 31-Jan-2003, 17-Jun-2005</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#historical-note" id="id14">Historical Note</a></li>
+<li><a class="reference internal" href="#abstract" id="id15">Abstract</a></li>
+<li><a class="reference internal" href="#proposal" id="id16">Proposal</a><ul>
+<li><a class="reference internal" href="#glossary" id="id17">Glossary</a></li>
+<li><a class="reference internal" href="#locating-bytecode-files" id="id18">Locating bytecode files</a></li>
+<li><a class="reference internal" href="#writing-bytecode-files" id="id19">Writing bytecode files</a></li>
+<li><a class="reference internal" href="#defining-augmented-directories" id="id20">Defining augmented directories</a></li>
+<li><a class="reference internal" href="#fixing-the-location-of-the-bytecode-base" id="id21">Fixing the location of the bytecode base</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rationale" id="id22">Rationale</a></li>
+<li><a class="reference internal" href="#alternatives" id="id23">Alternatives</a></li>
+<li><a class="reference internal" href="#issues" id="id24">Issues</a></li>
+<li><a class="reference internal" href="#examples" id="id25">Examples</a></li>
+<li><a class="reference internal" href="#implementation" id="id26">Implementation</a></li>
+<li><a class="reference internal" href="#references" id="id27">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id28">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="historical-note">
+<h2><a class="toc-backref" href="#id14">Historical Note</a><a class="headerlink" href="#historical-note" title="Permalink to this headline">¶</a></h2>
+<p>While this original PEP was withdrawn, a variant of this feature
+was eventually implemented for Python 3.8 in <a class="reference external" href="https://bugs.python.org/issue33499">https://bugs.python.org/issue33499</a></p>
+<p>Several of the issues and concerns originally raised in this PEP were resolved
+by other changes in the intervening years:</p>
+<ul class="simple">
+<li>the introduction of isolated mode to handle potential security concerns</li>
+<li>the switch to <code class="docutils literal notranslate"><span class="pre">importlib</span></code>, a fully import-hook based import system implementation</li>
+<li>PEP 3147’s change in the bytecode cache layout to use <code class="docutils literal notranslate"><span class="pre">__pycache__</span></code>
+subdirectories, including the <code class="docutils literal notranslate"><span class="pre">source_to_cache(path)</span></code> and
+<code class="docutils literal notranslate"><span class="pre">cache_to_source(path)</span></code> APIs that allow the interpreter to automatically
+handle the redirection to a separate cache directory</li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id15">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP outlines a mechanism for controlling the generation and
+location of compiled Python bytecode files.  This idea originally
+arose as a patch request <a class="footnote-reference brackets" href="#id8" id="id1">1</a> and evolved into a discussion thread on
+the python-dev mailing list <a class="footnote-reference brackets" href="#id9" id="id2">2</a>.  The introduction of an environment
+variable will allow people installing Python or Python-based
+third-party packages to control whether or not bytecode files should
+be generated at installation time, and if so, where they should be
+written.  It will also allow users to control whether or not bytecode
+files should be generated at application run-time, and if so, where
+they should be written.</p>
+</div>
+<div class="section" id="proposal">
+<h2><a class="toc-backref" href="#id16">Proposal</a><a class="headerlink" href="#proposal" title="Permalink to this headline">¶</a></h2>
+<p>Add a new environment variable, PYTHONBYTECODEBASE, to the mix of
+environment variables which Python understands.  PYTHONBYTECODEBASE is
+interpreted as follows:</p>
+<ul>
+<li><p>If not defined, Python bytecode is generated in exactly the same way
+as is currently done.  sys.bytecodebase is set to the root directory
+(either / on Unix and Mac OSX or the root directory of the startup
+(installation???) drive – typically <code class="docutils literal notranslate"><span class="pre">C:\</span></code> – on Windows).</p>
+</li>
+<li><p>If defined and it refers to an existing directory to which the user
+has write permission, sys.bytecodebase is set to that directory and
+bytecode files are written into a directory structure rooted at that
+location.</p>
+</li>
+<li><p>If defined but empty, sys.bytecodebase is set to None and generation
+of bytecode files is suppressed altogether.</p>
+</li>
+<li><p>If defined and one of the following is true:</p>
+<ul class="simple">
+<li>it does not refer to a directory,</li>
+<li>it refers to a directory, but not one for which the user has write
+permission</li>
+</ul>
+<p>a warning is displayed, sys.bytecodebase is set to None and
+generation of bytecode files is suppressed altogether.</p>
+</li>
+</ul>
+<p>After startup initialization, all runtime references are to
+sys.bytecodebase, not the PYTHONBYTECODEBASE environment variable.
+sys.path is not modified.</p>
+<p>From the above, we see sys.bytecodebase can only take on two valid
+types of values: None or a string referring to a valid directory on
+the system.</p>
+<p>During import, this extension works as follows:</p>
+<ul class="simple">
+<li>The normal search for a module is conducted.  The search order is
+roughly: dynamically loaded extension module, Python source file,
+Python bytecode file.  The only time this mechanism comes into play
+is if a Python source file is found.</li>
+<li>Once we’ve found a source module, an attempt to read a byte-compiled
+file in the same directory is made.  (This is the same as before.)</li>
+<li>If no byte-compiled file is found, an attempt to read a
+byte-compiled file from the augmented directory is made.</li>
+<li>If bytecode generation is required, the generated bytecode is written
+to the augmented directory if possible.</li>
+</ul>
+<p>Note that this PEP is explicitly <em>not</em> about providing
+module-by-module or directory-by-directory control over the
+disposition of bytecode files.</p>
+<div class="section" id="glossary">
+<h3><a class="toc-backref" href="#id17">Glossary</a><a class="headerlink" href="#glossary" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>“bytecode base” refers to the current setting of
+sys.bytecodebase.</li>
+<li>“augmented directory” refers to the directory formed from the
+bytecode base and the directory name of the source file.</li>
+<li>PYTHONBYTECODEBASE refers to the environment variable when necessary
+to distinguish it from “bytecode base”.</li>
+</ul>
+</div>
+<div class="section" id="locating-bytecode-files">
+<h3><a class="toc-backref" href="#id18">Locating bytecode files</a><a class="headerlink" href="#locating-bytecode-files" title="Permalink to this headline">¶</a></h3>
+<p>When the interpreter is searching for a module, it will use sys.path
+as usual.  However, when a possible bytecode file is considered, an
+extra probe for a bytecode file may be made.  First, a check is made
+for the bytecode file using the directory in sys.path which holds the
+source file (the current behavior).  If a valid bytecode file is not
+found there (either one does not exist or exists but is out-of-date)
+and the bytecode base is not None, a second probe is made using the
+directory in sys.path prefixed appropriately by the bytecode base.</p>
+</div>
+<div class="section" id="writing-bytecode-files">
+<h3><a class="toc-backref" href="#id19">Writing bytecode files</a><a class="headerlink" href="#writing-bytecode-files" title="Permalink to this headline">¶</a></h3>
+<p>When the bytecode base is not None, a new bytecode file is written to
+the appropriate augmented directory, never directly to a directory in
+sys.path.</p>
+</div>
+<div class="section" id="defining-augmented-directories">
+<h3><a class="toc-backref" href="#id20">Defining augmented directories</a><a class="headerlink" href="#defining-augmented-directories" title="Permalink to this headline">¶</a></h3>
+<p>Conceptually, the augmented directory for a bytecode file is the
+directory in which the source file exists prefixed by the bytecode
+base.  In a Unix environment this would be:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pcb</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">bytecodebase</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">sourcefile</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="p">:</span> <span class="n">sourcefile</span> <span class="o">=</span> <span class="n">sourcefile</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+<span class="n">augdir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pcb</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">sourcefile</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>On Windows, which does not have a single-rooted directory tree, the
+drive letter of the directory containing the source file is treated as
+a directory component after removing the trailing colon.  The
+augmented directory is thus derived as</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pcb</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">bytecodebase</span><span class="p">)</span>
+<span class="n">drive</span><span class="p">,</span> <span class="n">base</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitdrive</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">sourcefile</span><span class="p">))</span>
+<span class="n">drive</span> <span class="o">=</span> <span class="n">drive</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+<span class="k">if</span> <span class="n">base</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">:</span> <span class="n">base</span> <span class="o">=</span> <span class="n">base</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+<span class="n">augdir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pcb</span><span class="p">,</span> <span class="n">drive</span><span class="p">,</span> <span class="n">base</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="fixing-the-location-of-the-bytecode-base">
+<h3><a class="toc-backref" href="#id21">Fixing the location of the bytecode base</a><a class="headerlink" href="#fixing-the-location-of-the-bytecode-base" title="Permalink to this headline">¶</a></h3>
+<p>During program startup, the value of the PYTHONBYTECODEBASE
+environment variable is made absolute, checked for validity and added
+to the sys module, effectively:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pcb</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;PYTHONBYTECODEBASE&quot;</span><span class="p">])</span>
+<span class="n">probe</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pcb</span><span class="p">,</span> <span class="s2">&quot;foo&quot;</span><span class="p">)</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="nb">open</span><span class="p">(</span><span class="n">probe</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">bytecodebase</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">unlink</span><span class="p">(</span><span class="n">probe</span><span class="p">)</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">bytecodebase</span> <span class="o">=</span> <span class="n">pcb</span>
+</pre></div>
+</div>
+<p>This allows the user to specify the bytecode base as a relative path,
+but not have it subject to changes to the current working directory
+during program execution.  (I can’t imagine you’d want it to move
+around during program execution.)</p>
+<p>There is nothing special about sys.bytecodebase.  The user may change
+it at runtime if desired, but normally it will not be modified.</p>
+</div>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id22">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>In many environments it is not possible for non-root users to write
+into directories containing Python source files.  Most of the time,
+this is not a problem as Python source is generally byte compiled
+during installation.  However, there are situations where bytecode
+files are either missing or need to be updated.  If the directory
+containing the source file is not writable by the current user a
+performance penalty is incurred each time a program importing the
+module is run. <a class="footnote-reference brackets" href="#id10" id="id3">3</a> Warning messages may also be generated in certain
+circumstances.  If the directory is writable, nearly simultaneous
+attempts to write the bytecode file by two separate processes
+may occur, resulting in file corruption. <a class="footnote-reference brackets" href="#id11" id="id4">4</a></p>
+<p>In environments with RAM disks available, it may be desirable for
+performance reasons to write bytecode files to a directory on such a
+disk.  Similarly, in environments where Python source code resides on
+network file systems, it may be desirable to cache bytecode files on
+local disks.</p>
+</div>
+<div class="section" id="alternatives">
+<h2><a class="toc-backref" href="#id23">Alternatives</a><a class="headerlink" href="#alternatives" title="Permalink to this headline">¶</a></h2>
+<p>The only other alternative proposed so far <a class="footnote-reference brackets" href="#id8" id="id5">1</a> seems to be to add a
+-R flag to the interpreter to disable writing bytecode files
+altogether.  This proposal subsumes that.  Adding a command-line
+option is certainly possible, but is probably not sufficient, as the
+interpreter’s command line is not readily available during
+installation (early during program startup???).</p>
+</div>
+<div class="section" id="issues">
+<h2><a class="toc-backref" href="#id24">Issues</a><a class="headerlink" href="#issues" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Interpretation of a module’s __file__ attribute.  I believe the
+__file__ attribute of a module should reflect the true location of
+the bytecode file.  If people want to locate a module’s source code,
+they should use imp.find_module(module).</li>
+<li>Security - What if root has PYTHONBYTECODEBASE set?  Yes, this can
+present a security risk, but so can many other things the root user
+does.  The root user should probably not set PYTHONBYTECODEBASE
+except possibly during installation.  Still, perhaps this problem
+can be minimized.  When running as root the interpreter should check
+to see if PYTHONBYTECODEBASE refers to a directory which is writable
+by anyone other than root.  If so, it could raise an exception or
+warning and set sys.bytecodebase to None.  Or, see the next item.</li>
+<li>More security - What if PYTHONBYTECODEBASE refers to a general
+directory (say, /tmp)?  In this case, perhaps loading of a
+preexisting bytecode file should occur only if the file is owned by
+the current user or root.  (Does this matter on Windows?)</li>
+<li>The interaction of this PEP with import hooks has not been
+considered yet.  In fact, the best way to implement this idea might
+be as an import hook.  See PEP 302. <a class="footnote-reference brackets" href="#id12" id="id6">5</a></li>
+<li>In the current (pre-PEP 304) environment, it is safe to delete a
+source file after the corresponding bytecode file has been created,
+since they reside in the same directory.  With PEP 304 as currently
+defined, this is not the case.  A bytecode file in the augmented
+directory is only considered when the source file is present and it
+thus never considered when looking for module files ending in
+“.pyc”.  I think this behavior may have to change.</li>
+</ul>
+</div>
+<div class="section" id="examples">
+<h2><a class="toc-backref" href="#id25">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<p>In the examples which follow, the urllib source code resides in
+/usr/lib/python2.3/urllib.py and /usr/lib/python2.3 is in sys.path but
+is not writable by the current user.</p>
+<ul class="simple">
+<li>The bytecode base is /tmp.  /usr/lib/python2.3/urllib.pyc exists and
+is valid.  When urllib is imported, the contents of
+/usr/lib/python2.3/urllib.pyc are used.  The augmented directory is
+not consulted.  No other bytecode file is generated.</li>
+<li>The bytecode base is /tmp.  /usr/lib/python2.3/urllib.pyc exists,
+but is out-of-date.  When urllib is imported, the generated bytecode
+file is written to urllib.pyc in the augmented directory which has
+the value /tmp/usr/lib/python2.3.  Intermediate directories will be
+created as needed.</li>
+<li>The bytecode base is None.  No urllib.pyc file is found.  When
+urllib is imported, no bytecode file is written.</li>
+<li>The bytecode base is /tmp.  No urllib.pyc file is found.  When
+urllib is imported, the generated bytecode file is written to the
+augmented directory which has the value /tmp/usr/lib/python2.3.
+Intermediate directories will be created as needed.</li>
+<li>At startup, PYTHONBYTECODEBASE is /tmp/foobar, which does not exist.
+A warning is emitted, sys.bytecodebase is set to None and no
+bytecode files are written during program execution unless
+sys.bytecodebase is later changed to refer to a valid,
+writable directory.</li>
+<li>At startup, PYTHONBYTECODEBASE is set to /, which exists, but is not
+writable by the current user.  A warning is emitted,
+sys.bytecodebase is set to None and no bytecode files are
+written during program execution unless sys.bytecodebase is
+later changed to refer to a valid, writable directory.  Note that
+even though the augmented directory constructed for a particular
+bytecode file may be writable by the current user, what counts is
+that the bytecode base directory itself is writable.</li>
+<li>At startup PYTHONBYTECODEBASE is set to the empty string.
+sys.bytecodebase is set to None.  No warning is generated, however.
+If no urllib.pyc file is found when urllib is imported, no bytecode
+file is written.</li>
+</ul>
+<p>In the Windows examples which follow, the urllib source code resides
+in <code class="docutils literal notranslate"><span class="pre">C:\PYTHON22\urllib.py</span></code>.  <code class="docutils literal notranslate"><span class="pre">C:\PYTHON22</span></code> is in sys.path but is
+not writable by the current user.</p>
+<ul class="simple">
+<li>The bytecode base is set to <code class="docutils literal notranslate"><span class="pre">C:\TEMP</span></code>.  <code class="docutils literal notranslate"><span class="pre">C:\PYTHON22\urllib.pyc</span></code>
+exists and is valid.  When urllib is imported, the contents of
+<code class="docutils literal notranslate"><span class="pre">C:\PYTHON22\urllib.pyc</span></code> are used.  The augmented directory is not
+consulted.</li>
+<li>The bytecode base is set to <code class="docutils literal notranslate"><span class="pre">C:\TEMP</span></code>.  <code class="docutils literal notranslate"><span class="pre">C:\PYTHON22\urllib.pyc</span></code>
+exists, but is out-of-date.  When urllib is imported, a new bytecode
+file is written to the augmented directory which has the value
+<code class="docutils literal notranslate"><span class="pre">C:\TEMP\C\PYTHON22</span></code>.  Intermediate directories will be created as
+needed.</li>
+<li>At startup PYTHONBYTECODEBASE is set to <code class="docutils literal notranslate"><span class="pre">TEMP</span></code> and the current
+working directory at application startup is <code class="docutils literal notranslate"><span class="pre">H:\NET</span></code>.  The
+potential bytecode base is thus <code class="docutils literal notranslate"><span class="pre">H:\NET\TEMP</span></code>.  If this directory
+exists and is writable by the current user, sys.bytecodebase will be
+set to that value.  If not, a warning will be emitted and
+sys.bytecodebase will be set to None.</li>
+<li>The bytecode base is <code class="docutils literal notranslate"><span class="pre">C:\TEMP</span></code>.  No urllib.pyc file is found.
+When urllib is imported, the generated bytecode file is written to
+the augmented directory which has the value <code class="docutils literal notranslate"><span class="pre">C:\TEMP\C\PYTHON22</span></code>.
+Intermediate directories will be created as needed.</li>
+</ul>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id26">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>See the patch on Sourceforge. <a class="footnote-reference brackets" href="#id13" id="id7">6</a></p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id27">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id8"><span class="brackets">1</span><span class='fn-backref'><em> (<a href="#id1">1</a>, <a href="#id5">2</a>) </em></span></dt>
+<dd>patch 602345, Option for not writing py.[co] files, Klose
+(<a class="reference external" href="https://bugs.python.org/issue602345">https://bugs.python.org/issue602345</a>)</dd>
+<dt class="label" id="id9"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>python-dev thread, Disable writing .py[co], Norwitz
+(<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2003-January/032270.html">https://mail.python.org/pipermail/python-dev/2003-January/032270.html</a>)</dd>
+<dt class="label" id="id10"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd>Debian bug report, Mailman is writing to /usr in cron, Wegner
+(<a class="reference external" href="http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=96111">http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=96111</a>)</dd>
+<dt class="label" id="id11"><span class="brackets"><a class="fn-backref" href="#id4">4</a></span></dt>
+<dd>python-dev thread, Parallel pyc construction, Dubois
+(<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2003-January/032060.html">https://mail.python.org/pipermail/python-dev/2003-January/032060.html</a>)</dd>
+<dt class="label" id="id12"><span class="brackets"><a class="fn-backref" href="#id6">5</a></span></dt>
+<dd>PEP 302, New Import Hooks, van Rossum and Moore
+(<a class="reference external" href="http://www.python.org/dev/peps/pep-0302">http://www.python.org/dev/peps/pep-0302</a>)</dd>
+<dt class="label" id="id13"><span class="brackets"><a class="fn-backref" href="#id7">6</a></span></dt>
+<dd>patch 677103, PYTHONBYTECODEBASE patch (PEP 304), Montanaro
+(<a class="reference external" href="https://bugs.python.org/issue677103">https://bugs.python.org/issue677103</a>)</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id28">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0304.txt">https://github.com/python/peps/blob/master/pep-0304.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0304.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0303.html">PEP 0303</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0305.html">PEP 0305</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 304 – Controlling Generation of Bytecode Files</a><ul>
+<li><a class="reference internal" href="#historical-note">Historical Note</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#proposal">Proposal</a><ul>
+<li><a class="reference internal" href="#glossary">Glossary</a></li>
+<li><a class="reference internal" href="#locating-bytecode-files">Locating bytecode files</a></li>
+<li><a class="reference internal" href="#writing-bytecode-files">Writing bytecode files</a></li>
+<li><a class="reference internal" href="#defining-augmented-directories">Defining augmented directories</a></li>
+<li><a class="reference internal" href="#fixing-the-location-of-the-bytecode-base">Fixing the location of the bytecode base</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#alternatives">Alternatives</a></li>
+<li><a class="reference internal" href="#issues">Issues</a></li>
+<li><a class="reference internal" href="#examples">Examples</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

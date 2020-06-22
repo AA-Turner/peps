@@ -1,0 +1,689 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 610 – Recording the Direct URL Origin of installed distributions &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 611 – The one million limit" href="pep-0611.html" />
+    <link rel="prev" title="PEP 609 – PyPA Governance" href="pep-0609.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 610 – Recording the Direct URL Origin of installed distributions</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-610-recording-the-direct-url-origin-of-installed-distributions">
+<h1 class="page-title">PEP 610 – Recording the Direct URL Origin of installed distributions<a class="headerlink" href="#pep-610-recording-the-direct-url-origin-of-installed-distributions" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">610</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Recording the Direct URL Origin of installed distributions</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Stéphane Bidoul &lt;stephane.bidoul&#32;&#97;t&#32;gmail.com&gt;, Chris Jerdonek &lt;chris.jerdonek&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">Sponsor</dt>
+<dd class="field-even">Nick Coghlan &lt;ncoghlan&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-odd">BDFL-Delegate</dt>
+<dd class="field-odd">Pradyun Gedam &lt;pradyunsg&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">Discussions-To</dt>
+<dd class="field-even"><a class="reference external" href="https://discuss.python.org/t/recording-the-source-url-of-an-installed-distribution/1535">https://discuss.python.org/t/recording-the-source-url-of-an-installed-distribution/1535</a></dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd">Provisional</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even">Standards Track</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">21-Apr-2019</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+<dt class="field-odd">Resolution</dt>
+<dd class="field-odd"><a class="reference external" href="https://discuss.python.org/t/1535/56">https://discuss.python.org/t/1535/56</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id24">Abstract</a></li>
+<li><a class="reference internal" href="#provisional-acceptance" id="id25">Provisional acceptance</a></li>
+<li><a class="reference internal" href="#motivation" id="id26">Motivation</a><ul>
+<li><a class="reference internal" href="#installation-from-direct-url-references" id="id27">Installation from direct URL references</a></li>
+<li><a class="reference internal" href="#freezing-an-environment" id="id28">Freezing an environment</a></li>
+<li><a class="reference internal" href="#the-importance-of-installing-from-vcs-urls-for-application-integrators" id="id29">The importance of installing from (VCS) URLs for application integrators</a></li>
+<li><a class="reference internal" href="#additional-origin-metadata-available-for-vcs-urls" id="id30">Additional origin metadata available for VCS URLs</a></li>
+<li><a class="reference internal" href="#note-about-editable-installs" id="id31">Note about “editable” installs</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rationale" id="id32">Rationale</a></li>
+<li><a class="reference internal" href="#specification" id="id33">Specification</a><ul>
+<li><a class="reference internal" href="#registered-vcs" id="id34">Registered VCS</a><ul>
+<li><a class="reference internal" href="#git" id="id35">Git</a></li>
+<li><a class="reference internal" href="#mercurial" id="id36">Mercurial</a></li>
+<li><a class="reference internal" href="#bazaar" id="id37">Bazaar</a></li>
+<li><a class="reference internal" href="#subversion" id="id38">Subversion</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#examples" id="id39">Examples</a><ul>
+<li><a class="reference internal" href="#example-direct-url-json" id="id40">Example direct_url.json</a></li>
+<li><a class="reference internal" href="#example-pip-commands-and-their-effect-on-direct-url-json" id="id41">Example pip commands and their effect on direct_url.json</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#use-cases" id="id42">Use cases</a></li>
+<li><a class="reference internal" href="#backwards-compatibility" id="id43">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#alternatives" id="id44">Alternatives</a><ul>
+<li><a class="reference internal" href="#pep426-source-url" id="id45">PEP426 source_url</a></li>
+<li><a class="reference internal" href="#revision-vs-ref" id="id46">revision vs ref</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references" id="id47">References</a></li>
+<li><a class="reference internal" href="#acknowledgements" id="id48">Acknowledgements</a></li>
+<li><a class="reference internal" href="#copyright" id="id49">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id24">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Following PEP 440, a distribution can be identified by a name and either a
+version, or a direct URL reference (see <a class="reference external" href="https://www.python.org/dev/peps/pep-0440/#direct-references">PEP440 Direct References</a> <a class="footnote-reference brackets" href="#id7" id="id8">4</a>).
+After installation, the name and version are captured in the project metadata,
+but currently there is no way to obtain details of the URL used when the
+distribution was identified by a direct URL reference.</p>
+<p>This proposal defines
+additional metadata, to be added to the installed distribution by the
+installation front end, which records the Direct URL Origin for use by
+consumers which introspect the database of installed packages (see PEP 376).</p>
+</div>
+<div class="section" id="provisional-acceptance">
+<h2><a class="toc-backref" href="#id25">Provisional acceptance</a><a class="headerlink" href="#provisional-acceptance" title="Permalink to this headline">¶</a></h2>
+<p>In accordance with the PyPA’s specification process, this PEP has been
+<a class="reference external" href="https://www.pypa.io/en/latest/specifications/#provisional-acceptance">provisionally accepted</a>
+for initial implementation in <code class="docutils literal notranslate"><span class="pre">pip</span></code> and other PyPA tools.</p>
+<p>During this time, the specification is still subject to revision based
+on real world experience with those initial implementations.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id26">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>The original motivation of this PEP was to permit tools with a “freeze”
+operation allowing a Python environment to be recreated to work in a broader
+range of situations.</p>
+<p>Specifically, the PEP originated from the desire to address <a class="reference external" href="https://github.com/pypa/pip/issues/609">pip issue #609</a> <a class="footnote-reference brackets" href="#id1" id="id2">1</a>:
+i.e. improving the behavior of <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">freeze</span></code> in the presence of distributions
+installed from direct URL references. It follows a
+<a class="reference external" href="https://discuss.python.org/t/pip-freeze-vcs-urls-and-pep-517-feat-editable-installs/1473">thread on discuss.python.org</a> <a class="footnote-reference brackets" href="#id3" id="id4">2</a> about the best course of action to implement
+it.</p>
+<div class="section" id="installation-from-direct-url-references">
+<h3><a class="toc-backref" href="#id27">Installation from direct URL references</a><a class="headerlink" href="#installation-from-direct-url-references" title="Permalink to this headline">¶</a></h3>
+<p>Python installers such as pip are capable of downloading and installing
+distributions from package indexes. They are also capable of downloading
+and installing source code from requirements specifying arbitrary URLs of
+source archives and Version Control Systems (VCS) repositories,
+as standardized in <a class="reference external" href="https://www.python.org/dev/peps/pep-0440/#direct-references">PEP440 Direct References</a> <a class="footnote-reference brackets" href="#id7" id="id9">4</a>.</p>
+<p>In other words two relevant installation modes exist.</p>
+<ol class="arabic simple">
+<li>the package to install is specified as a name and version specifier:</li>
+</ol>
+<blockquote>
+<div>In this case, the installer looks in a package index (or optionally
+using <code class="docutils literal notranslate"><span class="pre">--find-links</span></code> in the case of pip) to find the distribution to install.</div></blockquote>
+<ol class="arabic simple" start="2">
+<li>The package to install is specified as a direct URL reference:</li>
+</ol>
+<blockquote>
+<div><p>In this case, the installer downloads whatever is specified by the URL
+(typically a wheel, a source archive or a VCS repository) and installs it.</p>
+<p>In this mode, installers typically download the source code in a
+temporary directory, invoke the PEP 517 build backend to produce a wheel
+if needed, install the wheel, and delete the temporary directory.</p>
+<p>After installation, no trace of the URL the user requested to download the
+package is left on the user system.</p>
+</div></blockquote>
+</div>
+<div class="section" id="freezing-an-environment">
+<h3><a class="toc-backref" href="#id28">Freezing an environment</a><a class="headerlink" href="#freezing-an-environment" title="Permalink to this headline">¶</a></h3>
+<p>Pip also sports a command named <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">freeze</span></code> which examines the Database of
+Installed Python Distributions to generate a list of requirements. The main
+goal of this command is to help users generating a list of requirements that
+will later allow the re-installation the same environment with the highest
+possible fidelity.</p>
+<p>As of pip version 19.3, the <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">freeze</span></code> command outputs a <code class="docutils literal notranslate"><span class="pre">name==version</span></code>
+line for each installed
+distribution (except for editable installs). To achieve the goal of
+reinstalling the same environment, this requires the (name, version)
+tuple to refer to an immutable version of the
+distribution. The immutability is guaranteed by package indexes
+such as Warehouse. The package index to use is typically known from
+environmental or command line parameters of the installer.</p>
+<p>This freeze mechanism therefore works fine for installation mode 1 (i.e.
+when the package to install was specified as a name plus version specifier).</p>
+<p>For installation mode 2, i.e. when the package to install was specified as a
+direct URL reference, the <code class="docutils literal notranslate"><span class="pre">name==version</span></code> tuple is obviously not sufficient
+to reinstall the same distribution and users of the freeze command expect it
+to output the URL that was originally requested.</p>
+<p>The reasoning above is equally applicable to tools, other than <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">freeze</span></code>,
+that would attempt to generate a <code class="docutils literal notranslate"><span class="pre">Pipfile.lock</span></code> or any other similar format
+from the Database of Installed Python Distributions. Unless specified
+otherwise, “freeze” is used in this document as a generic term for such
+an operation.</p>
+</div>
+<div class="section" id="the-importance-of-installing-from-vcs-urls-for-application-integrators">
+<h3><a class="toc-backref" href="#id29">The importance of installing from (VCS) URLs for application integrators</a><a class="headerlink" href="#the-importance-of-installing-from-vcs-urls-for-application-integrators" title="Permalink to this headline">¶</a></h3>
+<p>For an application integrator, it is important to be able to reliably install
+and freeze unreleased version of python distributions.
+For instance when a developer needs to deploy an unreleased patched version
+of a dependency, it is common to install the dependency directly from a VCS
+branch that has the patch, while waiting for the maintainer to release an
+updated version.</p>
+<p>In such cases, it is important for “freeze” to pin the exact VCS
+reference (commit-hash if available) that was installed, in order to create
+reproducible builds with the highest possible fidelity.</p>
+</div>
+<div class="section" id="additional-origin-metadata-available-for-vcs-urls">
+<h3><a class="toc-backref" href="#id30">Additional origin metadata available for VCS URLs</a><a class="headerlink" href="#additional-origin-metadata-available-for-vcs-urls" title="Permalink to this headline">¶</a></h3>
+<p>For VCS URLs, there is additional origin information available only at
+install time useful for introspection and certain workflows. For example,
+when installing a revision from a VCS URL, a tool can determine if the
+revision corresponds to a branch, tag or (in the case of Git) a ref. This
+information can be used when introspecting the Database of Installed Distributions
+to communicate to users more information about what version was installed
+(e.g. whether a branch or tag was installed and, if so, the name of the
+branch or tag). This also permits one to know whether a PEP 440 direct
+reference URL can be constructed using the tag form, as only tags have the
+semantics of immutability.</p>
+<p>In cases where the revision is mutable (e.g. branches and Git refs), knowing
+this information enables workflows where users can e.g. update to the latest
+version of a branch they are tracking, or update to the latest version of a
+pull request they are reviewing locally. In contrast, when the revision is a
+tag, tools can know in advance (e.g. without network calls) that no update is
+needed.</p>
+<p>As with the URL itself, if this information isn’t recorded at install time
+when the VCS repository is available, it would otherwise be lost.</p>
+</div>
+<div class="section" id="note-about-editable-installs">
+<h3><a class="toc-backref" href="#id31">Note about “editable” installs</a><a class="headerlink" href="#note-about-editable-installs" title="Permalink to this headline">¶</a></h3>
+<p>The editable installation mode of pip roughly lets a user insert a
+local directory in sys.path for development purpose. This mode is somewhat
+abused to work around the fact that a non-editable install from a VCS URL
+loses track of the origin after installation.
+Indeed editable installs implicitly record the VCS origin in the checkout
+directory, so the information can be recovered when running “freeze”.</p>
+<p>The use of this workaround, although useful, is fragile, creates confusion
+about the purpose of the editable mode, and works only when the distribution
+can be installed with setuptools (i.e. it is not usable with other PEP 517
+build backends).</p>
+<p>When this PEP is implemented, it will not be necessary anymore to use
+editable installs for the purpose of making pip freeze work correctly with
+VCS references.</p>
+</div>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id32">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>This PEP specifies a new <code class="docutils literal notranslate"><span class="pre">direct_url.json</span></code> metadata file in the
+<code class="docutils literal notranslate"><span class="pre">.dist-info</span></code> directory of an installed distribution.</p>
+<p>The fields specified are sufficient to reproduce the source archive and <a class="reference external" href="https://pip.pypa.io/en/stable/reference/pip_install/#vcs-support">VCS
+URLs supported by pip</a> <a class="footnote-reference brackets" href="#id5" id="id6">3</a>. They are also sufficient to reproduce <a class="reference external" href="https://www.python.org/dev/peps/pep-0440/#direct-references">PEP440 Direct
+References</a> <a class="footnote-reference brackets" href="#id7" id="id10">4</a>, as well as <a class="reference external" href="https://github.com/pypa/pipfile">Pipfile and Pipfile.lock</a> <a class="footnote-reference brackets" href="#id12" id="id13">5</a> entries. Finally, they
+are sufficient to record the branch, tag, and/or Git ref origin of the
+installed version that is already available for editable installs by virtue
+of a VCS checkout being present.</p>
+<p>Since at least three different ways already exist to encode this type of
+information, this PEP uses a dictionary format, so as not to make any
+assumption on how a direct
+URL reference must ultimately be encoded in a requirement or lockfile. See also
+the <a class="reference internal" href="#alternatives">Alternatives</a> section below for more discussion about this choice.</p>
+<p>Information has been taken from Ruby’s bundler manual to verify it has similar
+capabilities and inform the selection and naming of fields in this
+specifications.</p>
+<p>The JSON format allows for the addition of additional fields in the future.</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id33">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>This PEP specifies a <code class="docutils literal notranslate"><span class="pre">direct_url.json</span></code> file in the <code class="docutils literal notranslate"><span class="pre">.dist-info</span></code> directory
+of an installed distribution, to record the Direct URL Origin of the distribution.</p>
+<p>The canonical source for the name and semantics of this metadata file is
+the <a class="reference external" href="https://packaging.python.org/specifications/direct-url">Recording the Direct URL Origin of installed distributions</a> <a class="footnote-reference brackets" href="#id22" id="id23">10</a> document.</p>
+<p>This file MUST be created by installers when installing a distribution
+from a requirement specifying a direct URL reference (including a VCS URL).</p>
+<p>This file MUST NOT be created when installing a distribution from an other
+type of requirement (i.e. name plus version specifier).</p>
+<p>This JSON file MUST be a dictionary, compliant with <a class="reference external" href="https://tools.ietf.org/html/rfc8259">RFC 8259</a> <a class="footnote-reference brackets" href="#id18" id="id19">8</a> and UTF-8
+encoded.</p>
+<p>If present, it MUST contain at least two fields. The first one is <code class="docutils literal notranslate"><span class="pre">url</span></code>, with
+type <code class="docutils literal notranslate"><span class="pre">string</span></code>. Depending on what <code class="docutils literal notranslate"><span class="pre">url</span></code> refers to, the second field MUST be
+one of <code class="docutils literal notranslate"><span class="pre">vcs_info</span></code> (if <code class="docutils literal notranslate"><span class="pre">url</span></code> is a VCS reference), <code class="docutils literal notranslate"><span class="pre">archive_info</span></code> (if
+<code class="docutils literal notranslate"><span class="pre">url</span></code> is a source archives or a wheel), or <code class="docutils literal notranslate"><span class="pre">dir_info</span></code> (if <code class="docutils literal notranslate"><span class="pre">url</span></code>  is a
+local directory). These info fields have a (possibly empty) subdictionary as
+value, with the possible keys defined below.</p>
+<p><code class="docutils literal notranslate"><span class="pre">url</span></code> MUST be stripped of any sensitive authentication information,
+for security reasons.</p>
+<p>The user:password section of the URL MAY however
+be composed of environment variables, matching the following regular
+expression:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>\$\{[A-Za-z0-9-_]+\}(:\$\{[A-Za-z0-9-_]+\})?
+</pre></div>
+</div>
+<p>Additionally, the user:password section of the URL MAY be a
+well-known, non security sensitive string. A typical example is <code class="docutils literal notranslate"><span class="pre">git</span></code>
+in the case of an URL such as <code class="docutils literal notranslate"><span class="pre">ssh://git&#64;gitlab.com</span></code>.</p>
+<p>When <code class="docutils literal notranslate"><span class="pre">url</span></code> refers to a VCS repository, the <code class="docutils literal notranslate"><span class="pre">vcs_info</span></code> key MUST be present
+as a dictionary with the following keys:</p>
+<ul class="simple">
+<li>A <code class="docutils literal notranslate"><span class="pre">vcs</span></code> key (type <code class="docutils literal notranslate"><span class="pre">string</span></code>) MUST be present, containing the name of the VCS
+(i.e. one of <code class="docutils literal notranslate"><span class="pre">git</span></code>, <code class="docutils literal notranslate"><span class="pre">hg</span></code>, <code class="docutils literal notranslate"><span class="pre">bzr</span></code>, <code class="docutils literal notranslate"><span class="pre">svn</span></code>). Other VCS’s SHOULD be registered by
+writing a PEP to amend this specification.
+The <code class="docutils literal notranslate"><span class="pre">url</span></code> value MUST be compatible with the corresponding VCS,
+so an installer can hand it off without transformation to a
+checkout/download command of the VCS.</li>
+<li>A <code class="docutils literal notranslate"><span class="pre">requested_revision</span></code> key (type <code class="docutils literal notranslate"><span class="pre">string</span></code>) MAY be present naming a
+branch/tag/ref/commit/revision/etc (in a format compatible with the VCS)
+to install.</li>
+<li>A <code class="docutils literal notranslate"><span class="pre">commit_id</span></code> key (type <code class="docutils literal notranslate"><span class="pre">string</span></code>) MUST be present, containing the
+exact commit/revision number that was installed.
+If the VCS supports commit-hash
+based revision identifiers, such commit-hash MUST be used as
+<code class="docutils literal notranslate"><span class="pre">commit_id</span></code> in order to reference the immutable
+version of the source code that was installed.</li>
+<li>If the installer could discover additional information about
+the requested revision, it MAY add a <code class="docutils literal notranslate"><span class="pre">resolved_revision</span></code> and/or
+<code class="docutils literal notranslate"><span class="pre">resolved_revision_type</span></code> field. If no revision was provided in
+the requested URL, <code class="docutils literal notranslate"><span class="pre">resolved_revision</span></code> MAY contain the default branch
+that was installed, and <code class="docutils literal notranslate"><span class="pre">resolved_revision_type</span></code> will be <code class="docutils literal notranslate"><span class="pre">branch</span></code>.
+If the installer determines that <code class="docutils literal notranslate"><span class="pre">requested_revision</span></code> was a tag, it MAY
+add <code class="docutils literal notranslate"><span class="pre">resolved_revision_type</span></code> with value <code class="docutils literal notranslate"><span class="pre">tag</span></code>.</li>
+</ul>
+<p>When <code class="docutils literal notranslate"><span class="pre">url</span></code> refers to a source archive or a wheel, the <code class="docutils literal notranslate"><span class="pre">archive_info</span></code> key
+MUST be present as a dictionary with the following key:</p>
+<ul class="simple">
+<li>A <code class="docutils literal notranslate"><span class="pre">hash</span></code> key (type <code class="docutils literal notranslate"><span class="pre">string</span></code>) SHOULD be present, with value
+<code class="docutils literal notranslate"><span class="pre">&lt;hash-algorithm&gt;=&lt;expected-hash&gt;</span></code>.
+It is RECOMMENDED that only hashes which are unconditionally provided by
+the latest version of the standard library’s <code class="docutils literal notranslate"><span class="pre">hashlib</span></code> module be used for
+source archive hashes. At time of writing, that list consists of ‘md5’,
+‘sha1’, ‘sha224’, ‘sha256’, ‘sha384’, and ‘sha512’.</li>
+</ul>
+<p>When <code class="docutils literal notranslate"><span class="pre">url</span></code> refers to a local directory, the <code class="docutils literal notranslate"><span class="pre">dir_info</span></code> key MUST be
+present as a dictionary with the following key:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">editable</span></code> (type: <code class="docutils literal notranslate"><span class="pre">boolean</span></code>): <cite>true</cite> if the distribution was installed
+in editable mode, <cite>false</cite> otherwise. If absent, default to <cite>false</cite>.</li>
+</ul>
+<p>When <code class="docutils literal notranslate"><span class="pre">url</span></code> refers to a local directory, it MUST have the <code class="docutils literal notranslate"><span class="pre">file</span></code> sheme
+and be compliant with <a class="reference external" href="https://tools.ietf.org/html/rfc8089">RFC 8089</a> <a class="footnote-reference brackets" href="#id20" id="id21">9</a>. In particular, the path component must
+be absolute. Symbolic links SHOULD be preserved when making relative
+paths absolute.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When the requested URL has the <a class="reference external" href="file://">file://</a> scheme and points to a local directory that happens to contain a
+VCS checkout, installers MUST NOT attempt to infer any VCS information and
+therefore MUST NOT output any VCS related information (such as <code class="docutils literal notranslate"><span class="pre">vcs_info</span></code>)
+in <code class="docutils literal notranslate"><span class="pre">direct_url.json</span></code>.</p>
+</div>
+<p>A top-level <code class="docutils literal notranslate"><span class="pre">subdirectory</span></code> field MAY be present containing a directory path,
+relative to the root of the VCS repository, source archive or local directory,
+to specify where <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> or <code class="docutils literal notranslate"><span class="pre">setup.py</span></code> is located.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>As a general rule, installers should as much as possible preserve the
+information that was provided in the requested URL when generating
+<code class="docutils literal notranslate"><span class="pre">direct_url.json</span></code>. For example user:password environment variables
+should be preserved and <code class="docutils literal notranslate"><span class="pre">requested_revision</span></code> should reflect the revision that was
+provided in the requested URL as faithfully as possible. This information is
+however <em>enriched</em> with more precise data, such as <code class="docutils literal notranslate"><span class="pre">commit_id</span></code>.</p>
+</div>
+<div class="section" id="registered-vcs">
+<h3><a class="toc-backref" href="#id34">Registered VCS</a><a class="headerlink" href="#registered-vcs" title="Permalink to this headline">¶</a></h3>
+<p>This section lists the registered VCS’s; expanded, VCS-specific information
+on how to use the <code class="docutils literal notranslate"><span class="pre">vcs</span></code>, <code class="docutils literal notranslate"><span class="pre">requested_revision</span></code>, and other fields of
+<code class="docutils literal notranslate"><span class="pre">vcs_info</span></code>; and in
+some cases additional VCS-specific fields.
+Tools MAY support other VCS’s although it is RECOMMENDED to register
+them by writing a PEP to amend this specification. The <code class="docutils literal notranslate"><span class="pre">vcs</span></code> field SHOULD be the command name
+(lowercased). Additional fields that would be necessary to
+support such VCS SHOULD be prefixed with the VCS command name.</p>
+<div class="section" id="git">
+<h4><a class="toc-backref" href="#id35">Git</a><a class="headerlink" href="#git" title="Permalink to this headline">¶</a></h4>
+<p>Home page</p>
+<blockquote>
+<div><a class="reference external" href="https://git-scm.com/">https://git-scm.com/</a></div></blockquote>
+<p>vcs command</p>
+<blockquote>
+<div>git</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">vcs</span></code> field</p>
+<blockquote>
+<div>git</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">requested_revision</span></code> field</p>
+<blockquote>
+<div>A tag name, branch name, Git ref, commit hash, shortened commit hash,
+or other commit-ish.</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">commit_id</span></code> field</p>
+<blockquote>
+<div>A commit hash (40 hexadecimal characters sha1).</div></blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Installers can use the <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">show-ref</span></code> and <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">symbolic-ref</span></code> commands
+to determine if the <code class="docutils literal notranslate"><span class="pre">requested_revision</span></code> corresponds to a Git ref.
+In turn, a ref beginning with <code class="docutils literal notranslate"><span class="pre">refs/tags/</span></code> corresponds to a tag, and
+a ref beginning with <code class="docutils literal notranslate"><span class="pre">refs/remotes/origin/</span></code> after cloning corresponds
+to a branch.</p>
+</div>
+</div>
+<div class="section" id="mercurial">
+<h4><a class="toc-backref" href="#id36">Mercurial</a><a class="headerlink" href="#mercurial" title="Permalink to this headline">¶</a></h4>
+<p>Home page</p>
+<blockquote>
+<div><a class="reference external" href="https://www.mercurial-scm.org/">https://www.mercurial-scm.org/</a></div></blockquote>
+<p>vcs command</p>
+<blockquote>
+<div>hg</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">vcs</span></code> field</p>
+<blockquote>
+<div>hg</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">requested_revision</span></code> field</p>
+<blockquote>
+<div>A tag name, branch name, changeset ID, shortened changeset ID.</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">commit_id</span></code> field</p>
+<blockquote>
+<div>A changeset ID (40 hexadecimal characters).</div></blockquote>
+</div>
+<div class="section" id="bazaar">
+<h4><a class="toc-backref" href="#id37">Bazaar</a><a class="headerlink" href="#bazaar" title="Permalink to this headline">¶</a></h4>
+<p>Home page</p>
+<blockquote>
+<div><a class="reference external" href="https://bazaar.canonical.com/">https://bazaar.canonical.com/</a></div></blockquote>
+<p>vcs command</p>
+<blockquote>
+<div>bzr</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">vcs</span></code> field</p>
+<blockquote>
+<div>bzr</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">requested_revision</span></code> field</p>
+<blockquote>
+<div>A tag name, branch name, revision id.</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">commit_id</span></code> field</p>
+<blockquote>
+<div>A revision id.</div></blockquote>
+</div>
+<div class="section" id="subversion">
+<h4><a class="toc-backref" href="#id38">Subversion</a><a class="headerlink" href="#subversion" title="Permalink to this headline">¶</a></h4>
+<p>Home page</p>
+<blockquote>
+<div><a class="reference external" href="https://subversion.apache.org/">https://subversion.apache.org/</a></div></blockquote>
+<p>vcs command</p>
+<blockquote>
+<div>svn</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">vcs</span></code> field</p>
+<blockquote>
+<div>svn</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">requested_revision</span></code> field</p>
+<blockquote>
+<div><code class="docutils literal notranslate"><span class="pre">requested_revision</span></code> must be compatible with <code class="docutils literal notranslate"><span class="pre">svn</span> <span class="pre">checkout</span></code> <code class="docutils literal notranslate"><span class="pre">--revision</span></code> option.
+In Subversion, branch or tag is part of <code class="docutils literal notranslate"><span class="pre">url</span></code>.</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">commit_id</span></code> field</p>
+<blockquote>
+<div>Since Subversion does not support globally unique identifiers,
+this field is the Subversion revision number in the corresponding
+repository.</div></blockquote>
+</div>
+</div>
+</div>
+<div class="section" id="examples">
+<h2><a class="toc-backref" href="#id39">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="example-direct-url-json">
+<h3><a class="toc-backref" href="#id40">Example direct_url.json</a><a class="headerlink" href="#example-direct-url-json" title="Permalink to this headline">¶</a></h3>
+<p>Source archive:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;https://github.com/pypa/pip/archive/1.3.1.zip&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;archive_info&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;hash&quot;</span><span class="p">:</span> <span class="s2">&quot;sha256=2dc6b5a470a1bde68946f263f1af1515a2574a150a30d6ce02c6ff742fcc0db8&quot;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Git URL with tag and commit-hash:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;https://github.com/pypa/pip.git&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;vcs_info&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;vcs&quot;</span><span class="p">:</span> <span class="s2">&quot;git&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;requested_revision&quot;</span><span class="p">:</span> <span class="s2">&quot;1.3.1&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;resolved_revision_type&quot;</span><span class="p">:</span> <span class="s2">&quot;tag&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;commit_id&quot;</span><span class="p">:</span> <span class="s2">&quot;7921be1537eac1e97bc40179a57f0349c2aee67d&quot;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Local directory:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;file:///home/user/project&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;dir_info&quot;</span><span class="p">:</span> <span class="p">{}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Local directory installed in editable mode:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;file:///home/user/project&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;dir_info&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;editable&quot;</span><span class="p">:</span> <span class="n">true</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="example-pip-commands-and-their-effect-on-direct-url-json">
+<h3><a class="toc-backref" href="#id41">Example pip commands and their effect on direct_url.json</a><a class="headerlink" href="#example-pip-commands-and-their-effect-on-direct-url-json" title="Permalink to this headline">¶</a></h3>
+<p>Commands that generate a <code class="docutils literal notranslate"><span class="pre">direct_url.json</span></code>:</p>
+<ul class="simple">
+<li>pip install <a class="reference external" href="https://example.com/app-1.0.tgz">https://example.com/app-1.0.tgz</a></li>
+<li>pip install <a class="reference external" href="https://example.com/app-1.0.whl">https://example.com/app-1.0.whl</a></li>
+<li>pip install “git+https://example.com/repo/app.git#egg=app&amp;subdirectory=setup”</li>
+<li>pip install ./app</li>
+<li>pip install <a class="reference external" href="file:///home/user/app">file:///home/user/app</a></li>
+<li>pip install –editable “git+https://example.com/repo/app.git#egg=app&amp;subdirectory=setup”
+(in which case, <code class="docutils literal notranslate"><span class="pre">url</span></code> will be the local directory where the git repository has been
+cloned to, and <code class="docutils literal notranslate"><span class="pre">dir_info</span></code> will be present with <code class="docutils literal notranslate"><span class="pre">&quot;editable&quot;:</span> <span class="pre">true</span></code> and no
+<code class="docutils literal notranslate"><span class="pre">vcs_info</span></code> will be set)</li>
+<li>pip install -e ./app</li>
+</ul>
+<p>Commands that <em>do not</em> generate a <code class="docutils literal notranslate"><span class="pre">direct_url.json</span></code></p>
+<ul class="simple">
+<li>pip install app</li>
+<li>pip install app –no-index –find-links <a class="reference external" href="https://example.com/">https://example.com/</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="use-cases">
+<h2><a class="toc-backref" href="#id42">Use cases</a><a class="headerlink" href="#use-cases" title="Permalink to this headline">¶</a></h2>
+<p>“Freezing” an environment</p>
+<blockquote>
+<div><p>Tools, such as <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">freeze</span></code>, which generate requirements from the Database
+of Installed Python Distributions SHOULD exploit <code class="docutils literal notranslate"><span class="pre">direct_url.json</span></code>
+if it is present, and give it priority over the Version metadata in order
+to generate a higher fidelity output. In the presence of a <code class="docutils literal notranslate"><span class="pre">vcs</span></code> direct URL reference,
+the <code class="docutils literal notranslate"><span class="pre">commit_id</span></code> field SHOULD be used in priority in order to provide
+the highest possible fidelity to the originally installed version. If
+supported by their requirement format, tools are encouraged also to output
+the <code class="docutils literal notranslate"><span class="pre">tag</span></code> value if present, as it has immutable semantics.
+Tools MAY choose another approach, depending on the needs of their users.</p>
+<p>Note the initial iteration of this PEP does not attempt to make environments
+that include editable installs or installs from local directories
+reproducible, but it does attempt to make them readily identifiable. By
+locating the local project directory via the <code class="docutils literal notranslate"><span class="pre">url</span></code> and <code class="docutils literal notranslate"><span class="pre">dir_info</span></code> fields
+of this specification, tools can implement any strategy that fits their use
+cases.</p>
+</div></blockquote>
+</div>
+<div class="section" id="backwards-compatibility">
+<h2><a class="toc-backref" href="#id43">Backwards Compatibility</a><a class="headerlink" href="#backwards-compatibility" title="Permalink to this headline">¶</a></h2>
+<p>Since this PEP specifies a new file in the <code class="docutils literal notranslate"><span class="pre">.dist-info</span></code> directory,
+there are no backwards compatibility implications.</p>
+</div>
+<div class="section" id="alternatives">
+<h2><a class="toc-backref" href="#id44">Alternatives</a><a class="headerlink" href="#alternatives" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="pep426-source-url">
+<h3><a class="toc-backref" href="#id45">PEP426 source_url</a><a class="headerlink" href="#pep426-source-url" title="Permalink to this headline">¶</a></h3>
+<p>The now withdrawn PEP 426 specifies a <code class="docutils literal notranslate"><span class="pre">source_url</span></code> metadata entry.
+It is also implemented in <a class="reference external" href="https://distlib.readthedocs.io">distlib</a> <a class="footnote-reference brackets" href="#id14" id="id15">6</a>.</p>
+<p>It was intended for a slightly different purpose, for use in sdists.</p>
+<p>This format lacks support for the <code class="docutils literal notranslate"><span class="pre">subdirectory</span></code> option of pip requirement
+URLs. The same limitation is present in <a class="reference external" href="https://www.python.org/dev/peps/pep-0440/#direct-references">PEP440 Direct References</a> <a class="footnote-reference brackets" href="#id7" id="id11">4</a>.</p>
+<p>It also lacks explicit support for <a class="reference external" href="https://pip.pypa.io/en/stable/reference/pip_install/#id10">environment variables in the user:password
+part of URLs</a> <a class="footnote-reference brackets" href="#id16" id="id17">7</a>.</p>
+<p>The introduction of a key/value extensibility mechanism and support
+for environment variables for user:password in PEP 440, would be necessary
+for use in this PEP.</p>
+</div>
+<div class="section" id="revision-vs-ref">
+<h3><a class="toc-backref" href="#id46">revision vs ref</a><a class="headerlink" href="#revision-vs-ref" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">requested_revision</span></code> key was retained over <code class="docutils literal notranslate"><span class="pre">requested_ref</span></code> as it is a more generic term
+across various VCS and <code class="docutils literal notranslate"><span class="pre">ref</span></code> has a specific meaning for <code class="docutils literal notranslate"><span class="pre">git</span></code>.</p>
+</div>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id47">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id1"><span class="brackets"><a class="fn-backref" href="#id2">1</a></span></dt>
+<dd><a class="reference external" href="https://github.com/pypa/pip/issues/609">https://github.com/pypa/pip/issues/609</a></dd>
+<dt class="label" id="id3"><span class="brackets"><a class="fn-backref" href="#id4">2</a></span></dt>
+<dd><a class="reference external" href="https://discuss.python.org/t/pip-freeze-vcs-urls-and-pep-517-feat-editable-installs/1473">https://discuss.python.org/t/pip-freeze-vcs-urls-and-pep-517-feat-editable-installs/1473</a></dd>
+<dt class="label" id="id5"><span class="brackets"><a class="fn-backref" href="#id6">3</a></span></dt>
+<dd><a class="reference external" href="https://pip.pypa.io/en/stable/reference/pip_install/#vcs-support">https://pip.pypa.io/en/stable/reference/pip_install/#vcs-support</a></dd>
+<dt class="label" id="id7"><span class="brackets">4</span><span class='fn-backref'><em> (<a href="#id8">1</a>, <a href="#id9">2</a>, <a href="#id10">3</a>, <a href="#id11">4</a>) </em></span></dt>
+<dd><a class="reference external" href="https://www.python.org/dev/peps/pep-0440/#direct-references">https://www.python.org/dev/peps/pep-0440/#direct-references</a></dd>
+<dt class="label" id="id12"><span class="brackets"><a class="fn-backref" href="#id13">5</a></span></dt>
+<dd><a class="reference external" href="https://github.com/pypa/pipfile">https://github.com/pypa/pipfile</a></dd>
+<dt class="label" id="id14"><span class="brackets"><a class="fn-backref" href="#id15">6</a></span></dt>
+<dd><a class="reference external" href="https://distlib.readthedocs.io">https://distlib.readthedocs.io</a></dd>
+<dt class="label" id="id16"><span class="brackets"><a class="fn-backref" href="#id17">7</a></span></dt>
+<dd><a class="reference external" href="https://pip.pypa.io/en/stable/reference/pip_install/#id10">https://pip.pypa.io/en/stable/reference/pip_install/#id10</a></dd>
+<dt class="label" id="id18"><span class="brackets"><a class="fn-backref" href="#id19">8</a></span></dt>
+<dd><a class="reference external" href="https://tools.ietf.org/html/rfc8259">https://tools.ietf.org/html/rfc8259</a></dd>
+<dt class="label" id="id20"><span class="brackets"><a class="fn-backref" href="#id21">9</a></span></dt>
+<dd><a class="reference external" href="https://tools.ietf.org/html/rfc8089">https://tools.ietf.org/html/rfc8089</a></dd>
+<dt class="label" id="id22"><span class="brackets"><a class="fn-backref" href="#id23">10</a></span></dt>
+<dd><a class="reference external" href="https://packaging.python.org/specifications/direct-url">https://packaging.python.org/specifications/direct-url</a></dd>
+</dl>
+</div>
+<div class="section" id="acknowledgements">
+<h2><a class="toc-backref" href="#id48">Acknowledgements</a><a class="headerlink" href="#acknowledgements" title="Permalink to this headline">¶</a></h2>
+<p>Various people helped make this PEP a reality. Paul F. Moore provided the
+essence of the abstract. Nick Coghlan suggested the direct_url name.</p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id49">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document is placed in the public domain or under the
+CC0-1.0-Universal license, whichever is more permissive.</p>
+<blockquote>
+<div></div></blockquote>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0610.rst">https://github.com/python/peps/blob/master/pep-0610.rst</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0610.rst.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0609.html">PEP 0609</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0611.html">PEP 0611</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 610 – Recording the Direct URL Origin of installed distributions</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#provisional-acceptance">Provisional acceptance</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a><ul>
+<li><a class="reference internal" href="#installation-from-direct-url-references">Installation from direct URL references</a></li>
+<li><a class="reference internal" href="#freezing-an-environment">Freezing an environment</a></li>
+<li><a class="reference internal" href="#the-importance-of-installing-from-vcs-urls-for-application-integrators">The importance of installing from (VCS) URLs for application integrators</a></li>
+<li><a class="reference internal" href="#additional-origin-metadata-available-for-vcs-urls">Additional origin metadata available for VCS URLs</a></li>
+<li><a class="reference internal" href="#note-about-editable-installs">Note about “editable” installs</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#registered-vcs">Registered VCS</a><ul>
+<li><a class="reference internal" href="#git">Git</a></li>
+<li><a class="reference internal" href="#mercurial">Mercurial</a></li>
+<li><a class="reference internal" href="#bazaar">Bazaar</a></li>
+<li><a class="reference internal" href="#subversion">Subversion</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#examples">Examples</a><ul>
+<li><a class="reference internal" href="#example-direct-url-json">Example direct_url.json</a></li>
+<li><a class="reference internal" href="#example-pip-commands-and-their-effect-on-direct-url-json">Example pip commands and their effect on direct_url.json</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#use-cases">Use cases</a></li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#alternatives">Alternatives</a><ul>
+<li><a class="reference internal" href="#pep426-source-url">PEP426 source_url</a></li>
+<li><a class="reference internal" href="#revision-vs-ref">revision vs ref</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#acknowledgements">Acknowledgements</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

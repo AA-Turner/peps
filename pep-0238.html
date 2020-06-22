@@ -1,0 +1,609 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 238 – Changing the Division Operator &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 239 – Adding a Rational Type to Python" href="pep-0239.html" />
+    <link rel="prev" title="PEP 237 – Unifying Long Integers and Integers" href="pep-0237.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 238 – Changing the Division Operator</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-238-changing-the-division-operator">
+<h1 class="page-title">PEP 238 – Changing the Division Operator<a class="headerlink" href="#pep-238-changing-the-division-operator" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">238</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Changing the Division Operator</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">moshez&#32;&#97;t&#32;zadka.site.co.il (Moshe Zadka),
+guido&#32;&#97;t&#32;python.org (Guido van Rossum)</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">11-Mar-2001</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.2</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">16-Mar-2001, 26-Jul-2001, 27-Jul-2001</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id16">Abstract</a></li>
+<li><a class="reference internal" href="#motivation" id="id17">Motivation</a></li>
+<li><a class="reference internal" href="#variations" id="id18">Variations</a></li>
+<li><a class="reference internal" href="#alternatives" id="id19">Alternatives</a></li>
+<li><a class="reference internal" href="#api-changes" id="id20">API Changes</a></li>
+<li><a class="reference internal" href="#command-line-option" id="id21">Command Line Option</a></li>
+<li><a class="reference internal" href="#semantics-of-floor-division" id="id22">Semantics of Floor Division</a></li>
+<li><a class="reference internal" href="#semantics-of-true-division" id="id23">Semantics of True Division</a></li>
+<li><a class="reference internal" href="#the-future-division-statement" id="id24">The Future Division Statement</a></li>
+<li><a class="reference internal" href="#open-issues" id="id25">Open Issues</a></li>
+<li><a class="reference internal" href="#resolved-issues" id="id26">Resolved Issues</a></li>
+<li><a class="reference internal" href="#faq" id="id27">FAQ</a><ul>
+<li><a class="reference internal" href="#when-will-python-3-0-be-released" id="id28">When will Python 3.0 be released?</a></li>
+<li><a class="reference internal" href="#why-isn-t-true-division-called-float-division" id="id29">Why isn’t true division called float division?</a></li>
+<li><a class="reference internal" href="#why-is-there-a-need-for-truediv-and-itruediv" id="id30">Why is there a need for <code class="docutils literal notranslate"><span class="pre">__truediv__</span></code> and <code class="docutils literal notranslate"><span class="pre">__itruediv__</span></code>?</a></li>
+<li><a class="reference internal" href="#how-do-i-write-code-that-works-under-the-classic-rules-as-well-as-under-the-new-rules-without-using-or-a-future-division-statement" id="id31">How do I write code that works under the classic rules as well as under the new rules without using <code class="docutils literal notranslate"><span class="pre">//</span></code> or a future division statement?</a></li>
+<li><a class="reference internal" href="#how-do-i-specify-the-division-semantics-for-input-compile-execfile-eval-and-exec" id="id32">How do I specify the division semantics for <code class="docutils literal notranslate"><span class="pre">input()</span></code>, <code class="docutils literal notranslate"><span class="pre">compile()</span></code>, <code class="docutils literal notranslate"><span class="pre">execfile()</span></code>, <code class="docutils literal notranslate"><span class="pre">eval()</span></code> and <code class="docutils literal notranslate"><span class="pre">exec</span></code>?</a></li>
+<li><a class="reference internal" href="#what-about-code-compiled-by-the-codeop-module" id="id33">What about code compiled by the codeop module?</a></li>
+<li><a class="reference internal" href="#will-there-be-conversion-tools-or-aids" id="id34">Will there be conversion tools or aids?</a></li>
+<li><a class="reference internal" href="#why-is-my-question-not-answered-here" id="id35">Why is my question not answered here?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation" id="id36">Implementation</a></li>
+<li><a class="reference internal" href="#references" id="id37">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id38">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id16">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>The current division (<code class="docutils literal notranslate"><span class="pre">/</span></code>) operator has an ambiguous meaning for numerical
+arguments: it returns the floor of the mathematical result of division if the
+arguments are ints or longs, but it returns a reasonable approximation of the
+division result if the arguments are floats or complex.  This makes
+expressions expecting float or complex results error-prone when integers are
+not expected but possible as inputs.</p>
+<p>We propose to fix this by introducing different operators for different
+operations: <code class="docutils literal notranslate"><span class="pre">x/y</span></code> to return a reasonable approximation of the mathematical
+result of the division (“true division”), <code class="docutils literal notranslate"><span class="pre">x//y</span></code> to return the floor
+(“floor division”).  We call the current, mixed meaning of x/y
+“classic division”.</p>
+<p>Because of severe backwards compatibility issues, not to mention a major
+flamewar on c.l.py, we propose the following transitional measures (starting
+with Python 2.2):</p>
+<ul class="simple">
+<li>Classic division will remain the default in the Python 2.x series; true
+division will be standard in Python 3.0.</li>
+<li>The <code class="docutils literal notranslate"><span class="pre">//</span></code> operator will be available to request floor division
+unambiguously.</li>
+<li>The future division statement, spelled <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">__future__</span> <span class="pre">import</span> <span class="pre">division</span></code>,
+will change the <code class="docutils literal notranslate"><span class="pre">/</span></code> operator to mean true division throughout the module.</li>
+<li>A command line option will enable run-time warnings for classic division
+applied to int or long arguments; another command line option will make true
+division the default.</li>
+<li>The standard library will use the future division statement and the <code class="docutils literal notranslate"><span class="pre">//</span></code>
+operator when appropriate, so as to completely avoid classic division.</li>
+</ul>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id17">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>The classic division operator makes it hard to write numerical expressions
+that are supposed to give correct results from arbitrary numerical inputs.
+For all other operators, one can write down a formula such as <code class="docutils literal notranslate"><span class="pre">x*y**2</span> <span class="pre">+</span> <span class="pre">z</span></code>,
+and the calculated result will be close to the mathematical result (within the
+limits of numerical accuracy, of course) for any numerical input type (int,
+long, float, or complex).  But division poses a problem: if the expressions
+for both arguments happen to have an integral type, it implements floor
+division rather than true division.</p>
+<p>The problem is unique to dynamically typed languages: in a statically typed
+language like C, the inputs, typically function arguments, would be declared
+as double or float, and when a call passes an integer argument, it is
+converted to double or float at the time of the call.  Python doesn’t have
+argument type declarations, so integer arguments can easily find their way
+into an expression.</p>
+<p>The problem is particularly pernicious since ints are perfect substitutes for
+floats in all other circumstances: <code class="docutils literal notranslate"><span class="pre">math.sqrt(2)</span></code> returns the same value as
+<code class="docutils literal notranslate"><span class="pre">math.sqrt(2.0)</span></code>, <code class="docutils literal notranslate"><span class="pre">3.14*100</span></code> and <code class="docutils literal notranslate"><span class="pre">3.14*100.0</span></code> return the same value, and
+so on.  Thus, the author of a numerical routine may only use floating point
+numbers to test his code, and believe that it works correctly, and a user may
+accidentally pass in an integer input value and get incorrect results.</p>
+<p>Another way to look at this is that classic division makes it difficult to
+write polymorphic functions that work well with either float or int arguments;
+all other operators already do the right thing.  No algorithm that works for
+both ints and floats has a need for truncating division in one case and true
+division in the other.</p>
+<p>The correct work-around is subtle: casting an argument to float() is wrong if
+it could be a complex number; adding 0.0 to an argument doesn’t preserve the
+sign of the argument if it was minus zero.  The only solution without either
+downside is multiplying an argument (typically the first) by 1.0.  This leaves
+the value and sign unchanged for float and complex, and turns int and long
+into a float with the corresponding value.</p>
+<p>It is the opinion of the authors that this is a real design bug in Python, and
+that it should be fixed sooner rather than later. Assuming Python usage will
+continue to grow, the cost of leaving this bug in the language will eventually
+outweigh the cost of fixing old code – there is an upper bound to the amount
+of code to be fixed, but the amount of code that might be affected by the bug
+in the future is unbounded.</p>
+<p>Another reason for this change is the desire to ultimately unify Python’s
+numeric model.  This is the subject of PEP 228 <a class="footnote-reference brackets" href="#id10" id="id1">0</a> (which is currently
+incomplete).  A unified numeric model removes most of the user’s need to be
+aware of different numerical types.  This is good for beginners, but also
+takes away concerns about different numeric behavior for advanced programmers.
+(Of course, it won’t remove concerns about numerical stability and accuracy.)</p>
+<p>In a unified numeric model, the different types (int, long, float, complex,
+and possibly others, such as a new rational type) serve mostly as storage
+optimizations, and to some extent to indicate orthogonal properties such as
+inexactness or complexity.  In a unified model, the integer 1 should be
+indistinguishable from the floating point number 1.0 (except for its
+inexactness), and both should behave the same in all numeric contexts.
+Clearly, in a unified numeric model, if <code class="docutils literal notranslate"><span class="pre">a==b</span></code> and <code class="docutils literal notranslate"><span class="pre">c==d</span></code>, <code class="docutils literal notranslate"><span class="pre">a/c</span></code> should
+equal <code class="docutils literal notranslate"><span class="pre">b/d</span></code> (taking some liberties due to rounding for inexact numbers), and
+since everybody agrees that <code class="docutils literal notranslate"><span class="pre">1.0/2.0</span></code> equals 0.5, <code class="docutils literal notranslate"><span class="pre">1/2</span></code> should also equal
+0.5.  Likewise, since <code class="docutils literal notranslate"><span class="pre">1//2</span></code> equals zero, <code class="docutils literal notranslate"><span class="pre">1.0//2.0</span></code> should also equal
+zero.</p>
+</div>
+<div class="section" id="variations">
+<h2><a class="toc-backref" href="#id18">Variations</a><a class="headerlink" href="#variations" title="Permalink to this headline">¶</a></h2>
+<p>Aesthetically, <code class="docutils literal notranslate"><span class="pre">x//y</span></code> doesn’t please everyone, and hence several variations
+have been proposed.  They are addressed here:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">div</span> <span class="pre">y</span></code>.  This would introduce a new keyword.  Since <code class="docutils literal notranslate"><span class="pre">div</span></code> is a
+popular identifier, this would break a fair amount of existing code, unless
+the new keyword was only recognized under a future division statement.
+Since it is expected that the majority of code that needs to be converted is
+dividing integers, this would greatly increase the need for the future
+division statement.  Even with a future statement, the general sentiment
+against adding new keywords unless absolutely necessary argues against this.</li>
+<li><code class="docutils literal notranslate"><span class="pre">div(x,</span> <span class="pre">y)</span></code>.  This makes the conversion of old code much harder.
+Replacing <code class="docutils literal notranslate"><span class="pre">x/y</span></code> with <code class="docutils literal notranslate"><span class="pre">x//y</span></code> or <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">div</span> <span class="pre">y</span></code> can be done with a simple
+query replace; in most cases the programmer can easily verify that a
+particular module only works with integers so all occurrences of <code class="docutils literal notranslate"><span class="pre">x/y</span></code> can
+be replaced.  (The query replace is still needed to weed out slashes
+occurring in comments or string literals.)  Replacing <code class="docutils literal notranslate"><span class="pre">x/y</span></code> with
+<code class="docutils literal notranslate"><span class="pre">div(x,</span> <span class="pre">y)</span></code> would require a much more intelligent tool, since the extent
+of the expressions to the left and right of the <code class="docutils literal notranslate"><span class="pre">/</span></code> must be analyzed
+before the placement of the <code class="docutils literal notranslate"><span class="pre">div(</span></code> and <code class="docutils literal notranslate"><span class="pre">)</span></code> part can be decided.</li>
+<li><code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">\</span> <span class="pre">y</span></code>.  The backslash is already a token, meaning line continuation, and
+in general it suggests an <em>escape</em> to Unix eyes.  In addition (this due to
+Terry Reedy) this would make things like <code class="docutils literal notranslate"><span class="pre">eval(&quot;x\y&quot;)</span></code> harder to get
+right.</li>
+</ul>
+</div>
+<div class="section" id="alternatives">
+<h2><a class="toc-backref" href="#id19">Alternatives</a><a class="headerlink" href="#alternatives" title="Permalink to this headline">¶</a></h2>
+<p>In order to reduce the amount of old code that needs to be converted, several
+alternative proposals have been put forth. Here is a brief discussion of each
+proposal (or category of proposals).  If you know of an alternative that was
+discussed on c.l.py that isn’t mentioned here, please mail the second author.</p>
+<ul class="simple">
+<li>Let <code class="docutils literal notranslate"><span class="pre">/</span></code> keep its classic semantics; introduce <code class="docutils literal notranslate"><span class="pre">//</span></code> for true division.
+This still leaves a broken operator in the language, and invites to use the
+broken behavior.  It also shuts off the road to a unified numeric model a la
+PEP 228 <a class="footnote-reference brackets" href="#id10" id="id2">0</a>.</li>
+<li>Let int division return a special “portmanteau” type that behaves as an
+integer in integer context, but like a float in a float context.  The
+problem with this is that after a few operations, the int and the float
+value could be miles apart, it’s unclear which value should be used in
+comparisons, and of course many contexts (like conversion to string) don’t
+have a clear integer or float preference.</li>
+<li>Use a directive to use specific division semantics in a module, rather than
+a future statement.  This retains classic division as a permanent wart in
+the language, requiring future generations of Python programmers to be
+aware of the problem and the remedies.</li>
+<li>Use <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">__past__</span> <span class="pre">import</span> <span class="pre">division</span></code> to use classic division semantics in a
+module.  This also retains the classic division as a permanent wart, or at
+least for a long time (eventually the past division statement could raise an
+<code class="docutils literal notranslate"><span class="pre">ImportError</span></code>).</li>
+<li>Use a directive (or some other way) to specify the Python version for which
+a specific piece of code was developed.  This requires future Python
+interpreters to be able to emulate <em>exactly</em> several previous versions of
+Python, and moreover to do so for multiple versions within the same
+interpreter.  This is way too much work.  A much simpler solution is to keep
+multiple interpreters installed.  Another argument against this is that the
+version directive is almost always overspecified: most code written for
+Python X.Y, works for Python X.(Y-1) and X.(Y+1) as well, so specifying X.Y
+as a version is more constraining than it needs to be.  At the same time,
+there’s no way to know at which future or past version the code will break.</li>
+</ul>
+</div>
+<div class="section" id="api-changes">
+<h2><a class="toc-backref" href="#id20">API Changes</a><a class="headerlink" href="#api-changes" title="Permalink to this headline">¶</a></h2>
+<p>During the transitional phase, we have to support <em>three</em> division operators
+within the same program: classic division (for <code class="docutils literal notranslate"><span class="pre">/</span></code> in modules without a
+future division statement), true division (for <code class="docutils literal notranslate"><span class="pre">/</span></code> in modules with a future
+division statement), and floor division (for <code class="docutils literal notranslate"><span class="pre">//</span></code>).  Each operator comes in
+two flavors: regular, and as an augmented assignment operator (<code class="docutils literal notranslate"><span class="pre">/=</span></code> or
+<code class="docutils literal notranslate"><span class="pre">//=</span></code>).</p>
+<p>The names associated with these variations are:</p>
+<ul>
+<li><p>Overloaded operator methods:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">__div__</span><span class="p">(),</span> <span class="fm">__floordiv__</span><span class="p">(),</span> <span class="fm">__truediv__</span><span class="p">();</span>
+<span class="n">__idiv__</span><span class="p">(),</span> <span class="fm">__ifloordiv__</span><span class="p">(),</span> <span class="fm">__itruediv__</span><span class="p">()</span><span class="o">.</span>
+</pre></div>
+</div>
+</li>
+<li><p>Abstract API C functions:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyNumber_Divide</span><span class="p">(),</span> <span class="n">PyNumber_FloorDivide</span><span class="p">(),</span>
+<span class="n">PyNumber_TrueDivide</span><span class="p">();</span>
+
+<span class="n">PyNumber_InPlaceDivide</span><span class="p">(),</span> <span class="n">PyNumber_InPlaceFloorDivide</span><span class="p">(),</span>
+<span class="n">PyNumber_InPlaceTrueDivide</span><span class="p">()</span><span class="o">.</span>
+</pre></div>
+</div>
+</li>
+<li><p>Byte code opcodes:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">BINARY_DIVIDE</span><span class="p">,</span> <span class="n">BINARY_FLOOR_DIVIDE</span><span class="p">,</span> <span class="n">BINARY_TRUE_DIVIDE</span><span class="p">;</span>
+<span class="n">INPLACE_DIVIDE</span><span class="p">,</span> <span class="n">INPLACE_FLOOR_DIVIDE</span><span class="p">,</span> <span class="n">INPLACE_TRUE_DIVIDE</span><span class="o">.</span>
+</pre></div>
+</div>
+</li>
+<li><p>PyNumberMethod slots:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">nb_divide</span><span class="p">,</span> <span class="n">nb_floor_divide</span><span class="p">,</span> <span class="n">nb_true_divide</span><span class="p">,</span>
+<span class="n">nb_inplace_divide</span><span class="p">,</span> <span class="n">nb_inplace_floor_divide</span><span class="p">,</span>
+<span class="n">nb_inplace_true_divide</span><span class="o">.</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<p>The added <code class="docutils literal notranslate"><span class="pre">PyNumberMethod</span></code> slots require an additional flag in <code class="docutils literal notranslate"><span class="pre">tp_flags</span></code>;
+this flag will be named <code class="docutils literal notranslate"><span class="pre">Py_TPFLAGS_HAVE_NEWDIVIDE</span></code> and will be included in
+<code class="docutils literal notranslate"><span class="pre">Py_TPFLAGS_DEFAULT</span></code>.</p>
+<p>The true and floor division APIs will look for the corresponding slots and
+call that; when that slot is <code class="docutils literal notranslate"><span class="pre">NULL</span></code>, they will raise an exception.  There is
+no fallback to the classic divide slot.</p>
+<p>In Python 3.0, the classic division semantics will be removed; the classic
+division APIs will become synonymous with true division.</p>
+</div>
+<div class="section" id="command-line-option">
+<h2><a class="toc-backref" href="#id21">Command Line Option</a><a class="headerlink" href="#command-line-option" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">-Q</span></code> command line option takes a string argument that can take four
+values: <code class="docutils literal notranslate"><span class="pre">old</span></code>, <code class="docutils literal notranslate"><span class="pre">warn</span></code>, <code class="docutils literal notranslate"><span class="pre">warnall</span></code>, or <code class="docutils literal notranslate"><span class="pre">new</span></code>.  The default is <code class="docutils literal notranslate"><span class="pre">old</span></code>
+in Python 2.2 but will change to <code class="docutils literal notranslate"><span class="pre">warn</span></code> in later 2.x versions.  The <code class="docutils literal notranslate"><span class="pre">old</span></code>
+value means the classic division operator acts as described.  The <code class="docutils literal notranslate"><span class="pre">warn</span></code>
+value means the classic division operator issues a warning (a
+<code class="docutils literal notranslate"><span class="pre">DeprecationWarning</span></code> using the standard warning framework) when applied
+to ints or longs.  The <code class="docutils literal notranslate"><span class="pre">warnall</span></code> value also issues warnings for classic
+division when applied to floats or complex; this is for use by the
+<code class="docutils literal notranslate"><span class="pre">fixdiv.py</span></code> conversion script mentioned below.  The <code class="docutils literal notranslate"><span class="pre">new</span></code> value changes
+the default globally so that the <code class="docutils literal notranslate"><span class="pre">/</span></code> operator is always interpreted as
+true division.  The <code class="docutils literal notranslate"><span class="pre">new</span></code> option is only intended for use in certain
+educational environments, where true division is required, but asking the
+students to include the future division statement in all their code would be a
+problem.</p>
+<p>This option will not be supported in Python 3.0; Python 3.0 will always
+interpret <code class="docutils literal notranslate"><span class="pre">/</span></code> as true division.</p>
+<p>(This option was originally proposed as <code class="docutils literal notranslate"><span class="pre">-D</span></code>, but that turned out to be an
+existing option for Jython, hence the Q – mnemonic for Quotient.  Other names
+have been proposed, like <code class="docutils literal notranslate"><span class="pre">-Qclassic</span></code>, <code class="docutils literal notranslate"><span class="pre">-Qclassic-warn</span></code>, <code class="docutils literal notranslate"><span class="pre">-Qtrue</span></code>, or
+<code class="docutils literal notranslate"><span class="pre">-Qold_division</span></code> etc.; these seem more verbose to me without much advantage.
+After all the term classic division is not used in the language at all (only
+in the PEP), and the term true division is rarely used in the language – only
+in <code class="docutils literal notranslate"><span class="pre">__truediv__</span></code>.)</p>
+</div>
+<div class="section" id="semantics-of-floor-division">
+<h2><a class="toc-backref" href="#id22">Semantics of Floor Division</a><a class="headerlink" href="#semantics-of-floor-division" title="Permalink to this headline">¶</a></h2>
+<p>Floor division will be implemented in all the Python numeric types, and will
+have the semantics of:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">a</span> <span class="o">//</span> <span class="n">b</span> <span class="o">==</span> <span class="n">floor</span><span class="p">(</span><span class="n">a</span><span class="o">/</span><span class="n">b</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>except that the result type will be the common type into which <em>a</em> and <em>b</em> are
+coerced before the operation.</p>
+<p>Specifically, if <em>a</em> and <em>b</em> are of the same type, <code class="docutils literal notranslate"><span class="pre">a//b</span></code> will be of that
+type too.  If the inputs are of different types, they are first coerced to a
+common type using the same rules used for all other arithmetic operators.</p>
+<p>In particular, if <em>a</em> and <em>b</em> are both ints or longs, the result has the same
+type and value as for classic division on these types (including the case of
+mixed input types; <code class="docutils literal notranslate"><span class="pre">int//long</span></code> and <code class="docutils literal notranslate"><span class="pre">long//int</span></code> will both return a long).</p>
+<p>For floating point inputs, the result is a float.  For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mf">3.5</span><span class="o">//</span><span class="mf">2.0</span> <span class="o">==</span> <span class="mf">1.0</span>
+</pre></div>
+</div>
+<p>For complex numbers, <code class="docutils literal notranslate"><span class="pre">//</span></code> raises an exception, since <code class="docutils literal notranslate"><span class="pre">floor()</span></code> of a
+complex number is not allowed.</p>
+<p>For user-defined classes and extension types, all semantics are up to the
+implementation of the class or type.</p>
+</div>
+<div class="section" id="semantics-of-true-division">
+<h2><a class="toc-backref" href="#id23">Semantics of True Division</a><a class="headerlink" href="#semantics-of-true-division" title="Permalink to this headline">¶</a></h2>
+<p>True division for ints and longs will convert the arguments to float and then
+apply a float division.  That is, even <code class="docutils literal notranslate"><span class="pre">2/1</span></code> will return a <code class="docutils literal notranslate"><span class="pre">float</span> <span class="pre">(2.0)</span></code>,
+not an int.  For floats and complex, it will be the same as classic division.</p>
+<p>The 2.2 implementation of true division acts as if the float type had
+unbounded range, so that overflow doesn’t occur unless the magnitude of the
+mathematical <em>result</em> is too large to represent as a float.  For example,
+after <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">=</span> <span class="pre">1L</span> <span class="pre">&lt;&lt;</span> <span class="pre">40000</span></code>, <code class="docutils literal notranslate"><span class="pre">float(x)</span></code> raises <code class="docutils literal notranslate"><span class="pre">OverflowError</span></code> (note that
+this is also new in 2.2: previously the outcome was platform-dependent, most
+commonly a float infinity).  But <code class="docutils literal notranslate"><span class="pre">x/x</span></code> returns 1.0 without exception,
+while <code class="docutils literal notranslate"><span class="pre">x/1</span></code> raises <code class="docutils literal notranslate"><span class="pre">OverflowError</span></code>.</p>
+<p>Note that for int and long arguments, true division may lose information; this
+is in the nature of true division (as long as rationals are not in the
+language).  Algorithms that consciously use longs should consider using
+<code class="docutils literal notranslate"><span class="pre">//</span></code>, as true division of longs retains no more than 53 bits of precision
+(on most platforms).</p>
+<p>If and when a rational type is added to Python (see PEP 239 <a class="footnote-reference brackets" href="#id12" id="id3">2</a>), true
+division for ints and longs should probably return a rational.  This avoids
+the problem with true division of ints and longs losing information.  But
+until then, for consistency, float is the only choice for true division.</p>
+</div>
+<div class="section" id="the-future-division-statement">
+<h2><a class="toc-backref" href="#id24">The Future Division Statement</a><a class="headerlink" href="#the-future-division-statement" title="Permalink to this headline">¶</a></h2>
+<p>If <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">__future__</span> <span class="pre">import</span> <span class="pre">division</span></code> is present in a module, or if
+<code class="docutils literal notranslate"><span class="pre">-Qnew</span></code> is used, the <code class="docutils literal notranslate"><span class="pre">/</span></code> and <code class="docutils literal notranslate"><span class="pre">/=</span></code> operators are translated to true
+division opcodes; otherwise they are translated to classic division (until
+Python 3.0 comes along, where they are always translated to true division).</p>
+<p>The future division statement has no effect on the recognition or translation
+of <code class="docutils literal notranslate"><span class="pre">//</span></code> and <code class="docutils literal notranslate"><span class="pre">//=</span></code>.</p>
+<p>See PEP 236 <a class="footnote-reference brackets" href="#id14" id="id4">4</a> for the general rules for future statements.</p>
+<p>(It has been proposed to use a longer phrase, like <em>true_division</em> or
+<em>modern_division</em>.  These don’t seem to add much information.)</p>
+</div>
+<div class="section" id="open-issues">
+<h2><a class="toc-backref" href="#id25">Open Issues</a><a class="headerlink" href="#open-issues" title="Permalink to this headline">¶</a></h2>
+<p>We expect that these issues will be resolved over time, as more feedback is
+received or we gather more experience with the initial implementation.</p>
+<ul class="simple">
+<li>It has been proposed to call <code class="docutils literal notranslate"><span class="pre">//</span></code> the quotient operator, and the <code class="docutils literal notranslate"><span class="pre">/</span></code>
+operator the ratio operator.  I’m not sure about this – for some people
+quotient is just a synonym for division, and ratio suggests rational
+numbers, which is wrong.  I prefer the terminology to be slightly awkward
+if that avoids unambiguity.  Also, for some folks <em>quotient</em> suggests
+truncation towards zero, not towards infinity as <em>floor division</em>
+says explicitly.</li>
+<li>It has been argued that a command line option to change the default is
+evil.  It can certainly be dangerous in the wrong hands: for example, it
+would be impossible to combine a 3rd party library package that requires
+<code class="docutils literal notranslate"><span class="pre">-Qnew</span></code> with another one that requires <code class="docutils literal notranslate"><span class="pre">-Qold</span></code>.  But I believe that the
+VPython folks need a way to enable true division by default, and other
+educators might need the same.  These usually have enough control over the
+library packages available in their environment.</li>
+<li>For classes to have to support all three of <code class="docutils literal notranslate"><span class="pre">__div__()</span></code>,
+<code class="docutils literal notranslate"><span class="pre">__floordiv__()</span></code> and <code class="docutils literal notranslate"><span class="pre">__truediv__()</span></code> seems painful; and what to do in
+3.0?  Maybe we only need <code class="docutils literal notranslate"><span class="pre">__div__()</span></code> and <code class="docutils literal notranslate"><span class="pre">__floordiv__()</span></code>, or maybe at
+least true division should try <code class="docutils literal notranslate"><span class="pre">__truediv__()</span></code> first and <code class="docutils literal notranslate"><span class="pre">__div__()</span></code>
+second.</li>
+</ul>
+</div>
+<div class="section" id="resolved-issues">
+<h2><a class="toc-backref" href="#id26">Resolved Issues</a><a class="headerlink" href="#resolved-issues" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p>Issue:  For very large long integers, the definition of true division as
+returning a float causes problems, since the range of Python longs is much
+larger than that of Python floats.  This problem will disappear if and when
+rational numbers are supported.</p>
+<p>Resolution:  For long true division, Python uses an internal float type with
+native double precision but unbounded range, so that OverflowError doesn’t
+occur unless the quotient is too large to represent as a native double.</p>
+</li>
+<li><p>Issue:  In the interim, maybe the long-to-float conversion could be made to
+raise <code class="docutils literal notranslate"><span class="pre">OverflowError</span></code> if the long is out of range.</p>
+<p>Resolution:  This has been implemented, but, as above, the magnitude of the
+inputs to long true division doesn’t matter; only the magnitude of the
+quotient matters.</p>
+</li>
+<li><p>Issue:  Tim Peters will make sure that whenever an in-range float is
+returned, decent precision is guaranteed.</p>
+<p>Resolution:  Provided the quotient of long true division is representable as
+a float, it suffers no more than 3 rounding errors:  one each for converting
+the inputs to an internal float type with native double precision but
+unbounded range, and one more for the division.  However, note that if the
+magnitude of the quotient is too <em>small</em> to represent as a native double,
+0.0 is returned without exception (“silent underflow”).</p>
+</li>
+</ul>
+</div>
+<div class="section" id="faq">
+<h2><a class="toc-backref" href="#id27">FAQ</a><a class="headerlink" href="#faq" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="when-will-python-3-0-be-released">
+<h3><a class="toc-backref" href="#id28">When will Python 3.0 be released?</a><a class="headerlink" href="#when-will-python-3-0-be-released" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div>We don’t plan that long ahead, so we can’t say for sure.  We want to allow
+at least two years for the transition.  If Python 3.0 comes out sooner,
+we’ll keep the 2.x line alive for backwards compatibility until at least
+two years from the release of Python 2.2.  In practice, you will be able
+to continue to use the Python 2.x line for several years after Python 3.0
+is released, so you can take your time with the transition.  Sites are
+expected to have both Python 2.x and Python 3.x installed simultaneously.</div></blockquote>
+</div>
+<div class="section" id="why-isn-t-true-division-called-float-division">
+<h3><a class="toc-backref" href="#id29">Why isn’t true division called float division?</a><a class="headerlink" href="#why-isn-t-true-division-called-float-division" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div>Because I want to keep the door open to <em>possibly</em> introducing rationals
+and making 1/2 return a rational rather than a float.  See PEP 239 <a class="footnote-reference brackets" href="#id12" id="id5">2</a>.</div></blockquote>
+</div>
+<div class="section" id="why-is-there-a-need-for-truediv-and-itruediv">
+<h3><a class="toc-backref" href="#id30">Why is there a need for <code class="docutils literal notranslate"><span class="pre">__truediv__</span></code> and <code class="docutils literal notranslate"><span class="pre">__itruediv__</span></code>?</a><a class="headerlink" href="#why-is-there-a-need-for-truediv-and-itruediv" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div>We don’t want to make user-defined classes second-class citizens.
+Certainly not with the type/class unification going on.</div></blockquote>
+</div>
+<div class="section" id="how-do-i-write-code-that-works-under-the-classic-rules-as-well-as-under-the-new-rules-without-using-or-a-future-division-statement">
+<h3><a class="toc-backref" href="#id31">How do I write code that works under the classic rules as well as under the new rules without using <code class="docutils literal notranslate"><span class="pre">//</span></code> or a future division statement?</a><a class="headerlink" href="#how-do-i-write-code-that-works-under-the-classic-rules-as-well-as-under-the-new-rules-without-using-or-a-future-division-statement" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div>Use <code class="docutils literal notranslate"><span class="pre">x*1.0/y</span></code> for true division, <code class="docutils literal notranslate"><span class="pre">divmod(x,</span> <span class="pre">y)</span></code> <a class="footnote-reference brackets" href="#id10" id="id6">0</a> for int
+division.  Especially the latter is best hidden inside a function.  You
+may also write <code class="docutils literal notranslate"><span class="pre">float(x)/y</span></code> for true division if you are sure that you
+don’t expect complex numbers.  If you know your integers are never
+negative, you can use <code class="docutils literal notranslate"><span class="pre">int(x/y)</span></code> – while the documentation of <code class="docutils literal notranslate"><span class="pre">int()</span></code>
+says that <code class="docutils literal notranslate"><span class="pre">int()</span></code> can round or truncate depending on the C
+implementation, we know of no C implementation that doesn’t truncate, and
+we’re going to change the spec for <code class="docutils literal notranslate"><span class="pre">int()</span></code> to promise truncation.  Note
+that classic division (and floor division) round towards negative
+infinity, while <code class="docutils literal notranslate"><span class="pre">int()</span></code> rounds towards zero, giving different answers
+for negative numbers.</div></blockquote>
+</div>
+<div class="section" id="how-do-i-specify-the-division-semantics-for-input-compile-execfile-eval-and-exec">
+<h3><a class="toc-backref" href="#id32">How do I specify the division semantics for <code class="docutils literal notranslate"><span class="pre">input()</span></code>, <code class="docutils literal notranslate"><span class="pre">compile()</span></code>, <code class="docutils literal notranslate"><span class="pre">execfile()</span></code>, <code class="docutils literal notranslate"><span class="pre">eval()</span></code> and <code class="docutils literal notranslate"><span class="pre">exec</span></code>?</a><a class="headerlink" href="#how-do-i-specify-the-division-semantics-for-input-compile-execfile-eval-and-exec" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div>They inherit the choice from the invoking module.  PEP 236 <a class="footnote-reference brackets" href="#id14" id="id7">4</a> now lists
+this as a resolved problem, referring to PEP 264 <a class="footnote-reference brackets" href="#id15" id="id8">5</a>.</div></blockquote>
+</div>
+<div class="section" id="what-about-code-compiled-by-the-codeop-module">
+<h3><a class="toc-backref" href="#id33">What about code compiled by the codeop module?</a><a class="headerlink" href="#what-about-code-compiled-by-the-codeop-module" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div>This is dealt with properly; see PEP 264 <a class="footnote-reference brackets" href="#id15" id="id9">5</a>.</div></blockquote>
+</div>
+<div class="section" id="will-there-be-conversion-tools-or-aids">
+<h3><a class="toc-backref" href="#id34">Will there be conversion tools or aids?</a><a class="headerlink" href="#will-there-be-conversion-tools-or-aids" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div>Certainly.  While these are outside the scope of the PEP, I should point
+out two simple tools that will be released with Python 2.2a3:
+<code class="docutils literal notranslate"><span class="pre">Tools/scripts/finddiv.py</span></code> finds division operators (slightly smarter
+than <code class="docutils literal notranslate"><span class="pre">grep</span> <span class="pre">/</span></code>) and <code class="docutils literal notranslate"><span class="pre">Tools/scripts/fixdiv.py</span></code> can produce patches based
+on run-time analysis.</div></blockquote>
+</div>
+<div class="section" id="why-is-my-question-not-answered-here">
+<h3><a class="toc-backref" href="#id35">Why is my question not answered here?</a><a class="headerlink" href="#why-is-my-question-not-answered-here" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div>Because we weren’t aware of it.  If it’s been discussed on c.l.py and you
+believe the answer is of general interest, please notify the second
+author.  (We don’t have the time or inclination to answer every question
+sent in private email, hence the requirement that it be discussed on
+c.l.py first.)</div></blockquote>
+</div>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id36">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>Essentially everything mentioned here is implemented in CVS and will be
+released with Python 2.2a3; most of it was already released with Python 2.2a2.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id37">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id10"><span class="brackets">0</span><span class='fn-backref'><em> (<a href="#id1">1</a>, <a href="#id2">2</a>, <a href="#id6">3</a>) </em></span></dt>
+<dd>PEP 228, Reworking Python’s Numeric Model
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0228/">http://www.python.org/dev/peps/pep-0228/</a></dd>
+<dt class="label" id="id11"><span class="brackets">1</span></dt>
+<dd>PEP 237, Unifying Long Integers and Integers, Zadka,
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0237/">http://www.python.org/dev/peps/pep-0237/</a></dd>
+<dt class="label" id="id12"><span class="brackets">2</span><span class='fn-backref'><em> (<a href="#id3">1</a>, <a href="#id5">2</a>) </em></span></dt>
+<dd>PEP 239, Adding a Rational Type to Python, Zadka,
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0239/">http://www.python.org/dev/peps/pep-0239/</a></dd>
+<dt class="label" id="id13"><span class="brackets">3</span></dt>
+<dd>PEP 240, Adding a Rational Literal to Python, Zadka,
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0240/">http://www.python.org/dev/peps/pep-0240/</a></dd>
+<dt class="label" id="id14"><span class="brackets">4</span><span class='fn-backref'><em> (<a href="#id4">1</a>, <a href="#id7">2</a>) </em></span></dt>
+<dd>PEP 236, Back to the __future__, Peters,
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0236/">http://www.python.org/dev/peps/pep-0236/</a></dd>
+<dt class="label" id="id15"><span class="brackets">5</span><span class='fn-backref'><em> (<a href="#id8">1</a>, <a href="#id9">2</a>) </em></span></dt>
+<dd>PEP 264, Future statements in simulated shells
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0236/">http://www.python.org/dev/peps/pep-0236/</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id38">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0238.txt">https://github.com/python/peps/blob/master/pep-0238.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0238.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0237.html">PEP 0237</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0239.html">PEP 0239</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 238 – Changing the Division Operator</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#variations">Variations</a></li>
+<li><a class="reference internal" href="#alternatives">Alternatives</a></li>
+<li><a class="reference internal" href="#api-changes">API Changes</a></li>
+<li><a class="reference internal" href="#command-line-option">Command Line Option</a></li>
+<li><a class="reference internal" href="#semantics-of-floor-division">Semantics of Floor Division</a></li>
+<li><a class="reference internal" href="#semantics-of-true-division">Semantics of True Division</a></li>
+<li><a class="reference internal" href="#the-future-division-statement">The Future Division Statement</a></li>
+<li><a class="reference internal" href="#open-issues">Open Issues</a></li>
+<li><a class="reference internal" href="#resolved-issues">Resolved Issues</a></li>
+<li><a class="reference internal" href="#faq">FAQ</a><ul>
+<li><a class="reference internal" href="#when-will-python-3-0-be-released">When will Python 3.0 be released?</a></li>
+<li><a class="reference internal" href="#why-isn-t-true-division-called-float-division">Why isn’t true division called float division?</a></li>
+<li><a class="reference internal" href="#why-is-there-a-need-for-truediv-and-itruediv">Why is there a need for <code class="docutils literal notranslate"><span class="pre">__truediv__</span></code> and <code class="docutils literal notranslate"><span class="pre">__itruediv__</span></code>?</a></li>
+<li><a class="reference internal" href="#how-do-i-write-code-that-works-under-the-classic-rules-as-well-as-under-the-new-rules-without-using-or-a-future-division-statement">How do I write code that works under the classic rules as well as under the new rules without using <code class="docutils literal notranslate"><span class="pre">//</span></code> or a future division statement?</a></li>
+<li><a class="reference internal" href="#how-do-i-specify-the-division-semantics-for-input-compile-execfile-eval-and-exec">How do I specify the division semantics for <code class="docutils literal notranslate"><span class="pre">input()</span></code>, <code class="docutils literal notranslate"><span class="pre">compile()</span></code>, <code class="docutils literal notranslate"><span class="pre">execfile()</span></code>, <code class="docutils literal notranslate"><span class="pre">eval()</span></code> and <code class="docutils literal notranslate"><span class="pre">exec</span></code>?</a></li>
+<li><a class="reference internal" href="#what-about-code-compiled-by-the-codeop-module">What about code compiled by the codeop module?</a></li>
+<li><a class="reference internal" href="#will-there-be-conversion-tools-or-aids">Will there be conversion tools or aids?</a></li>
+<li><a class="reference internal" href="#why-is-my-question-not-answered-here">Why is my question not answered here?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

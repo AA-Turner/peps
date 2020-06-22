@@ -1,0 +1,246 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 486 – Make the Python Launcher aware of virtual environments &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 487 – Simpler customisation of class creation" href="pep-0487.html" />
+    <link rel="prev" title="PEP 485 – A Function for testing approximate equality" href="pep-0485.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 486 – Make the Python Launcher aware of virtual environments</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-486-make-the-python-launcher-aware-of-virtual-environments">
+<h1 class="page-title">PEP 486 – Make the Python Launcher aware of virtual environments<a class="headerlink" href="#pep-486-make-the-python-launcher-aware-of-virtual-environments" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">486</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Make the Python Launcher aware of virtual environments</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Paul Moore &lt;p.f.moore&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">12-Feb-2015</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.5</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">12-Feb-2015</dd>
+<dt class="field-odd">Resolution</dt>
+<dd class="field-odd"><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2015-February/138579.html">https://mail.python.org/pipermail/python-dev/2015-February/138579.html</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id3">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id4">Rationale</a></li>
+<li><a class="reference internal" href="#implementation" id="id5">Implementation</a></li>
+<li><a class="reference internal" href="#impact-on-script-launching" id="id6">Impact on Script Launching</a></li>
+<li><a class="reference internal" href="#exclusions" id="id7">Exclusions</a></li>
+<li><a class="reference internal" href="#reference-implementation" id="id8">Reference Implementation</a></li>
+<li><a class="reference internal" href="#references" id="id9">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id10">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id3">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>The Windows installers for Python include a launcher that locates the
+correct Python interpreter to run (see PEP 397).  However, the
+launcher is not aware of virtual environments (virtualenv <a class="footnote-reference brackets" href="#id2" id="id1">1</a> or PEP
+405 based), and so cannot be used to run commands from the active
+virtualenv.</p>
+<p>This PEP proposes making the launcher “virtualenv aware”.  This means
+that when run without specifying an explicit Python interpreter to
+use, the launcher will use the currently active virtualenv, if any,
+before falling back to the configured default Python.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id4">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Windows users with multiple copies of Python installed need a means of
+selecting which one to use.  The Python launcher provides this
+facility by means of a <code class="docutils literal notranslate"><span class="pre">py</span></code> command that can be used to run either a
+configured “default” Python or a specific interpreter, by means of
+command line arguments.  So typical usage would be:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run the Python interactive interpreter</span>
+<span class="n">py</span>
+
+<span class="c1"># Execute an installed module</span>
+<span class="n">py</span> <span class="o">-</span><span class="n">m</span> <span class="n">pip</span> <span class="n">install</span> <span class="n">pytest</span>
+<span class="n">py</span> <span class="o">-</span><span class="n">m</span> <span class="n">pytest</span>
+</pre></div>
+</div>
+<p>When using virtual environments, the <code class="docutils literal notranslate"><span class="pre">py</span></code> launcher is unaware that a
+virtualenv is active, and will continue to use the system Python.  So
+different command invocations are needed to run the same commands in a
+virtualenv:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run the Python interactive interpreter</span>
+<span class="n">python</span>
+
+<span class="c1"># Execute an installed module (these could use python -m,</span>
+<span class="c1"># which is longer to type but is a little more similar to the</span>
+<span class="c1"># launcher approach)</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="n">pytest</span>
+<span class="n">py</span><span class="o">.</span><span class="n">test</span>
+</pre></div>
+</div>
+<p>Having to use different commands is error-prone, and in many cases
+the error is difficult to spot immediately. The PEP proposes making
+the <code class="docutils literal notranslate"><span class="pre">py</span></code> command usable with virtual environments, so that the first
+form of command can be used in all cases.</p>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id5">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>Both <code class="docutils literal notranslate"><span class="pre">virtualenv</span></code> and the core <code class="docutils literal notranslate"><span class="pre">venv</span></code> module set an environment
+variable <code class="docutils literal notranslate"><span class="pre">VIRTUAL_ENV</span></code> when activating a virtualenv.  This PEP
+proposes that the launcher checks for the <code class="docutils literal notranslate"><span class="pre">VIRTUAL_ENV</span></code> environment
+variable whenever it would run the “default” Python interpreter for
+the system (i.e., when no specific version flags such as <code class="docutils literal notranslate"><span class="pre">py</span> <span class="pre">-2.7</span></code>
+are used) and if present, run the Python interpreter for the
+virtualenv rather than the default system Python.</p>
+<p>The “default” Python interpreter referred to above is (as per PEP 397)
+either the latest version of Python installed on the system, or
+a version configured via the <code class="docutils literal notranslate"><span class="pre">py.ini</span></code> configuration file.  When the
+user specifies an explicit Python version on the command line, this
+will always be used (as at present).</p>
+</div>
+<div class="section" id="impact-on-script-launching">
+<h2><a class="toc-backref" href="#id6">Impact on Script Launching</a><a class="headerlink" href="#impact-on-script-launching" title="Permalink to this headline">¶</a></h2>
+<p>As well as interactive use, the launcher is used as the Windows file
+association for Python scripts.  In that case, a “shebang” (<code class="docutils literal notranslate"><span class="pre">#!</span></code>)
+line at the start of the script is used to identify the interpreter to
+run.  A fully-qualified path can be used, or a version-specific Python
+(<code class="docutils literal notranslate"><span class="pre">python3</span></code> or <code class="docutils literal notranslate"><span class="pre">python2</span></code>, or even <code class="docutils literal notranslate"><span class="pre">python3.5</span></code>), or the generic
+<code class="docutils literal notranslate"><span class="pre">python</span></code>, which means to use the default interpreter.</p>
+<p>The launcher also looks for the specific shebang line
+<code class="docutils literal notranslate"><span class="pre">#!/usr/bin/env</span> <span class="pre">python</span></code>. On Unix, the <code class="docutils literal notranslate"><span class="pre">env</span></code> program searches for a
+command on <code class="docutils literal notranslate"><span class="pre">$PATH</span></code> and runs the command so located. Similarly, with
+this shebang line, the launcher will look for a copy of <code class="docutils literal notranslate"><span class="pre">python.exe</span></code>
+on the user’s current <code class="docutils literal notranslate"><span class="pre">%PATH%</span></code> and will run that copy.</p>
+<p>As activating a virtualenv means that it is added to <code class="docutils literal notranslate"><span class="pre">PATH</span></code>, no
+special handling is needed to run scripts with the active virtualenv -
+they just need to use the <code class="docutils literal notranslate"><span class="pre">#!/usr/bin/env</span> <span class="pre">python</span></code> shebang line,
+exactly as on Unix. (If there is no activated virtualenv, and no
+<code class="docutils literal notranslate"><span class="pre">python.exe</span></code> on <code class="docutils literal notranslate"><span class="pre">PATH</span></code>, the launcher will look for a default
+Python exactly as if the shebang line had said <code class="docutils literal notranslate"><span class="pre">#!python</span></code>).</p>
+</div>
+<div class="section" id="exclusions">
+<h2><a class="toc-backref" href="#id7">Exclusions</a><a class="headerlink" href="#exclusions" title="Permalink to this headline">¶</a></h2>
+<p>The PEP makes no attempt to promote the use of the launcher for
+running Python on Windows.  Most existing documentation assumes the
+user of <code class="docutils literal notranslate"><span class="pre">python</span></code> as the command to run Python, and (for example)
+<code class="docutils literal notranslate"><span class="pre">pip</span></code> to run an installed Python command.  This documentation is not
+expected to change, and users who choose to manage their <code class="docutils literal notranslate"><span class="pre">PATH</span></code>
+environment variable can continue to use this form.  The focus of this
+PEP is purely on allowing users who prefer to use the launcher when
+dealing with their system Python installations, to be able to continue
+to do so when using virtual environments.</p>
+</div>
+<div class="section" id="reference-implementation">
+<h2><a class="toc-backref" href="#id8">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>A patch implementing the proposed behaviour is available at
+<a class="reference external" href="http://bugs.python.org/issue23465">http://bugs.python.org/issue23465</a></p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id9">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><a class="reference external" href="https://virtualenv.pypa.io/">https://virtualenv.pypa.io/</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id10">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0486.txt">https://github.com/python/peps/blob/master/pep-0486.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0486.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0485.html">PEP 0485</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0487.html">PEP 0487</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 486 – Make the Python Launcher aware of virtual environments</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#impact-on-script-launching">Impact on Script Launching</a></li>
+<li><a class="reference internal" href="#exclusions">Exclusions</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

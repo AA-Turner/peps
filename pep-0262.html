@@ -1,0 +1,439 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 262 – A Database of Installed Python Packages &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 263 – Defining Python Source Code Encodings" href="pep-0263.html" />
+    <link rel="prev" title="PEP 261 – Support for “wide” Unicode characters" href="pep-0261.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 262 – A Database of Installed Python Packages</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-262-a-database-of-installed-python-packages">
+<h1 class="page-title">PEP 262 – A Database of Installed Python Packages<a class="headerlink" href="#pep-262-a-database-of-installed-python-packages" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">262</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">A Database of Installed Python Packages</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">A.M. Kuchling &lt;amk&#32;&#97;t&#32;amk.ca&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Deferred</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">08-Jul-2001</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd">27-Mar-2002</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#introduction" id="id4">Introduction</a></li>
+<li><a class="reference internal" href="#requirements" id="id5">Requirements</a></li>
+<li><a class="reference internal" href="#database-location" id="id6">Database Location</a></li>
+<li><a class="reference internal" href="#database-contents" id="id7">Database Contents</a><ul>
+<li><a class="reference internal" href="#pkg-info-section" id="id8">PKG-INFO section</a></li>
+<li><a class="reference internal" href="#files-section" id="id9">FILES section</a></li>
+<li><a class="reference internal" href="#requires-section" id="id10">REQUIRES section</a></li>
+<li><a class="reference internal" href="#provides-section" id="id11">PROVIDES section</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#api-description" id="id12">API Description</a></li>
+<li><a class="reference internal" href="#deliverables" id="id13">Deliverables</a></li>
+<li><a class="reference internal" href="#open-issues" id="id14">Open Issues</a></li>
+<li><a class="reference internal" href="#rejected-suggestions" id="id15">Rejected Suggestions</a></li>
+<li><a class="reference internal" href="#references" id="id16">References</a></li>
+<li><a class="reference internal" href="#acknowledgements" id="id17">Acknowledgements</a></li>
+<li><a class="reference internal" href="#copyright" id="id18">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="introduction">
+<h2><a class="toc-backref" href="#id4">Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>This PEP describes a format for a database of the Python software
+installed on a system.</p>
+<p>(In this document, the term “distribution” is used to mean a set
+of code that’s developed and distributed together.  A “distribution”
+is the same as a Red Hat or Debian package, but the term “package”
+already has a meaning in Python terminology, meaning “a directory
+with an <code class="docutils literal notranslate"><span class="pre">__init__.py</span></code> file in it.”)</p>
+</div>
+<div class="section" id="requirements">
+<h2><a class="toc-backref" href="#id5">Requirements</a><a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h2>
+<p>We need a way to figure out what distributions, and what versions of
+those distributions, are installed on a system.  We want to provide
+features similar to CPAN, APT, or RPM.  Required use cases that
+should be supported are:</p>
+<ul class="simple">
+<li>Is distribution X on a system?</li>
+<li>What version of distribution X is installed?</li>
+<li>Where can the new version of distribution X be found?  (This can
+be defined as either “a home page where the user can go and
+find a download link”, or “a place where a program can find
+the newest version?”  Both should probably be supported.)</li>
+<li>What files did distribution X put on my system?</li>
+<li>What distribution did the file x/y/z.py come from?</li>
+<li>Has anyone modified x/y/z.py locally?</li>
+<li>What other distributions does this software need?</li>
+<li>What Python modules does this distribution provide?</li>
+</ul>
+</div>
+<div class="section" id="database-location">
+<h2><a class="toc-backref" href="#id6">Database Location</a><a class="headerlink" href="#database-location" title="Permalink to this headline">¶</a></h2>
+<p>The database lives in a bunch of files under
+&lt;prefix&gt;/lib/python&lt;version&gt;/install-db/.  This location will be
+called INSTALLDB through the remainder of this PEP.</p>
+<p>The structure of the database is deliberately kept simple; each
+file in this directory or its subdirectories (if any) describes a
+single distribution.  Binary packagings of Python software such as
+RPMs can then update Python’s database by just installing the
+corresponding file into the INSTALLDB directory.</p>
+<p>The rationale for scanning subdirectories is that we can move to a
+directory-based indexing scheme if the database directory contains
+too many entries.  For example, this would let us transparently
+switch from INSTALLDB/Numeric to INSTALLDB/N/Nu/Numeric or some
+similar hashing scheme.</p>
+</div>
+<div class="section" id="database-contents">
+<h2><a class="toc-backref" href="#id7">Database Contents</a><a class="headerlink" href="#database-contents" title="Permalink to this headline">¶</a></h2>
+<p>Each file in INSTALLDB or its subdirectories describes a single
+distribution, and has the following contents:</p>
+<p>An initial line listing the sections in this file, separated
+by whitespace.  Currently this will always be ‘PKG-INFO FILES
+REQUIRES PROVIDES’.  This is for future-proofing; if we add a
+new section, for example to list documentation files, then
+we’d add a DOCS section and list it in the contents.  Sections
+are always separated by blank lines.</p>
+<p>A distribution that uses the Distutils for installation should
+automatically update the database.  Distributions that roll their
+own installation will have to use the database’s API to
+manually add or update their own entry.  System package managers
+such as RPM or pkgadd can just create the new file in the
+INSTALLDB directory.</p>
+<p>Each section of the file is used for a different purpose.</p>
+<div class="section" id="pkg-info-section">
+<h3><a class="toc-backref" href="#id8">PKG-INFO section</a><a class="headerlink" href="#pkg-info-section" title="Permalink to this headline">¶</a></h3>
+<p>An initial set of RFC-822 headers containing the distribution
+information for a file, as described in PEP 241, “Metadata for
+Python Software Packages”.</p>
+</div>
+<div class="section" id="files-section">
+<h3><a class="toc-backref" href="#id9">FILES section</a><a class="headerlink" href="#files-section" title="Permalink to this headline">¶</a></h3>
+<p>An entry for each file installed by the
+distribution. Generated files such as .pyc and .pyo files are
+on this list as well as the original .py files installed by a
+distribution; their checksums won’t be stored or checked,
+though.</p>
+<p>Each file’s entry is a single tab-delimited line that contains
+the following fields:</p>
+<ul class="simple">
+<li>The file’s full path, as installed on the system.</li>
+<li>The file’s size</li>
+<li>The file’s permissions.  On Windows, this field will always be
+‘unknown’</li>
+<li>The owner and group of the file, separated by a tab.
+On Windows, these fields will both be ‘unknown’.</li>
+<li>A SHA1 digest of the file, encoded in hex.  For generated files
+such as *.pyc files, this field must contain the string “-“,
+which indicates that the file’s checksum should not be verified.</li>
+</ul>
+</div>
+<div class="section" id="requires-section">
+<h3><a class="toc-backref" href="#id10">REQUIRES section</a><a class="headerlink" href="#requires-section" title="Permalink to this headline">¶</a></h3>
+<p>This section is a list of strings giving the services required for
+this module distribution to run properly.  This list includes the
+distribution name (“python-stdlib”) and module names (“rfc822”,
+“htmllib”, “email”, “email.Charset”).  It will be specified
+by an extra ‘requires’ argument to the <code class="docutils literal notranslate"><span class="pre">distutils.core.setup()</span></code>
+function.  For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">setup</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">requires</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;xml.utils.iso8601&#39;</span><span class="p">,</span>
+</pre></div>
+</div>
+<p>Eventually there may be automated tools that look through all of
+the code and produce a list of requirements, but it’s unlikely
+that these tools can handle all possible cases; a manual
+way to specify requirements will always be necessary.</p>
+</div>
+<div class="section" id="provides-section">
+<h3><a class="toc-backref" href="#id11">PROVIDES section</a><a class="headerlink" href="#provides-section" title="Permalink to this headline">¶</a></h3>
+<p>This section is a list of strings giving the services provided by
+an installed distribution.  This list includes the distribution name
+(“python-stdlib”) and module names (“rfc822”, “htmllib”, “email”,
+“email.Charset”).</p>
+<p>XXX should files be listed?  e.g. $PREFIX/lib/color-table.txt,
+to pick up data files, required scripts, etc.</p>
+<p>Eventually there may be an option to let module developers add
+their own strings to this section.  For example, you might add
+“XML parser” to this section, and other module distributions could
+then list “XML parser” as one of their dependencies to indicate
+that multiple different XML parsers can be used.  For now this
+ability isn’t supported because it raises too many issues: do we
+need a central registry of legal strings, or just let people put
+whatever they like?  Etc., etc…</p>
+</div>
+</div>
+<div class="section" id="api-description">
+<h2><a class="toc-backref" href="#id12">API Description</a><a class="headerlink" href="#api-description" title="Permalink to this headline">¶</a></h2>
+<p>There’s a single fundamental class, InstallationDatabase.  The
+code for it lives in distutils/install_db.py.  (XXX any
+suggestions for alternate locations in the standard library, or an
+alternate module name?)</p>
+<p>The InstallationDatabase returns instances of Distribution that contain
+all the information about an installed distribution.</p>
+<p>XXX Several of the fields in Distribution are duplicates of ones in
+distutils.dist.Distribution.  Probably they should be factored out
+into the Distribution class proposed here, but can this be done in a
+backward-compatible way?</p>
+<p>InstallationDatabase has the following interface:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">InstallationDatabase</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span> <span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;InstallationDatabase(path:string)</span>
+<span class="sd">        Read the installation database rooted at the specified path.</span>
+<span class="sd">        If path is None, INSTALLDB is used as the default.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">get_distribution</span> <span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">distribution_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get_distribution(distribution_name:string) : Distribution</span>
+<span class="sd">        Get the object corresponding to a single distribution.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">list_distributions</span> <span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;list_distributions() : [Distribution]</span>
+<span class="sd">        Return a list of all distributions installed on the system,</span>
+<span class="sd">        enumerated in no particular order.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">find_distribution</span> <span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;find_file(path:string) : Distribution</span>
+<span class="sd">        Search and return the distribution containing the file &#39;path&#39;.</span>
+<span class="sd">        Returns None if the file doesn&#39;t belong to any distribution</span>
+<span class="sd">        that the InstallationDatabase knows about.</span>
+<span class="sd">        XXX should this work for directories?</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+<span class="k">class</span> <span class="nc">Distribution</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Instance attributes:</span>
+<span class="sd">    name : string</span>
+<span class="sd">      Distribution name</span>
+<span class="sd">    files : {string : (size:int, perms:int, owner:string, group:string,</span>
+<span class="sd">                       digest:string)}</span>
+<span class="sd">       Dictionary mapping the path of a file installed by this distribution</span>
+<span class="sd">       to information about the file.</span>
+
+<span class="sd">    The following fields all come from PEP 241.</span>
+
+<span class="sd">    version : distutils.version.Version</span>
+<span class="sd">      Version of this distribution</span>
+<span class="sd">    platform : [string]</span>
+<span class="sd">    summary : string</span>
+<span class="sd">    description : string</span>
+<span class="sd">    keywords : string</span>
+<span class="sd">    home_page : string</span>
+<span class="sd">    author : string</span>
+<span class="sd">    author_email : string</span>
+<span class="sd">    license : string</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">add_file</span> <span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;add_file(path:string):None</span>
+<span class="sd">        Record the size, ownership, &amp;c., information for an installed file.</span>
+<span class="sd">        XXX as written, this would stat() the file.  Should the size/perms/</span>
+<span class="sd">        checksum all be provided as parameters to this method instead?</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">has_file</span> <span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;has_file(path:string) : Boolean</span>
+<span class="sd">        Returns true if the specified path belongs to a file in this</span>
+<span class="sd">        distribution.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+     <span class="k">def</span> <span class="nf">check_file</span> <span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;check_file(path:string) : Boolean</span>
+<span class="sd">        Checks whether the file&#39;s size, checksum, and ownership match,</span>
+<span class="sd">        returning true if they do.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="deliverables">
+<h2><a class="toc-backref" href="#id13">Deliverables</a><a class="headerlink" href="#deliverables" title="Permalink to this headline">¶</a></h2>
+<p>A description of the database API, to be added to this PEP.</p>
+<p>Patches to the Distutils that 1) implement an InstallationDatabase
+class, 2) Update the database when a new distribution is installed.  3)
+add a simple package management tool, features to be added to this
+PEP.  (Or should that be a separate PEP?)  See <a class="footnote-reference brackets" href="#id3" id="id1">2</a> for the current
+patch.</p>
+</div>
+<div class="section" id="open-issues">
+<h2><a class="toc-backref" href="#id14">Open Issues</a><a class="headerlink" href="#open-issues" title="Permalink to this headline">¶</a></h2>
+<p>PJE suggests the installation database “be potentially present on
+every directory in sys.path, with the contents merged in sys.path
+order.  This would allow home-directory or other
+alternate-location installs to work, and ease the process of a
+distutils install command writing the file.” Nice feature: it does
+mean that package manager tools can take into account Python
+packages that a user has privately installed.</p>
+<p>AMK wonders: what does setup.py do if it’s told to install
+packages to a directory not on sys.path?  Does it write an
+install-db directory to the directory it’s told to write to, or
+does it do nothing?</p>
+<p>Should the package-database file itself be included in the files
+list?  (PJE would think yes, but of course it can’t contain its
+own checksum.  AMK can’t think of a use case where including the
+DB file matters.)</p>
+<p>PJE wonders about writing the package DB file
+<strong>first</strong>, before installing any other files, so that failed partial
+installations can both be backed out, and recognized as broken.
+This PEP may have to specify some algorithm for recognizing this
+situation.</p>
+<p>Should we guarantee the format of installation databases remains
+compatible across Python versions, or is it subject to arbitrary
+change?  Probably we need to guarantee compatibility.</p>
+</div>
+<div class="section" id="rejected-suggestions">
+<h2><a class="toc-backref" href="#id15">Rejected Suggestions</a><a class="headerlink" href="#rejected-suggestions" title="Permalink to this headline">¶</a></h2>
+<p>Instead of using one text file per distribution, one large text
+file or an anydbm file could be used.  This has been rejected for
+a few reasons.  First, performance is probably not an extremely
+pressing concern as the database is only used when installing or
+removing software, a relatively infrequent task.  Scalability also
+likely isn’t a problem, as people may have hundreds of Python
+packages installed, but thousands or tens of thousands seems
+unlikely.  Finally, individual text files are compatible with
+installers such as RPM or DPKG because a binary packager can just
+drop the new database file into the database directory.  If one
+large text file or a binary file were used, the Python database
+would then have to be updated by running a postinstall script.</p>
+<p>On Windows, the permissions and owner/group of a file aren’t
+stored.  Windows does in fact support ownership and access
+permissions, but reading and setting them requires the win32all
+extensions, and they aren’t present in the basic Python installer
+for Windows.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id16">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets">1</span></dt>
+<dd>Michael Muller’s patch (posted to the Distutils-SIG around 28
+Dec 1999) generates a list of installed files.</dd>
+<dt class="label" id="id3"><span class="brackets"><a class="fn-backref" href="#id1">2</a></span></dt>
+<dd>A patch to implement this PEP will be tracked as
+patch #562100 on SourceForge.
+<a class="reference external" href="https://bugs.python.org/issue562100">https://bugs.python.org/issue562100</a> .
+Code implementing the installation database is currently in
+Python CVS in the nondist/sandbox/pep262 directory.</dd>
+</dl>
+</div>
+<div class="section" id="acknowledgements">
+<h2><a class="toc-backref" href="#id17">Acknowledgements</a><a class="headerlink" href="#acknowledgements" title="Permalink to this headline">¶</a></h2>
+<p>Ideas for this PEP originally came from postings by Greg Ward,
+Fred L. Drake Jr., Thomas Heller, Mats Wichmann, Phillip J. Eby,
+and others.</p>
+<p>Many changes and rewrites to this document were suggested by the
+readers of the Distutils SIG.</p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id18">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0262.txt">https://github.com/python/peps/blob/master/pep-0262.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0262.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0261.html">PEP 0261</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0263.html">PEP 0263</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 262 – A Database of Installed Python Packages</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#requirements">Requirements</a></li>
+<li><a class="reference internal" href="#database-location">Database Location</a></li>
+<li><a class="reference internal" href="#database-contents">Database Contents</a><ul>
+<li><a class="reference internal" href="#pkg-info-section">PKG-INFO section</a></li>
+<li><a class="reference internal" href="#files-section">FILES section</a></li>
+<li><a class="reference internal" href="#requires-section">REQUIRES section</a></li>
+<li><a class="reference internal" href="#provides-section">PROVIDES section</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#api-description">API Description</a></li>
+<li><a class="reference internal" href="#deliverables">Deliverables</a></li>
+<li><a class="reference internal" href="#open-issues">Open Issues</a></li>
+<li><a class="reference internal" href="#rejected-suggestions">Rejected Suggestions</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#acknowledgements">Acknowledgements</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

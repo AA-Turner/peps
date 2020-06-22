@@ -1,0 +1,324 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 614 – Relaxing Grammar Restrictions On Decorators &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 615 – Support for the IANA Time Zone Database in the Standard Library" href="pep-0615.html" />
+    <link rel="prev" title="PEP 613 – Explicit Type Aliases" href="pep-0613.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 614 – Relaxing Grammar Restrictions On Decorators</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-614-relaxing-grammar-restrictions-on-decorators">
+<h1 class="page-title">PEP 614 – Relaxing Grammar Restrictions On Decorators<a class="headerlink" href="#pep-614-relaxing-grammar-restrictions-on-decorators" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">614</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Relaxing Grammar Restrictions On Decorators</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Brandt Bucher &lt;brandtbucher&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">Sponsor</dt>
+<dd class="field-even">Guido van Rossum &lt;guido&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd">Accepted</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even">Standards Track</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">10-Feb-2020</dd>
+<dt class="field-even">Python-Version</dt>
+<dd class="field-even">3.9</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd">11-Feb-2020</dd>
+<dt class="field-even">Resolution</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id2">Abstract</a></li>
+<li><a class="reference internal" href="#motivation" id="id3">Motivation</a></li>
+<li><a class="reference internal" href="#rationale" id="id4">Rationale</a><ul>
+<li><a class="reference internal" href="#allowing-any-expression" id="id5">Allowing Any Expression</a></li>
+<li><a class="reference internal" href="#what-counts-as-an-expression" id="id6">What Counts As An “Expression”</a><ul>
+<li><a class="reference internal" href="#tuple-displays-must-be-parenthesized" id="id7">Tuple Displays <em>Must</em> Be Parenthesized</a></li>
+<li><a class="reference internal" href="#named-expressions-need-not-be-parenthesized" id="id8">Named Expressions <em>Need Not</em> Be Parenthesized</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#specification" id="id9">Specification</a></li>
+<li><a class="reference internal" href="#backwards-compatibility" id="id10">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#how-to-teach-this" id="id11">How To Teach This</a></li>
+<li><a class="reference internal" href="#reference-implementation" id="id12">Reference Implementation</a></li>
+<li><a class="reference internal" href="#copyright" id="id13">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id2">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Python currently requires that all decorators consist of a dotted
+name, optionally followed by a single call. This PEP proposes removing
+these limitations and allowing decorators to be any valid expression.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id3">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>When decorators were first being introduced, <a class="reference external" href="https://mail.python.org/archives/list/python-dev&#64;python.org/message/P3JD24UFFPZUUDANOAI6GZAPIGY4CVK7">Guido described</a>
+the motivation to limit their syntax as a preference, not a technical
+requirement:</p>
+<blockquote>
+<div>I have a gut feeling about this one.  I’m not sure where it comes
+from, but I have it…  So while it would be quite easy to change
+the syntax to <code class="docutils literal notranslate"><span class="pre">&#64;test</span></code> in the future, I’d like to stick to with
+the more restricted form unless a real use case is presented where
+allowing <code class="docutils literal notranslate"><span class="pre">&#64;test</span></code> would increase readability.</div></blockquote>
+<p>While these limitations were rarely encountered in practice, <a class="reference external" href="https://bugs.python.org/issue19660">BPO
+issues</a> and <a class="reference external" href="https://mail.python.org/archives/list/python-ideas&#64;python.org/thread/UQOCJH3KOPBP7P3AVNS3OYBGZPR3V2WO/#CAOXYF4GV76AFJNCYSYMQTBM7CIPPH5M">mailing list posts</a>
+have consistently surfaced over the years requesting that they be
+removed. The <a class="reference external" href="https://mail.python.org/archives/list/python-ideas&#64;python.org/thread/WOWD4P323DYDIGUQVWMESDWUG6QOW4MP">most recent one</a>
+(which <a class="reference external" href="https://mail.python.org/archives/list/python-ideas&#64;python.org/message/FKE7ZFGUDCU5WVOE2QTD5XGMCNCOMETV">prompted this proposal</a>)
+contained a good example of code using the <code class="docutils literal notranslate"><span class="pre">PyQt5</span></code> library that
+would become more readable, idiomatic, and maintainable if the
+existing restrictions were relaxed.  Slightly modified:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">buttons</span> <span class="o">=</span> <span class="p">[</span><span class="n">QPushButton</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Button </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)]</span>
+
+<span class="c1"># Do stuff with the list of buttons...</span>
+
+<span class="nd">@buttons</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span>
+<span class="k">def</span> <span class="nf">spam</span><span class="p">():</span>
+    <span class="o">...</span>
+
+<span class="nd">@buttons</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span>
+<span class="k">def</span> <span class="nf">eggs</span><span class="p">():</span>
+    <span class="o">...</span>
+
+<span class="c1"># Do stuff with the list of buttons...</span>
+</pre></div>
+</div>
+<p>Currently, these decorations must be rewritten as something like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">button_0</span> <span class="o">=</span> <span class="n">buttons</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="nd">@button_0</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span>
+<span class="k">def</span> <span class="nf">spam</span><span class="p">():</span>
+    <span class="o">...</span>
+
+<span class="n">button_1</span> <span class="o">=</span> <span class="n">buttons</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+<span class="nd">@button_1</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span>
+<span class="k">def</span> <span class="nf">eggs</span><span class="p">():</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p>Further, the current grammar is already loose enough that it’s trivial
+to hack more complicated decorator expressions together. So rather
+than disallow arbitrarily complex expressions, as intended, the
+current restrictions only make them uglier and less efficient:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Identity function hack:</span>
+
+<span class="k">def</span> <span class="nf">_</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">x</span>
+
+<span class="nd">@_</span><span class="p">(</span><span class="n">buttons</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">spam</span><span class="p">():</span>
+    <span class="o">...</span>
+
+<span class="c1"># eval hack:</span>
+
+<span class="nd">@eval</span><span class="p">(</span><span class="s2">&quot;buttons[1].clicked.connect&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">eggs</span><span class="p">():</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id4">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="allowing-any-expression">
+<h3><a class="toc-backref" href="#id5">Allowing Any Expression</a><a class="headerlink" href="#allowing-any-expression" title="Permalink to this headline">¶</a></h3>
+<p>The decision to allow <em>any</em> valid expression (and not just relaxing
+the current restrictions to allow, for example, subscripting) has
+been considered as the next logical step in the evolution of decorator
+grammar for quite some time.  As <a class="reference external" href="https://mail.python.org/archives/list/python-ideas&#64;python.org/message/CAOXYF4GV76AFJNCYSYMQTBM7CIPPH5M">Guido noted</a>,
+during yet another mailing list thread:</p>
+<blockquote>
+<div>I don’t think it’s reasonable to constrain it less than it
+currently is but more than a general expression.</div></blockquote>
+<p>Special-casing the grammar to allow <em>some</em> useful cases would only
+complicate the current situation, and all but guarantee that the
+process would repeat itself sometime in the future.  Further, one
+purpose of this grammatical change is to discourage the temptation to
+use hacks like the <code class="docutils literal notranslate"><span class="pre">eval</span></code> and identity-function anti-patterns shown
+above.</p>
+<p>In short: if we’re removing somewhat arbitrary restrictions, we should
+remove <em>all</em> of them.</p>
+</div>
+<div class="section" id="what-counts-as-an-expression">
+<h3><a class="toc-backref" href="#id6">What Counts As An “Expression”</a><a class="headerlink" href="#what-counts-as-an-expression" title="Permalink to this headline">¶</a></h3>
+<p>Throughout this document, the word “expression” is used as defined in
+the <a class="reference external" href="https://docs.python.org/3.9/reference/expressions.html#grammar-token-expression">Python Language Reference</a>.
+This can be summarized as “anything that’s valid as a test in <code class="docutils literal notranslate"><span class="pre">if</span></code>,
+<code class="docutils literal notranslate"><span class="pre">elif</span></code>, and <code class="docutils literal notranslate"><span class="pre">while</span></code> blocks”.  This differs subtly from a perhaps
+more popular <a class="reference external" href="https://docs.python.org/3/glossary.html#term-expression">definition</a>, which can
+be summarized as “anything that’s valid as string input to <code class="docutils literal notranslate"><span class="pre">eval</span></code>”.</p>
+<p>This definition of “expression” is convenient in that it fits our
+needs well, and reuses the allowed grammar of existing language
+constructs.  It has two subtle differences from the other definition:</p>
+<div class="section" id="tuple-displays-must-be-parenthesized">
+<h4><a class="toc-backref" href="#id7">Tuple Displays <em>Must</em> Be Parenthesized</a><a class="headerlink" href="#tuple-displays-must-be-parenthesized" title="Permalink to this headline">¶</a></h4>
+<p>This is based on an observation Guido made in the same email.
+Continued immediately from above:</p>
+<blockquote>
+<div><p>Though I wouldn’t allow commas– there’s no way that</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@f</span><span class="p">,</span> <span class="n">g</span>
+<span class="k">def</span> <span class="nf">pooh</span><span class="p">():</span> <span class="o">...</span>
+</pre></div>
+</div>
+<p>can make sense.</p>
+</div></blockquote>
+<p>Indeed, it may even lead inexperienced readers to conclude that
+several decorators are being applied, as if they were stacked.
+Requiring parentheses here makes the (admittedly nonsensical) intent
+clear without imposing further restrictions and grammar complications.</p>
+</div>
+<div class="section" id="named-expressions-need-not-be-parenthesized">
+<h4><a class="toc-backref" href="#id8">Named Expressions <em>Need Not</em> Be Parenthesized</a><a class="headerlink" href="#named-expressions-need-not-be-parenthesized" title="Permalink to this headline">¶</a></h4>
+<p>Here, the the choice of syntax is unambiguous.  <span class="target" id="index-0"></span><a class="pep reference external" href="./pep-0572.html"><strong>PEP 572</strong></a> explains
+why it requires parentheses around top-level expression statements:</p>
+<blockquote>
+<div>This rule is included to simplify the choice for the user between
+an assignment statement and an assignment expression – there is
+no syntactic position where both are valid.</div></blockquote>
+<p>Since an assignment statement is not valid here, assignment
+expressions should not be unnecessarily burdened with parentheses.</p>
+</div>
+</div>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id9">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>The grammar for decorators is currently:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">decorator</span><span class="p">:</span> <span class="s1">&#39;@&#39;</span> <span class="n">dotted_name</span> <span class="p">[</span> <span class="s1">&#39;(&#39;</span> <span class="p">[</span><span class="n">arglist</span><span class="p">]</span> <span class="s1">&#39;)&#39;</span> <span class="p">]</span> <span class="n">NEWLINE</span>
+</pre></div>
+</div>
+<p>This PEP proposes that it be simplified to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">decorator</span><span class="p">:</span> <span class="s1">&#39;@&#39;</span> <span class="n">namedexpr_test</span> <span class="n">NEWLINE</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="backwards-compatibility">
+<h2><a class="toc-backref" href="#id10">Backwards Compatibility</a><a class="headerlink" href="#backwards-compatibility" title="Permalink to this headline">¶</a></h2>
+<p>This new grammar is fully backward-compatible with the existing
+grammar.</p>
+</div>
+<div class="section" id="how-to-teach-this">
+<h2><a class="toc-backref" href="#id11">How To Teach This</a><a class="headerlink" href="#how-to-teach-this" title="Permalink to this headline">¶</a></h2>
+<p>Decorators can continue to be taught as they always have; the average
+Python programmer is likely unaware that the current restriction even
+exists.</p>
+</div>
+<div class="section" id="reference-implementation">
+<h2><a class="toc-backref" href="#id12">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>The author has drafted a CPython implementation, which can be found on
+<a class="reference external" href="https://github.com/brandtbucher/cpython/tree/decorators">GitHub</a>.</p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id13">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document is placed in the public domain or under the
+CC0-1.0-Universal license, whichever is more permissive.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0614.rst">https://github.com/python/peps/blob/master/pep-0614.rst</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0614.rst.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0613.html">PEP 0613</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0615.html">PEP 0615</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 614 – Relaxing Grammar Restrictions On Decorators</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a><ul>
+<li><a class="reference internal" href="#allowing-any-expression">Allowing Any Expression</a></li>
+<li><a class="reference internal" href="#what-counts-as-an-expression">What Counts As An “Expression”</a><ul>
+<li><a class="reference internal" href="#tuple-displays-must-be-parenthesized">Tuple Displays <em>Must</em> Be Parenthesized</a></li>
+<li><a class="reference internal" href="#named-expressions-need-not-be-parenthesized">Named Expressions <em>Need Not</em> Be Parenthesized</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#how-to-teach-this">How To Teach This</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

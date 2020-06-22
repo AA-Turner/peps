@@ -1,0 +1,361 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 273 – Import Modules from Zip Archives &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 274 – Dict Comprehensions" href="pep-0274.html" />
+    <link rel="prev" title="PEP 272 – API for Block Encryption Algorithms v1.0" href="pep-0272.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 273 – Import Modules from Zip Archives</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-273-import-modules-from-zip-archives">
+<h1 class="page-title">PEP 273 – Import Modules from Zip Archives<a class="headerlink" href="#pep-273-import-modules-from-zip-archives" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">273</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Import Modules from Zip Archives</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">jim&#32;&#97;t&#32;interet.com (James C. Ahlstrom)</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">11-Oct-2001</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.3</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">26-Oct-2001</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id8">Abstract</a></li>
+<li><a class="reference internal" href="#note" id="id9">Note</a></li>
+<li><a class="reference internal" href="#specification" id="id10">Specification</a></li>
+<li><a class="reference internal" href="#subdirectory-equivalence" id="id11">Subdirectory Equivalence</a></li>
+<li><a class="reference internal" href="#efficiency" id="id12">Efficiency</a></li>
+<li><a class="reference internal" href="#zlib" id="id13">zlib</a></li>
+<li><a class="reference internal" href="#booting" id="id14">Booting</a></li>
+<li><a class="reference internal" href="#directory-imports" id="id15">Directory Imports</a></li>
+<li><a class="reference internal" href="#benchmarks" id="id16">Benchmarks</a></li>
+<li><a class="reference internal" href="#custom-imports" id="id17">Custom Imports</a></li>
+<li><a class="reference internal" href="#implementation" id="id18">Implementation</a></li>
+<li><a class="reference internal" href="#references" id="id19">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id20">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id8">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP adds the ability to import Python modules
+<code class="docutils literal notranslate"><span class="pre">*.py</span></code>, <code class="docutils literal notranslate"><span class="pre">*.py[co]</span></code> and packages from zip archives.  The
+same code is used to speed up normal directory imports
+provided <code class="docutils literal notranslate"><span class="pre">os.listdir</span></code> is available.</p>
+</div>
+<div class="section" id="note">
+<h2><a class="toc-backref" href="#id9">Note</a><a class="headerlink" href="#note" title="Permalink to this headline">¶</a></h2>
+<p>Zip imports were added to Python 2.3, but the final implementation
+uses an approach different from the one described in this PEP.
+The 2.3 implementation is SourceForge patch #652586 <a class="footnote-reference brackets" href="#id5" id="id1">1</a>, which adds
+new import hooks described in PEP 302.</p>
+<p>The rest of this PEP is therefore only of historical interest.</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id10">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>Currently, <code class="docutils literal notranslate"><span class="pre">sys.path</span></code> is a list of directory names as strings.  If
+this PEP is implemented, an item of <code class="docutils literal notranslate"><span class="pre">sys.path</span></code> can be a string
+naming a zip file archive.  The zip archive can contain a
+subdirectory structure to support package imports.  The zip
+archive satisfies imports exactly as a subdirectory would.</p>
+<p>The implementation is in C code in the Python core and works on
+all supported Python platforms.</p>
+<p>Any files may be present in the zip archive, but only files
+<code class="docutils literal notranslate"><span class="pre">*.py</span></code> and <code class="docutils literal notranslate"><span class="pre">*.py[co]</span></code> are available for import.  Zip import of
+dynamic modules (<code class="docutils literal notranslate"><span class="pre">*.pyd</span></code>, <code class="docutils literal notranslate"><span class="pre">*.so</span></code>) is disallowed.</p>
+<p>Just as <code class="docutils literal notranslate"><span class="pre">sys.path</span></code> currently has default directory names, a default
+zip archive name is added too.  Otherwise there is no way to
+import all Python library files from an archive.</p>
+</div>
+<div class="section" id="subdirectory-equivalence">
+<h2><a class="toc-backref" href="#id11">Subdirectory Equivalence</a><a class="headerlink" href="#subdirectory-equivalence" title="Permalink to this headline">¶</a></h2>
+<p>The zip archive must be treated exactly as a subdirectory tree so
+we can support package imports based on current and future rules.
+All zip data is taken from the Central Directory, the data must be
+correct, and brain dead zip files are not accommodated.</p>
+<p>Suppose <code class="docutils literal notranslate"><span class="pre">sys.path</span></code> contains “/A/B/SubDir” and “/C/D/E/Archive.zip”,
+and we are trying to import <code class="docutils literal notranslate"><span class="pre">modfoo</span></code> from the <code class="docutils literal notranslate"><span class="pre">Q</span></code> package.  Then
+<code class="docutils literal notranslate"><span class="pre">import.c</span></code> will generate a list of paths and extensions and will
+look for the file.  The list of generated paths does not change
+for zip imports.  Suppose <code class="docutils literal notranslate"><span class="pre">import.c</span></code> generates the path
+“/A/B/SubDir/Q/R/modfoo.pyc”.  Then it will also generate the path
+“/C/D/E/Archive.zip/Q/R/modfoo.pyc”.  Finding the SubDir path is
+exactly equivalent to finding “Q/R/modfoo.pyc” in the archive.</p>
+<p>Suppose you zip up /A/B/SubDir/* and all its subdirectories.  Then
+your zip file will satisfy imports just as your subdirectory did.</p>
+<p>Well, not quite.  You can’t satisfy dynamic modules from a zip
+file.  Dynamic modules have extensions like <code class="docutils literal notranslate"><span class="pre">.dll</span></code>, <code class="docutils literal notranslate"><span class="pre">.pyd</span></code>, and <code class="docutils literal notranslate"><span class="pre">.so</span></code>.
+They are operating system dependent, and probably can’t be loaded
+except from a file.  It might be possible to extract the dynamic
+module from the zip file, write it to a plain file and load it.
+But that would mean creating temporary files, and dealing with all
+the <code class="docutils literal notranslate"><span class="pre">dynload_*.c</span></code>, and that’s probably not a good idea.</p>
+<p>When trying to import <code class="docutils literal notranslate"><span class="pre">*.pyc</span></code>, if it is not available then
+<code class="docutils literal notranslate"><span class="pre">*.pyo</span></code> will be used instead.  And vice versa when looking for <code class="docutils literal notranslate"><span class="pre">*.pyo</span></code>.
+If neither <code class="docutils literal notranslate"><span class="pre">*.pyc</span></code> nor <code class="docutils literal notranslate"><span class="pre">*.pyo</span></code> is available, or if the magic numbers
+are invalid, then <code class="docutils literal notranslate"><span class="pre">*.py</span></code> will be compiled and used to satisfy the
+import, but the compiled file will not be saved.  Python would
+normally write it to the same directory as <code class="docutils literal notranslate"><span class="pre">*.py</span></code>, but surely we
+don’t want to write to the zip file.  We could write to the
+directory of the zip archive, but that would clutter it up, not
+good if it is <code class="docutils literal notranslate"><span class="pre">/usr/bin</span></code> for example.</p>
+<p>Failing to write the compiled files will make zip imports very slow,
+and the user will probably not figure out what is wrong.  So it
+is best to put <code class="docutils literal notranslate"><span class="pre">*.pyc</span></code> and <code class="docutils literal notranslate"><span class="pre">*.pyo</span></code> in the archive with the <code class="docutils literal notranslate"><span class="pre">*.py</span></code>.</p>
+</div>
+<div class="section" id="efficiency">
+<h2><a class="toc-backref" href="#id12">Efficiency</a><a class="headerlink" href="#efficiency" title="Permalink to this headline">¶</a></h2>
+<p>The only way to find files in a zip archive is linear search.  So
+for each zip file in <code class="docutils literal notranslate"><span class="pre">sys.path</span></code>, we search for its names once, and
+put the names plus other relevant data into a static Python
+dictionary.  The key is the archive name from <code class="docutils literal notranslate"><span class="pre">sys.path</span></code> joined with
+the file name (including any subdirectories) within the archive.
+This is exactly the name generated by <code class="docutils literal notranslate"><span class="pre">import.c</span></code>, and makes lookup
+easy.</p>
+<p>This same mechanism is used to speed up directory (non-zip) imports.
+See below.</p>
+</div>
+<div class="section" id="zlib">
+<h2><a class="toc-backref" href="#id13">zlib</a><a class="headerlink" href="#zlib" title="Permalink to this headline">¶</a></h2>
+<p>Compressed zip archives require <code class="docutils literal notranslate"><span class="pre">zlib</span></code> for decompression.  Prior to
+any other imports, we attempt an import of <code class="docutils literal notranslate"><span class="pre">zlib</span></code>.  Import of
+compressed files will fail with a message “missing <code class="docutils literal notranslate"><span class="pre">zlib</span></code>” unless
+<code class="docutils literal notranslate"><span class="pre">zlib</span></code> is available.</p>
+</div>
+<div class="section" id="booting">
+<h2><a class="toc-backref" href="#id14">Booting</a><a class="headerlink" href="#booting" title="Permalink to this headline">¶</a></h2>
+<p>Python imports <code class="docutils literal notranslate"><span class="pre">site.py</span></code> itself, and this imports <code class="docutils literal notranslate"><span class="pre">os</span></code>, <code class="docutils literal notranslate"><span class="pre">nt</span></code>, <code class="docutils literal notranslate"><span class="pre">ntpath</span></code>,
+<code class="docutils literal notranslate"><span class="pre">stat</span></code>, and <code class="docutils literal notranslate"><span class="pre">UserDict</span></code>.  It also imports <code class="docutils literal notranslate"><span class="pre">sitecustomize.py</span></code> which may
+import more modules.  Zip imports must be available before <code class="docutils literal notranslate"><span class="pre">site.py</span></code>
+is imported.</p>
+<p>Just as there are default directories in <code class="docutils literal notranslate"><span class="pre">sys.path</span></code>, there must be
+one or more default zip archives too.</p>
+<p>The problem is what the name should be.  The name should be linked
+with the Python version, so the Python executable can correctly
+find its corresponding libraries even when there are multiple
+Python versions on the same machine.</p>
+<p>We add one name to <code class="docutils literal notranslate"><span class="pre">sys.path</span></code>.  On Unix, the directory is
+<code class="docutils literal notranslate"><span class="pre">sys.prefix</span> <span class="pre">+</span> <span class="pre">&quot;/lib&quot;</span></code>, and the file name is
+<code class="docutils literal notranslate"><span class="pre">&quot;python%s%s.zip&quot;</span> <span class="pre">%</span> <span class="pre">(sys.version[0],</span> <span class="pre">sys.version[2])</span></code>.
+So for Python 2.2 and prefix <code class="docutils literal notranslate"><span class="pre">/usr/local</span></code>, the path
+<code class="docutils literal notranslate"><span class="pre">/usr/local/lib/python2.2/</span></code> is already on <code class="docutils literal notranslate"><span class="pre">sys.path</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">/usr/local/lib/python22.zip</span></code> would be added.
+On Windows, the file is the full path to <code class="docutils literal notranslate"><span class="pre">python22.dll</span></code>, with
+“dll” replaced by “zip”.  The zip archive name is always inserted
+as the second item in <code class="docutils literal notranslate"><span class="pre">sys.path</span></code>.  The first is the directory of the
+<code class="docutils literal notranslate"><span class="pre">main.py</span></code> (thanks Tim).</p>
+</div>
+<div class="section" id="directory-imports">
+<h2><a class="toc-backref" href="#id15">Directory Imports</a><a class="headerlink" href="#directory-imports" title="Permalink to this headline">¶</a></h2>
+<p>The static Python dictionary used to speed up zip imports can be
+used to speed up normal directory imports too.  For each item in
+<code class="docutils literal notranslate"><span class="pre">sys.path</span></code> that is not a zip archive, we call <code class="docutils literal notranslate"><span class="pre">os.listdir</span></code>, and add
+the directory contents to the dictionary.  Then instead of calling
+<code class="docutils literal notranslate"><span class="pre">fopen()</span></code> in a double loop, we just check the dictionary.  This
+greatly speeds up imports.  If <code class="docutils literal notranslate"><span class="pre">os.listdir</span></code> doesn’t exist, the
+dictionary is not used.</p>
+</div>
+<div class="section" id="benchmarks">
+<h2><a class="toc-backref" href="#id16">Benchmarks</a><a class="headerlink" href="#benchmarks" title="Permalink to this headline">¶</a></h2>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 7%" />
+<col style="width: 29%" />
+<col style="width: 29%" />
+<col style="width: 17%" />
+<col style="width: 17%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head">Case</th>
+<th class="head">Original 2.2a3</th>
+<th class="head">Using os.listdir</th>
+<th class="head">Zip Uncomp</th>
+<th class="head">Zip Compr</th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td>1</td>
+<td>3.2 2.5 3.2-&gt;1.02</td>
+<td>2.3 2.5 2.3-&gt;0.87</td>
+<td>1.66-&gt;0.93</td>
+<td>1.5-&gt;1.07</td>
+</tr>
+<tr class="row-odd"><td>2</td>
+<td>2.8 3.9 3.0-&gt;1.32</td>
+<td>Same as Case 1.</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td>3</td>
+<td>5.7 5.7 5.7-&gt;5.7</td>
+<td>2.1 2.1 2.1-&gt;1.8</td>
+<td>1.25-&gt;0.99</td>
+<td>1.19-&gt;1.13</td>
+</tr>
+<tr class="row-odd"><td>4</td>
+<td>9.4 9.4 9.3-&gt;9.35</td>
+<td>Same as Case 3.</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>Case 1: Local drive C:, <code class="docutils literal notranslate"><span class="pre">sys.path</span></code> has its default value.
+Case 2: Local drive C:, directory with files is at the end of <code class="docutils literal notranslate"><span class="pre">sys.path</span></code>.
+Case 3: Network  drive, <code class="docutils literal notranslate"><span class="pre">sys.path</span></code> has its default value.
+Case 4: Network  drive, directory with files is at the end of <code class="docutils literal notranslate"><span class="pre">sys.path</span></code>.</p>
+<p>Benchmarks were performed on a Pentium 4 clone, 1.4 GHz, 256 Meg.
+The machine was running Windows 2000 with a Linux/Samba network server.
+Times are in seconds, and are the time to import about 100 Lib modules.
+Case 2 and 4 have the “correct” directory moved to the end of <code class="docutils literal notranslate"><span class="pre">sys.path</span></code>.
+“Uncomp” means uncompressed zip archive, “Compr” means compressed.</p>
+<p>Initial times are after a re-boot of the system; the time after
+“-&gt;” is the time after repeated runs.  Times to import from C:
+after a re-boot are rather highly variable for the “Original” case,
+but are more realistic.</p>
+</div>
+<div class="section" id="custom-imports">
+<h2><a class="toc-backref" href="#id17">Custom Imports</a><a class="headerlink" href="#custom-imports" title="Permalink to this headline">¶</a></h2>
+<p>The logic demonstrates the ability to import using default searching
+until a needed Python module (in this case, <code class="docutils literal notranslate"><span class="pre">os</span></code>) becomes available.
+This can be used to bootstrap custom importers.  For example, if
+“<code class="docutils literal notranslate"><span class="pre">importer()</span></code>” in <code class="docutils literal notranslate"><span class="pre">__init__.py</span></code> exists, then it could be used for imports.
+The “<code class="docutils literal notranslate"><span class="pre">importer()</span></code>” can freely import os and other modules, and these
+will be satisfied from the default mechanism.  This PEP does not
+define any custom importers, and this note is for information only.</p>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id18">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>A C implementation is available as SourceForge patch 492105.
+Superseded by patch 652586 and current CVS. <a class="footnote-reference brackets" href="#id6" id="id2">2</a></p>
+<p>A newer version (updated for recent CVS by Paul Moore) is 645650.
+Superseded by patch 652586 and current CVS. <a class="footnote-reference brackets" href="#id7" id="id3">3</a></p>
+<p>A competing implementation by Just van Rossum is 652586, which is
+the basis for the final implementation of PEP 302.  PEP 273 has
+been implemented using PEP 302’s import hooks. <a class="footnote-reference brackets" href="#id5" id="id4">1</a></p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id19">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id5"><span class="brackets">1</span><span class='fn-backref'><em> (<a href="#id1">1</a>, <a href="#id4">2</a>) </em></span></dt>
+<dd>Just van Rossum, New import hooks + Import from Zip files
+<a class="reference external" href="https://bugs.python.org/issue652586">https://bugs.python.org/issue652586</a></dd>
+<dt class="label" id="id6"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>Import from Zip archive, James C. Ahlstrom
+<a class="reference external" href="https://bugs.python.org/issue492105">https://bugs.python.org/issue492105</a></dd>
+<dt class="label" id="id7"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd>Import from Zip Archive, Paul Moore
+<a class="reference external" href="https://bugs.python.org/issue645650">https://bugs.python.org/issue645650</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id20">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0273.txt">https://github.com/python/peps/blob/master/pep-0273.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0273.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0272.html">PEP 0272</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0274.html">PEP 0274</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 273 – Import Modules from Zip Archives</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#note">Note</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#subdirectory-equivalence">Subdirectory Equivalence</a></li>
+<li><a class="reference internal" href="#efficiency">Efficiency</a></li>
+<li><a class="reference internal" href="#zlib">zlib</a></li>
+<li><a class="reference internal" href="#booting">Booting</a></li>
+<li><a class="reference internal" href="#directory-imports">Directory Imports</a></li>
+<li><a class="reference internal" href="#benchmarks">Benchmarks</a></li>
+<li><a class="reference internal" href="#custom-imports">Custom Imports</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

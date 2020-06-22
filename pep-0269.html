@@ -1,0 +1,320 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 269 – Pgen Module for Python &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 270 – uniq method for list objects" href="pep-0270.html" />
+    <link rel="prev" title="PEP 268 – Extended HTTP functionality and WebDAV" href="pep-0268.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 269 – Pgen Module for Python</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-269-pgen-module-for-python">
+<h1 class="page-title">PEP 269 – Pgen Module for Python<a class="headerlink" href="#pep-269-pgen-module-for-python" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">269</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Pgen Module for Python</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">jriehl&#32;&#97;t&#32;spaceship.com (Jonathan Riehl)</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Deferred</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">24-Aug-2001</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.2</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id11">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id12">Rationale</a></li>
+<li><a class="reference internal" href="#specification" id="id13">Specification</a><ul>
+<li><a class="reference internal" href="#parsegrammarfile-filename-ast" id="id14"><code class="docutils literal notranslate"><span class="pre">parseGrammarFile</span> <span class="pre">(fileName)</span> <span class="pre">-&gt;</span> <span class="pre">AST</span></code></a></li>
+<li><a class="reference internal" href="#parsegrammarstring-text-ast" id="id15"><code class="docutils literal notranslate"><span class="pre">parseGrammarString</span> <span class="pre">(text)</span> <span class="pre">-&gt;</span> <span class="pre">AST</span></code></a></li>
+<li><a class="reference internal" href="#buildparser-grammarast-dfa" id="id16"><code class="docutils literal notranslate"><span class="pre">buildParser</span> <span class="pre">(grammarAst)</span> <span class="pre">-&gt;</span> <span class="pre">DFA</span></code></a></li>
+<li><a class="reference internal" href="#parsefile-filename-dfa-start-ast" id="id17"><code class="docutils literal notranslate"><span class="pre">parseFile</span> <span class="pre">(fileName,</span> <span class="pre">dfa,</span> <span class="pre">start)</span> <span class="pre">-&gt;</span> <span class="pre">AST</span></code></a></li>
+<li><a class="reference internal" href="#parsestring-text-dfa-start-ast" id="id18"><code class="docutils literal notranslate"><span class="pre">parseString</span> <span class="pre">(text,</span> <span class="pre">dfa,</span> <span class="pre">start)</span> <span class="pre">-&gt;</span> <span class="pre">AST</span></code></a></li>
+<li><a class="reference internal" href="#symboltostringmap-dfa-dict" id="id19"><code class="docutils literal notranslate"><span class="pre">symbolToStringMap</span> <span class="pre">(dfa)</span> <span class="pre">-&gt;</span> <span class="pre">dict</span></code></a></li>
+<li><a class="reference internal" href="#stringtosymbolmap-dfa-dict" id="id20"><code class="docutils literal notranslate"><span class="pre">stringToSymbolMap</span> <span class="pre">(dfa)</span> <span class="pre">-&gt;</span> <span class="pre">dict</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation-plan" id="id21">Implementation Plan</a></li>
+<li><a class="reference internal" href="#limitations" id="id22">Limitations</a></li>
+<li><a class="reference internal" href="#reference-implementation" id="id23">Reference Implementation</a></li>
+<li><a class="reference internal" href="#references" id="id24">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id25">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id11">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Much like the <code class="docutils literal notranslate"><span class="pre">parser</span></code> module exposes the Python parser, this PEP
+proposes that the parser generator used to create the Python
+parser, <code class="docutils literal notranslate"><span class="pre">pgen</span></code>, be exposed as a module in Python.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id12">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Through the course of Pythonic history, there have been numerous
+discussions about the creation of a Python compiler <a class="footnote-reference brackets" href="#id6" id="id1">1</a>.  These
+have resulted in several implementations of Python parsers, most
+notably the <code class="docutils literal notranslate"><span class="pre">parser</span></code> module currently provided in the Python
+standard library <a class="footnote-reference brackets" href="#id7" id="id2">2</a> and Jeremy Hylton’s <code class="docutils literal notranslate"><span class="pre">compiler</span></code> module <a class="footnote-reference brackets" href="#id8" id="id3">3</a>.
+However, while multiple language changes have been proposed
+<a class="footnote-reference brackets" href="#id9" id="id4">4</a> <a class="footnote-reference brackets" href="#id10" id="id5">5</a>, experimentation with the Python syntax has lacked the
+benefit of a Python binding to the actual parser generator used to
+build Python.</p>
+<p>By providing a Python wrapper analogous to Fred Drake Jr.’s parser
+wrapper, but targeted at the <code class="docutils literal notranslate"><span class="pre">pgen</span></code> library, the following
+assertions are made:</p>
+<ol class="arabic simple">
+<li>Reference implementations of syntax changes will be easier to
+develop.  Currently, a reference implementation of a syntax
+change would require the developer to use the <code class="docutils literal notranslate"><span class="pre">pgen</span></code> tool from
+the command line.  The resulting parser data structure would
+then either have to be reworked to interface with a custom
+CPython implementation, or wrapped as a C extension module.</li>
+<li>Reference implementations of syntax changes will be easier to
+distribute.  Since the parser generator will be available in
+Python, it should follow that the resulting parser will
+accessible from Python.  Therefore, reference implementations
+should be available as pure Python code, versus using custom
+versions of the existing CPython distribution, or as compilable
+extension modules.</li>
+<li>Reference implementations of syntax changes will be easier to
+discuss with a larger audience.  This somewhat falls out of the
+second assertion, since the community of Python users is most
+likely larger than the community of CPython developers.</li>
+<li>Development of small languages in Python will be further
+enhanced, since the additional module will be a fully
+functional LL(1) parser generator.</li>
+</ol>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id13">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>The proposed module will be called <code class="docutils literal notranslate"><span class="pre">pgen</span></code>.  The <code class="docutils literal notranslate"><span class="pre">pgen</span></code> module will
+contain the following functions:</p>
+<div class="section" id="parsegrammarfile-filename-ast">
+<h3><a class="toc-backref" href="#id14"><code class="docutils literal notranslate"><span class="pre">parseGrammarFile</span> <span class="pre">(fileName)</span> <span class="pre">-&gt;</span> <span class="pre">AST</span></code></a><a class="headerlink" href="#parsegrammarfile-filename-ast" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">parseGrammarFile()</span></code> function will read the file pointed to
+by fileName and create an AST object.  The AST nodes will
+contain the nonterminal, numeric values of the parser
+generator meta-grammar.  The output AST will be an instance of
+the AST extension class as provided by the <code class="docutils literal notranslate"><span class="pre">parser</span></code> module.
+Syntax errors in the input file will cause the SyntaxError
+exception to be raised.</p>
+</div>
+<div class="section" id="parsegrammarstring-text-ast">
+<h3><a class="toc-backref" href="#id15"><code class="docutils literal notranslate"><span class="pre">parseGrammarString</span> <span class="pre">(text)</span> <span class="pre">-&gt;</span> <span class="pre">AST</span></code></a><a class="headerlink" href="#parsegrammarstring-text-ast" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">parseGrammarString()</span></code> function will follow the semantics of
+the <code class="docutils literal notranslate"><span class="pre">parseGrammarFile()</span></code>, but accept the grammar text as a
+string for input, as opposed to the file name.</p>
+</div>
+<div class="section" id="buildparser-grammarast-dfa">
+<h3><a class="toc-backref" href="#id16"><code class="docutils literal notranslate"><span class="pre">buildParser</span> <span class="pre">(grammarAst)</span> <span class="pre">-&gt;</span> <span class="pre">DFA</span></code></a><a class="headerlink" href="#buildparser-grammarast-dfa" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">buildParser()</span></code> function will accept an AST object for input
+and return a DFA (deterministic finite automaton) data
+structure.  The DFA data structure will be a C extension
+class, much like the AST structure is provided in the <code class="docutils literal notranslate"><span class="pre">parser</span></code>
+module.  If the input AST does not conform to the nonterminal
+codes defined for the <code class="docutils literal notranslate"><span class="pre">pgen</span></code> meta-grammar, <code class="docutils literal notranslate"><span class="pre">buildParser()</span></code> will
+throw a <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> exception.</p>
+</div>
+<div class="section" id="parsefile-filename-dfa-start-ast">
+<h3><a class="toc-backref" href="#id17"><code class="docutils literal notranslate"><span class="pre">parseFile</span> <span class="pre">(fileName,</span> <span class="pre">dfa,</span> <span class="pre">start)</span> <span class="pre">-&gt;</span> <span class="pre">AST</span></code></a><a class="headerlink" href="#parsefile-filename-dfa-start-ast" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">parseFile()</span></code> function will essentially be a wrapper for the
+<code class="docutils literal notranslate"><span class="pre">PyParser_ParseFile()</span></code> C API function.  The wrapper code will
+accept the DFA C extension class, and the file name.  An AST
+instance that conforms to the lexical values in the <code class="docutils literal notranslate"><span class="pre">token</span></code>
+module and the nonterminal values contained in the DFA will be
+output.</p>
+</div>
+<div class="section" id="parsestring-text-dfa-start-ast">
+<h3><a class="toc-backref" href="#id18"><code class="docutils literal notranslate"><span class="pre">parseString</span> <span class="pre">(text,</span> <span class="pre">dfa,</span> <span class="pre">start)</span> <span class="pre">-&gt;</span> <span class="pre">AST</span></code></a><a class="headerlink" href="#parsestring-text-dfa-start-ast" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">parseString()</span></code> function will operate in a similar fashion
+to the <code class="docutils literal notranslate"><span class="pre">parseFile()</span></code> function, but accept the parse text as an
+argument.  Much like <code class="docutils literal notranslate"><span class="pre">parseFile()</span></code> will wrap the
+<code class="docutils literal notranslate"><span class="pre">PyParser_ParseFile()</span></code> C API function, <code class="docutils literal notranslate"><span class="pre">parseString()</span></code> will wrap
+the <code class="docutils literal notranslate"><span class="pre">PyParser_ParseString()</span></code> function.</p>
+</div>
+<div class="section" id="symboltostringmap-dfa-dict">
+<h3><a class="toc-backref" href="#id19"><code class="docutils literal notranslate"><span class="pre">symbolToStringMap</span> <span class="pre">(dfa)</span> <span class="pre">-&gt;</span> <span class="pre">dict</span></code></a><a class="headerlink" href="#symboltostringmap-dfa-dict" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">symbolToStringMap()</span></code> function will accept a DFA instance
+and return a dictionary object that maps from the DFA’s
+numeric values for its nonterminals to the string names of the
+nonterminals as found in the original grammar specification
+for the DFA.</p>
+</div>
+<div class="section" id="stringtosymbolmap-dfa-dict">
+<h3><a class="toc-backref" href="#id20"><code class="docutils literal notranslate"><span class="pre">stringToSymbolMap</span> <span class="pre">(dfa)</span> <span class="pre">-&gt;</span> <span class="pre">dict</span></code></a><a class="headerlink" href="#stringtosymbolmap-dfa-dict" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">stringToSymbolMap()</span></code> function output a dictionary mapping
+the nonterminal names of the input DFA to their corresponding
+numeric values.</p>
+<p>Extra credit will be awarded if the map generation functions and
+parsing functions are also methods of the DFA extension class.</p>
+</div>
+</div>
+<div class="section" id="implementation-plan">
+<h2><a class="toc-backref" href="#id21">Implementation Plan</a><a class="headerlink" href="#implementation-plan" title="Permalink to this headline">¶</a></h2>
+<p>A cunning plan has been devised to accomplish this enhancement:</p>
+<ol class="arabic simple">
+<li>Rename the <code class="docutils literal notranslate"><span class="pre">pgen</span></code> functions to conform to the CPython naming
+standards.  This action may involve adding some header files to
+the <code class="docutils literal notranslate"><span class="pre">Include</span></code> subdirectory.</li>
+<li>Move the <code class="docutils literal notranslate"><span class="pre">pgen</span></code> C modules in the Makefile.pre.in from unique <code class="docutils literal notranslate"><span class="pre">pgen</span></code>
+elements to the Python C library.</li>
+<li>Make any needed changes to the <code class="docutils literal notranslate"><span class="pre">parser</span></code> module so the AST
+extension class understands that there are AST types it may not
+understand.  Cursory examination of the AST extension class
+shows that it keeps track of whether the tree is a suite or an
+expression.</li>
+</ol>
+<ol class="arabic simple" start="3">
+<li>Code an additional C module in the <code class="docutils literal notranslate"><span class="pre">Modules</span></code> directory.  The C
+extension module will implement the DFA extension class and the
+functions outlined in the previous section.</li>
+<li>Add the new module to the build process.  Black magic, indeed.</li>
+</ol>
+</div>
+<div class="section" id="limitations">
+<h2><a class="toc-backref" href="#id22">Limitations</a><a class="headerlink" href="#limitations" title="Permalink to this headline">¶</a></h2>
+<p>Under this proposal, would be designers of Python 3000 will still
+be constrained to Python’s lexical conventions.  The addition,
+subtraction or modification of the Python lexer is outside the
+scope of this PEP.</p>
+</div>
+<div class="section" id="reference-implementation">
+<h2><a class="toc-backref" href="#id23">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>No reference implementation is currently provided. A patch
+was provided at some point in
+<a class="reference external" href="http://sourceforge.net/tracker/index.php?func=detail&amp;aid=599331&amp;group_id=5470&amp;atid=305470">http://sourceforge.net/tracker/index.php?func=detail&amp;aid=599331&amp;group_id=5470&amp;atid=305470</a>
+but that patch is no longer maintained.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id24">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id6"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>The (defunct) Python Compiler-SIG
+<a class="reference external" href="http://www.python.org/sigs/compiler-sig/">http://www.python.org/sigs/compiler-sig/</a></dd>
+<dt class="label" id="id7"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>Parser Module Documentation
+<a class="reference external" href="http://docs.python.org/library/parser.html">http://docs.python.org/library/parser.html</a></dd>
+<dt class="label" id="id8"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd>Hylton, Jeremy.
+<a class="reference external" href="http://docs.python.org/library/compiler.html">http://docs.python.org/library/compiler.html</a></dd>
+<dt class="label" id="id9"><span class="brackets"><a class="fn-backref" href="#id4">4</a></span></dt>
+<dd>Pelletier, Michel. “Python Interface Syntax”, PEP-245.
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0245/">http://www.python.org/dev/peps/pep-0245/</a></dd>
+<dt class="label" id="id10"><span class="brackets"><a class="fn-backref" href="#id5">5</a></span></dt>
+<dd>The Python Types-SIG
+<a class="reference external" href="http://www.python.org/sigs/types-sig/">http://www.python.org/sigs/types-sig/</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id25">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0269.txt">https://github.com/python/peps/blob/master/pep-0269.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0269.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0268.html">PEP 0268</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0270.html">PEP 0270</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 269 – Pgen Module for Python</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#parsegrammarfile-filename-ast"><code class="docutils literal notranslate"><span class="pre">parseGrammarFile</span> <span class="pre">(fileName)</span> <span class="pre">-&gt;</span> <span class="pre">AST</span></code></a></li>
+<li><a class="reference internal" href="#parsegrammarstring-text-ast"><code class="docutils literal notranslate"><span class="pre">parseGrammarString</span> <span class="pre">(text)</span> <span class="pre">-&gt;</span> <span class="pre">AST</span></code></a></li>
+<li><a class="reference internal" href="#buildparser-grammarast-dfa"><code class="docutils literal notranslate"><span class="pre">buildParser</span> <span class="pre">(grammarAst)</span> <span class="pre">-&gt;</span> <span class="pre">DFA</span></code></a></li>
+<li><a class="reference internal" href="#parsefile-filename-dfa-start-ast"><code class="docutils literal notranslate"><span class="pre">parseFile</span> <span class="pre">(fileName,</span> <span class="pre">dfa,</span> <span class="pre">start)</span> <span class="pre">-&gt;</span> <span class="pre">AST</span></code></a></li>
+<li><a class="reference internal" href="#parsestring-text-dfa-start-ast"><code class="docutils literal notranslate"><span class="pre">parseString</span> <span class="pre">(text,</span> <span class="pre">dfa,</span> <span class="pre">start)</span> <span class="pre">-&gt;</span> <span class="pre">AST</span></code></a></li>
+<li><a class="reference internal" href="#symboltostringmap-dfa-dict"><code class="docutils literal notranslate"><span class="pre">symbolToStringMap</span> <span class="pre">(dfa)</span> <span class="pre">-&gt;</span> <span class="pre">dict</span></code></a></li>
+<li><a class="reference internal" href="#stringtosymbolmap-dfa-dict"><code class="docutils literal notranslate"><span class="pre">stringToSymbolMap</span> <span class="pre">(dfa)</span> <span class="pre">-&gt;</span> <span class="pre">dict</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation-plan">Implementation Plan</a></li>
+<li><a class="reference internal" href="#limitations">Limitations</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

@@ -1,0 +1,406 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 618 – Add Optional Length-Checking To zip &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 628 – Add ``math.tau``" href="pep-0628.html" />
+    <link rel="prev" title="PEP 617 – New PEG parser for CPython" href="pep-0617.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 618 – Add Optional Length-Checking To zip</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-618-add-optional-length-checking-to-zip">
+<h1 class="page-title">PEP 618 – Add Optional Length-Checking To zip<a class="headerlink" href="#pep-618-add-optional-length-checking-to-zip" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">618</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Add Optional Length-Checking To zip</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Brandt Bucher &lt;brandtbucher&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">Sponsor</dt>
+<dd class="field-even">Antoine Pitrou &lt;antoine&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd">Draft</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even">Standards Track</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">01-May-2020</dd>
+<dt class="field-even">Python-Version</dt>
+<dd class="field-even">3.9</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd">01-May-2020</dd>
+<dt class="field-even">Resolution</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id2">Abstract</a></li>
+<li><a class="reference internal" href="#motivation" id="id3">Motivation</a></li>
+<li><a class="reference internal" href="#rationale" id="id4">Rationale</a></li>
+<li><a class="reference internal" href="#specification" id="id5">Specification</a></li>
+<li><a class="reference internal" href="#backward-compatibility" id="id6">Backward Compatibility</a></li>
+<li><a class="reference internal" href="#reference-implementation" id="id7">Reference Implementation</a></li>
+<li><a class="reference internal" href="#rejected-ideas" id="id8">Rejected Ideas</a><ul>
+<li><a class="reference internal" href="#add-additional-flavors-of-zip-to-itertools" id="id9">Add Additional Flavors Of <code class="docutils literal notranslate"><span class="pre">zip</span></code> To <code class="docutils literal notranslate"><span class="pre">itertools</span></code></a></li>
+<li><a class="reference internal" href="#add-several-modes-to-switch-between" id="id10">Add Several “Modes” To Switch Between</a></li>
+<li><a class="reference internal" href="#add-a-method-or-alternate-constructor-to-the-zip-type" id="id11">Add A Method Or Alternate Constructor To The <code class="docutils literal notranslate"><span class="pre">zip</span></code> Type</a></li>
+<li><a class="reference internal" href="#change-the-default-behavior-of-zip" id="id12">Change The Default Behavior Of <code class="docutils literal notranslate"><span class="pre">zip</span></code></a></li>
+<li><a class="reference internal" href="#accept-a-callback-to-handle-remaining-items" id="id13">Accept A Callback To Handle Remaining Items</a></li>
+<li><a class="reference internal" href="#raise-an-assertionerror-instead-of-a-valueerror" id="id14">Raise An <code class="docutils literal notranslate"><span class="pre">AssertionError</span></code> Instead Of A <code class="docutils literal notranslate"><span class="pre">ValueError</span></code></a></li>
+<li><a class="reference internal" href="#add-a-similar-feature-to-map" id="id15">Add A Similar Feature to <code class="docutils literal notranslate"><span class="pre">map</span></code></a></li>
+<li><a class="reference internal" href="#do-nothing" id="id16">Do Nothing</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#copyright" id="id17">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id2">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes adding an optional <code class="docutils literal notranslate"><span class="pre">strict</span></code> boolean keyword
+parameter to the built-in <code class="docutils literal notranslate"><span class="pre">zip</span></code>.  When enabled, a <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> is
+raised if one of the arguments is exhausted before the others.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id3">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>Many Python users find that most of their <code class="docutils literal notranslate"><span class="pre">zip</span></code> usage involves
+iterables that <em>should</em> be of equal length.  Sometimes this invariant
+is proven true from the context of the surrounding code, but often the
+data being zipped is passed from the caller, sourced separately, or
+generated in some fashion.  In any of these cases, the default
+behavior of <code class="docutils literal notranslate"><span class="pre">zip</span></code> means that faulty refactoring or logic errors
+could easily result in silently losing data.  These bugs are not only
+difficult to diagnose, but difficult to even detect at all.</p>
+<p>It is easy to come up with simple cases where this could be a problem.
+For example, the following code may work fine when <code class="docutils literal notranslate"><span class="pre">items</span></code> is a
+sequence, but silently start producing shortened, mismatched results
+if <code class="docutils literal notranslate"><span class="pre">items</span></code> is refactored by the caller to be a consumable iterator:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">apply_calculations</span><span class="p">(</span><span class="n">items</span><span class="p">):</span>
+    <span class="n">transformed</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">items</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="n">transformed</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="n">something</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>There are several other ways in which <code class="docutils literal notranslate"><span class="pre">zip</span></code> is commonly used.
+Idiomatic tricks are especially susceptible, because they are often
+employed by users who lack a complete understanding of how the code
+works.  One example is unpacking into <code class="docutils literal notranslate"><span class="pre">zip</span></code> to lazily “unzip” or
+“transpose” nested iterables:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">([</span><span class="nb">iter</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]),</span> <span class="nb">iter</span><span class="p">([</span><span class="s2">&quot;one&quot;</span> <span class="s2">&quot;two&quot;</span> <span class="s2">&quot;three&quot;</span><span class="p">])])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">xt</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">x</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Another is “chunking” data into equal-sized groups:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">n</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span> <span class="o">**</span> <span class="mi">2</span><span class="p">),</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">xn</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nb">iter</span><span class="p">(</span><span class="n">x</span><span class="p">)]</span> <span class="o">*</span> <span class="n">n</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>In the first case, non-rectangular data is usually a logic error.  In
+the second case, data with a length that is not a multiple of <code class="docutils literal notranslate"><span class="pre">n</span></code> is
+often an error as well.  However, both of these idioms will silently
+omit the tail-end items of malformed input.</p>
+<p>Perhaps most convincingly, the current use of <code class="docutils literal notranslate"><span class="pre">zip</span></code> in the
+standard-library <code class="docutils literal notranslate"><span class="pre">ast</span></code> module has created multiple bugs that
+<a class="reference external" href="https://bugs.python.org/issue40355">silently drop parts of malformed nodes</a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">ast</span> <span class="kn">import</span> <span class="n">Constant</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">literal_eval</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">nasty_dict</span> <span class="o">=</span> <span class="n">Dict</span><span class="p">(</span><span class="n">keys</span><span class="o">=</span><span class="p">[</span><span class="n">Constant</span><span class="p">(</span><span class="kc">None</span><span class="p">)],</span> <span class="n">values</span><span class="o">=</span><span class="p">[])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">literal_eval</span><span class="p">(</span><span class="n">nasty_dict</span><span class="p">)</span>  <span class="c1"># Like eval(&quot;{None: }&quot;)</span>
+<span class="go">{}</span>
+</pre></div>
+</div>
+<p>In fact, the author has counted dozens of other call sites in Python’s
+standard library and tooling where it would be appropriate to enable
+this new feature immediately.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id4">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Some critics assert that constant boolean switches are a “code-smell”,
+or go against Python’s design philosophy.  However, Python currently
+contains several examples of boolean keyword parameters on built-in
+functions which are typically called with compile-time constants:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">compile(...,</span> <span class="pre">dont_inherit=True)</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">open(...,</span> <span class="pre">closefd=False)</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">print(...,</span> <span class="pre">flush=True)</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">sorted(...,</span> <span class="pre">reverse=True)</span></code></li>
+</ul>
+<p>Many more exist in the standard library.</p>
+<p>A good rule of thumb is that “mode-switches” which change return types
+or significantly alter functionality are indeed an anti-pattern, while
+ones which enable or disable complementary checks or behavior are not.</p>
+<p>The idea and name for this new parameter were <a class="reference external" href="https://mail.python.org/archives/list/python-ideas&#64;python.org/message/6GFUADSQ5JTF7W7OGWF7XF2NH2XUTUQM">originally proposed</a>
+by Ram Rachum.  The thread received over 100 replies, with the
+alternative “equal” receiving a similar amount of support.</p>
+<p>The author does not have a strong preference between the two choices,
+though “equal equals” <em>is</em> a bit awkward in prose.  It may also
+(wrongly) imply some notion of “equality” between the zipped items:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">z</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">([</span><span class="mf">2.0</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">,</span> <span class="mf">6.0</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">],</span> <span class="n">equal</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id5">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>When the built-in <code class="docutils literal notranslate"><span class="pre">zip</span></code> is called with the keyword-only argument
+<code class="docutils literal notranslate"><span class="pre">strict=True</span></code>, the resulting iterator will raise a <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> if
+the arguments are exhausted at differing lengths.  This error will
+occur at the point when iteration would normally stop today.</p>
+<p>At most one additional item may be consumed from one of the iterators
+when compared to normal <code class="docutils literal notranslate"><span class="pre">zip</span></code> usage.</p>
+</div>
+<div class="section" id="backward-compatibility">
+<h2><a class="toc-backref" href="#id6">Backward Compatibility</a><a class="headerlink" href="#backward-compatibility" title="Permalink to this headline">¶</a></h2>
+<p>This change is fully backward-compatible.</p>
+</div>
+<div class="section" id="reference-implementation">
+<h2><a class="toc-backref" href="#id7">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>The author has drafted a <a class="reference external" href="https://github.com/python/cpython/compare/master...brandtbucher:zip-strict">C implementation</a>.</p>
+<p>An approximate pure-Python translation is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">zip</span><span class="p">(</span><span class="o">*</span><span class="n">iterables</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">iterables</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="n">iterators</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">iterable</span><span class="p">)</span> <span class="k">for</span> <span class="n">iterable</span> <span class="ow">in</span> <span class="n">iterables</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">items</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">iterator</span> <span class="ow">in</span> <span class="n">iterators</span><span class="p">:</span>
+                <span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">next</span><span class="p">(</span><span class="n">iterator</span><span class="p">))</span>
+            <span class="k">yield</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">items</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">strict</span><span class="p">:</span>
+            <span class="k">return</span>
+    <span class="k">if</span> <span class="n">items</span><span class="p">:</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">items</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;zip() argument </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2"> is too short&quot;</span><span class="p">)</span>
+    <span class="n">sentinel</span> <span class="o">=</span> <span class="nb">object</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">iterator</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">iterators</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="mi">2</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">next</span><span class="p">(</span><span class="n">iterator</span><span class="p">,</span> <span class="n">sentinel</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">sentinel</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;zip() argument </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2"> is too long&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="rejected-ideas">
+<h2><a class="toc-backref" href="#id8">Rejected Ideas</a><a class="headerlink" href="#rejected-ideas" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="add-additional-flavors-of-zip-to-itertools">
+<h3><a class="toc-backref" href="#id9">Add Additional Flavors Of <code class="docutils literal notranslate"><span class="pre">zip</span></code> To <code class="docutils literal notranslate"><span class="pre">itertools</span></code></a><a class="headerlink" href="#add-additional-flavors-of-zip-to-itertools" title="Permalink to this headline">¶</a></h3>
+<p>Adding <code class="docutils literal notranslate"><span class="pre">zip_strict</span></code> to itertools is a larger change with greater
+maintenance burden than the simple modification being proposed.</p>
+<p>It seems that a great deal of the motivation driving this alternative
+is that <code class="docutils literal notranslate"><span class="pre">zip_longest</span></code> already exists in <code class="docutils literal notranslate"><span class="pre">itertools</span></code>.  However,
+<code class="docutils literal notranslate"><span class="pre">zip_longest</span></code> is really another beast entirely: it takes on the
+responsibility of filling in missing values, a problem neither of
+the other variants even have.  It also arguably has the most
+specialized behavior of the three (to the point of exposing a new
+<code class="docutils literal notranslate"><span class="pre">fillvalue</span></code> parameter), so it makes sense that it would live in
+<code class="docutils literal notranslate"><span class="pre">itertools</span></code> while <code class="docutils literal notranslate"><span class="pre">zip</span></code> grows in-place.</p>
+<p>Importing a drop-in replacement for a built-in also feels too heavy,
+especially just to check a tricky condition that should “always” be
+true.  The goal here is not just to provide a way to catch bugs, but
+to also make it easy (even tempting) for a user to enable the check
+whenever using <code class="docutils literal notranslate"><span class="pre">zip</span></code> at a call site with this property.</p>
+<p>Some have also argued that a new function buried in the standard
+library is somehow more “discoverable” than a keyword parameter on the
+built-in itself.  The author does not believe this to be true.</p>
+<p>Another proposed idiom, per-module shadowing of the built-in <code class="docutils literal notranslate"><span class="pre">zip</span></code>
+with some subtly different variant from <code class="docutils literal notranslate"><span class="pre">itertools</span></code>, is an
+anti-pattern that shouldn’t be encouraged.</p>
+</div>
+<div class="section" id="add-several-modes-to-switch-between">
+<h3><a class="toc-backref" href="#id10">Add Several “Modes” To Switch Between</a><a class="headerlink" href="#add-several-modes-to-switch-between" title="Permalink to this headline">¶</a></h3>
+<p>This option only makes more sense than a binary flag if we anticipate
+having three or more modes. The “obvious” three choices for these
+enumerated or constant modes would be “shortest” (the current <code class="docutils literal notranslate"><span class="pre">zip</span></code>
+behavior), “strict” (the proposed behavior), and “longest”
+(the <code class="docutils literal notranslate"><span class="pre">itertools.zip_longest</span></code> behavior).</p>
+<p>However, it doesn’t seem like adding behaviors other than the current
+default and the proposed “strict” mode is worth the additional
+complexity.  The clearest candidate, “longest”, would require a new
+<code class="docutils literal notranslate"><span class="pre">fillvalue</span></code> parameter (which is meaningless for both other modes).
+This mode is also already handled perfectly by
+<code class="docutils literal notranslate"><span class="pre">itertools.zip_longest</span></code>, and adding it would create two ways of
+doing the same thing.  It’s not clear which would be the “obvious”
+choice: the <code class="docutils literal notranslate"><span class="pre">mode</span></code> parameter on the built-in <code class="docutils literal notranslate"><span class="pre">zip</span></code>, or the
+long-lived namesake utility in <code class="docutils literal notranslate"><span class="pre">itertools</span></code>.</p>
+</div>
+<div class="section" id="add-a-method-or-alternate-constructor-to-the-zip-type">
+<h3><a class="toc-backref" href="#id11">Add A Method Or Alternate Constructor To The <code class="docutils literal notranslate"><span class="pre">zip</span></code> Type</a><a class="headerlink" href="#add-a-method-or-alternate-constructor-to-the-zip-type" title="Permalink to this headline">¶</a></h3>
+<p>Consider the following two options, which have both been proposed:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">zm</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">iters</span><span class="p">)</span><span class="o">.</span><span class="n">strict</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">zd</span> <span class="o">=</span> <span class="nb">zip</span><span class="o">.</span><span class="n">strict</span><span class="p">(</span><span class="o">*</span><span class="n">iters</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>It’s not obvious which one will succeed, or how the other will fail.
+If <code class="docutils literal notranslate"><span class="pre">zip.strict</span></code> is implemented as a method, <code class="docutils literal notranslate"><span class="pre">zm</span></code> will succeed, but
+<code class="docutils literal notranslate"><span class="pre">zd</span></code> will fail in one of several confusing ways:</p>
+<ul class="simple">
+<li>Yield results that aren’t wrapped in a tuple (if <code class="docutils literal notranslate"><span class="pre">iters</span></code> contains
+just one item, a <code class="docutils literal notranslate"><span class="pre">zip</span></code> iterator).</li>
+<li>Raise a <code class="docutils literal notranslate"><span class="pre">TypeError</span></code> for an incorrect argument type (if <code class="docutils literal notranslate"><span class="pre">iters</span></code>
+contains just one item, not a <code class="docutils literal notranslate"><span class="pre">zip</span></code> iterator).</li>
+<li>Raise a <code class="docutils literal notranslate"><span class="pre">TypeError</span></code> for an incorrect number of arguments
+(otherwise).</li>
+</ul>
+<p>If <code class="docutils literal notranslate"><span class="pre">zip.strict</span></code> is implemented as a <code class="docutils literal notranslate"><span class="pre">classmethod</span></code> or
+<code class="docutils literal notranslate"><span class="pre">staticmethod</span></code>, <code class="docutils literal notranslate"><span class="pre">zd</span></code> will succeed, and <code class="docutils literal notranslate"><span class="pre">zm</span></code> will silently yield
+nothing (which is the problem we are trying to avoid in the first
+place).</p>
+<p>This proposal is further complicated by the fact that CPython’s actual
+<code class="docutils literal notranslate"><span class="pre">zip</span></code> type is an undocumented implementation detail.</p>
+</div>
+<div class="section" id="change-the-default-behavior-of-zip">
+<h3><a class="toc-backref" href="#id12">Change The Default Behavior Of <code class="docutils literal notranslate"><span class="pre">zip</span></code></a><a class="headerlink" href="#change-the-default-behavior-of-zip" title="Permalink to this headline">¶</a></h3>
+<p>There is nothing “wrong” with the default behavior of <code class="docutils literal notranslate"><span class="pre">zip</span></code>, since
+there are many cases where it is indeed the correct way to handle
+unequally-sized inputs. It’s extremely useful, for example, when
+dealing with infinite iterators.</p>
+<p><code class="docutils literal notranslate"><span class="pre">itertools.zip_longest</span></code> already exists to service those cases where
+the “extra” tail-end data is still needed.</p>
+</div>
+<div class="section" id="accept-a-callback-to-handle-remaining-items">
+<h3><a class="toc-backref" href="#id13">Accept A Callback To Handle Remaining Items</a><a class="headerlink" href="#accept-a-callback-to-handle-remaining-items" title="Permalink to this headline">¶</a></h3>
+<p>While able to do basically anything a user could need, this solution
+makes handling the more common cases (like rejecting mismatched
+lengths) unnecessarily complicated and non-obvious.</p>
+</div>
+<div class="section" id="raise-an-assertionerror-instead-of-a-valueerror">
+<h3><a class="toc-backref" href="#id14">Raise An <code class="docutils literal notranslate"><span class="pre">AssertionError</span></code> Instead Of A <code class="docutils literal notranslate"><span class="pre">ValueError</span></code></a><a class="headerlink" href="#raise-an-assertionerror-instead-of-a-valueerror" title="Permalink to this headline">¶</a></h3>
+<p>There are no built-in functions or types that raise an
+<code class="docutils literal notranslate"><span class="pre">AssertionError</span></code> as part of their API.  Further, the <a class="reference external" href="https://docs.python.org/3.9/library/exceptions.html?highlight=assertionerror#AssertionError">official
+documentation</a>
+simply reads (in its entirety):</p>
+<blockquote>
+<div>Raised when an <code class="docutils literal notranslate"><span class="pre">assert</span></code> statement fails.</div></blockquote>
+<p>Since this feature has nothing to do with Python’s <code class="docutils literal notranslate"><span class="pre">assert</span></code>
+statement, raising an <code class="docutils literal notranslate"><span class="pre">AssertionError</span></code> here would be inappropriate.
+Users desiring a check that is disabled in optimized mode (like an
+<code class="docutils literal notranslate"><span class="pre">assert</span></code> statement) can use <code class="docutils literal notranslate"><span class="pre">strict=__debug__</span></code> instead.</p>
+</div>
+<div class="section" id="add-a-similar-feature-to-map">
+<h3><a class="toc-backref" href="#id15">Add A Similar Feature to <code class="docutils literal notranslate"><span class="pre">map</span></code></a><a class="headerlink" href="#add-a-similar-feature-to-map" title="Permalink to this headline">¶</a></h3>
+<p>This PEP does not propose any changes to <code class="docutils literal notranslate"><span class="pre">map</span></code>, since the use of
+<code class="docutils literal notranslate"><span class="pre">map</span></code> with multiple iterable arguments is quite rare. However, this
+PEP’s ruling shall serve as precedent such a future discussion (should
+it occur).</p>
+<p>If rejected, the feature is realistically not worth pursuing. If
+accepted, such a change to <code class="docutils literal notranslate"><span class="pre">map</span></code> should not require its own PEP
+(though, like all enhancements, its usefulness should be carefully
+considered).  For consistency, it should follow same API and semantics
+debated here for <code class="docutils literal notranslate"><span class="pre">zip</span></code>.</p>
+</div>
+<div class="section" id="do-nothing">
+<h3><a class="toc-backref" href="#id16">Do Nothing</a><a class="headerlink" href="#do-nothing" title="Permalink to this headline">¶</a></h3>
+<p>This option is perhaps the least attractive.</p>
+<p>Silently truncated data is a particularly nasty class of bug, and
+hand-writing a robust solution that gets this right <a class="reference external" href="https://stackoverflow.com/questions/32954486/zip-iterators-asserting-for-equal-length-in-python">isn’t trivial</a>.
+The real-world motivating examples from Python’s own standard library
+are evidence that it’s <em>very</em> easy to fall into the sort of trap that
+this feature aims to avoid.</p>
+</div>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id17">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document is placed in the public domain or under the
+CC0-1.0-Universal license, whichever is more permissive.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0618.rst">https://github.com/python/peps/blob/master/pep-0618.rst</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0618.rst.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0617.html">PEP 0617</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0628.html">PEP 0628</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 618 – Add Optional Length-Checking To zip</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#backward-compatibility">Backward Compatibility</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#rejected-ideas">Rejected Ideas</a><ul>
+<li><a class="reference internal" href="#add-additional-flavors-of-zip-to-itertools">Add Additional Flavors Of <code class="docutils literal notranslate"><span class="pre">zip</span></code> To <code class="docutils literal notranslate"><span class="pre">itertools</span></code></a></li>
+<li><a class="reference internal" href="#add-several-modes-to-switch-between">Add Several “Modes” To Switch Between</a></li>
+<li><a class="reference internal" href="#add-a-method-or-alternate-constructor-to-the-zip-type">Add A Method Or Alternate Constructor To The <code class="docutils literal notranslate"><span class="pre">zip</span></code> Type</a></li>
+<li><a class="reference internal" href="#change-the-default-behavior-of-zip">Change The Default Behavior Of <code class="docutils literal notranslate"><span class="pre">zip</span></code></a></li>
+<li><a class="reference internal" href="#accept-a-callback-to-handle-remaining-items">Accept A Callback To Handle Remaining Items</a></li>
+<li><a class="reference internal" href="#raise-an-assertionerror-instead-of-a-valueerror">Raise An <code class="docutils literal notranslate"><span class="pre">AssertionError</span></code> Instead Of A <code class="docutils literal notranslate"><span class="pre">ValueError</span></code></a></li>
+<li><a class="reference internal" href="#add-a-similar-feature-to-map">Add A Similar Feature to <code class="docutils literal notranslate"><span class="pre">map</span></code></a></li>
+<li><a class="reference internal" href="#do-nothing">Do Nothing</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

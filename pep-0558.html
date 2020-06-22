@@ -1,0 +1,860 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 558 – Defined semantics for locals() &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 559 – Built-in noop()" href="pep-0559.html" />
+    <link rel="prev" title="PEP 557 – Data Classes" href="pep-0557.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 558 – Defined semantics for locals()</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-558-defined-semantics-for-locals">
+<h1 class="page-title">PEP 558 – Defined semantics for locals()<a class="headerlink" href="#pep-558-defined-semantics-for-locals" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">558</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Defined semantics for locals()</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Nick Coghlan &lt;ncoghlan&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even">Nathaniel J. Smith</dd>
+<dt class="field-odd">Discussions-To</dt>
+<dd class="field-odd"><a class="reference external" href="https://discuss.python.org/t/pep-558-defined-semantics-for-locals/2936">https://discuss.python.org/t/pep-558-defined-semantics-for-locals/2936</a></dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Draft</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">2017-09-08</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.9</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">2017-09-08, 2019-05-22, 2019-05-30, 2019-12-30</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id24">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id25">Rationale</a></li>
+<li><a class="reference internal" href="#proposal" id="id26">Proposal</a><ul>
+<li><a class="reference internal" href="#new-locals-documentation" id="id27">New <code class="docutils literal notranslate"><span class="pre">locals()</span></code> documentation</a></li>
+<li><a class="reference internal" href="#module-scope" id="id28">Module scope</a></li>
+<li><a class="reference internal" href="#class-scope" id="id29">Class scope</a></li>
+<li><a class="reference internal" href="#function-scope" id="id30">Function scope</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#cpython-implementation-changes" id="id31">CPython Implementation Changes</a><ul>
+<li><a class="reference internal" href="#resolving-the-issues-with-tracing-mode-behaviour" id="id32">Resolving the issues with tracing mode behaviour</a></li>
+<li><a class="reference internal" href="#making-the-behaviour-at-function-scope-less-surprising" id="id33">Making the behaviour at function scope less surprising</a></li>
+<li><a class="reference internal" href="#changes-to-the-stable-c-api-abi" id="id34">Changes to the stable C API/ABI</a></li>
+<li><a class="reference internal" href="#changes-to-the-public-cpython-c-api" id="id35">Changes to the public CPython C API</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#design-discussion" id="id36">Design Discussion</a><ul>
+<li><a class="reference internal" href="#changing-locals-to-return-independent-snapshots-at-function-scope" id="id37">Changing <code class="docutils literal notranslate"><span class="pre">locals()</span></code> to return independent snapshots at function scope</a></li>
+<li><a class="reference internal" href="#keeping-locals-as-a-snapshot-at-function-scope" id="id38">Keeping <code class="docutils literal notranslate"><span class="pre">locals()</span></code> as a snapshot at function scope</a></li>
+<li><a class="reference internal" href="#what-happens-with-the-default-args-for-eval-and-exec" id="id39">What happens with the default args for <code class="docutils literal notranslate"><span class="pre">eval()</span></code> and <code class="docutils literal notranslate"><span class="pre">exec()</span></code>?</a></li>
+<li><a class="reference internal" href="#changing-the-frame-api-semantics-in-regular-operation" id="id40">Changing the frame API semantics in regular operation</a></li>
+<li><a class="reference internal" href="#historical-semantics-at-function-scope" id="id41">Historical semantics at function scope</a></li>
+<li><a class="reference internal" href="#proposing-several-additions-to-the-stable-c-api-abi" id="id42">Proposing several additions to the stable C API/ABI</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation" id="id43">Implementation</a></li>
+<li><a class="reference internal" href="#acknowledgements" id="id44">Acknowledgements</a></li>
+<li><a class="reference internal" href="#references" id="id45">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id46">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id24">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>The semantics of the <code class="docutils literal notranslate"><span class="pre">locals()</span></code> builtin have historically been underspecified
+and hence implementation dependent.</p>
+<p>This PEP proposes formally standardising on the behaviour of the CPython 3.8
+reference implementation for most execution scopes, with some adjustments to the
+behaviour at function scope to make it more predictable and independent of the
+presence or absence of tracing functions.</p>
+<p>In addition, it proposes that the following functions be added to the stable
+Python C API/ABI:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyObject</span> <span class="o">*</span> <span class="n">PyLocals_Get</span><span class="p">();</span>
+<span class="nb">int</span> <span class="n">PyLocals_GetReturnsCopy</span><span class="p">();</span>
+<span class="n">PyObject</span> <span class="o">*</span> <span class="n">PyLocals_GetCopy</span><span class="p">();</span>
+<span class="n">PyObject</span> <span class="o">*</span> <span class="n">PyLocals_GetView</span><span class="p">();</span>
+<span class="nb">int</span> <span class="n">PyLocals_RefreshViews</span><span class="p">();</span>
+</pre></div>
+</div>
+<p>It also proposes the addition of several supporting functions and type
+definitions to the CPython C API.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id25">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>While the precise semantics of the <code class="docutils literal notranslate"><span class="pre">locals()</span></code> builtin are nominally undefined,
+in practice, many Python programs depend on it behaving exactly as it behaves in
+CPython (at least when no tracing functions are installed).</p>
+<p>Other implementations such as PyPy are currently replicating that behaviour,
+up to and including replication of local variable mutation bugs that
+can arise when a trace hook is installed <a class="footnote-reference brackets" href="#id16" id="id1">1</a>.</p>
+<p>While this PEP considers CPython’s current behaviour when no trace hooks are
+installed to be largely acceptable, it considers the current
+behaviour when trace hooks are installed to be problematic, as it causes bugs
+like <a class="footnote-reference brackets" href="#id16" id="id2">1</a> <em>without</em> even reliably enabling the desired functionality of allowing
+debuggers like <code class="docutils literal notranslate"><span class="pre">pdb</span></code> to mutate local variables <a class="footnote-reference brackets" href="#id18" id="id3">3</a>.</p>
+<p>Review of the initial PEP and the draft implementation then identified an
+opportunity for simplification of both the documentation and implementation
+of the function level <code class="docutils literal notranslate"><span class="pre">locals()</span></code> behaviour by updating it to return an
+independent snapshot of the function locals and closure variables on each
+call, rather than continuing to return the semi-dynamic intermittently updated
+shared copy that it has historically returned in CPython.</p>
+</div>
+<div class="section" id="proposal">
+<h2><a class="toc-backref" href="#id26">Proposal</a><a class="headerlink" href="#proposal" title="Permalink to this headline">¶</a></h2>
+<p>The expected semantics of the <code class="docutils literal notranslate"><span class="pre">locals()</span></code> builtin change based on the current
+execution scope. For this purpose, the defined scopes of execution are:</p>
+<ul class="simple">
+<li>module scope: top-level module code, as well as any other code executed using
+<code class="docutils literal notranslate"><span class="pre">exec()</span></code> or <code class="docutils literal notranslate"><span class="pre">eval()</span></code> with a single namespace</li>
+<li>class scope: code in the body of a <code class="docutils literal notranslate"><span class="pre">class</span></code> statement, as well as any other
+code executed using <code class="docutils literal notranslate"><span class="pre">exec()</span></code> or <code class="docutils literal notranslate"><span class="pre">eval()</span></code> with separate local and global
+namespaces</li>
+<li>function scope: code in the body of a <code class="docutils literal notranslate"><span class="pre">def</span></code> or <code class="docutils literal notranslate"><span class="pre">async</span> <span class="pre">def</span></code> statement,
+or any other construct that creates an optimized code block in CPython (e.g.
+comprehensions, lambda functions)</li>
+</ul>
+<p>We also allow interpreters to define two “modes” of execution, with only the
+first mode being considered part of the language specification itself:</p>
+<ul class="simple">
+<li>regular operation: the way the interpreter behaves by default</li>
+<li>tracing mode: the way the interpreter behaves when a trace hook has been
+registered in one or more threads via an implementation dependent mechanism
+like <code class="docutils literal notranslate"><span class="pre">sys.settrace</span></code> (<a class="footnote-reference brackets" href="#id19" id="id4">4</a>) in CPython’s <code class="docutils literal notranslate"><span class="pre">sys</span></code> module or
+<code class="docutils literal notranslate"><span class="pre">PyEval_SetTrace</span></code> (<a class="footnote-reference brackets" href="#id20" id="id5">5</a>) in CPython’s C API</li>
+</ul>
+<p>For regular operation, this PEP proposes elevating most of the current behaviour
+of the CPython reference implementation to become part of the language
+specification, <em>except</em> that each call to <code class="docutils literal notranslate"><span class="pre">locals()</span></code> at function scope will
+create a new dictionary object, rather than caching a common dict instance in
+the frame object that each invocation will update and return.</p>
+<p>For tracing mode, this PEP proposes changes to CPython’s behaviour at function
+scope that make the <code class="docutils literal notranslate"><span class="pre">locals()</span></code> builtin semantics identical to those used in
+regular operation, while also making the related frame API semantics clearer
+and easier for interactive debuggers to rely on.</p>
+<p>The proposed tracing mode changes also affect the semantics of frame object
+references obtained through other means, such as via a traceback, or via the
+<code class="docutils literal notranslate"><span class="pre">sys._getframe()</span></code> API.</p>
+<div class="section" id="new-locals-documentation">
+<h3><a class="toc-backref" href="#id27">New <code class="docutils literal notranslate"><span class="pre">locals()</span></code> documentation</a><a class="headerlink" href="#new-locals-documentation" title="Permalink to this headline">¶</a></h3>
+<p>The heart of this proposal is to revise the documentation for the <code class="docutils literal notranslate"><span class="pre">locals()</span></code>
+builtin to read as follows:</p>
+<blockquote>
+<div><p>Return a mapping object representing the current local symbol table, with
+variable names as the keys, and their currently bound references as the
+values.</p>
+<p>At module scope, as well as when using <code class="docutils literal notranslate"><span class="pre">exec()</span></code> or <code class="docutils literal notranslate"><span class="pre">eval()</span></code> with a
+single namespace, this function returns the same namespace as <code class="docutils literal notranslate"><span class="pre">globals()</span></code>.</p>
+<p>At class scope, it returns the namespace that will be passed to the
+metaclass constructor.</p>
+<p>When using <code class="docutils literal notranslate"><span class="pre">exec()</span></code> or <code class="docutils literal notranslate"><span class="pre">eval()</span></code> with separate local and global
+namespaces, it returns the local namespace passed in to the function call.</p>
+<p>In all of the above cases, each call to <code class="docutils literal notranslate"><span class="pre">locals()</span></code> in a given frame of
+execution will return the <em>same</em> mapping object. Changes made through
+the mapping object returned from <code class="docutils literal notranslate"><span class="pre">locals()</span></code> will be visible as bound,
+rebound, or deleted local variables, and binding, rebinding, or deleting
+local variables will immediately affect the contents of the returned mapping
+object.</p>
+<p>At function scope (including for generators and coroutines), each call to
+<code class="docutils literal notranslate"><span class="pre">locals()</span></code> instead returns a fresh dictionary containing the current
+bindings of the function’s local variables and any nonlocal cell references.
+In this case, name binding changes made via the returned dict are <em>not</em>
+written back to the corresponding local variables or nonlocal cell
+references, and binding, rebinding, or deleting local variables and nonlocal
+cell references does <em>not</em> affect the contents of previously returned
+dictionaries.</p>
+</div></blockquote>
+<p>There would also be a versionchanged note for Python 3.9:</p>
+<blockquote>
+<div>In prior versions, the semantics of mutating the mapping object returned
+from <code class="docutils literal notranslate"><span class="pre">locals()</span></code> were formally undefined. In CPython specifically,
+the mapping returned at function scope could be implicitly refreshed by
+other operations, such as calling <code class="docutils literal notranslate"><span class="pre">locals()</span></code> again, or the interpreter
+implicitly invoking a Python level trace function. Obtaining the legacy
+CPython behaviour now requires explicit calls to update the initially
+returned dictionary with the results of subsequent calls to <code class="docutils literal notranslate"><span class="pre">locals()</span></code>.</div></blockquote>
+<p>For reference, the current documentation of this builtin reads as follows:</p>
+<blockquote>
+<div><p>Update and return a dictionary representing the current local symbol table.
+Free variables are returned by locals() when it is called in function
+blocks, but not in class blocks.</p>
+<p>Note: The contents of this dictionary should not be modified; changes may
+not affect the values of local and free variables used by the interpreter.</p>
+</div></blockquote>
+<p>(In other words: the status quo is that the semantics and behaviour of
+<code class="docutils literal notranslate"><span class="pre">locals()</span></code> are formally implementation defined, whereas the proposed
+state after this PEP is that the only implementation defined behaviour will be
+that associated with whether or not the implementation emulates the CPython
+frame API, with the behaviour in all other cases being defined by the language
+and library references)</p>
+</div>
+<div class="section" id="module-scope">
+<h3><a class="toc-backref" href="#id28">Module scope</a><a class="headerlink" href="#module-scope" title="Permalink to this headline">¶</a></h3>
+<p>At module scope, as well as when using <code class="docutils literal notranslate"><span class="pre">exec()</span></code> or <code class="docutils literal notranslate"><span class="pre">eval()</span></code> with a
+single namespace, <code class="docutils literal notranslate"><span class="pre">locals()</span></code> must return the same object as <code class="docutils literal notranslate"><span class="pre">globals()</span></code>,
+which must be the actual execution namespace (available as
+<code class="docutils literal notranslate"><span class="pre">inspect.currentframe().f_locals</span></code> in implementations that provide access
+to frame objects).</p>
+<p>Variable assignments during subsequent code execution in the same scope must
+dynamically change the contents of the returned mapping, and changes to the
+returned mapping must change the values bound to local variable names in the
+execution environment.</p>
+<p>The semantics at module scope are required to be the same in both tracing
+mode (if provided by the implementation) and in regular operation.</p>
+<p>To capture this expectation as part of the language specification, the following
+paragraph will be added to the documentation for <code class="docutils literal notranslate"><span class="pre">locals()</span></code>:</p>
+<blockquote>
+<div>At module scope, as well as when using <code class="docutils literal notranslate"><span class="pre">exec()</span></code> or <code class="docutils literal notranslate"><span class="pre">eval()</span></code> with a
+single namespace, this function returns the same namespace as <code class="docutils literal notranslate"><span class="pre">globals()</span></code>.</div></blockquote>
+<p>This part of the proposal does not require any changes to the reference
+implementation - it is standardisation of the current behaviour.</p>
+</div>
+<div class="section" id="class-scope">
+<h3><a class="toc-backref" href="#id29">Class scope</a><a class="headerlink" href="#class-scope" title="Permalink to this headline">¶</a></h3>
+<p>At class scope, as well as when using <code class="docutils literal notranslate"><span class="pre">exec()</span></code> or <code class="docutils literal notranslate"><span class="pre">eval()</span></code> with separate
+global and local namespaces, <code class="docutils literal notranslate"><span class="pre">locals()</span></code> must return the specified local
+namespace (which may be supplied by the metaclass <code class="docutils literal notranslate"><span class="pre">__prepare__</span></code> method
+in the case of classes). As for module scope, this must be a direct reference
+to the actual execution namespace (available as
+<code class="docutils literal notranslate"><span class="pre">inspect.currentframe().f_locals</span></code> in implementations that provide access
+to frame objects).</p>
+<p>Variable assignments during subsequent code execution in the same scope must
+change the contents of the returned mapping, and changes to the returned mapping
+must change the values bound to local variable names in the
+execution environment.</p>
+<p>The mapping returned by <code class="docutils literal notranslate"><span class="pre">locals()</span></code> will <em>not</em> be used as the actual class
+namespace underlying the defined class (the class creation process will copy
+the contents to a fresh dictionary that is only accessible by going through the
+class machinery).</p>
+<p>For nested classes defined inside a function, any nonlocal cells referenced from
+the class scope are <em>not</em> included in the <code class="docutils literal notranslate"><span class="pre">locals()</span></code> mapping.</p>
+<p>The semantics at class scope are required to be the same in both tracing
+mode (if provided by the implementation) and in regular operation.</p>
+<p>To capture this expectation as part of the language specification, the following
+two paragraphs will be added to the documentation for <code class="docutils literal notranslate"><span class="pre">locals()</span></code>:</p>
+<blockquote>
+<div><p>When using <code class="docutils literal notranslate"><span class="pre">exec()</span></code> or <code class="docutils literal notranslate"><span class="pre">eval()</span></code> with separate local and global
+namespaces, [this function] returns the given local namespace.</p>
+<p>At class scope, it returns the namespace that will be passed to the metaclass
+constructor.</p>
+</div></blockquote>
+<p>This part of the proposal does not require any changes to the reference
+implementation - it is standardisation of the current behaviour.</p>
+</div>
+<div class="section" id="function-scope">
+<h3><a class="toc-backref" href="#id30">Function scope</a><a class="headerlink" href="#function-scope" title="Permalink to this headline">¶</a></h3>
+<p>At function scope, interpreter implementations are granted significant freedom
+to optimise local variable access, and hence are NOT required to permit
+arbitrary modification of local and nonlocal variable bindings through the
+mapping returned from <code class="docutils literal notranslate"><span class="pre">locals()</span></code>.</p>
+<p>Historically, this leniency has been described in the language specification
+with the words “The contents of this dictionary should not be modified; changes
+may not affect the values of local and free variables used by the interpreter.”</p>
+<p>This PEP proposes to change that text to instead say:</p>
+<blockquote>
+<div>At function scope (including for generators and coroutines), each call to
+<code class="docutils literal notranslate"><span class="pre">locals()</span></code> instead returns a fresh dictionary containing the current
+bindings of the function’s local variables and any nonlocal cell references.
+In this case, name binding changes made via the returned dict are <em>not</em>
+written back to the corresponding local variables or nonlocal cell
+references, and binding, rebinding, or deleting local variables and nonlocal
+cell references does <em>not</em> affect the contents of previously returned
+dictionaries.</div></blockquote>
+<p>This part of the proposal <em>does</em> require changes to the CPython reference
+implementation, as CPython currently returns a shared mapping object that may
+be implicitly refreshed by additional calls to <code class="docutils literal notranslate"><span class="pre">locals()</span></code>, and the
+“write back” strategy currently used to support namespace changes
+from trace functions also doesn’t comply with it (and causes the quirky
+behavioural problems mentioned in the Rationale).</p>
+</div>
+</div>
+<div class="section" id="cpython-implementation-changes">
+<h2><a class="toc-backref" href="#id31">CPython Implementation Changes</a><a class="headerlink" href="#cpython-implementation-changes" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="resolving-the-issues-with-tracing-mode-behaviour">
+<h3><a class="toc-backref" href="#id32">Resolving the issues with tracing mode behaviour</a><a class="headerlink" href="#resolving-the-issues-with-tracing-mode-behaviour" title="Permalink to this headline">¶</a></h3>
+<p>The current cause of CPython’s tracing mode quirks (both the side effects from
+simply installing a tracing function and the fact that writing values back to
+function locals only works for the specific function being traced) is the way
+that locals mutation support for trace hooks is currently implemented: the
+<code class="docutils literal notranslate"><span class="pre">PyFrame_LocalsToFast</span></code> function.</p>
+<p>When a trace function is installed, CPython currently does the following for
+function frames (those where the code object uses “fast locals” semantics):</p>
+<ol class="arabic simple">
+<li>Calls <code class="docutils literal notranslate"><span class="pre">PyFrame_FastToLocals</span></code> to update the dynamic snapshot</li>
+<li>Calls the trace hook (with tracing of the hook itself disabled)</li>
+<li>Calls <code class="docutils literal notranslate"><span class="pre">PyFrame_LocalsToFast</span></code> to capture any changes made to the dynamic
+snapshot</li>
+</ol>
+<p>This approach is problematic for a few different reasons:</p>
+<ul class="simple">
+<li>Even if the trace function doesn’t mutate the snapshot, the final step resets
+any cell references back to the state they were in before the trace function
+was called (this is the root cause of the bug report in <a class="footnote-reference brackets" href="#id16" id="id6">1</a>)</li>
+<li>If the trace function <em>does</em> mutate the snapshot, but then does something
+that causes the snapshot to be refreshed, those changes are lost (this is
+one aspect of the bug report in <a class="footnote-reference brackets" href="#id18" id="id7">3</a>)</li>
+<li>If the trace function attempts to mutate the local variables of a frame other
+than the one being traced (e.g. <code class="docutils literal notranslate"><span class="pre">frame.f_back.f_locals</span></code>), those changes
+will almost certainly be lost (this is another aspect of the bug report in
+<a class="footnote-reference brackets" href="#id18" id="id8">3</a>)</li>
+<li>If a <code class="docutils literal notranslate"><span class="pre">locals()</span></code> reference is passed to another function, and <em>that</em>
+function mutates the snapshot namespace, then those changes <em>may</em> be written
+back to the execution frame <em>if</em> a trace hook is installed</li>
+</ul>
+<p>The proposed resolution to this problem is to take advantage of the fact that
+whereas functions typically access their <em>own</em> namespace using the language
+defined <code class="docutils literal notranslate"><span class="pre">locals()</span></code> builtin, trace functions necessarily use the implementation
+dependent <code class="docutils literal notranslate"><span class="pre">frame.f_locals</span></code> interface, as a frame reference is what gets
+passed to hook implementations.</p>
+<p>Instead of being a direct reference to the internal dynamic snapshot used to
+populate the independent snapshots returned by <code class="docutils literal notranslate"><span class="pre">locals()</span></code>, <code class="docutils literal notranslate"><span class="pre">frame.f_locals</span></code>
+will be updated to instead return a dedicated proxy type (implemented as a
+private subclass of the existing <code class="docutils literal notranslate"><span class="pre">types.MappingProxyType</span></code>) that has two
+internal attributes not exposed as part of the Python runtime API:</p>
+<ul class="simple">
+<li><em>mapping</em>: an implicitly updated snapshot of the function local variables
+and closure references, as well as any arbitrary items that have been set via
+the mapping API, even if they don’t have storage allocated for them on the
+underlying frame</li>
+<li><em>frame</em>: the underlying frame that the snapshot is for</li>
+</ul>
+<p>For backwards compatibility, the stored snapshot will continue to be made
+available through the public <code class="docutils literal notranslate"><span class="pre">PyEval_GetLocals()</span></code> C API.</p>
+<p><code class="docutils literal notranslate"><span class="pre">__getitem__</span></code> operations on the proxy will read directly from the stored
+snapshot.</p>
+<p>The stored snapshot is implicitly updated when the <code class="docutils literal notranslate"><span class="pre">f_locals</span></code> attribute is
+retrieved from the frame object, as well as individual keys being updated by
+mutating operations on the proxy itself. This means that if a reference to the
+proxy is obtained from within the function, the proxy won’t implicitly pick up
+name binding operations that take place as the function executes - the
+<code class="docutils literal notranslate"><span class="pre">f_locals</span></code> attribute on the frame will need to be accessed again in order to
+trigger a refresh.</p>
+<p><code class="docutils literal notranslate"><span class="pre">__setitem__</span></code> and <code class="docutils literal notranslate"><span class="pre">__delitem__</span></code> operations on the proxy will affect not only
+the dynamic snapshot, but <em>also</em> the corresponding fast local or cell reference
+on the underlying frame.</p>
+<p>After a frame has finished executing, cell references can still be updated via
+the proxy, but the link back to the underlying frame is explicitly broken to
+avoid creating a persistent reference cycle that unexpectedly keeps frames
+alive.</p>
+<p>Other MutableMapping methods will behave as expected for a mapping with these
+essential method semantics.</p>
+</div>
+<div class="section" id="making-the-behaviour-at-function-scope-less-surprising">
+<h3><a class="toc-backref" href="#id33">Making the behaviour at function scope less surprising</a><a class="headerlink" href="#making-the-behaviour-at-function-scope-less-surprising" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">locals()</span></code> builtin will be made aware of the new fast locals proxy type,
+and when it detects it on a frame, will return a fresh snapshot of the local
+namespace (i.e. the equivalent of <code class="docutils literal notranslate"><span class="pre">dict(frame.f_locals)</span></code>) rather than
+returning the proxy directly.</p>
+</div>
+<div class="section" id="changes-to-the-stable-c-api-abi">
+<h3><a class="toc-backref" href="#id34">Changes to the stable C API/ABI</a><a class="headerlink" href="#changes-to-the-stable-c-api-abi" title="Permalink to this headline">¶</a></h3>
+<p>Unlike Python code, extension module functions that call in to the Python C API
+can be called from any kind of Python scope. This means it isn’t obvious from
+the context whether <code class="docutils literal notranslate"><span class="pre">locals()</span></code> will return a snapshot or not, as it depends
+on the scope of the calling Python code, not the C code itself.</p>
+<p>This means it is desirable to offer C APIs that give predictable, scope
+independent, behaviour. However, it is also desirable to allow C code to
+exactly mimic the behaviour of Python code at the same scope.</p>
+<p>To enable mimicing the behaviour of Python code, the stable C ABI would gain
+the following new functions:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyObject</span> <span class="o">*</span> <span class="n">PyLocals_Get</span><span class="p">();</span>
+<span class="nb">int</span> <span class="n">PyLocals_GetReturnsCopy</span><span class="p">();</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">PyLocals_Get()</span></code> is directly equivalent to the Python <code class="docutils literal notranslate"><span class="pre">locals()</span></code> builtin.
+It returns a new reference to the local namespace mapping for the active
+Python frame at module and class scope, and when using <code class="docutils literal notranslate"><span class="pre">exec()</span></code> or <code class="docutils literal notranslate"><span class="pre">eval()</span></code>.
+It returns a shallow copy of the active namespace at
+function/coroutine/generator scope.</p>
+<p><code class="docutils literal notranslate"><span class="pre">PyLocals_GetReturnsCopy()</span></code> returns zero if <code class="docutils literal notranslate"><span class="pre">PyLocals_Get()</span></code> returns a
+direct reference to the local namespace mapping, and a non-zero value if it
+returns a shallow copy. This allows extension module code to determine the
+potential impact of mutating the mapping returned by <code class="docutils literal notranslate"><span class="pre">PyLocals_Get()</span></code> without
+needing access to the details of the running frame object.</p>
+<p>To allow extension module code to behave consistently regardless of the active
+Python scope, the stable C ABI would gain the following new functions:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyObject</span> <span class="o">*</span> <span class="n">PyLocals_GetCopy</span><span class="p">();</span>
+<span class="n">PyObject</span> <span class="o">*</span> <span class="n">PyLocals_GetView</span><span class="p">();</span>
+<span class="nb">int</span> <span class="n">PyLocals_RefreshViews</span><span class="p">();</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">PyLocals_GetCopy()</span></code> returns a new dict instance populated from the current
+locals namespace. Roughly equivalent to <code class="docutils literal notranslate"><span class="pre">dict(locals())</span></code> in Python code, but
+avoids the double-copy in the case where <code class="docutils literal notranslate"><span class="pre">locals()</span></code> already returns a shallow
+copy.</p>
+<p><code class="docutils literal notranslate"><span class="pre">PyLocals_GetView()</span></code> returns a new read-only mapping proxy instance for the
+current locals namespace. This view is immediately updated for all local
+variable changes at module and class scope, and when using exec() or eval().
+It is updated at implementation dependent times at function/coroutine/generator
+scope (accessing the existing <code class="docutils literal notranslate"><span class="pre">PyEval_GetLocals()</span></code> API, or any of the
+<code class="docutils literal notranslate"><span class="pre">PyLocals_Get*</span></code> APIs, including calling <code class="docutils literal notranslate"><span class="pre">PyLocals_GetView()</span></code> again, will
+always force an update).</p>
+<p><code class="docutils literal notranslate"><span class="pre">PyLocals_RefreshViews()</span></code> updates any views previously returned by
+<code class="docutils literal notranslate"><span class="pre">PyLocals_GetView()</span></code> with the current status of the frame. A non-zero return
+value indicates that an error occurred with the update, and the views may not
+accurately reflect the current state of the frame. The Python exception state
+will be set in such cases. This function also refreshes the shared dynamic
+snapshot returned by <code class="docutils literal notranslate"><span class="pre">PyEval_GetLocals()</span></code> in optimised scopes.</p>
+<p>The existing <code class="docutils literal notranslate"><span class="pre">PyEval_GetLocals()</span></code> API will retain its existing behaviour in
+CPython (mutable locals at class and module scope, shared dynamic snapshot
+otherwise). However, its documentation will be updated to note that the
+conditions under which the shared dynamic snapshot get updated have changed.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">PyEval_GetLocals()</span></code> documentation will also be updated to recommend
+replacing usage of this API with whichever of the new APIs is most appropriate
+for the use case:</p>
+<ul class="simple">
+<li>Use <code class="docutils literal notranslate"><span class="pre">PyLocals_Get()</span></code> to exactly match the semantics of the Python level
+<code class="docutils literal notranslate"><span class="pre">locals()</span></code> builtin.</li>
+<li>Use <code class="docutils literal notranslate"><span class="pre">PyLocals_GetView()</span></code> for read-only access to the current locals
+namespace.</li>
+<li>Use <code class="docutils literal notranslate"><span class="pre">PyLocals_GetCopy()</span></code> for a regular mutable dict that contains a copy of
+the current locals namespace, but has no ongoing connection to the active
+frame.</li>
+<li>Query <code class="docutils literal notranslate"><span class="pre">PyLocals_GetReturnsCopy()</span></code> explicitly to implement custom handling
+(e.g. raising a meaningful exception) for scopes where <code class="docutils literal notranslate"><span class="pre">PyLocals_Get()</span></code>
+would return a shallow copy rather than granting read/write access to the
+locals namespace.</li>
+</ul>
+</div>
+<div class="section" id="changes-to-the-public-cpython-c-api">
+<h3><a class="toc-backref" href="#id35">Changes to the public CPython C API</a><a class="headerlink" href="#changes-to-the-public-cpython-c-api" title="Permalink to this headline">¶</a></h3>
+<p>The existing <code class="docutils literal notranslate"><span class="pre">PyEval_GetLocals()</span></code> API returns a borrowed reference, which
+means it cannot be updated to return the new shallow copies at function
+scope. Instead, it will return a borrowed reference to the internal mapping
+maintained by the fast locals proxy. This shared mapping will behave similarly
+to the existing shared mapping in Python 3.8 and earlier, but the exact
+conditions under which it gets refreshed will be different. Specifically:</p>
+<ul class="simple">
+<li>accessing the Python level <code class="docutils literal notranslate"><span class="pre">f_locals</span></code> frame attribute</li>
+<li>any call to <code class="docutils literal notranslate"><span class="pre">PyFrame_GetLocals()</span></code>, <code class="docutils literal notranslate"><span class="pre">PyFrame_GetLocalsCopy()</span></code>,
+<code class="docutils literal notranslate"><span class="pre">PyFrame_GetLocalsView()</span></code>, <code class="docutils literal notranslate"><span class="pre">_PyFrame_BorrowLocals()</span></code>, or
+<code class="docutils literal notranslate"><span class="pre">PyFrame_RefreshLocalsViews()</span></code> for the frame</li>
+<li>any call to <code class="docutils literal notranslate"><span class="pre">PyLocals_Get()</span></code>, <code class="docutils literal notranslate"><span class="pre">PyLocals_GetCopy()</span></code>, <code class="docutils literal notranslate"><span class="pre">PyLocals_GetView()</span></code>,
+<code class="docutils literal notranslate"><span class="pre">PyLocals_RefreshViews()</span></code>, or the Python <code class="docutils literal notranslate"><span class="pre">locals()</span></code> builtin while the
+frame is running</li>
+</ul>
+<p>(Even though <code class="docutils literal notranslate"><span class="pre">PyEval_GetLocals()</span></code> is part of the stable C API/ABI, the
+specifics of when the namespace it returns gets refreshed are still an
+interpreter implementation detail)</p>
+<p>The additions to the public CPython C API are the frame level enhancements
+needed to support the stable C API/ABI updates:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyObject</span> <span class="o">*</span> <span class="n">PyFrame_GetLocals</span><span class="p">(</span><span class="n">frame</span><span class="p">);</span>
+<span class="nb">int</span> <span class="n">PyFrame_GetLocalsReturnsCopy</span><span class="p">(</span><span class="n">frame</span><span class="p">);</span>
+<span class="n">PyObject</span> <span class="o">*</span> <span class="n">PyFrame_GetLocalsCopy</span><span class="p">(</span><span class="n">frame</span><span class="p">);</span>
+<span class="n">PyObject</span> <span class="o">*</span> <span class="n">PyFrame_GetLocalsView</span><span class="p">(</span><span class="n">frame</span><span class="p">);</span>
+<span class="nb">int</span> <span class="n">PyFrame_RefreshLocalsViews</span><span class="p">(</span><span class="n">frame</span><span class="p">);</span>
+<span class="n">PyObject</span> <span class="o">*</span> <span class="n">_PyFrame_BorrowLocals</span><span class="p">(</span><span class="n">frame</span><span class="p">);</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">PyFrame_GetLocals(frame)</span></code> is the underlying API for <code class="docutils literal notranslate"><span class="pre">PyLocals_Get()</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">PyFrame_GetLocalsReturnsCopy(frame)</span></code> is the underlying API for
+<code class="docutils literal notranslate"><span class="pre">PyLocals_GetReturnsCopy()</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">PyFrame_GetLocalsCopy(frame)</span></code> is the underlying API for
+<code class="docutils literal notranslate"><span class="pre">PyLocals_GetCopy()</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">PyFrame_GetLocalsView(frame)</span></code> is the underlying API for <code class="docutils literal notranslate"><span class="pre">PyLocals_GetView()</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">PyFrame_RefreshLocalsViews(frame)</span></code> is the underlying API for
+<code class="docutils literal notranslate"><span class="pre">PyLocals_RefreshViews()</span></code>. In the draft reference implementation, it is also
+needed in CPython when accessing the frame <code class="docutils literal notranslate"><span class="pre">f_locals</span></code> attribute directly from
+the frame struct, or the mapping returned by <code class="docutils literal notranslate"><span class="pre">_PyFrame_BorrowLocals(frame)</span></code>,
+and <code class="docutils literal notranslate"><span class="pre">PyFrame_GetLocalsReturnsCopy()</span></code> is true for that frame (otherwise the
+locals proxy may report stale information).</p>
+<p><code class="docutils literal notranslate"><span class="pre">_PyFrame_BorrowLocals(frame)</span></code> is the underlying API for
+<code class="docutils literal notranslate"><span class="pre">PyEval_GetLocals()</span></code>. The underscore prefix is intended to discourage use and
+to indicate that code using it is unlikely to be portable across
+implementations. However, it is documented and visible to the linker because
+the dynamic snapshot stored inside the write-through proxy is otherwise
+completely inaccessible from C code (in the draft reference implementation,
+the struct definition for the fast locals proxy itself is deliberately kept
+private to the frame implementation, so not even the rest of CPython can see
+it - instances must be manipulated via the Python mapping C API).</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">PyFrame_LocalsToFast()</span></code> function will be changed to always emit
+<code class="docutils literal notranslate"><span class="pre">RuntimeError</span></code>, explaining that it is no longer a supported operation, and
+affected code should be updated to use <code class="docutils literal notranslate"><span class="pre">PyFrame_GetLocals(frame)</span></code>,
+<code class="docutils literal notranslate"><span class="pre">PyFrame_GetLocalsCopy(frame)</span></code>, or <code class="docutils literal notranslate"><span class="pre">PyFrame_GetLocalsView(frame)</span></code> instead.</p>
+<p>In addition to the above documented interfaces, the draft reference
+implementation also exposes the following undocumented interfaces:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyTypeObject</span> <span class="n">_PyFastLocalsProxy_Type</span><span class="p">;</span>
+<span class="c1">#define _PyFastLocalsProxy_CheckExact(self) \</span>
+    <span class="p">(</span><span class="n">Py_TYPE</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">==</span> <span class="o">&amp;</span><span class="n">_PyFastLocalsProxy_Type</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This type is what the reference implementation actually stores in <code class="docutils literal notranslate"><span class="pre">f_locals</span></code>
+for optimized frames (i.e. when <code class="docutils literal notranslate"><span class="pre">PyFrame_GetLocalsReturnsCopy()</span></code> returns
+true).</p>
+</div>
+</div>
+<div class="section" id="design-discussion">
+<h2><a class="toc-backref" href="#id36">Design Discussion</a><a class="headerlink" href="#design-discussion" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="changing-locals-to-return-independent-snapshots-at-function-scope">
+<h3><a class="toc-backref" href="#id37">Changing <code class="docutils literal notranslate"><span class="pre">locals()</span></code> to return independent snapshots at function scope</a><a class="headerlink" href="#changing-locals-to-return-independent-snapshots-at-function-scope" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">locals()</span></code> builtin is a required part of the language, and in the
+reference implementation it has historically returned a mutable mapping with
+the following characteristics:</p>
+<ul class="simple">
+<li>each call to <code class="docutils literal notranslate"><span class="pre">locals()</span></code> returns the <em>same</em> mapping object</li>
+<li>for namespaces where <code class="docutils literal notranslate"><span class="pre">locals()</span></code> returns a reference to something other than
+the actual local execution namespace, each call to <code class="docutils literal notranslate"><span class="pre">locals()</span></code> updates the
+mapping object with the current state of the local variables and any referenced
+nonlocal cells</li>
+<li>changes to the returned mapping <em>usually</em> aren’t written back to the
+local variable bindings or the nonlocal cell references, but write backs
+can be triggered by doing one of the following:<ul>
+<li>installing a Python level trace hook (write backs then happen whenever
+the trace hook is called)</li>
+<li>running a function level wildcard import (requires bytecode injection in Py3)</li>
+<li>running an <code class="docutils literal notranslate"><span class="pre">exec</span></code> statement in the function’s scope (Py2 only, since
+<code class="docutils literal notranslate"><span class="pre">exec</span></code> became an ordinary builtin in Python 3)</li>
+</ul>
+</li>
+</ul>
+<p>Originally this PEP proposed to retain the first two of these properties,
+while changing the third in order to address the outright behaviour bugs that
+it can cause.</p>
+<p>In <a class="footnote-reference brackets" href="#id22" id="id9">7</a> Nathaniel Smith made a persuasive case that we could make the behaviour
+of <code class="docutils literal notranslate"><span class="pre">locals()</span></code> at function scope substantially less confusing by retaining only
+the second property and having each call to <code class="docutils literal notranslate"><span class="pre">locals()</span></code> at function scope
+return an <em>independent</em> snapshot of the local variables and closure references
+rather than updating an implicitly shared snapshot.</p>
+<p>As this revised design also made the implementation markedly easier to follow,
+the PEP was updated to propose this change in behaviour, rather than retaining
+the historical shared snapshot.</p>
+</div>
+<div class="section" id="keeping-locals-as-a-snapshot-at-function-scope">
+<h3><a class="toc-backref" href="#id38">Keeping <code class="docutils literal notranslate"><span class="pre">locals()</span></code> as a snapshot at function scope</a><a class="headerlink" href="#keeping-locals-as-a-snapshot-at-function-scope" title="Permalink to this headline">¶</a></h3>
+<p>As discussed in <a class="footnote-reference brackets" href="#id22" id="id10">7</a>, it would theoretically be possible to change the semantics
+of the <code class="docutils literal notranslate"><span class="pre">locals()</span></code> builtin to return the write-through proxy at function scope,
+rather than switching it to return independent snapshots.</p>
+<p>This PEP doesn’t (and won’t) propose this as it’s a backwards incompatible
+change in practice, even though code that relies on the current behaviour is
+technically operating in an undefined area of the language specification.</p>
+<p>Consider the following code snippet:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">example</span><span class="p">():</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="nb">locals</span><span class="p">()[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Even with a trace hook installed, that function will consistently print <code class="docutils literal notranslate"><span class="pre">1</span></code>
+on the current reference interpreter implementation:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">example</span><span class="p">()</span>
+<span class="go">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">sys</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">basic_hook</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="k">return</span> <span class="n">basic_hook</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sys</span><span class="o">.</span><span class="n">settrace</span><span class="p">(</span><span class="n">basic_hook</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">example</span><span class="p">()</span>
+<span class="go">1</span>
+</pre></div>
+</div>
+<p>Similarly, <code class="docutils literal notranslate"><span class="pre">locals()</span></code> can be passed to the <code class="docutils literal notranslate"><span class="pre">exec()</span></code> and <code class="docutils literal notranslate"><span class="pre">eval()</span></code> builtins
+at function scope (either explicitly or implicitly) without risking unexpected
+rebinding of local variables or closure references.</p>
+<p>Provoking the reference interpreter into incorrectly mutating the local variable
+state requires a more complex setup where a nested function closes over a
+variable being rebound in the outer function, and due to the use of either
+threads, generators, or coroutines, it’s possible for a trace function to start
+running for the nested function before the rebinding operation in the outer
+function, but finish running after the rebinding operation has taken place (in
+which case the rebinding will be reverted, which is the bug reported in <a class="footnote-reference brackets" href="#id16" id="id11">1</a>).</p>
+<p>In addition to preserving the de facto semantics which have been in place since
+PEP 227 introduced nested scopes in Python 2.1, the other benefit of restricting
+the write-through proxy support to the implementation-defined frame object API
+is that it means that only interpreter implementations which emulate the full
+frame API need to offer the write-through capability at all, and that
+JIT-compiled implementations only need to enable it when a frame introspection
+API is invoked, or a trace hook is installed, not whenever <code class="docutils literal notranslate"><span class="pre">locals()</span></code> is
+accessed at function scope.</p>
+<p>Returning snapshots from <code class="docutils literal notranslate"><span class="pre">locals()</span></code> at function scope also means that static
+analysis for function level code will be more reliable, as only access to the
+frame machinery will allow rebinding of local and nonlocal variable
+references in a way that is hidden from static analysis.</p>
+</div>
+<div class="section" id="what-happens-with-the-default-args-for-eval-and-exec">
+<h3><a class="toc-backref" href="#id39">What happens with the default args for <code class="docutils literal notranslate"><span class="pre">eval()</span></code> and <code class="docutils literal notranslate"><span class="pre">exec()</span></code>?</a><a class="headerlink" href="#what-happens-with-the-default-args-for-eval-and-exec" title="Permalink to this headline">¶</a></h3>
+<p>These are formally defined as inheriting <code class="docutils literal notranslate"><span class="pre">globals()</span></code> and <code class="docutils literal notranslate"><span class="pre">locals()</span></code> from
+the calling scope by default.</p>
+<p>There isn’t any need for the PEP to change these defaults, so it doesn’t, and
+<code class="docutils literal notranslate"><span class="pre">exec()</span></code> and <code class="docutils literal notranslate"><span class="pre">eval()</span></code> will start running in a shallow copy of the local
+namespace when that is what <code class="docutils literal notranslate"><span class="pre">locals()</span></code> returns.</p>
+<p>This behaviour will have potential performance implications, especially
+for functions with large numbers of local variables (e.g. if these functions
+are called in a loop, calling <code class="docutils literal notranslate"><span class="pre">gloabls()</span></code> and <code class="docutils literal notranslate"><span class="pre">locals()</span></code> once before the
+loop and then passing the namespace into the function explicitly will give the
+same semantics and performance characteristics as the status quo, whereas
+relying on the implicit default would create a new shallow copy of the local
+namespace on each iteration).</p>
+<p>(Note: the reference implementation draft PR has updated the <code class="docutils literal notranslate"><span class="pre">locals()</span></code> and
+<code class="docutils literal notranslate"><span class="pre">vars()</span></code>, <code class="docutils literal notranslate"><span class="pre">eval()</span></code>, and <code class="docutils literal notranslate"><span class="pre">exec()</span></code> builtins to use <code class="docutils literal notranslate"><span class="pre">PyLocals_Get()</span></code>. The
+<code class="docutils literal notranslate"><span class="pre">dir()</span></code> builtin still uses <code class="docutils literal notranslate"><span class="pre">PyEval_GetLocals()</span></code>, since it’s only using it
+to make a list from the keys).</p>
+</div>
+<div class="section" id="changing-the-frame-api-semantics-in-regular-operation">
+<h3><a class="toc-backref" href="#id40">Changing the frame API semantics in regular operation</a><a class="headerlink" href="#changing-the-frame-api-semantics-in-regular-operation" title="Permalink to this headline">¶</a></h3>
+<p>Earlier versions of this PEP proposed having the semantics of the frame
+<code class="docutils literal notranslate"><span class="pre">f_locals</span></code> attribute depend on whether or not a tracing hook was currently
+installed - only providing the write-through proxy behaviour when a tracing hook
+was active, and otherwise behaving the same as the historical <code class="docutils literal notranslate"><span class="pre">locals()</span></code>
+builtin.</p>
+<p>That was adopted as the original design proposal for a couple of key reasons,
+one pragmatic and one more philosophical:</p>
+<ul class="simple">
+<li>Object allocations and method wrappers aren’t free, and tracing functions
+aren’t the only operations that access frame locals from outside the function.
+Restricting the changes to tracing mode meant that the additional memory and
+execution time overhead of these changes would be as close to zero in regular
+operation as we can possibly make them.</li>
+<li>“Don’t change what isn’t broken”: the current tracing mode problems are caused
+by a requirement that’s specific to tracing mode (support for external
+rebinding of function local variable references), so it made sense to also
+restrict any related fixes to tracing mode</li>
+</ul>
+<p>However, actually attempting to implement and document that dynamic approach
+highlighted the fact that it makes for a really subtle runtime state dependent
+behaviour distinction in how <code class="docutils literal notranslate"><span class="pre">frame.f_locals</span></code> works, and creates several
+new edge cases around how <code class="docutils literal notranslate"><span class="pre">f_locals</span></code> behaves as trace functions are added
+and removed.</p>
+<p>Accordingly, the design was switched to the current one, where
+<code class="docutils literal notranslate"><span class="pre">frame.f_locals</span></code> is always a write-through proxy, and <code class="docutils literal notranslate"><span class="pre">locals()</span></code> is always
+a snapshot, which is both simpler to implement and easier to explain.</p>
+<p>Regardless of how the CPython reference implementation chooses to handle this,
+optimising compilers and interpreters also remain free to impose additional
+restrictions on debuggers, such as making local variable mutation through frame
+objects an opt-in behaviour that may disable some optimisations (just as the
+emulation of CPython’s frame API is already an opt-in flag in some Python
+implementations).</p>
+</div>
+<div class="section" id="historical-semantics-at-function-scope">
+<h3><a class="toc-backref" href="#id41">Historical semantics at function scope</a><a class="headerlink" href="#historical-semantics-at-function-scope" title="Permalink to this headline">¶</a></h3>
+<p>The current semantics of mutating <code class="docutils literal notranslate"><span class="pre">locals()</span></code> and <code class="docutils literal notranslate"><span class="pre">frame.f_locals</span></code> in CPython
+are rather quirky due to historical implementation details:</p>
+<ul class="simple">
+<li>actual execution uses the fast locals array for local variable bindings and
+cell references for nonlocal variables</li>
+<li>there’s a <code class="docutils literal notranslate"><span class="pre">PyFrame_FastToLocals</span></code> operation that populates the frame’s
+<code class="docutils literal notranslate"><span class="pre">f_locals</span></code> attribute based on the current state of the fast locals array
+and any referenced cells. This exists for three reasons:<ul>
+<li>allowing trace functions to read the state of local variables</li>
+<li>allowing traceback processors to read the state of local variables</li>
+<li>allowing <code class="docutils literal notranslate"><span class="pre">locals()</span></code> to read the state of local variables</li>
+</ul>
+</li>
+<li>a direct reference to <code class="docutils literal notranslate"><span class="pre">frame.f_locals</span></code> is returned from <code class="docutils literal notranslate"><span class="pre">locals()</span></code>, so if
+you hand out multiple concurrent references, then all those references will be
+to the exact same dictionary</li>
+<li>the two common calls to the reverse operation, <code class="docutils literal notranslate"><span class="pre">PyFrame_LocalsToFast</span></code>, were
+removed in the migration to Python 3: <code class="docutils literal notranslate"><span class="pre">exec</span></code> is no longer a statement (and
+hence can no longer affect function local namespaces), and the compiler now
+disallows the use of <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">module</span> <span class="pre">import</span> <span class="pre">*</span></code> operations at function scope</li>
+<li>however, two obscure calling paths remain: <code class="docutils literal notranslate"><span class="pre">PyFrame_LocalsToFast</span></code> is called
+as part of returning from a trace function (which allows debuggers to make
+changes to the local variable state), and you can also still inject the
+<code class="docutils literal notranslate"><span class="pre">IMPORT_STAR</span></code> opcode when creating a function directly from a code object
+rather than via the compiler</li>
+</ul>
+<p>This proposal deliberately <em>doesn’t</em> formalise these semantics as is, since they
+only make sense in terms of the historical evolution of the language and the
+reference implementation, rather than being deliberately designed.</p>
+</div>
+<div class="section" id="proposing-several-additions-to-the-stable-c-api-abi">
+<h3><a class="toc-backref" href="#id42">Proposing several additions to the stable C API/ABI</a><a class="headerlink" href="#proposing-several-additions-to-the-stable-c-api-abi" title="Permalink to this headline">¶</a></h3>
+<p>Historically, the CPython C API (and subsequently, the stable ABI) has
+exposed only a single API function related to the Python <code class="docutils literal notranslate"><span class="pre">locals</span></code> builtin:
+<code class="docutils literal notranslate"><span class="pre">PyEval_GetLocals()</span></code>. However, as it returns a borrowed reference, it is
+not possible to adapt that interface directly to supporting the new <code class="docutils literal notranslate"><span class="pre">locals()</span></code>
+semantics proposed in this PEP.</p>
+<p>An earlier iteration of this PEP proposed a minimalist adaptation to the new
+semantics: one C API function that behaved like the Python <code class="docutils literal notranslate"><span class="pre">locals()</span></code> builtin,
+and another that behaved like the <code class="docutils literal notranslate"><span class="pre">frame.f_locals</span></code> descriptor (creating and
+returning the write-through proxy if necessary).</p>
+<p>The feedback <a class="footnote-reference brackets" href="#id23" id="id12">8</a> on that version of the C API was that it was too heavily based
+on how the Python level semantics were implemented, and didn’t account for the
+behaviours that authors of C extensions were likely to <em>need</em>.</p>
+<p>The broader API now being proposed came from grouping the potential reasons for
+wanting to access the Python <code class="docutils literal notranslate"><span class="pre">locals()</span></code> namespace from an extension module
+into the following cases:</p>
+<ul class="simple">
+<li>needing to exactly replicate the semantics of the Python level <code class="docutils literal notranslate"><span class="pre">locals()</span></code>
+operation. This is the <code class="docutils literal notranslate"><span class="pre">PyLocals_Get()</span></code> API.</li>
+<li>needing to behave differently depending on whether writes to the result of
+<code class="docutils literal notranslate"><span class="pre">PyLocals_Get()</span></code> will be visible to Python code or not. This is handled by
+the <code class="docutils literal notranslate"><span class="pre">PyLocals_GetReturnsCopy()</span></code> query API.</li>
+<li>always wanting a mutable namespace that has been pre-populated from the
+current Python <code class="docutils literal notranslate"><span class="pre">locals()</span></code> namespace, but <em>not</em> wanting any changes to
+be visible to Python code. This is the <code class="docutils literal notranslate"><span class="pre">PyLocals_GetCopy()</span></code> API.</li>
+<li>always wanting a read-only view of the current locals namespace, without
+incurring the runtime overhead of making a full copy each time. This is the
+<code class="docutils literal notranslate"><span class="pre">PyLocals_GetView()</span></code> and <code class="docutils literal notranslate"><span class="pre">PyLocals_RefreshViews()</span></code> APIs.</li>
+</ul>
+<p>Historically, these kinds of checks and operations would only have been
+possible if a Python implementation emulated the full CPython frame API. With
+the proposed API, extension modules can instead ask more clearly for the
+semantics that they actually need, giving Python implementations more
+flexibility in how they provide those capabilities.</p>
+</div>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id43">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>The reference implementation update is in development as a draft pull
+request on GitHub (<a class="footnote-reference brackets" href="#id21" id="id13">6</a>).</p>
+</div>
+<div class="section" id="acknowledgements">
+<h2><a class="toc-backref" href="#id44">Acknowledgements</a><a class="headerlink" href="#acknowledgements" title="Permalink to this headline">¶</a></h2>
+<p>Thanks to Nathaniel J. Smith for proposing the write-through proxy idea in
+<a class="footnote-reference brackets" href="#id16" id="id14">1</a> and pointing out some critical design flaws in earlier iterations of the
+PEP that attempted to avoid introducing such a proxy.</p>
+<p>Thanks to Steve Dower and Petr Viktorin for asking that more attention be paid
+to the developer experience of the proposed C API additions <a class="footnote-reference brackets" href="#id23" id="id15">8</a>.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id45">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id16"><span class="brackets">1</span><span class='fn-backref'><em> (<a href="#id1">1</a>, <a href="#id2">2</a>, <a href="#id6">3</a>, <a href="#id11">4</a>, <a href="#id14">5</a>) </em></span></dt>
+<dd>Broken local variable assignment given threads + trace hook + closure
+(<a class="reference external" href="https://bugs.python.org/issue30744">https://bugs.python.org/issue30744</a>)</dd>
+<dt class="label" id="id17"><span class="brackets">2</span></dt>
+<dd>Clarify the required behaviour of <code class="docutils literal notranslate"><span class="pre">locals()</span></code>
+(<a class="reference external" href="https://bugs.python.org/issue17960">https://bugs.python.org/issue17960</a>)</dd>
+<dt class="label" id="id18"><span class="brackets">3</span><span class='fn-backref'><em> (<a href="#id3">1</a>, <a href="#id7">2</a>, <a href="#id8">3</a>) </em></span></dt>
+<dd>Updating function local variables from pdb is unreliable
+(<a class="reference external" href="https://bugs.python.org/issue9633">https://bugs.python.org/issue9633</a>)</dd>
+<dt class="label" id="id19"><span class="brackets"><a class="fn-backref" href="#id4">4</a></span></dt>
+<dd>CPython’s Python API for installing trace hooks
+(<a class="reference external" href="https://docs.python.org/dev/library/sys.html#sys.settrace">https://docs.python.org/dev/library/sys.html#sys.settrace</a>)</dd>
+<dt class="label" id="id20"><span class="brackets"><a class="fn-backref" href="#id5">5</a></span></dt>
+<dd>CPython’s C API for installing trace hooks
+(<a class="reference external" href="https://docs.python.org/3/c-api/init.html#c.PyEval_SetTrace">https://docs.python.org/3/c-api/init.html#c.PyEval_SetTrace</a>)</dd>
+<dt class="label" id="id21"><span class="brackets"><a class="fn-backref" href="#id13">6</a></span></dt>
+<dd>PEP 558 reference implementation
+(<a class="reference external" href="https://github.com/python/cpython/pull/3640/files">https://github.com/python/cpython/pull/3640/files</a>)</dd>
+<dt class="label" id="id22"><span class="brackets">7</span><span class='fn-backref'><em> (<a href="#id9">1</a>, <a href="#id10">2</a>) </em></span></dt>
+<dd>Nathaniel’s review of possible function level semantics for locals()
+(<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2019-May/157738.html">https://mail.python.org/pipermail/python-dev/2019-May/157738.html</a>)</dd>
+<dt class="label" id="id23"><span class="brackets">8</span><span class='fn-backref'><em> (<a href="#id12">1</a>, <a href="#id15">2</a>) </em></span></dt>
+<dd>Discussion of more intentionally designed C API enhancements
+(<a class="reference external" href="https://discuss.python.org/t/pep-558-defined-semantics-for-locals/2936/3">https://discuss.python.org/t/pep-558-defined-semantics-for-locals/2936/3</a>)</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id46">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0558.rst">https://github.com/python/peps/blob/master/pep-0558.rst</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0558.rst.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0557.html">PEP 0557</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0559.html">PEP 0559</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 558 – Defined semantics for locals()</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#proposal">Proposal</a><ul>
+<li><a class="reference internal" href="#new-locals-documentation">New <code class="docutils literal notranslate"><span class="pre">locals()</span></code> documentation</a></li>
+<li><a class="reference internal" href="#module-scope">Module scope</a></li>
+<li><a class="reference internal" href="#class-scope">Class scope</a></li>
+<li><a class="reference internal" href="#function-scope">Function scope</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#cpython-implementation-changes">CPython Implementation Changes</a><ul>
+<li><a class="reference internal" href="#resolving-the-issues-with-tracing-mode-behaviour">Resolving the issues with tracing mode behaviour</a></li>
+<li><a class="reference internal" href="#making-the-behaviour-at-function-scope-less-surprising">Making the behaviour at function scope less surprising</a></li>
+<li><a class="reference internal" href="#changes-to-the-stable-c-api-abi">Changes to the stable C API/ABI</a></li>
+<li><a class="reference internal" href="#changes-to-the-public-cpython-c-api">Changes to the public CPython C API</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#design-discussion">Design Discussion</a><ul>
+<li><a class="reference internal" href="#changing-locals-to-return-independent-snapshots-at-function-scope">Changing <code class="docutils literal notranslate"><span class="pre">locals()</span></code> to return independent snapshots at function scope</a></li>
+<li><a class="reference internal" href="#keeping-locals-as-a-snapshot-at-function-scope">Keeping <code class="docutils literal notranslate"><span class="pre">locals()</span></code> as a snapshot at function scope</a></li>
+<li><a class="reference internal" href="#what-happens-with-the-default-args-for-eval-and-exec">What happens with the default args for <code class="docutils literal notranslate"><span class="pre">eval()</span></code> and <code class="docutils literal notranslate"><span class="pre">exec()</span></code>?</a></li>
+<li><a class="reference internal" href="#changing-the-frame-api-semantics-in-regular-operation">Changing the frame API semantics in regular operation</a></li>
+<li><a class="reference internal" href="#historical-semantics-at-function-scope">Historical semantics at function scope</a></li>
+<li><a class="reference internal" href="#proposing-several-additions-to-the-stable-c-api-abi">Proposing several additions to the stable C API/ABI</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#acknowledgements">Acknowledgements</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

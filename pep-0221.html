@@ -1,0 +1,225 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 221 – Import As &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 222 – Web Library Enhancements" href="pep-0222.html" />
+    <link rel="prev" title="PEP 220 – Coroutines, Generators, Continuations" href="pep-0220.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 221 – Import As</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-221-import-as">
+<h1 class="page-title">PEP 221 – Import As<a class="headerlink" href="#pep-221-import-as" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">221</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Import As</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">thomas&#32;&#97;t&#32;python.org (Thomas Wouters)</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">15-Aug-2000</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.0</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#introduction" id="id5">Introduction</a></li>
+<li><a class="reference internal" href="#rationale" id="id6">Rationale</a></li>
+<li><a class="reference internal" href="#implementation-details" id="id7">Implementation details</a></li>
+<li><a class="reference internal" href="#copyright" id="id8">Copyright</a></li>
+<li><a class="reference internal" href="#references" id="id9">References</a></li>
+</ul>
+</div>
+<div class="section" id="introduction">
+<h2><a class="toc-backref" href="#id5">Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>This PEP describes the <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">as</span></code> proposal for Python 2.0.  This
+PEP tracks the status and ownership of this feature.  It contains
+a description of the feature and outlines changes necessary to
+support the feature.  The CVS revision history of this file
+contains the definitive historical record.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id6">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes an extension of Python syntax regarding the
+<code class="docutils literal notranslate"><span class="pre">import</span></code> and <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">&lt;module&gt;</span> <span class="pre">import</span></code> statements.  These statements
+load in a module, and either bind that module to a local name, or
+binds objects from that module to a local name.  However, it is
+sometimes desirable to bind those objects to a different name, for
+instance to avoid name clashes.  This can currently be achieved
+using the following idiom:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="n">real_os</span> <span class="o">=</span> <span class="n">os</span>
+<span class="k">del</span> <span class="n">os</span>
+</pre></div>
+</div>
+<p>And similarly for the <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">...</span> <span class="pre">import</span></code> statement:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">os</span> <span class="kn">import</span> <span class="n">fdopen</span><span class="p">,</span> <span class="n">exit</span><span class="p">,</span> <span class="n">stat</span>
+<span class="n">os_fdopen</span> <span class="o">=</span> <span class="n">fdopen</span>
+<span class="n">os_stat</span> <span class="o">=</span> <span class="n">stat</span>
+<span class="k">del</span> <span class="n">fdopen</span><span class="p">,</span> <span class="n">stat</span>
+</pre></div>
+</div>
+<p>The proposed syntax change would add an optional <code class="docutils literal notranslate"><span class="pre">as</span></code> clause to
+both these statements, as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span> <span class="k">as</span> <span class="nn">real_os</span>
+<span class="kn">from</span> <span class="nn">os</span> <span class="kn">import</span> <span class="n">fdopen</span> <span class="k">as</span> <span class="n">os_fdopen</span><span class="p">,</span> <span class="n">exit</span><span class="p">,</span> <span class="n">stat</span> <span class="k">as</span> <span class="n">os_stat</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">as</span></code> name is not intended to be a keyword, and some trickery
+has to be used to convince the CPython parser it isn’t one.  For
+more advanced parsers/tokenizers, however, this should not be a
+problem.</p>
+<p>A slightly special case exists for importing sub-modules.  The
+statement</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os.path</span>
+</pre></div>
+</div>
+<p>stores the module <code class="docutils literal notranslate"><span class="pre">os</span></code> locally as <code class="docutils literal notranslate"><span class="pre">os</span></code>, so that the imported
+submodule <code class="docutils literal notranslate"><span class="pre">path</span></code> is accessible as <code class="docutils literal notranslate"><span class="pre">os.path</span></code>.  As a result,</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os.path</span> <span class="k">as</span> <span class="nn">p</span>
+</pre></div>
+</div>
+<p>stores <code class="docutils literal notranslate"><span class="pre">os.path</span></code>, not <code class="docutils literal notranslate"><span class="pre">os</span></code>, in <code class="docutils literal notranslate"><span class="pre">p</span></code>.  This makes it effectively the
+same as</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">os</span> <span class="kn">import</span> <span class="n">path</span> <span class="k">as</span> <span class="n">p</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="implementation-details">
+<h2><a class="toc-backref" href="#id7">Implementation details</a><a class="headerlink" href="#implementation-details" title="Permalink to this headline">¶</a></h2>
+<p>This PEP has been accepted, and the suggested code change has been
+checked in.  The patch can still be found in the SourceForge patch
+manager <a class="footnote-reference brackets" href="#id3" id="id1">1</a>.  Currently, a <code class="docutils literal notranslate"><span class="pre">NAME</span></code> field is used in the grammar rather
+than a bare string, to avoid the keyword issue.  It introduces a
+new bytecode, <code class="docutils literal notranslate"><span class="pre">IMPORT_STAR</span></code>, which performs the <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">module</span> <span class="pre">import</span>
+<span class="pre">*</span></code> behaviour, and changes the behaviour of the <code class="docutils literal notranslate"><span class="pre">IMPORT_FROM</span></code>
+bytecode so that it loads the requested name (which is always a
+single name) onto the stack, to be subsequently stored by a <code class="docutils literal notranslate"><span class="pre">STORE</span></code>
+opcode. As a result, all names explicitly imported now follow the
+<code class="docutils literal notranslate"><span class="pre">global</span></code> directives.</p>
+<p>The special case of <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">module</span> <span class="pre">import</span> <span class="pre">*</span></code> remains a special case,
+in that it cannot accommodate an <code class="docutils literal notranslate"><span class="pre">as</span></code> clause, and that no <code class="docutils literal notranslate"><span class="pre">STORE</span></code>
+opcodes are generated; the objects imported are loaded directly
+into the local namespace. This also means that names imported in
+this fashion are always local, and do not follow the <code class="docutils literal notranslate"><span class="pre">global</span></code>
+directive.</p>
+<p>An additional change to this syntax has also been suggested, to
+generalize the expression given after the <code class="docutils literal notranslate"><span class="pre">as</span></code> clause.  Rather
+than a single name, it could be allowed to be any expression that
+yields a valid l-value; anything that can be assigned to.  The
+change to accommodate this is minimal, as the patch <a class="footnote-reference brackets" href="#id4" id="id2">2</a> proves, and
+the resulting generalization allows a number of new constructs
+that run completely parallel with other Python assignment
+constructs. However, this idea has been rejected by Guido, as
+“hypergeneralization”.</p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id8">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the Public Domain.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id9">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id3"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><a class="reference external" href="https://hg.python.org/cpython/rev/18385172fac0">https://hg.python.org/cpython/rev/18385172fac0</a></dd>
+<dt class="label" id="id4"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd><a class="reference external" href="http://sourceforge.net/patch/?func=detailpatch&amp;patch_id=101234&amp;group_id=5470">http://sourceforge.net/patch/?func=detailpatch&amp;patch_id=101234&amp;group_id=5470</a></dd>
+</dl>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0221.txt">https://github.com/python/peps/blob/master/pep-0221.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0221.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0220.html">PEP 0220</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0222.html">PEP 0222</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 221 – Import As</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#implementation-details">Implementation details</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

@@ -1,0 +1,1078 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 451 – A ModuleSpec Type for the Import System &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 452 – API for Cryptographic Hash Functions v2.0" href="pep-0452.html" />
+    <link rel="prev" title="PEP 450 – Adding A Statistics Module To The Standard Library" href="pep-0450.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 451 – A ModuleSpec Type for the Import System</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-451-a-modulespec-type-for-the-import-system">
+<h1 class="page-title">PEP 451 – A ModuleSpec Type for the Import System<a class="headerlink" href="#pep-451-a-modulespec-type-for-the-import-system" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">451</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">A ModuleSpec Type for the Import System</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Eric Snow &lt;ericsnowcurrently&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even">Brett Cannon &lt;brett&#32;&#97;t&#32;python.org&gt;, Nick Coghlan &lt;ncoghlan&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-odd">Discussions-To</dt>
+<dd class="field-odd"><a class="reference external" href="mailto:import-sig&#37;&#52;&#48;python&#46;org?subject=PEP%20451">import-sig&#32;&#97;t&#32;python.org</a></dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">8-Aug-2013</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.4</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">8-Aug-2013, 28-Aug-2013, 18-Sep-2013, 24-Sep-2013, 4-Oct-2013</dd>
+<dt class="field-odd">Resolution</dt>
+<dd class="field-odd"><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2013-November/130104.html">https://mail.python.org/pipermail/python-dev/2013-November/130104.html</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id11">Abstract</a></li>
+<li><a class="reference internal" href="#terms-and-concepts" id="id12">Terms and Concepts</a><ul>
+<li><a class="reference internal" href="#name" id="id13">name</a></li>
+<li><a class="reference internal" href="#finder" id="id14">finder</a></li>
+<li><a class="reference internal" href="#loader" id="id15">loader</a></li>
+<li><a class="reference internal" href="#origin" id="id16">origin</a></li>
+<li><a class="reference internal" href="#location" id="id17">location</a></li>
+<li><a class="reference internal" href="#cache" id="id18">cache</a></li>
+<li><a class="reference internal" href="#package" id="id19">package</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#motivation" id="id20">Motivation</a></li>
+<li><a class="reference internal" href="#specification" id="id21">Specification</a><ul>
+<li><a class="reference internal" href="#importlib-machinery-modulespec-new" id="id22">importlib.machinery.ModuleSpec (new)</a></li>
+<li><a class="reference internal" href="#importlib-util-additions" id="id23">importlib.util Additions</a></li>
+<li><a class="reference internal" href="#other-api-additions" id="id24">Other API Additions</a></li>
+<li><a class="reference internal" href="#api-changes" id="id25">API Changes</a></li>
+<li><a class="reference internal" href="#deprecations" id="id26">Deprecations</a></li>
+<li><a class="reference internal" href="#removals" id="id27">Removals</a></li>
+<li><a class="reference internal" href="#other-changes" id="id28">Other Changes</a></li>
+<li><a class="reference internal" href="#backward-compatibility" id="id29">Backward-Compatibility</a></li>
+<li><a class="reference internal" href="#what-will-not-change" id="id30">What Will not Change?</a></li>
+<li><a class="reference internal" href="#responsibilities" id="id31">Responsibilities</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#what-will-existing-finders-and-loaders-have-to-do-differently" id="id32">What Will Existing Finders and Loaders Have to Do Differently?</a></li>
+<li><a class="reference internal" href="#modulespec-users" id="id33">ModuleSpec Users</a></li>
+<li><a class="reference internal" href="#how-loading-will-work" id="id34">How Loading Will Work</a></li>
+<li><a class="reference internal" href="#how-reloading-will-work" id="id35">How Reloading Will Work</a></li>
+<li><a class="reference internal" href="#modulespec" id="id36">ModuleSpec</a><ul>
+<li><a class="reference internal" href="#attributes" id="id37">Attributes</a></li>
+<li><a class="reference internal" href="#factory-functions" id="id38">Factory Functions</a></li>
+<li><a class="reference internal" href="#id5" id="id39">Backward Compatibility</a></li>
+<li><a class="reference internal" href="#subclassing" id="id40">Subclassing</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#existing-types" id="id41">Existing Types</a><ul>
+<li><a class="reference internal" href="#module-objects" id="id42">Module Objects</a></li>
+<li><a class="reference internal" href="#finders" id="id43">Finders</a></li>
+<li><a class="reference internal" href="#the-target-parameter-of-find-spec" id="id44">The “target” parameter of find_spec()</a></li>
+<li><a class="reference internal" href="#namespace-packages" id="id45">Namespace Packages</a></li>
+<li><a class="reference internal" href="#loaders" id="id46">Loaders</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id9" id="id47">Other Changes</a></li>
+<li><a class="reference internal" href="#reference-implementation" id="id48">Reference Implementation</a><ul>
+<li><a class="reference internal" href="#implementation-notes" id="id49">Implementation Notes</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rejected-additions-to-the-pep" id="id50">Rejected Additions to the PEP</a></li>
+<li><a class="reference internal" href="#references" id="id51">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id52">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id11">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes to add a new class to importlib.machinery called
+“ModuleSpec”.  It will provide all the import-related information used
+to load a module and will be available without needing to load the
+module first.  Finders will directly provide a module’s spec instead of
+a loader (which they will continue to provide indirectly).  The import
+machinery will be adjusted to take advantage of module specs, including
+using them to load modules.</p>
+</div>
+<div class="section" id="terms-and-concepts">
+<h2><a class="toc-backref" href="#id12">Terms and Concepts</a><a class="headerlink" href="#terms-and-concepts" title="Permalink to this headline">¶</a></h2>
+<p>The changes in this proposal are an opportunity to make several
+existing terms and concepts more clear, whereas currently they are
+(unfortunately) ambiguous.  New concepts are also introduced in this
+proposal.  Finally, it’s worth explaining a few other existing terms
+with which people may not be so familiar.  For the sake of context, here
+is a brief summary of all three groups of terms and concepts.  A more
+detailed explanation of the import system is found at
+<a class="footnote-reference brackets" href="#import-system-docs" id="id1">2</a>.</p>
+<div class="section" id="name">
+<h3><a class="toc-backref" href="#id13">name</a><a class="headerlink" href="#name" title="Permalink to this headline">¶</a></h3>
+<p>In this proposal, a module’s “name” refers to its fully-qualified name,
+meaning the fully-qualified name of the module’s parent (if any) joined
+to the simple name of the module by a period.</p>
+</div>
+<div class="section" id="finder">
+<h3><a class="toc-backref" href="#id14">finder</a><a class="headerlink" href="#finder" title="Permalink to this headline">¶</a></h3>
+<p>A “finder” is an object that identifies the loader that the import
+system should use to load a module.  Currently this is accomplished by
+calling the finder’s find_module() method, which returns the loader.</p>
+<p>Finders are strictly responsible for providing the loader, which they do
+through their find_module() method. The import system then uses that
+loader to load the module.</p>
+</div>
+<div class="section" id="loader">
+<h3><a class="toc-backref" href="#id15">loader</a><a class="headerlink" href="#loader" title="Permalink to this headline">¶</a></h3>
+<p>A “loader” is an object that is used to load a module during import.
+Currently this is done by calling the loader’s load_module() method.  A
+loader may also provide APIs for getting information about the modules
+it can load, as well as about data from sources associated with such a
+module.</p>
+<p>Right now loaders (via load_module()) are responsible for certain
+boilerplate, import-related operations.  These are:</p>
+<ol class="arabic simple">
+<li>Perform some (module-related) validation</li>
+<li>Create the module object</li>
+<li>Set import-related attributes on the module</li>
+<li>“Register” the module to sys.modules</li>
+<li>Exec the module</li>
+<li>Clean up in the event of failure while loading the module</li>
+</ol>
+<p>This all takes place during the import system’s call to
+Loader.load_module().</p>
+</div>
+<div class="section" id="origin">
+<h3><a class="toc-backref" href="#id16">origin</a><a class="headerlink" href="#origin" title="Permalink to this headline">¶</a></h3>
+<p>This is a new term and concept.  The idea of it exists subtly in the
+import system already, but this proposal makes the concept explicit.</p>
+<p>“origin” in an import context means the system (or resource within a
+system) from which a module originates.  For the purposes of this
+proposal, “origin” is also a string which identifies such a resource or
+system.  “origin” is applicable to all modules.</p>
+<p>For example, the origin for built-in and frozen modules is the
+interpreter itself.  The import system already identifies this origin as
+“built-in” and “frozen”, respectively.  This is demonstrated in the
+following module repr: “&lt;module ‘sys’ (built-in)&gt;”.</p>
+<p>In fact, the module repr is already a relatively reliable, though
+implicit, indicator of a module’s origin.  Other modules also indicate
+their origin through other means, as described in the entry for
+“location”.</p>
+<p>It is up to the loader to decide on how to interpret and use a module’s
+origin, if at all.</p>
+</div>
+<div class="section" id="location">
+<h3><a class="toc-backref" href="#id17">location</a><a class="headerlink" href="#location" title="Permalink to this headline">¶</a></h3>
+<p>This is a new term.  However the concept already exists clearly in the
+import system, as associated with the <code class="docutils literal notranslate"><span class="pre">__file__</span></code> and <code class="docutils literal notranslate"><span class="pre">__path__</span></code>
+attributes of modules, as well as the name/term “path” elsewhere.</p>
+<p>A “location” is a resource or “place”, rather than a system at large,
+from which a module is loaded.  It qualifies as an “origin”.  Examples
+of locations include filesystem paths and URLs.  A location is
+identified by the name of the resource, but may not necessarily identify
+the system to which the resource pertains.  In such cases the loader
+would have to identify the system itself.</p>
+<p>In contrast to other kinds of module origin, a location cannot be
+inferred by the loader just by the module name.  Instead, the loader
+must be provided with a string to identify the location, usually by the
+finder that generates the loader.  The loader then uses this information
+to locate the resource from which it will load the module.  In theory
+you could load the module at a given location under various names.</p>
+<p>The most common example of locations in the import system are the
+files from which source and extension modules are loaded.  For these
+modules the location is identified by the string in the <code class="docutils literal notranslate"><span class="pre">__file__</span></code>
+attribute.  Although <code class="docutils literal notranslate"><span class="pre">__file__</span></code> isn’t particularly accurate for some
+modules (e.g. zipped), it is currently the only way that the import
+system indicates that a module has a location.</p>
+<p>A module that has a location may be called “locatable”.</p>
+</div>
+<div class="section" id="cache">
+<h3><a class="toc-backref" href="#id18">cache</a><a class="headerlink" href="#cache" title="Permalink to this headline">¶</a></h3>
+<p>The import system stores compiled modules in the __pycache__ directory
+as an optimization.  This module cache that we use today was provided by
+PEP 3147.  For this proposal, the relevant API for module caching is the
+<code class="docutils literal notranslate"><span class="pre">__cache__</span></code> attribute of modules and the cache_from_source() function
+in importlib.util.  Loaders are responsible for putting modules into the
+cache (and loading out of the cache).   Currently the cache is only used
+for compiled source modules.  However, loaders may take advantage of
+the module cache for other kinds of modules.</p>
+</div>
+<div class="section" id="package">
+<h3><a class="toc-backref" href="#id19">package</a><a class="headerlink" href="#package" title="Permalink to this headline">¶</a></h3>
+<p>The concept does not change, nor does the term.  However, the
+distinction between modules and packages is mostly superficial.
+Packages <em>are</em> modules.  They simply have a <code class="docutils literal notranslate"><span class="pre">__path__</span></code> attribute and
+import may add attributes bound to submodules.  The typically perceived
+difference is a source of confusion.  This proposal explicitly
+de-emphasizes the distinction between packages and modules where it
+makes sense to do so.</p>
+</div>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id20">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>The import system has evolved over the lifetime of Python.  In late 2002
+PEP 302 introduced standardized import hooks via finders and
+loaders and sys.meta_path.  The importlib module, introduced
+with Python 3.1, now exposes a pure Python implementation of the APIs
+described by PEP 302, as well as of the full import system.  It is now
+much easier to understand and extend the import system.  While a benefit
+to the Python community, this greater accessibility also presents a
+challenge.</p>
+<p>As more developers come to understand and customize the import system,
+any weaknesses in the finder and loader APIs will be more impactful.  So
+the sooner we can address any such weaknesses the import system, the
+better…and there are a couple we hope to take care of with this proposal.</p>
+<p>Firstly, any time the import system needs to save information about a
+module we end up with more attributes on module objects that are
+generally only meaningful to the import system.  It would be nice to
+have a per-module namespace in which to put future import-related
+information and to pass around within the import system.  Secondly,
+there’s an API void between finders and loaders that causes undue
+complexity when encountered.  The PEP 420 (namespace packages)
+implementation had to work around this.  The complexity surfaced again
+during recent efforts on a separate proposal. <a class="footnote-reference brackets" href="#ref-files-pep" id="id2">1</a></p>
+<p>The <a class="reference internal" href="#finder">finder</a> and <a class="reference internal" href="#loader">loader</a> sections above detail current responsibility
+of both.  Notably, loaders are not required to provide any of the
+functionality of their load_module() method through other methods.  Thus,
+though the import-related information about a module is likely available
+without loading the module, it is not otherwise exposed.</p>
+<p>Furthermore, the requirements associated with load_module() are
+common to all loaders and mostly are implemented in exactly the same
+way.  This means every loader has to duplicate the same boilerplate
+code.  importlib.util provides some tools that help with this, but
+it would be more helpful if the import system simply took charge of
+these responsibilities.  The trouble is that this would limit the degree
+of customization that load_module() could easily continue to facilitate.</p>
+<p>More importantly, While a finder <em>could</em> provide the information that
+the loader’s load_module() would need, it currently has no consistent
+way to get it to the loader.  This is a gap between finders and loaders
+which this proposal aims to fill.</p>
+<p>Finally, when the import system calls a finder’s find_module(), the
+finder makes use of a variety of information about the module that is
+useful outside the context of the method.  Currently the options are
+limited for persisting that per-module information past the method call,
+since it only returns the loader.  Popular options for this limitation
+are to store the information in a module-to-info mapping somewhere on
+the finder itself, or store it on the loader.</p>
+<p>Unfortunately, loaders are not required to be module-specific.  On top
+of that, some of the useful information finders could provide is
+common to all finders, so ideally the import system could take care of
+those details.  This is the same gap as before between finders and
+loaders.</p>
+<p>As an example of complexity attributable to this flaw, the
+implementation of namespace packages in Python 3.3 (see PEP 420) added
+FileFinder.find_loader() because there was no good way for
+find_module() to provide the namespace search locations.</p>
+<p>The answer to this gap is a ModuleSpec object that contains the
+per-module information and takes care of the boilerplate functionality
+involved with loading the module.</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id21">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>The goal is to address the gap between finders and loaders while
+changing as little of their semantics as possible.  Though some
+functionality and information is moved to the new ModuleSpec type,
+their behavior should remain the same.  However, for the sake of clarity
+the finder and loader semantics will be explicitly identified.</p>
+<p>Here is a high-level summary of the changes described by this PEP.  More
+detail is available in later sections.</p>
+<div class="section" id="importlib-machinery-modulespec-new">
+<h3><a class="toc-backref" href="#id22">importlib.machinery.ModuleSpec (new)</a><a class="headerlink" href="#importlib-machinery-modulespec-new" title="Permalink to this headline">¶</a></h3>
+<p>An encapsulation of a module’s import-system-related state during import.
+See the <a class="reference internal" href="#modulespec">ModuleSpec</a> section below for a more detailed description.</p>
+<ul class="simple">
+<li>ModuleSpec(name, loader, *, origin=None, loader_state=None, is_package=None)</li>
+</ul>
+<p>Attributes:</p>
+<ul class="simple">
+<li>name - a string for the fully-qualified name of the module.</li>
+<li>loader - the loader to use for loading.</li>
+<li>origin - the name of the place from which the module is loaded,
+e.g. “builtin” for built-in modules and the filename for modules
+loaded from source.</li>
+<li>submodule_search_locations - list of strings for where to find
+submodules, if a package (None otherwise).</li>
+<li>loader_state - a container of extra module-specific data for use
+during loading.</li>
+<li>cached (property) - a string for where the compiled module should be
+stored.</li>
+<li>parent (RO-property) - the fully-qualified name of the package to
+which the module belongs as a submodule (or None).</li>
+<li>has_location (RO-property) - a flag indicating whether or not the
+module’s “origin” attribute refers to a location.</li>
+</ul>
+</div>
+<div class="section" id="importlib-util-additions">
+<h3><a class="toc-backref" href="#id23">importlib.util Additions</a><a class="headerlink" href="#importlib-util-additions" title="Permalink to this headline">¶</a></h3>
+<p>These are ModuleSpec factory functions, meant as a convenience for
+finders.  See the <a class="reference internal" href="#factory-functions">Factory Functions</a> section below for more detail.</p>
+<ul class="simple">
+<li>spec_from_file_location(name, location, *, loader=None, submodule_search_locations=None)
+- build a spec from file-oriented information and loader APIs.</li>
+<li>spec_from_loader(name, loader, *, origin=None, is_package=None)
+- build a spec with missing information filled in by using loader
+APIs.</li>
+</ul>
+</div>
+<div class="section" id="other-api-additions">
+<h3><a class="toc-backref" href="#id24">Other API Additions</a><a class="headerlink" href="#other-api-additions" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>importlib.find_spec(name, path=None, target=None) will work exactly
+the same as importlib.find_loader() (which it replaces), but return a
+spec instead of a loader.</li>
+</ul>
+<p>For finders:</p>
+<ul class="simple">
+<li>importlib.abc.MetaPathFinder.find_spec(name, path, target) and
+importlib.abc.PathEntryFinder.find_spec(name, target) will return a
+module spec to use during import.</li>
+</ul>
+<p>For loaders:</p>
+<ul class="simple">
+<li>importlib.abc.Loader.exec_module(module) will execute a module in its
+own namespace.  It replaces importlib.abc.Loader.load_module(), taking
+over its module execution functionality.</li>
+<li>importlib.abc.Loader.create_module(spec) (optional) will return the
+module to use for loading.</li>
+</ul>
+<p>For modules:</p>
+<ul class="simple">
+<li>Module objects will have a new attribute: <code class="docutils literal notranslate"><span class="pre">__spec__</span></code>.</li>
+</ul>
+</div>
+<div class="section" id="api-changes">
+<h3><a class="toc-backref" href="#id25">API Changes</a><a class="headerlink" href="#api-changes" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>InspectLoader.is_package() will become optional.</li>
+</ul>
+</div>
+<div class="section" id="deprecations">
+<h3><a class="toc-backref" href="#id26">Deprecations</a><a class="headerlink" href="#deprecations" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>importlib.abc.MetaPathFinder.find_module()</li>
+<li>importlib.abc.PathEntryFinder.find_module()</li>
+<li>importlib.abc.PathEntryFinder.find_loader()</li>
+<li>importlib.abc.Loader.load_module()</li>
+<li>importlib.abc.Loader.module_repr()</li>
+<li>importlib.util.set_package()</li>
+<li>importlib.util.set_loader()</li>
+<li>importlib.find_loader()</li>
+</ul>
+</div>
+<div class="section" id="removals">
+<h3><a class="toc-backref" href="#id27">Removals</a><a class="headerlink" href="#removals" title="Permalink to this headline">¶</a></h3>
+<p>These were introduced prior to Python 3.4’s release, so they can simply
+be removed.</p>
+<ul class="simple">
+<li>importlib.abc.Loader.init_module_attrs()</li>
+<li>importlib.util.module_to_load()</li>
+</ul>
+</div>
+<div class="section" id="other-changes">
+<h3><a class="toc-backref" href="#id28">Other Changes</a><a class="headerlink" href="#other-changes" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>The import system implementation in importlib will be changed to make
+use of ModuleSpec.</li>
+<li>importlib.reload() will make use of ModuleSpec.</li>
+<li>A module’s import-related attributes (other than <code class="docutils literal notranslate"><span class="pre">__spec__</span></code>) will no
+longer be used directly by the import system during that module’s
+import.  However, this does not impact use of those attributes
+(e.g. <code class="docutils literal notranslate"><span class="pre">__path__</span></code>) when loading other modules (e.g. submodules).</li>
+<li>Import-related attributes should no longer be added to modules
+directly, except by the import system.</li>
+<li>The module type’s <code class="docutils literal notranslate"><span class="pre">__repr__()</span></code> will be a thin wrapper around a pure
+Python implementation which will leverage ModuleSpec.</li>
+<li>The spec for the <code class="docutils literal notranslate"><span class="pre">__main__</span></code> module will reflect the appropriate
+name and origin.</li>
+</ul>
+</div>
+<div class="section" id="backward-compatibility">
+<h3><a class="toc-backref" href="#id29">Backward-Compatibility</a><a class="headerlink" href="#backward-compatibility" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>If a finder does not define find_spec(), a spec is derived from
+the loader returned by find_module().</li>
+<li>PathEntryFinder.find_loader() still takes priority over
+find_module().</li>
+<li>Loader.load_module() is used if exec_module() is not defined.</li>
+</ul>
+</div>
+<div class="section" id="what-will-not-change">
+<h3><a class="toc-backref" href="#id30">What Will not Change?</a><a class="headerlink" href="#what-will-not-change" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>The syntax and semantics of the import statement.</li>
+<li>Existing finders and loaders will continue to work normally.</li>
+<li>The import-related module attributes will still be initialized with
+the same information.</li>
+<li>Finders will still create loaders (now storing them in specs).</li>
+<li>Loader.load_module(), if a module defines it, will have all the
+same requirements and may still be called directly.</li>
+<li>Loaders will still be responsible for module data APIs.</li>
+<li>importlib.reload() will still overwrite the import-related attributes.</li>
+</ul>
+</div>
+<div class="section" id="responsibilities">
+<h3><a class="toc-backref" href="#id31">Responsibilities</a><a class="headerlink" href="#responsibilities" title="Permalink to this headline">¶</a></h3>
+<p>Here’s a quick breakdown of where responsibilities lie after this PEP.</p>
+<p>finders:</p>
+<ul class="simple">
+<li>create/identify a loader that can load the module.</li>
+<li>create the spec for the module.</li>
+</ul>
+<p>loaders:</p>
+<ul class="simple">
+<li>create the module (optional).</li>
+<li>execute the module.</li>
+</ul>
+<p>ModuleSpec:</p>
+<ul class="simple">
+<li>orchestrate module loading</li>
+<li>boilerplate for module loading, including managing sys.modules and
+setting import-related attributes</li>
+<li>create module if loader doesn’t</li>
+<li>call loader.exec_module(), passing in the module in which to exec</li>
+<li>contain all the information the loader needs to exec the module</li>
+<li>provide the repr for modules</li>
+</ul>
+</div>
+</div>
+<div class="section" id="what-will-existing-finders-and-loaders-have-to-do-differently">
+<h2><a class="toc-backref" href="#id32">What Will Existing Finders and Loaders Have to Do Differently?</a><a class="headerlink" href="#what-will-existing-finders-and-loaders-have-to-do-differently" title="Permalink to this headline">¶</a></h2>
+<p>Immediately?  Nothing.  The status quo will be deprecated, but will
+continue working.  However, here are the things that the authors of
+finders and loaders should change relative to this PEP:</p>
+<ul class="simple">
+<li>Implement find_spec() on finders.</li>
+<li>Implement exec_module() on loaders, if possible.</li>
+</ul>
+<p>The ModuleSpec factory functions in importlib.util are intended to be
+helpful for converting existing finders.  spec_from_loader() and
+spec_from_file_location() are both straightforward utilities in this
+regard.</p>
+<p>For existing loaders, exec_module() should be a relatively direct
+conversion from the non-boilerplate portion of load_module().  In some
+uncommon cases the loader should also implement create_module().</p>
+</div>
+<div class="section" id="modulespec-users">
+<h2><a class="toc-backref" href="#id33">ModuleSpec Users</a><a class="headerlink" href="#modulespec-users" title="Permalink to this headline">¶</a></h2>
+<p>ModuleSpec objects have 3 distinct target audiences: Python itself,
+import hooks, and normal Python users.</p>
+<p>Python will use specs in the import machinery, in interpreter startup,
+and in various standard library modules.  Some modules are
+import-oriented, like pkgutil, and others are not, like pickle and
+pydoc.  In all cases, the full ModuleSpec API will get used.</p>
+<p>Import hooks (finders and loaders) will make use of the spec in specific
+ways.  First of all, finders may use the spec factory functions in
+importlib.util to create spec objects.  They may also directly adjust
+the spec attributes after the spec is created.  Secondly, the finder may
+bind additional information to the spec (in finder_extras) for the
+loader to consume during module creation/execution.  Finally, loaders
+will make use of the attributes on a spec when creating and/or executing
+a module.</p>
+<p>Python users will be able to inspect a module’s <code class="docutils literal notranslate"><span class="pre">__spec__</span></code> to get
+import-related information about the object.  Generally, Python
+applications and interactive users will not be using the <code class="docutils literal notranslate"><span class="pre">ModuleSpec</span></code>
+factory functions nor any the instance methods.</p>
+</div>
+<div class="section" id="how-loading-will-work">
+<h2><a class="toc-backref" href="#id34">How Loading Will Work</a><a class="headerlink" href="#how-loading-will-work" title="Permalink to this headline">¶</a></h2>
+<p>Here is an outline of what the import machinery does during loading,
+adjusted to take advantage of the module’s spec and the new loader API:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">module</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">loader</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">loader</span><span class="p">,</span> <span class="s1">&#39;create_module&#39;</span><span class="p">):</span>
+    <span class="n">module</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">create_module</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">module</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">module</span> <span class="o">=</span> <span class="n">ModuleType</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<span class="c1"># The import-related module attributes get set here:</span>
+<span class="n">_init_module_attrs</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="n">module</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">loader</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">spec</span><span class="o">.</span><span class="n">submodule_search_locations</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="c1"># Namespace package</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="n">spec</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">module</span>
+<span class="k">elif</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">loader</span><span class="p">,</span> <span class="s1">&#39;exec_module&#39;</span><span class="p">):</span>
+    <span class="n">spec</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">load_module</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+    <span class="c1"># __loader__ and __package__ would be explicitly set here for</span>
+    <span class="c1"># backwards-compatibility.</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="n">spec</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">module</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">spec</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">exec_module</span><span class="p">(</span><span class="n">module</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">BaseException</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">del</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="n">spec</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">raise</span>
+<span class="n">module_to_return</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="n">spec</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>These steps are exactly what Loader.load_module() is already
+expected to do.  Loaders will thus be simplified since they will only
+need to implement exec_module().</p>
+<p>Note that we must return the module from sys.modules.  During loading
+the module may have replaced itself in sys.modules.  Since we don’t have
+a post-import hook API to accommodate the use case, we have to deal with
+it.  However, in the replacement case we do not worry about setting the
+import-related module attributes on the object.  The module writer is on
+their own if they are doing this.</p>
+</div>
+<div class="section" id="how-reloading-will-work">
+<h2><a class="toc-backref" href="#id35">How Reloading Will Work</a><a class="headerlink" href="#how-reloading-will-work" title="Permalink to this headline">¶</a></h2>
+<p>Here is the corresponding outline for reload():</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">_RELOADING</span> <span class="o">=</span> <span class="p">{}</span>
+
+<span class="k">def</span> <span class="nf">reload</span><span class="p">(</span><span class="n">module</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">__spec__</span><span class="o">.</span><span class="n">name</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="vm">__name__</span>
+    <span class="n">spec</span> <span class="o">=</span> <span class="n">find_spec</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">module</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">module</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ImportError</span>
+    <span class="k">if</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">_RELOADING</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_RELOADING</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+    <span class="n">_RELOADING</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">module</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">loader</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Namespace loader</span>
+            <span class="n">_init_module_attrs</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="n">module</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">module</span>
+        <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">parent</span> <span class="ow">and</span> <span class="n">spec</span><span class="o">.</span><span class="n">parent</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ImportError</span>
+
+        <span class="n">_init_module_attrs</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="n">module</span><span class="p">)</span>
+        <span class="c1"># Ignoring backwards-compatibility call to load_module()</span>
+        <span class="c1"># for simplicity.</span>
+        <span class="n">spec</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">exec_module</span><span class="p">(</span><span class="n">module</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="k">del</span> <span class="n">_RELOADING</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>A key point here is the switch to Loader.exec_module() means that
+loaders will no longer have an easy way to know at execution time if it
+is a reload or not.  Before this proposal, they could simply check to
+see if the module was already in sys.modules.  Now, by the time
+exec_module() is called during load (not reload) the import machinery
+would already have placed the module in sys.modules.  This is part of
+the reason why find_spec() has
+<a class="reference external" href="The&quot;target&quot;parameteroffind_spec()">the “target” parameter</a>.</p>
+<p>The semantics of reload will remain essentially the same as they exist
+already <a class="footnote-reference brackets" href="#reload-semantics-fix" id="id3">5</a>.  The impact of this PEP on some kinds
+of lazy loading modules was a point of discussion. <a class="footnote-reference brackets" href="#lazy-import-concerns" id="id4">4</a></p>
+</div>
+<div class="section" id="modulespec">
+<h2><a class="toc-backref" href="#id36">ModuleSpec</a><a class="headerlink" href="#modulespec" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="attributes">
+<h3><a class="toc-backref" href="#id37">Attributes</a><a class="headerlink" href="#attributes" title="Permalink to this headline">¶</a></h3>
+<p>Each of the following names is an attribute on ModuleSpec objects.  A
+value of None indicates “not set”.  This contrasts with module
+objects where the attribute simply doesn’t exist.  Most of the
+attributes correspond to the import-related attributes of modules.  Here
+is the mapping.  The reverse of this mapping describes how the import
+machinery sets the module attributes right before calling exec_module().</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 65%" />
+<col style="width: 35%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head">On ModuleSpec</th>
+<th class="head">On Modules</th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td>name</td>
+<td>__name__</td>
+</tr>
+<tr class="row-odd"><td>loader</td>
+<td>__loader__</td>
+</tr>
+<tr class="row-even"><td>parent</td>
+<td>__package__</td>
+</tr>
+<tr class="row-odd"><td>origin</td>
+<td>__file__*</td>
+</tr>
+<tr class="row-even"><td>cached</td>
+<td>__cached__*,**</td>
+</tr>
+<tr class="row-odd"><td>submodule_search_locations</td>
+<td>__path__**</td>
+</tr>
+<tr class="row-even"><td>loader_state</td>
+<td>-</td>
+</tr>
+<tr class="row-odd"><td>has_location</td>
+<td>-</td>
+</tr>
+</tbody>
+</table>
+<div class="line-block">
+<div class="line">* Set on the module only if spec.has_location is true.</div>
+<div class="line">** Set on the module only if the spec attribute is not None.</div>
+</div>
+<p>While parent and has_location are read-only properties, the remaining
+attributes can be replaced after the module spec is created and even
+after import is complete.  This allows for unusual cases where directly
+modifying the spec is the best option.  However, typical use should not
+involve changing the state of a module’s spec.</p>
+<p><strong>origin</strong></p>
+<p>“origin” is a string for the name of the place from which the module
+originates.  See <a class="reference internal" href="#origin">origin</a> above.  Aside from the informational value,
+it is also used in the module’s repr.  In the case of a spec where
+“has_location” is true, <code class="docutils literal notranslate"><span class="pre">__file__</span></code> is set to the value of “origin”.
+For built-in modules “origin” would be set to “built-in”.</p>
+<p><strong>has_location</strong></p>
+<p>As explained in the <a class="reference internal" href="#location">location</a> section above, many modules are
+“locatable”, meaning there is a corresponding resource from which the
+module will be loaded and that resource can be described by a string.
+In contrast, non-locatable modules can’t be loaded in this fashion, e.g.
+builtin modules and modules dynamically created in code.  For these, the
+name is the only way to access them, so they have an “origin” but not a
+“location”.</p>
+<p>“has_location” is true if the module is locatable.  In that case the
+spec’s origin is used as the location and <code class="docutils literal notranslate"><span class="pre">__file__</span></code> is set to
+spec.origin.  If additional location information is required (e.g.
+zipimport), that information may be stored in spec.loader_state.</p>
+<p>“has_location” may be implied from the existence of a load_data() method
+on the loader.</p>
+<p>Incidentally, not all locatable modules will be cache-able, but most
+will.</p>
+<p><strong>submodule_search_locations</strong></p>
+<p>The list of location strings, typically directory paths, in which to
+search for submodules.  If the module is a package this will be set to
+a list (even an empty one).  Otherwise it is None.</p>
+<p>The name of the corresponding module attribute, <code class="docutils literal notranslate"><span class="pre">__path__</span></code>, is
+relatively ambiguous.  Instead of mirroring it, we use a more explicit
+attribute name that makes the purpose clear.</p>
+<p><strong>loader_state</strong></p>
+<p>A finder may set loader_state to any value to provide additional
+data for the loader to use during loading.  A value of None is the
+default and indicates that there is no additional data.  Otherwise it
+can be set to any object, such as a dict, list, or
+types.SimpleNamespace, containing the relevant extra information.</p>
+<p>For example, zipimporter could use it to pass the zip archive name
+to the loader directly, rather than needing to derive it from origin
+or create a custom loader for each find operation.</p>
+<p>loader_state is meant for use by the finder and corresponding loader.
+It is not guaranteed to be a stable resource for any other use.</p>
+</div>
+<div class="section" id="factory-functions">
+<h3><a class="toc-backref" href="#id38">Factory Functions</a><a class="headerlink" href="#factory-functions" title="Permalink to this headline">¶</a></h3>
+<p><strong>spec_from_file_location(name, location, *, loader=None, submodule_search_locations=None)</strong></p>
+<p>Build a spec from file-oriented information and loader APIs.</p>
+<ul class="simple">
+<li>“origin” will be set to the location.</li>
+<li>“has_location” will be set to True.</li>
+<li>“cached” will be set to the result of calling cache_from_source().</li>
+<li>“origin” can be deduced from loader.get_filename() (if “location” is
+not passed in.</li>
+<li>“loader” can be deduced from suffix if the location is a filename.</li>
+<li>“submodule_search_locations” can be deduced from loader.is_package()
+and from os.path.dirname(location) if location is a filename.</li>
+</ul>
+<p><strong>spec_from_loader(name, loader, *, origin=None, is_package=None)</strong></p>
+<p>Build a spec with missing information filled in by using loader APIs.</p>
+<ul class="simple">
+<li>“has_location” can be deduced from loader.get_data.</li>
+<li>“origin” can be deduced from loader.get_filename().</li>
+<li>“submodule_search_locations” can be deduced from loader.is_package()
+and from os.path.dirname(location) if location is a filename.</li>
+</ul>
+</div>
+<div class="section" id="id5">
+<h3><a class="toc-backref" href="#id39">Backward Compatibility</a><a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h3>
+<p>ModuleSpec doesn’t have any.  This would be a different story if
+Finder.find_module() were to return a module spec instead of loader.
+In that case, specs would have to act like the loader that would have
+been returned instead.  Doing so would be relatively simple, but is an
+unnecessary complication.  It was part of earlier versions of this PEP.</p>
+</div>
+<div class="section" id="subclassing">
+<h3><a class="toc-backref" href="#id40">Subclassing</a><a class="headerlink" href="#subclassing" title="Permalink to this headline">¶</a></h3>
+<p>Subclasses of ModuleSpec are allowed, but should not be necessary.
+Simply setting loader_state or adding functionality to a custom
+finder or loader will likely be a better fit and should be tried first.
+However, as long as a subclass still fulfills the requirements of the
+import system, objects of that type are completely fine as the return
+value of Finder.find_spec().  The same points apply to duck-typing.</p>
+</div>
+</div>
+<div class="section" id="existing-types">
+<h2><a class="toc-backref" href="#id41">Existing Types</a><a class="headerlink" href="#existing-types" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-objects">
+<h3><a class="toc-backref" href="#id42">Module Objects</a><a class="headerlink" href="#module-objects" title="Permalink to this headline">¶</a></h3>
+<p>Other than adding <code class="docutils literal notranslate"><span class="pre">__spec__</span></code>, none of the import-related module
+attributes will be changed or deprecated, though some of them could be;
+any such deprecation can wait until Python 4.</p>
+<p>A module’s spec will not be kept in sync with the corresponding import-
+related attributes.  Though they may differ, in practice they will
+typically be the same.</p>
+<p>One notable exception is that case where a module is run as a script by
+using the <code class="docutils literal notranslate"><span class="pre">-m</span></code> flag.  In that case <code class="docutils literal notranslate"><span class="pre">module.__spec__.name</span></code> will
+reflect the actual module name while <code class="docutils literal notranslate"><span class="pre">module.__name__</span></code> will be
+<code class="docutils literal notranslate"><span class="pre">__main__</span></code>.</p>
+<p>A module’s spec is not guaranteed to be identical between two modules
+with the same name.  Likewise there is no guarantee that successive
+calls to importlib.find_spec() will return the same object or even an
+equivalent object, though at least the latter is likely.</p>
+</div>
+<div class="section" id="finders">
+<h3><a class="toc-backref" href="#id43">Finders</a><a class="headerlink" href="#finders" title="Permalink to this headline">¶</a></h3>
+<p>Finders are still responsible for identifying, and typically creating,
+the loader that should be used to load a module.  That loader will
+now be stored in the module spec returned by find_spec() rather
+than returned directly.  As is currently the case without the PEP, if a
+loader would be costly to create, that loader can be designed to defer
+the cost until later.</p>
+<p><strong>MetaPathFinder.find_spec(name, path=None, target=None)</strong></p>
+<p><strong>PathEntryFinder.find_spec(name, target=None)</strong></p>
+<p>Finders must return ModuleSpec objects when find_spec() is
+called.  This new method replaces find_module() and
+find_loader() (in the PathEntryFinder case).  If a loader does
+not have find_spec(), find_module() and find_loader() are
+used instead, for backward-compatibility.</p>
+<p>Adding yet another similar method to loaders is a case of practicality.
+find_module() could be changed to return specs instead of loaders.
+This is tempting because the import APIs have suffered enough,
+especially considering PathEntryFinder.find_loader() was just
+added in Python 3.3.  However, the extra complexity and a less-than-
+explicit method name aren’t worth it.</p>
+</div>
+<div class="section" id="the-target-parameter-of-find-spec">
+<h3><a class="toc-backref" href="#id44">The “target” parameter of find_spec()</a><a class="headerlink" href="#the-target-parameter-of-find-spec" title="Permalink to this headline">¶</a></h3>
+<p>A call to find_spec() may optionally include a “target” argument.  This
+is the module object that will be used subsequently as the target of
+loading.  During normal import (and by default) “target” is None,
+meaning the target module has yet to be created.  During reloading the
+module passed in to reload() is passed through to find_spec() as the
+target.  This argument allows the finder to build the module spec with
+more information than is otherwise available.  Doing so is particularly
+relevant in identifying the loader to use.</p>
+<p>Through find_spec() the finder will always identify the loader it
+will return in the spec (or return None).  At the point the loader is
+identified, the finder should also decide whether or not the loader
+supports loading into the target module, in the case that “target” is
+passed in.  This decision may entail consulting with the loader.</p>
+<p>If the finder determines that the loader does not support loading into
+the target module, it should either find another loader or raise
+ImportError (completely stopping import of the module).  This
+determination is especially important during reload since, as noted in
+<a class="reference internal" href="#how-reloading-will-work">How Reloading Will Work</a>, loaders will no longer be able to trivially
+identify a reload situation on their own.</p>
+<p>Two alternatives were presented to the “target” parameter:
+Loader.supports_reload() and adding “target” to Loader.exec_module()
+instead of find_spec().  supports_reload() was the initial approach to
+the reload situation. <a class="footnote-reference brackets" href="#supports-reload" id="id6">6</a>  However, there was some
+opposition to the loader-specific, reload-centric approach.
+<a class="footnote-reference brackets" href="#supports-reload-considered-harmful" id="id7">7</a></p>
+<p>As to “target” on exec_module(), the loader may need other information
+from the target module (or spec) during reload, more than just “does
+this loader support reloading this module”, that is no longer available
+with the move away from load_module().  A proposal on the table was to
+add something like “target” to exec_module().  <a class="footnote-reference brackets" href="#exec-module-target" id="id8">8</a>
+However, putting “target” on find_spec() instead is more in line with
+the goals of this PEP.  Furthermore, it obviates the need for
+supports_reload().</p>
+</div>
+<div class="section" id="namespace-packages">
+<h3><a class="toc-backref" href="#id45">Namespace Packages</a><a class="headerlink" href="#namespace-packages" title="Permalink to this headline">¶</a></h3>
+<p>Currently a path entry finder may return (None, portions) from
+find_loader() to indicate it found part of a possible namespace
+package.  To achieve the same effect, find_spec() must return a spec
+with “loader” set to None (a.k.a. not set) and with
+submodule_search_locations set to the same portions as would have been
+provided by find_loader().  It’s up to PathFinder how to handle such
+specs.</p>
+</div>
+<div class="section" id="loaders">
+<h3><a class="toc-backref" href="#id46">Loaders</a><a class="headerlink" href="#loaders" title="Permalink to this headline">¶</a></h3>
+<p><strong>Loader.exec_module(module)</strong></p>
+<p>Loaders will have a new method, exec_module().  Its only job
+is to “exec” the module and consequently populate the module’s
+namespace.  It is not responsible for creating or preparing the module
+object, nor for any cleanup afterward.  It has no return value.
+exec_module() will be used during both loading and reloading.</p>
+<p>exec_module() should properly handle the case where it is called more
+than once.  For some kinds of modules this may mean raising ImportError
+every time after the first time the method is called.  This is
+particularly relevant for reloading, where some kinds of modules do not
+support in-place reloading.</p>
+<p><strong>Loader.create_module(spec)</strong></p>
+<p>Loaders may also implement create_module() that will return a
+new module to exec.  It may return None to indicate that the default
+module creation code should be used.  One use case, though atypical, for
+create_module() is to provide a module that is a subclass of the builtin
+module type.  Most loaders will not need to implement create_module(),</p>
+<p>create_module() should properly handle the case where it is called more
+than once for the same spec/module.  This may include returning None or
+raising ImportError.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>exec_module() and create_module() should not set any import-related
+module attributes.  The fact that load_module() does is a design flaw
+that this proposal aims to correct.</p>
+</div>
+<p>Other changes:</p>
+<p>PEP 420 introduced the optional module_repr() loader method to limit
+the amount of special-casing in the module type’s <code class="docutils literal notranslate"><span class="pre">__repr__()</span></code>.  Since
+this method is part of ModuleSpec, it will be deprecated on loaders.
+However, if it exists on a loader it will be used exclusively.</p>
+<p>Loader.init_module_attr() method, added prior to Python 3.4’s
+release, will be removed in favor of the same method on ModuleSpec.</p>
+<p>However, InspectLoader.is_package() will not be deprecated even
+though the same information is found on ModuleSpec.  ModuleSpec
+can use it to populate its own is_package if that information is
+not otherwise available.  Still, it will be made optional.</p>
+<p>In addition to executing a module during loading, loaders will still be
+directly responsible for providing APIs concerning module-related data.</p>
+</div>
+</div>
+<div class="section" id="id9">
+<h2><a class="toc-backref" href="#id47">Other Changes</a><a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>The various finders and loaders provided by importlib will be
+updated to comply with this proposal.</li>
+<li>Any other implementations of or dependencies on the import-related APIs
+(particularly finders and loaders) in the stdlib will be likewise
+adjusted to this PEP.  While they should continue to work, any such
+changes that get missed should be considered bugs for the Python 3.4.x
+series.</li>
+<li>The spec for the <code class="docutils literal notranslate"><span class="pre">__main__</span></code> module will reflect how the interpreter
+was started.  For instance, with <code class="docutils literal notranslate"><span class="pre">-m</span></code> the spec’s name will be that
+of the module used, while <code class="docutils literal notranslate"><span class="pre">__main__.__name__</span></code> will still be
+“__main__”.</li>
+<li>We will add importlib.find_spec() to mirror importlib.find_loader()
+(which becomes deprecated).</li>
+<li>importlib.reload() is changed to use ModuleSpec.</li>
+<li>importlib.reload() will now make use of the per-module import lock.</li>
+</ul>
+</div>
+<div class="section" id="reference-implementation">
+<h2><a class="toc-backref" href="#id48">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>A reference implementation is available at
+<a class="reference external" href="http://bugs.python.org/issue18864">http://bugs.python.org/issue18864</a>.</p>
+<div class="section" id="implementation-notes">
+<h3><a class="toc-backref" href="#id49">Implementation Notes</a><a class="headerlink" href="#implementation-notes" title="Permalink to this headline">¶</a></h3>
+<p>* The implementation of this PEP needs to be cognizant of its impact on
+pkgutil (and setuptools).  pkgutil has some generic function-based
+extensions to PEP 302 which may break if importlib starts wrapping
+loaders without the tools’ knowledge.</p>
+<p>* Other modules to look at: runpy (and pythonrun.c), pickle, pydoc,
+inspect.</p>
+<p>For instance, pickle should be updated in the <code class="docutils literal notranslate"><span class="pre">__main__</span></code> case to look
+at <code class="docutils literal notranslate"><span class="pre">module.__spec__.name</span></code>.</p>
+</div>
+</div>
+<div class="section" id="rejected-additions-to-the-pep">
+<h2><a class="toc-backref" href="#id50">Rejected Additions to the PEP</a><a class="headerlink" href="#rejected-additions-to-the-pep" title="Permalink to this headline">¶</a></h2>
+<p>There were a few proposed additions to this proposal that did not fit
+well enough into its scope.</p>
+<p>There is no “PathModuleSpec” subclass of ModuleSpec that separates out
+has_location, cached, and submodule_search_locations.  While that might
+make the separation cleaner, module objects don’t have that distinction.
+ModuleSpec will support both cases equally well.</p>
+<p>While “ModuleSpec.is_package” would be a simple additional attribute
+(aliasing self.submodule_search_locations is not None), it perpetuates
+the artificial (and mostly erroneous) distinction between modules and
+packages.</p>
+<p>The module spec <a class="reference internal" href="#factory-functions">Factory Functions</a> could be classmethods on
+ModuleSpec.  However that would expose them on <em>all</em> modules via
+<code class="docutils literal notranslate"><span class="pre">__spec__</span></code>, which has the potential to unnecessarily confuse
+non-advanced Python users.  The factory functions have a specific use
+case, to support finder authors.  See <a class="reference internal" href="#modulespec-users">ModuleSpec Users</a>.</p>
+<p>Likewise, several other methods could be added to ModuleSpec that expose
+the specific uses of module specs by the import machinery:</p>
+<ul class="simple">
+<li>create() - a wrapper around Loader.create_module().</li>
+<li>exec(module) - a wrapper around Loader.exec_module().</li>
+<li>load() - an analogue to the deprecated Loader.load_module().</li>
+</ul>
+<p>As with the factory functions, exposing these methods via
+module.__spec__ is less than desirable.  They would end up being an
+attractive nuisance, even if only exposed as “private” attributes (as
+they were in previous versions of this PEP).  If someone finds a need
+for these methods later, we can expose the via an appropriate API
+(separate from ModuleSpec) at that point, perhaps relative to PEP 406
+(import engine).</p>
+<p>Conceivably, the load() method could optionally take a list of
+modules with which to interact instead of sys.modules.  Also, load()
+could be leveraged to implement multi-version imports.  Both are
+interesting ideas, but definitely outside the scope of this proposal.</p>
+<p>Others left out:</p>
+<ul class="simple">
+<li>Add ModuleSpec.submodules (RO-property) - returns possible submodules
+relative to the spec.</li>
+<li>Add ModuleSpec.loaded (RO-property) - the module in sys.module, if
+any.</li>
+<li>Add ModuleSpec.data - a descriptor that wraps the data API of the
+spec’s loader.</li>
+<li>Also see <a class="footnote-reference brackets" href="#cleaner-reload-support" id="id10">3</a>.</li>
+</ul>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id51">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="ref-files-pep"><span class="brackets"><a class="fn-backref" href="#id2">1</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/import-sig/2013-August/000658.html">https://mail.python.org/pipermail/import-sig/2013-August/000658.html</a></dd>
+<dt class="label" id="import-system-docs"><span class="brackets"><a class="fn-backref" href="#id1">2</a></span></dt>
+<dd><a class="reference external" href="http://docs.python.org/3/reference/import.html">http://docs.python.org/3/reference/import.html</a></dd>
+<dt class="label" id="cleaner-reload-support"><span class="brackets"><a class="fn-backref" href="#id10">3</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/import-sig/2013-September/000735.html">https://mail.python.org/pipermail/import-sig/2013-September/000735.html</a></dd>
+<dt class="label" id="lazy-import-concerns"><span class="brackets"><a class="fn-backref" href="#id4">4</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2013-August/128129.html">https://mail.python.org/pipermail/python-dev/2013-August/128129.html</a></dd>
+<dt class="label" id="reload-semantics-fix"><span class="brackets"><a class="fn-backref" href="#id3">5</a></span></dt>
+<dd><a class="reference external" href="http://bugs.python.org/issue19413">http://bugs.python.org/issue19413</a></dd>
+<dt class="label" id="supports-reload"><span class="brackets"><a class="fn-backref" href="#id6">6</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2013-October/129913.html">https://mail.python.org/pipermail/python-dev/2013-October/129913.html</a></dd>
+<dt class="label" id="supports-reload-considered-harmful"><span class="brackets"><a class="fn-backref" href="#id7">7</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2013-October/129971.html">https://mail.python.org/pipermail/python-dev/2013-October/129971.html</a></dd>
+<dt class="label" id="exec-module-target"><span class="brackets"><a class="fn-backref" href="#id8">8</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2013-October/129933.html">https://mail.python.org/pipermail/python-dev/2013-October/129933.html</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id52">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0451.txt">https://github.com/python/peps/blob/master/pep-0451.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0451.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0450.html">PEP 0450</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0452.html">PEP 0452</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 451 – A ModuleSpec Type for the Import System</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#terms-and-concepts">Terms and Concepts</a><ul>
+<li><a class="reference internal" href="#name">name</a></li>
+<li><a class="reference internal" href="#finder">finder</a></li>
+<li><a class="reference internal" href="#loader">loader</a></li>
+<li><a class="reference internal" href="#origin">origin</a></li>
+<li><a class="reference internal" href="#location">location</a></li>
+<li><a class="reference internal" href="#cache">cache</a></li>
+<li><a class="reference internal" href="#package">package</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#importlib-machinery-modulespec-new">importlib.machinery.ModuleSpec (new)</a></li>
+<li><a class="reference internal" href="#importlib-util-additions">importlib.util Additions</a></li>
+<li><a class="reference internal" href="#other-api-additions">Other API Additions</a></li>
+<li><a class="reference internal" href="#api-changes">API Changes</a></li>
+<li><a class="reference internal" href="#deprecations">Deprecations</a></li>
+<li><a class="reference internal" href="#removals">Removals</a></li>
+<li><a class="reference internal" href="#other-changes">Other Changes</a></li>
+<li><a class="reference internal" href="#backward-compatibility">Backward-Compatibility</a></li>
+<li><a class="reference internal" href="#what-will-not-change">What Will not Change?</a></li>
+<li><a class="reference internal" href="#responsibilities">Responsibilities</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#what-will-existing-finders-and-loaders-have-to-do-differently">What Will Existing Finders and Loaders Have to Do Differently?</a></li>
+<li><a class="reference internal" href="#modulespec-users">ModuleSpec Users</a></li>
+<li><a class="reference internal" href="#how-loading-will-work">How Loading Will Work</a></li>
+<li><a class="reference internal" href="#how-reloading-will-work">How Reloading Will Work</a></li>
+<li><a class="reference internal" href="#modulespec">ModuleSpec</a><ul>
+<li><a class="reference internal" href="#attributes">Attributes</a></li>
+<li><a class="reference internal" href="#factory-functions">Factory Functions</a></li>
+<li><a class="reference internal" href="#id5">Backward Compatibility</a></li>
+<li><a class="reference internal" href="#subclassing">Subclassing</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#existing-types">Existing Types</a><ul>
+<li><a class="reference internal" href="#module-objects">Module Objects</a></li>
+<li><a class="reference internal" href="#finders">Finders</a></li>
+<li><a class="reference internal" href="#the-target-parameter-of-find-spec">The “target” parameter of find_spec()</a></li>
+<li><a class="reference internal" href="#namespace-packages">Namespace Packages</a></li>
+<li><a class="reference internal" href="#loaders">Loaders</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id9">Other Changes</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a><ul>
+<li><a class="reference internal" href="#implementation-notes">Implementation Notes</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rejected-additions-to-the-pep">Rejected Additions to the PEP</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

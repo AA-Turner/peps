@@ -1,0 +1,703 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 3143 – Standard daemon process library &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 3144 – IP Address Manipulation Library for the Python Standard Library" href="pep-3144.html" />
+    <link rel="prev" title="PEP 3142 – Add a “while” clause to generator expressions" href="pep-3142.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 3143 – Standard daemon process library</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-3143-standard-daemon-process-library">
+<h1 class="page-title"><a class="toc-backref" href="#id21">PEP 3143 – Standard daemon process library</a><a class="headerlink" href="#pep-3143-standard-daemon-process-library" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">3143</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Standard daemon process library</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Ben Finney &lt;ben+python&#32;&#97;t&#32;benfinney.id.au&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Deferred</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">2009-01-26</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.x</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="id20">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id36">Abstract</a></li>
+<li><a class="reference internal" href="#pep-deferral" id="id37">PEP Deferral</a></li>
+<li><a class="reference internal" href="#specification" id="id38">Specification</a><ul>
+<li><a class="reference internal" href="#example-usage" id="id39">Example usage</a></li>
+<li><a class="reference internal" href="#interface" id="id40">Interface</a></li>
+<li><a class="reference internal" href="#daemoncontext-objects" id="id41"><code class="docutils literal notranslate"><span class="pre">DaemonContext</span></code> objects</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#motivation" id="id42">Motivation</a></li>
+<li><a class="reference internal" href="#rationale" id="id43">Rationale</a><ul>
+<li><a class="reference internal" href="#correct-daemon-behaviour" id="id44">Correct daemon behaviour</a></li>
+<li><a class="reference internal" href="#a-daemon-is-not-a-service" id="id45">A daemon is not a service</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#reference-implementation" id="id46">Reference Implementation</a><ul>
+<li><a class="reference internal" href="#other-daemon-implementations" id="id47">Other daemon implementations</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references" id="id48">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id49">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id36">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Writing a program to become a well-behaved Unix daemon is somewhat
+complex and tricky to get right, yet the steps are largely similar for
+any daemon regardless of what else the program may need to do.</p>
+<p>This PEP introduces a package to the Python standard library that
+provides a simple interface to the task of becoming a daemon process.</p>
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#pep-3143-standard-daemon-process-library" id="id21">PEP 3143 – Standard daemon process library</a><ul>
+<li><a class="reference internal" href="#abstract" id="id22">Abstract</a></li>
+<li><a class="reference internal" href="#pep-deferral" id="id23">PEP Deferral</a></li>
+<li><a class="reference internal" href="#specification" id="id24">Specification</a><ul>
+<li><a class="reference internal" href="#example-usage" id="id25">Example usage</a></li>
+<li><a class="reference internal" href="#interface" id="id26">Interface</a></li>
+<li><a class="reference internal" href="#daemoncontext-objects" id="id27"><code class="docutils literal notranslate"><span class="pre">DaemonContext</span></code> objects</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#motivation" id="id28">Motivation</a></li>
+<li><a class="reference internal" href="#rationale" id="id29">Rationale</a><ul>
+<li><a class="reference internal" href="#correct-daemon-behaviour" id="id30">Correct daemon behaviour</a></li>
+<li><a class="reference internal" href="#a-daemon-is-not-a-service" id="id31">A daemon is not a service</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#reference-implementation" id="id32">Reference Implementation</a><ul>
+<li><a class="reference internal" href="#other-daemon-implementations" id="id33">Other daemon implementations</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references" id="id34">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id35">Copyright</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="pep-deferral">
+<h2><a class="toc-backref" href="#id37">PEP Deferral</a><a class="headerlink" href="#pep-deferral" title="Permalink to this headline">¶</a></h2>
+<p>Further exploration of the concepts covered in this PEP has been deferred
+for lack of a current champion interested in promoting the goals of the PEP
+and collecting and incorporating feedback, and with sufficient available
+time to do so effectively.</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id38">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="example-usage">
+<h3><a class="toc-backref" href="#id39">Example usage</a><a class="headerlink" href="#example-usage" title="Permalink to this headline">¶</a></h3>
+<p>Simple example of direct <cite>DaemonContext</cite> usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">daemon</span>
+
+<span class="kn">from</span> <span class="nn">spam</span> <span class="kn">import</span> <span class="n">do_main_program</span>
+
+<span class="k">with</span> <span class="n">daemon</span><span class="o">.</span><span class="n">DaemonContext</span><span class="p">():</span>
+    <span class="n">do_main_program</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>More complex example usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">grp</span>
+<span class="kn">import</span> <span class="nn">signal</span>
+<span class="kn">import</span> <span class="nn">daemon</span>
+<span class="kn">import</span> <span class="nn">lockfile</span>
+
+<span class="kn">from</span> <span class="nn">spam</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">initial_program_setup</span><span class="p">,</span>
+    <span class="n">do_main_program</span><span class="p">,</span>
+    <span class="n">program_cleanup</span><span class="p">,</span>
+    <span class="n">reload_program_config</span><span class="p">,</span>
+    <span class="p">)</span>
+
+<span class="n">context</span> <span class="o">=</span> <span class="n">daemon</span><span class="o">.</span><span class="n">DaemonContext</span><span class="p">(</span>
+    <span class="n">working_directory</span><span class="o">=</span><span class="s1">&#39;/var/lib/foo&#39;</span><span class="p">,</span>
+    <span class="n">umask</span><span class="o">=</span><span class="mo">0o002</span><span class="p">,</span>
+    <span class="n">pidfile</span><span class="o">=</span><span class="n">lockfile</span><span class="o">.</span><span class="n">FileLock</span><span class="p">(</span><span class="s1">&#39;/var/run/spam.pid&#39;</span><span class="p">),</span>
+    <span class="p">)</span>
+
+<span class="n">context</span><span class="o">.</span><span class="n">signal_map</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">signal</span><span class="o">.</span><span class="n">SIGTERM</span><span class="p">:</span> <span class="n">program_cleanup</span><span class="p">,</span>
+    <span class="n">signal</span><span class="o">.</span><span class="n">SIGHUP</span><span class="p">:</span> <span class="s1">&#39;terminate&#39;</span><span class="p">,</span>
+    <span class="n">signal</span><span class="o">.</span><span class="n">SIGUSR1</span><span class="p">:</span> <span class="n">reload_program_config</span><span class="p">,</span>
+    <span class="p">}</span>
+
+<span class="n">mail_gid</span> <span class="o">=</span> <span class="n">grp</span><span class="o">.</span><span class="n">getgrnam</span><span class="p">(</span><span class="s1">&#39;mail&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">gr_gid</span>
+<span class="n">context</span><span class="o">.</span><span class="n">gid</span> <span class="o">=</span> <span class="n">mail_gid</span>
+
+<span class="n">important_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;spam.data&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span>
+<span class="n">interesting_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;eggs.data&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span>
+<span class="n">context</span><span class="o">.</span><span class="n">files_preserve</span> <span class="o">=</span> <span class="p">[</span><span class="n">important_file</span><span class="p">,</span> <span class="n">interesting_file</span><span class="p">]</span>
+
+<span class="n">initial_program_setup</span><span class="p">()</span>
+
+<span class="k">with</span> <span class="n">context</span><span class="p">:</span>
+    <span class="n">do_main_program</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="interface">
+<h3><a class="toc-backref" href="#id40">Interface</a><a class="headerlink" href="#interface" title="Permalink to this headline">¶</a></h3>
+<p>A new package, <cite>daemon</cite>, is added to the standard library.</p>
+<p>A class, <cite>DaemonContext</cite>, is defined to represent the settings and
+process context for the program running as a daemon process.</p>
+</div>
+<div class="section" id="daemoncontext-objects">
+<h3><a class="toc-backref" href="#id41"><code class="docutils literal notranslate"><span class="pre">DaemonContext</span></code> objects</a><a class="headerlink" href="#daemoncontext-objects" title="Permalink to this headline">¶</a></h3>
+<p>A <cite>DaemonContext</cite> instance represents the behaviour settings and
+process context for the program when it becomes a daemon. The
+behaviour and environment is customised by setting options on the
+instance, before calling the <cite>open</cite> method.</p>
+<p>Each option can be passed as a keyword argument to the <cite>DaemonContext</cite>
+constructor, or subsequently altered by assigning to an attribute on
+the instance at any time prior to calling <cite>open</cite>. That is, for
+options named <cite>wibble</cite> and <cite>wubble</cite>, the following invocation:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">foo</span> <span class="o">=</span> <span class="n">daemon</span><span class="o">.</span><span class="n">DaemonContext</span><span class="p">(</span><span class="n">wibble</span><span class="o">=</span><span class="n">bar</span><span class="p">,</span> <span class="n">wubble</span><span class="o">=</span><span class="n">baz</span><span class="p">)</span>
+<span class="n">foo</span><span class="o">.</span><span class="n">open</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>is equivalent to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">foo</span> <span class="o">=</span> <span class="n">daemon</span><span class="o">.</span><span class="n">DaemonContext</span><span class="p">()</span>
+<span class="n">foo</span><span class="o">.</span><span class="n">wibble</span> <span class="o">=</span> <span class="n">bar</span>
+<span class="n">foo</span><span class="o">.</span><span class="n">wubble</span> <span class="o">=</span> <span class="n">baz</span>
+<span class="n">foo</span><span class="o">.</span><span class="n">open</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The following options are defined.</p>
+<dl>
+<dt><cite>files_preserve</cite></dt><dd><dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><code class="docutils literal notranslate"><span class="pre">None</span></code></dd>
+</dl>
+<p>List of files that should <em>not</em> be closed when starting the
+daemon. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, all open file descriptors will be closed.</p>
+<p>Elements of the list are file descriptors (as returned by a file
+object’s <cite>fileno()</cite> method) or Python <cite>file</cite> objects. Each
+specifies a file that is not to be closed during daemon start.</p>
+</dd>
+<dt><cite>chroot_directory</cite></dt><dd><dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><code class="docutils literal notranslate"><span class="pre">None</span></code></dd>
+</dl>
+<p>Full path to a directory to set as the effective root directory of
+the process. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, specifies that the root directory is not
+to be changed.</p>
+</dd>
+<dt><cite>working_directory</cite></dt><dd><dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><code class="docutils literal notranslate"><span class="pre">'/'</span></code></dd>
+</dl>
+<p>Full path of the working directory to which the process should
+change on daemon start.</p>
+<p>Since a filesystem cannot be unmounted if a process has its
+current working directory on that filesystem, this should either
+be left at default or set to a directory that is a sensible “home
+directory” for the daemon while it is running.</p>
+</dd>
+<dt><cite>umask</cite></dt><dd><dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><code class="docutils literal notranslate"><span class="pre">0</span></code></dd>
+</dl>
+<p>File access creation mask (“umask”) to set for the process on
+daemon start.</p>
+<p>Since a process inherits its umask from its parent process,
+starting the daemon will reset the umask to this value so that
+files are created by the daemon with access modes as it expects.</p>
+</dd>
+<dt><cite>pidfile</cite></dt><dd><dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><code class="docutils literal notranslate"><span class="pre">None</span></code></dd>
+</dl>
+<p>Context manager for a PID lock file. When the daemon context opens
+and closes, it enters and exits the <cite>pidfile</cite> context manager.</p>
+</dd>
+<dt><cite>detach_process</cite></dt><dd><dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><code class="docutils literal notranslate"><span class="pre">None</span></code></dd>
+</dl>
+<p>If <code class="docutils literal notranslate"><span class="pre">True</span></code>, detach the process context when opening the daemon
+context; if <code class="docutils literal notranslate"><span class="pre">False</span></code>, do not detach.</p>
+<p>If unspecified (<code class="docutils literal notranslate"><span class="pre">None</span></code>) during initialisation of the instance,
+this will be set to <code class="docutils literal notranslate"><span class="pre">True</span></code> by default, and <code class="docutils literal notranslate"><span class="pre">False</span></code> only if
+detaching the process is determined to be redundant; for example,
+in the case when the process was started by <cite>init</cite>, by <cite>initd</cite>, or
+by <cite>inetd</cite>.</p>
+</dd>
+<dt><cite>signal_map</cite></dt><dd><dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd">system-dependent</dd>
+</dl>
+<p>Mapping from operating system signals to callback actions.</p>
+<p>The mapping is used when the daemon context opens, and determines
+the action for each signal’s signal handler:</p>
+<ul class="simple">
+<li>A value of <code class="docutils literal notranslate"><span class="pre">None</span></code> will ignore the signal (by setting the
+signal action to <code class="docutils literal notranslate"><span class="pre">signal.SIG_IGN</span></code>).</li>
+<li>A string value will be used as the name of an attribute on the
+<code class="docutils literal notranslate"><span class="pre">DaemonContext</span></code> instance. The attribute’s value will be used
+as the action for the signal handler.</li>
+<li>Any other value will be used as the action for the signal
+handler.</li>
+</ul>
+<p>The default value depends on which signals are defined on the
+running system. Each item from the list below whose signal is
+actually defined in the <code class="docutils literal notranslate"><span class="pre">signal</span></code> module will appear in the
+default map:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">signal.SIGTTIN</span></code>: <code class="docutils literal notranslate"><span class="pre">None</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">signal.SIGTTOU</span></code>: <code class="docutils literal notranslate"><span class="pre">None</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">signal.SIGTSTP</span></code>: <code class="docutils literal notranslate"><span class="pre">None</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">signal.SIGTERM</span></code>: <code class="docutils literal notranslate"><span class="pre">'terminate'</span></code></li>
+</ul>
+<p>Depending on how the program will interact with its child
+processes, it may need to specify a signal map that includes the
+<code class="docutils literal notranslate"><span class="pre">signal.SIGCHLD</span></code> signal (received when a child process exits).
+See the specific operating system’s documentation for more detail
+on how to determine what circumstances dictate the need for signal
+handlers.</p>
+</dd>
+<dt><cite>uid</cite></dt><dd><dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><code class="docutils literal notranslate"><span class="pre">os.getuid()</span></code></dd>
+</dl>
+</dd>
+<dt><cite>gid</cite></dt><dd><dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><code class="docutils literal notranslate"><span class="pre">os.getgid()</span></code></dd>
+</dl>
+<p>The user ID (“UID”) value and group ID (“GID”) value to switch
+the process to on daemon start.</p>
+<p>The default values, the real UID and GID of the process, will
+relinquish any effective privilege elevation inherited by the
+process.</p>
+</dd>
+<dt><cite>prevent_core</cite></dt><dd><dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><code class="docutils literal notranslate"><span class="pre">True</span></code></dd>
+</dl>
+<p>If true, prevents the generation of core files, in order to avoid
+leaking sensitive information from daemons run as <cite>root</cite>.</p>
+</dd>
+<dt><cite>stdin</cite></dt><dd><dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><code class="docutils literal notranslate"><span class="pre">None</span></code></dd>
+</dl>
+</dd>
+<dt><cite>stdout</cite></dt><dd><dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><code class="docutils literal notranslate"><span class="pre">None</span></code></dd>
+</dl>
+</dd>
+<dt><cite>stderr</cite></dt><dd><dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><code class="docutils literal notranslate"><span class="pre">None</span></code></dd>
+</dl>
+<p>Each of <cite>stdin</cite>, <cite>stdout</cite>, and <cite>stderr</cite> is a file-like object
+which will be used as the new file for the standard I/O stream
+<cite>sys.stdin</cite>, <cite>sys.stdout</cite>, and <cite>sys.stderr</cite> respectively. The file
+should therefore be open, with a minimum of mode ‘r’ in the case
+of <cite>stdin</cite>, and mode ‘w+’ in the case of <cite>stdout</cite> and <cite>stderr</cite>.</p>
+<p>If the object has a <cite>fileno()</cite> method that returns a file
+descriptor, the corresponding file will be excluded from being
+closed during daemon start (that is, it will be treated as though
+it were listed in <cite>files_preserve</cite>).</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the corresponding system stream is re-bound to the
+file named by <cite>os.devnull</cite>.</p>
+</dd>
+</dl>
+<p>The following methods are defined.</p>
+<dl>
+<dt><cite>open()</cite></dt><dd><dl class="field-list simple">
+<dt class="field-odd">Return</dt>
+<dd class="field-odd"><code class="docutils literal notranslate"><span class="pre">None</span></code></dd>
+</dl>
+<p>Open the daemon context, turning the current program into a daemon
+process. This performs the following steps:</p>
+<ul>
+<li><p>If this instance’s <cite>is_open</cite> property is true, return
+immediately. This makes it safe to call <cite>open</cite> multiple times on
+an instance.</p>
+</li>
+<li><p>If the <cite>prevent_core</cite> attribute is true, set the resource limits
+for the process to prevent any core dump from the process.</p>
+</li>
+<li><p>If the <cite>chroot_directory</cite> attribute is not <code class="docutils literal notranslate"><span class="pre">None</span></code>, set the
+effective root directory of the process to that directory (via
+<cite>os.chroot</cite>).</p>
+<p>This allows running the daemon process inside a “chroot gaol”
+as a means of limiting the system’s exposure to rogue behaviour
+by the process. Note that the specified directory needs to
+already be set up for this purpose.</p>
+</li>
+<li><p>Set the process UID and GID to the <cite>uid</cite> and <cite>gid</cite> attribute
+values.</p>
+</li>
+<li><p>Close all open file descriptors. This excludes those listed in
+the <cite>files_preserve</cite> attribute, and those that correspond to the
+<cite>stdin</cite>, <cite>stdout</cite>, or <cite>stderr</cite> attributes.</p>
+</li>
+<li><p>Change current working directory to the path specified by the
+<cite>working_directory</cite> attribute.</p>
+</li>
+<li><p>Reset the file access creation mask to the value specified by
+the <cite>umask</cite> attribute.</p>
+</li>
+<li><p>If the <cite>detach_process</cite> option is true, detach the current
+process into its own process group, and disassociate from any
+controlling terminal.</p>
+</li>
+<li><p>Set signal handlers as specified by the <cite>signal_map</cite> attribute.</p>
+</li>
+<li><p>If any of the attributes <cite>stdin</cite>, <cite>stdout</cite>, <cite>stderr</cite> are not
+<code class="docutils literal notranslate"><span class="pre">None</span></code>, bind the system streams <cite>sys.stdin</cite>, <cite>sys.stdout</cite>,
+and/or <cite>sys.stderr</cite> to the files represented by the
+corresponding attributes. Where the attribute has a file
+descriptor, the descriptor is duplicated (instead of re-binding
+the name).</p>
+</li>
+<li><p>If the <cite>pidfile</cite> attribute is not <code class="docutils literal notranslate"><span class="pre">None</span></code>, enter its context
+manager.</p>
+</li>
+<li><p>Mark this instance as open (for the purpose of future <cite>open</cite> and
+<cite>close</cite> calls).</p>
+</li>
+<li><p>Register the <cite>close</cite> method to be called during Python’s exit
+processing.</p>
+</li>
+</ul>
+<p>When the function returns, the running program is a daemon
+process.</p>
+</dd>
+<dt><cite>close()</cite></dt><dd><dl class="field-list simple">
+<dt class="field-odd">Return</dt>
+<dd class="field-odd"><code class="docutils literal notranslate"><span class="pre">None</span></code></dd>
+</dl>
+<p>Close the daemon context. This performs the following steps:</p>
+<ul class="simple">
+<li>If this instance’s <cite>is_open</cite> property is false, return
+immediately. This makes it safe to call <cite>close</cite> multiple times
+on an instance.</li>
+<li>If the <cite>pidfile</cite> attribute is not <code class="docutils literal notranslate"><span class="pre">None</span></code>, exit its context
+manager.</li>
+<li>Mark this instance as closed (for the purpose of future <cite>open</cite>
+and <cite>close</cite> calls).</li>
+</ul>
+</dd>
+<dt><cite>is_open</cite></dt><dd><dl class="field-list simple">
+<dt class="field-odd">Return</dt>
+<dd class="field-odd"><code class="docutils literal notranslate"><span class="pre">True</span></code> if the instance is open, <code class="docutils literal notranslate"><span class="pre">False</span></code> otherwise.</dd>
+</dl>
+<p>This property exposes the state indicating whether the instance is
+currently open. It is <code class="docutils literal notranslate"><span class="pre">True</span></code> if the instance’s <cite>open</cite> method has
+been called and the <cite>close</cite> method has not subsequently been
+called.</p>
+</dd>
+<dt><cite>terminate(signal_number, stack_frame)</cite></dt><dd><dl class="field-list simple">
+<dt class="field-odd">Return</dt>
+<dd class="field-odd"><code class="docutils literal notranslate"><span class="pre">None</span></code></dd>
+</dl>
+<p>Signal handler for the <code class="docutils literal notranslate"><span class="pre">signal.SIGTERM</span></code> signal. Performs the
+following step:</p>
+<ul class="simple">
+<li>Raise a <code class="docutils literal notranslate"><span class="pre">SystemExit</span></code> exception explaining the signal.</li>
+</ul>
+</dd>
+</dl>
+<p>The class also implements the context manager protocol via
+<code class="docutils literal notranslate"><span class="pre">__enter__</span></code> and <code class="docutils literal notranslate"><span class="pre">__exit__</span></code> methods.</p>
+<dl>
+<dt><cite>__enter__()</cite></dt><dd><dl class="field-list simple">
+<dt class="field-odd">Return</dt>
+<dd class="field-odd">The <code class="docutils literal notranslate"><span class="pre">DaemonContext</span></code> instance</dd>
+</dl>
+<p>Call the instance’s <cite>open()</cite> method, then return the instance.</p>
+</dd>
+<dt><cite>__exit__(exc_type, exc_value, exc_traceback)</cite></dt><dd><dl class="field-list simple">
+<dt class="field-odd">Return</dt>
+<dd class="field-odd"><code class="docutils literal notranslate"><span class="pre">True</span></code> or <code class="docutils literal notranslate"><span class="pre">False</span></code> as defined by the context manager
+protocol</dd>
+</dl>
+<p>Call the instance’s <cite>close()</cite> method, then return <code class="docutils literal notranslate"><span class="pre">True</span></code> if the
+exception was handled or <code class="docutils literal notranslate"><span class="pre">False</span></code> if it was not.</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id42">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>The majority of programs written to be Unix daemons either implement
+behaviour very similar to that in the <a class="reference internal" href="#specification">specification</a>, or are
+poorly-behaved daemons by the <a class="reference internal" href="#correct-daemon-behaviour">correct daemon behaviour</a>.</p>
+<p>Since these steps should be much the same in most implementations but
+are very particular and easy to omit or implement incorrectly, they
+are a prime target for a standard well-tested implementation in the
+standard library.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id43">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="correct-daemon-behaviour">
+<h3><a class="toc-backref" href="#id44">Correct daemon behaviour</a><a class="headerlink" href="#correct-daemon-behaviour" title="Permalink to this headline">¶</a></h3>
+<p>According to Stevens in <a class="reference internal" href="#stevens" id="id1"><span>[stevens]</span></a> §2.6, a program should perform the
+following steps to become a Unix daemon process.</p>
+<ul class="simple">
+<li>Close all open file descriptors.</li>
+<li>Change current working directory.</li>
+<li>Reset the file access creation mask.</li>
+<li>Run in the background.</li>
+<li>Disassociate from process group.</li>
+<li>Ignore terminal I/O signals.</li>
+<li>Disassociate from control terminal.</li>
+<li>Don’t reacquire a control terminal.</li>
+<li>Correctly handle the following circumstances:<ul>
+<li>Started by System V <cite>init</cite> process.</li>
+<li>Daemon termination by <code class="docutils literal notranslate"><span class="pre">SIGTERM</span></code> signal.</li>
+<li>Children generate <code class="docutils literal notranslate"><span class="pre">SIGCLD</span></code> signal.</li>
+</ul>
+</li>
+</ul>
+<p>The <cite>daemon</cite> tool <a class="reference internal" href="#slack-daemon" id="id2"><span>[slack-daemon]</span></a> lists (in its summary of features)
+behaviour that should be performed when turning a program into a
+well-behaved Unix daemon process. It differs from this PEP’s intent in
+that it invokes a <em>separate</em> program as a daemon process. The
+following features are appropriate for a daemon that starts itself
+once the program is already running:</p>
+<ul class="simple">
+<li>Sets up the correct process context for a daemon.</li>
+<li>Behaves sensibly when started by <cite>initd(8)</cite> or <cite>inetd(8)</cite>.</li>
+<li>Revokes any suid or sgid privileges to reduce security risks in case
+daemon is incorrectly installed with special privileges.</li>
+<li>Prevents the generation of core files to prevent leaking sensitive
+information from daemons run as root (optional).</li>
+<li>Names the daemon by creating and locking a PID file to guarantee
+that only one daemon with the given name can execute at any given
+time (optional).</li>
+<li>Sets the user and group under which to run the daemon (optional,
+root only).</li>
+<li>Creates a chroot gaol (optional, root only).</li>
+<li>Captures the daemon’s stdout and stderr and directs them to syslog
+(optional).</li>
+</ul>
+</div>
+<div class="section" id="a-daemon-is-not-a-service">
+<h3><a class="toc-backref" href="#id45">A daemon is not a service</a><a class="headerlink" href="#a-daemon-is-not-a-service" title="Permalink to this headline">¶</a></h3>
+<p>This PEP addresses only Unix-style daemons, for which the above
+correct behaviour is relevant, as opposed to comparable behaviours on
+other operating systems.</p>
+<p>There is a related concept in many systems, called a “service”. A
+service differs from the model in this PEP, in that rather than having
+the <em>current</em> program continue to run as a daemon process, a service
+starts an <em>additional</em> process to run in the background, and the
+current process communicates with that additional process via some
+defined channels.</p>
+<p>The Unix-style daemon model in this PEP can be used, among other
+things, to implement the background-process part of a service; but
+this PEP does not address the other aspects of setting up and managing
+a service.</p>
+</div>
+</div>
+<div class="section" id="reference-implementation">
+<h2><a class="toc-backref" href="#id46">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>The <cite>python-daemon</cite> package <a class="reference internal" href="#python-daemon" id="id3"><span>[python-daemon]</span></a>.</p>
+<div class="section" id="other-daemon-implementations">
+<h3><a class="toc-backref" href="#id47">Other daemon implementations</a><a class="headerlink" href="#other-daemon-implementations" title="Permalink to this headline">¶</a></h3>
+<p>Prior to this PEP, several existing third-party Python libraries or
+tools implemented some of this PEP’s <a class="reference internal" href="#correct-daemon-behaviour">correct daemon behaviour</a>.</p>
+<p>The <a class="reference internal" href="#reference-implementation">reference implementation</a> is a fairly direct successor from the
+following implementations:</p>
+<ul class="simple">
+<li>Many good ideas were contributed by the community to Python cookbook
+recipes #66012 <a class="reference internal" href="#cookbook-66012" id="id4"><span>[cookbook-66012]</span></a> and #278731 <a class="reference internal" href="#cookbook-278731" id="id5"><span>[cookbook-278731]</span></a>.</li>
+<li>The <cite>bda.daemon</cite> library <a class="reference internal" href="#bda-daemon" id="id6"><span>[bda.daemon]</span></a> is an implementation of
+<a class="reference internal" href="#cookbook-66012" id="id7"><span>[cookbook-66012]</span></a>. It is the predecessor of <a class="reference internal" href="#python-daemon" id="id8"><span>[python-daemon]</span></a>.</li>
+</ul>
+<p>Other Python daemon implementations that differ from this PEP:</p>
+<ul class="simple">
+<li>The <cite>zdaemon</cite> tool <a class="reference internal" href="#zdaemon" id="id9"><span>[zdaemon]</span></a> was written for the Zope project. Like
+<a class="reference internal" href="#slack-daemon" id="id10"><span>[slack-daemon]</span></a>, it differs from this specification because it is
+used to run another program as a daemon process.</li>
+<li>The Python library <cite>daemon</cite> <a class="reference internal" href="#clapper-daemon" id="id11"><span>[clapper-daemon]</span></a> is (according to its
+homepage) no longer maintained. As of version 1.0.1, it implements
+the basic steps from <a class="reference internal" href="#stevens" id="id12"><span>[stevens]</span></a>.</li>
+<li>The <cite>daemonize</cite> library <a class="reference internal" href="#seutter-daemonize" id="id13"><span>[seutter-daemonize]</span></a> also implements the
+basic steps from <a class="reference internal" href="#stevens" id="id14"><span>[stevens]</span></a>.</li>
+<li>Ray Burr’s <cite>daemon.py</cite> module <a class="reference internal" href="#burr-daemon" id="id15"><span>[burr-daemon]</span></a> provides the <a class="reference internal" href="#stevens" id="id16"><span>[stevens]</span></a>
+procedure as well as PID file handling and redirection of output to
+syslog.</li>
+<li>Twisted <a class="reference internal" href="#twisted" id="id17"><span>[twisted]</span></a> includes, perhaps unsurprisingly, an
+implementation of a process daemonisation API that is integrated
+with the rest of the Twisted framework; it differs significantly
+from the API in this PEP.</li>
+<li>The Python <cite>initd</cite> library <a class="reference internal" href="#dagitses-initd" id="id18"><span>[dagitses-initd]</span></a>, which uses
+<a class="reference internal" href="#clapper-daemon" id="id19"><span>[clapper-daemon]</span></a>, implements an equivalent of Unix <cite>initd(8)</cite> for
+controlling a daemon process.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id48">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="citation">
+<dt class="label" id="stevens"><span class="brackets">stevens</span><span class='fn-backref'><em> (<a href="#id1">1</a>, <a href="#id12">2</a>, <a href="#id14">3</a>, <a href="#id16">4</a>) </em></span></dt>
+<dd><cite>Unix Network Programming</cite>, W. Richard Stevens, 1994 Prentice
+Hall.</dd>
+<dt class="label" id="slack-daemon"><span class="brackets">slack-daemon</span><span class='fn-backref'><em> (<a href="#id2">1</a>, <a href="#id10">2</a>) </em></span></dt>
+<dd>The (non-Python) “libslack” implementation of a <cite>daemon</cite> tool
+<a class="reference external" href="http://www.libslack.org/daemon/">http://www.libslack.org/daemon/</a> by “raf” &lt;<a class="reference external" href="mailto:raf&#37;&#52;&#48;raf&#46;org">raf<span>&#64;</span>raf<span>&#46;</span>org</a>&gt;.</dd>
+<dt class="label" id="python-daemon"><span class="brackets">python-daemon</span><span class='fn-backref'><em> (<a href="#id3">1</a>, <a href="#id8">2</a>) </em></span></dt>
+<dd>The <cite>python-daemon</cite> library
+<a class="reference external" href="http://pypi.python.org/pypi/python-daemon/">http://pypi.python.org/pypi/python-daemon/</a> by Ben Finney et
+al.</dd>
+<dt class="label" id="cookbook-66012"><span class="brackets">cookbook-66012</span><span class='fn-backref'><em> (<a href="#id4">1</a>, <a href="#id7">2</a>) </em></span></dt>
+<dd>Python Cookbook recipe 66012, “Fork a daemon process on Unix”
+<a class="reference external" href="http://code.activestate.com/recipes/66012/">http://code.activestate.com/recipes/66012/</a>.</dd>
+<dt class="label" id="cookbook-278731"><span class="brackets"><a class="fn-backref" href="#id5">cookbook-278731</a></span></dt>
+<dd>Python Cookbook recipe 278731, “Creating a daemon the Python way”
+<a class="reference external" href="http://code.activestate.com/recipes/278731/">http://code.activestate.com/recipes/278731/</a>.</dd>
+<dt class="label" id="bda-daemon"><span class="brackets"><a class="fn-backref" href="#id6">bda.daemon</a></span></dt>
+<dd>The <cite>bda.daemon</cite> library
+<a class="reference external" href="http://pypi.python.org/pypi/bda.daemon/">http://pypi.python.org/pypi/bda.daemon/</a> by Robert
+Niederreiter et al.</dd>
+<dt class="label" id="zdaemon"><span class="brackets"><a class="fn-backref" href="#id9">zdaemon</a></span></dt>
+<dd>The <cite>zdaemon</cite> tool <a class="reference external" href="http://pypi.python.org/pypi/zdaemon/">http://pypi.python.org/pypi/zdaemon/</a> by
+Guido van Rossum et al.</dd>
+<dt class="label" id="clapper-daemon"><span class="brackets">clapper-daemon</span><span class='fn-backref'><em> (<a href="#id11">1</a>, <a href="#id19">2</a>) </em></span></dt>
+<dd>The <cite>daemon</cite> library <a class="reference external" href="http://pypi.python.org/pypi/daemon/">http://pypi.python.org/pypi/daemon/</a> by
+Brian Clapper.</dd>
+<dt class="label" id="seutter-daemonize"><span class="brackets"><a class="fn-backref" href="#id13">seutter-daemonize</a></span></dt>
+<dd>The <cite>daemonize</cite> library <a class="reference external" href="http://daemonize.sourceforge.net/">http://daemonize.sourceforge.net/</a> by
+Jerry Seutter.</dd>
+<dt class="label" id="burr-daemon"><span class="brackets"><a class="fn-backref" href="#id15">burr-daemon</a></span></dt>
+<dd>The <cite>daemon.py</cite> module
+<a class="reference external" href="http://www.nightmare.com/~ryb/code/daemon.py">http://www.nightmare.com/~ryb/code/daemon.py</a> by Ray Burr.</dd>
+<dt class="label" id="twisted"><span class="brackets"><a class="fn-backref" href="#id17">twisted</a></span></dt>
+<dd>The <cite>Twisted</cite> application framework
+<a class="reference external" href="http://pypi.python.org/pypi/Twisted/">http://pypi.python.org/pypi/Twisted/</a> by Glyph Lefkowitz et
+al.</dd>
+<dt class="label" id="dagitses-initd"><span class="brackets"><a class="fn-backref" href="#id18">dagitses-initd</a></span></dt>
+<dd>The Python <cite>initd</cite> library <a class="reference external" href="http://pypi.python.org/pypi/initd/">http://pypi.python.org/pypi/initd/</a>
+by Michael Andreas Dagitses.</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id49">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This work is hereby placed in the public domain. To the extent that
+placing a work in the public domain is not legally possible, the
+copyright holder hereby grants to all recipients of this work all
+rights and freedoms that would otherwise be restricted by copyright.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-3143.txt">https://github.com/python/peps/blob/master/pep-3143.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-3143.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-3142.html">PEP 3142</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-3144.html">PEP 3144</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 3143 – Standard daemon process library</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#pep-deferral">PEP Deferral</a></li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#example-usage">Example usage</a></li>
+<li><a class="reference internal" href="#interface">Interface</a></li>
+<li><a class="reference internal" href="#daemoncontext-objects"><code class="docutils literal notranslate"><span class="pre">DaemonContext</span></code> objects</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a><ul>
+<li><a class="reference internal" href="#correct-daemon-behaviour">Correct daemon behaviour</a></li>
+<li><a class="reference internal" href="#a-daemon-is-not-a-service">A daemon is not a service</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a><ul>
+<li><a class="reference internal" href="#other-daemon-implementations">Other daemon implementations</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

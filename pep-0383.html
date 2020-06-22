@@ -1,0 +1,290 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 383 – Non-decodable Bytes in System Character Interfaces &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 384 – Defining a Stable ABI" href="pep-0384.html" />
+    <link rel="prev" title="PEP 382 – Namespace Packages" href="pep-0382.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 383 – Non-decodable Bytes in System Character Interfaces</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-383-non-decodable-bytes-in-system-character-interfaces">
+<h1 class="page-title">PEP 383 – Non-decodable Bytes in System Character Interfaces<a class="headerlink" href="#pep-383-non-decodable-bytes-in-system-character-interfaces" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">383</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Non-decodable Bytes in System Character Interfaces</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Martin v. Löwis &lt;martin&#32;&#97;t&#32;v.loewis.de&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">22-Apr-2009</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.1</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id7">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id8">Rationale</a></li>
+<li><a class="reference internal" href="#specification" id="id9">Specification</a></li>
+<li><a class="reference internal" href="#discussion" id="id10">Discussion</a></li>
+<li><a class="reference internal" href="#references" id="id11">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id12">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id7">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>File names, environment variables, and command line arguments are
+defined as being character data in POSIX; the C APIs however allow
+passing arbitrary bytes - whether these conform to a certain encoding
+or not. This PEP proposes a means of dealing with such irregularities
+by embedding the bytes in character strings in such a way that allows
+recreation of the original byte string.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id8">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>The C char type is a data type that is commonly used to represent both
+character data and bytes. Certain POSIX interfaces are specified and
+widely understood as operating on character data, however, the system
+call interfaces make no assumption on the encoding of these data, and
+pass them on as-is. With Python 3, character strings use a
+Unicode-based internal representation, making it difficult to ignore
+the encoding of byte strings in the same way that the C interfaces can
+ignore the encoding.</p>
+<p>On the other hand, Microsoft Windows NT has corrected the original
+design limitation of Unix, and made it explicit in its system
+interfaces that these data (file names, environment variables, command
+line arguments) are indeed character data, by providing a
+Unicode-based API (keeping a C-char-based one for backwards
+compatibility).</p>
+<p>For Python 3, one proposed solution is to provide two sets of APIs: a
+byte-oriented one, and a character-oriented one, where the
+character-oriented one would be limited to not being able to represent
+all data accurately. Unfortunately, for Windows, the situation would
+be exactly the opposite: the byte-oriented interface cannot represent
+all data; only the character-oriented API can. As a consequence,
+libraries and applications that want to support all user data in a
+cross-platform manner have to accept mish-mash of bytes and characters
+exactly in the way that caused endless troubles for Python 2.x.</p>
+<p>With this PEP, a uniform treatment of these data as characters becomes
+possible. The uniformity is achieved by using specific encoding
+algorithms, meaning that the data can be converted back to bytes on
+POSIX systems only if the same encoding is used.</p>
+<p>Being able to treat such strings uniformly will allow application
+writers to abstract from details specific to the operating system, and
+reduces the risk of one API failing when the other API would have
+worked.</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id9">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>On Windows, Python uses the wide character APIs to access
+character-oriented APIs, allowing direct conversion of the
+environmental data to Python str objects (<a class="footnote-reference brackets" href="#id4" id="id1">1</a>).</p>
+<p>On POSIX systems, Python currently applies the locale’s encoding to
+convert the byte data to Unicode, failing for characters that cannot
+be decoded. With this PEP, non-decodable bytes &gt;= 128 will be
+represented as lone surrogate codes U+DC80..U+DCFF. Bytes below
+128 will produce exceptions; see the discussion below.</p>
+<p>To convert non-decodable bytes, a new error handler (<a class="footnote-reference brackets" href="#id5" id="id2">2</a>)
+“surrogateescape” is introduced, which produces these surrogates. On
+encoding, the error handler converts the surrogate back to the
+corresponding byte. This error handler will be used in any API that
+receives or produces file names, command line arguments, or
+environment variables.</p>
+<p>The error handler interface is extended to allow the encode error
+handler to return byte strings immediately, in addition to returning
+Unicode strings which then get encoded again (also see the discussion
+below).</p>
+<p>Byte-oriented interfaces that already exist in Python 3.0 are not
+affected by this specification. They are neither enhanced nor
+deprecated.</p>
+<p>External libraries that operate on file names (such as GUI file
+choosers) should also encode them according to the PEP.</p>
+</div>
+<div class="section" id="discussion">
+<h2><a class="toc-backref" href="#id10">Discussion</a><a class="headerlink" href="#discussion" title="Permalink to this headline">¶</a></h2>
+<p>This surrogateescape encoding is based on Markus Kuhn’s idea that
+he called UTF-8b <a class="footnote-reference brackets" href="#id6" id="id3">3</a>.</p>
+<p>While providing a uniform API to non-decodable bytes, this interface
+has the limitation that chosen representation only “works” if the data
+get converted back to bytes with the surrogateescape error handler
+also. Encoding the data with the locale’s encoding and the (default)
+strict error handler will raise an exception, encoding them with UTF-8
+will produce non-sensical data.</p>
+<p>Data obtained from other sources may conflict with data produced
+by this PEP. Dealing with such conflicts is out of scope of the PEP.</p>
+<p>This PEP allows the possibility of “smuggling” bytes in character
+strings. This would be a security risk if the bytes are
+security-critical when interpreted as characters on a target system,
+such as path name separators. For this reason, the PEP rejects
+smuggling bytes below 128. If the target system uses EBCDIC, such
+smuggled bytes may still be a security risk, allowing smuggling of
+e.g. square brackets or the backslash. Python currently does not
+support EBCDIC, so this should not be a problem in practice. Anybody
+porting Python to an EBCDIC system might want to adjust the error
+handlers, or come up with other approaches to address the security
+risks.</p>
+<p>Encodings that are not compatible with ASCII are not supported by
+this specification; bytes in the ASCII range that fail to decode
+will cause an exception. It is widely agreed that such encodings
+should not be used as locale charsets.</p>
+<p>For most applications, we assume that they eventually pass data
+received from a system interface back into the same system
+interfaces. For example, an application invoking os.listdir() will
+likely pass the result strings back into APIs like os.stat() or
+open(), which then encodes them back into their original byte
+representation. Applications that need to process the original byte
+strings can obtain them by encoding the character strings with the
+file system encoding, passing “surrogateescape” as the error handler
+name. For example, a function that works like os.listdir, except for
+accepting and returning bytes, would be written as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">listdir_b</span><span class="p">(</span><span class="n">dirname</span><span class="p">):</span>
+    <span class="n">fse</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">getfilesystemencoding</span><span class="p">()</span>
+    <span class="n">dirname</span> <span class="o">=</span> <span class="n">dirname</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">fse</span><span class="p">,</span> <span class="s2">&quot;surrogateescape&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">fn</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">dirname</span><span class="p">):</span>
+        <span class="c1"># fn is now a str object</span>
+        <span class="k">yield</span> <span class="n">fn</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">fse</span><span class="p">,</span> <span class="s2">&quot;surrogateescape&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The extension to the encode error handler interface proposed by this
+PEP is necessary to implement the ‘surrogateescape’ error handler,
+because there are required byte sequences which cannot be generated
+from replacement Unicode.  However, the encode error handler interface
+presently requires replacement Unicode to be provided in lieu of the
+non-encodable Unicode from the source string.  Then it promptly
+encodes that replacement Unicode.  In some error handlers, such as the
+‘surrogateescape’ proposed here, it is also simpler and more efficient
+for the error handler to provide a pre-encoded replacement byte
+string, rather than forcing it to calculating Unicode from which the
+encoder would create the desired bytes.</p>
+<p>A few alternative approaches have been proposed:</p>
+<ul class="simple">
+<li>create a new string subclass that supports embedded bytes</li>
+<li>use different escape schemes, such as escaping with a NUL
+character, or mapping to infrequent characters.</li>
+</ul>
+<p>Of these proposals, the approach of escaping each byte XX
+with the sequence U+0000 U+00XX has the disadvantage that
+encoding to UTF-8 will introduce a NUL byte in the UTF-8
+sequence. As a consequence, C libraries may interpret this
+as a string termination, even though the string continues.
+In particular, the gtk libraries will truncate text in this
+case; other libraries may show similar problems.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id11">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id4"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>PEP 277
+“Unicode file name support for Windows NT”
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0277/">http://www.python.org/dev/peps/pep-0277/</a></dd>
+<dt class="label" id="id5"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>PEP 293
+“Codec Error Handling Callbacks”
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0293/">http://www.python.org/dev/peps/pep-0293/</a></dd>
+<dt class="label" id="id6"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd>UTF-8b
+<a class="reference external" href="http://permalink.gmane.org/gmane.comp.internationalization.linux/920">http://permalink.gmane.org/gmane.comp.internationalization.linux/920</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id12">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0383.txt">https://github.com/python/peps/blob/master/pep-0383.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0383.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0382.html">PEP 0382</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0384.html">PEP 0384</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 383 – Non-decodable Bytes in System Character Interfaces</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#discussion">Discussion</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

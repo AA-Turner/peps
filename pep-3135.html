@@ -1,0 +1,349 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 3135 – New Super &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 3136 – Labeled break and continue" href="pep-3136.html" />
+    <link rel="prev" title="PEP 3134 – Exception Chaining and Embedded Tracebacks" href="pep-3134.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 3135 – New Super</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-3135-new-super">
+<h1 class="page-title">PEP 3135 – New Super<a class="headerlink" href="#pep-3135-new-super" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">3135</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">New Super</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Calvin Spealman &lt;ironfroggy&#32;&#97;t&#32;gmail.com&gt;,
+Tim Delaney &lt;timothy.c.delaney&#32;&#97;t&#32;gmail.com&gt;,
+Lie Ryan &lt;lie.1296&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">28-Apr-2007</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.0</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">28-Apr-2007, 29-Apr-2007 (1), 29-Apr-2007 (2), 14-May-2007, 12-Mar-2009</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#numbering-note" id="id3">Numbering Note</a></li>
+<li><a class="reference internal" href="#abstract" id="id4">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id5">Rationale</a></li>
+<li><a class="reference internal" href="#specification" id="id6">Specification</a></li>
+<li><a class="reference internal" href="#closed-issues" id="id7">Closed Issues</a><ul>
+<li><a class="reference internal" href="#determining-the-class-object-to-use" id="id8">Determining the class object to use</a></li>
+<li><a class="reference internal" href="#should-super-actually-become-a-keyword" id="id9">Should <code class="docutils literal notranslate"><span class="pre">super</span></code> actually become a keyword?</a></li>
+<li><a class="reference internal" href="#super-used-with-call-attributes" id="id10">super used with __call__ attributes</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#alternative-proposals" id="id11">Alternative Proposals</a><ul>
+<li><a class="reference internal" href="#no-changes" id="id12">No Changes</a></li>
+<li><a class="reference internal" href="#dynamic-attribute-on-super-type" id="id13">Dynamic attribute on super type</a></li>
+<li><a class="reference internal" href="#self-super-foo-args" id="id14">self.__super__.foo(*args)</a></li>
+<li><a class="reference internal" href="#super-self-args-or-super-self-args" id="id15">super(self, *args) or __super__(self, *args)</a></li>
+<li><a class="reference internal" href="#super-foo-self-args" id="id16">super.foo(self, *args)</a></li>
+<li><a class="reference internal" href="#super-p-kw" id="id17">super(*p, **kw)</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#history" id="id18">History</a></li>
+<li><a class="reference internal" href="#references" id="id19">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id20">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="numbering-note">
+<h2><a class="toc-backref" href="#id3">Numbering Note</a><a class="headerlink" href="#numbering-note" title="Permalink to this headline">¶</a></h2>
+<p>This PEP started its life as PEP 367.  Since it is now targeted
+for Python 3000, it has been moved into the 3xxx space.</p>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id4">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes syntactic sugar for use of the <code class="docutils literal notranslate"><span class="pre">super</span></code> type to automatically
+construct instances of the super type binding to the class that a method was
+defined in, and the instance (or class object for classmethods) that the method
+is currently acting upon.</p>
+<p>The premise of the new super usage suggested is as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">foo</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>to replace the old:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">super</span><span class="p">(</span><span class="n">Foo</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">foo</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id5">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>The current usage of super requires an explicit passing of both the class and
+instance it must operate from, requiring a breaking of the DRY (Don’t Repeat
+Yourself) rule. This hinders any change in class name, and is often considered
+a wart by many.</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id6">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>Within the specification section, some special terminology will be used to
+distinguish similar and closely related concepts. “super class” will refer to
+the actual builtin class named “super”. A “super instance” is simply an
+instance of the super class, which is associated with another class and
+possibly with an instance of that class.</p>
+<p>The new <code class="docutils literal notranslate"><span class="pre">super</span></code> semantics are only available in Python 3.0.</p>
+<p>Replacing the old usage of super, calls to the next class in the MRO (method
+resolution order) can be made without explicitly passing the class object
+(although doing so will still be supported). Every function
+will have a cell named <code class="docutils literal notranslate"><span class="pre">__class__</span></code> that contains the class object that the
+function is defined in.</p>
+<p>The new syntax:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">super</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>is equivalent to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">super</span><span class="p">(</span><span class="vm">__class__</span><span class="p">,</span> <span class="o">&lt;</span><span class="n">firstarg</span><span class="o">&gt;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">__class__</span></code> is the class that the method was defined in, and
+<code class="docutils literal notranslate"><span class="pre">&lt;firstarg&gt;</span></code> is the first parameter of the method (normally <code class="docutils literal notranslate"><span class="pre">self</span></code>
+for instance methods, and <code class="docutils literal notranslate"><span class="pre">cls</span></code> for class methods). For functions
+defined outside a class body, <code class="docutils literal notranslate"><span class="pre">__class__</span></code> is not defined, and will
+result in runtime <code class="docutils literal notranslate"><span class="pre">SystemError</span></code>.</p>
+<p>While <code class="docutils literal notranslate"><span class="pre">super</span></code> is not a reserved word, the parser recognizes the use
+of <code class="docutils literal notranslate"><span class="pre">super</span></code> in a method definition and only passes in the
+<code class="docutils literal notranslate"><span class="pre">__class__</span></code> cell when this is found.  Thus, calling a global alias
+of <code class="docutils literal notranslate"><span class="pre">super</span></code> without arguments will not necessarily work.</p>
+</div>
+<div class="section" id="closed-issues">
+<h2><a class="toc-backref" href="#id7">Closed Issues</a><a class="headerlink" href="#closed-issues" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="determining-the-class-object-to-use">
+<h3><a class="toc-backref" href="#id8">Determining the class object to use</a><a class="headerlink" href="#determining-the-class-object-to-use" title="Permalink to this headline">¶</a></h3>
+<p>The class object is taken from a cell named <code class="docutils literal notranslate"><span class="pre">__class__</span></code>.</p>
+</div>
+<div class="section" id="should-super-actually-become-a-keyword">
+<h3><a class="toc-backref" href="#id9">Should <code class="docutils literal notranslate"><span class="pre">super</span></code> actually become a keyword?</a><a class="headerlink" href="#should-super-actually-become-a-keyword" title="Permalink to this headline">¶</a></h3>
+<p>No. It is not necessary for super to become a keyword.</p>
+</div>
+<div class="section" id="super-used-with-call-attributes">
+<h3><a class="toc-backref" href="#id10">super used with __call__ attributes</a><a class="headerlink" href="#super-used-with-call-attributes" title="Permalink to this headline">¶</a></h3>
+<p>It was considered that it might be a problem that instantiating super instances
+the classic way, because calling it would lookup the __call__ attribute and
+thus try to perform an automatic super lookup to the next class in the MRO.
+However, this was found to be false, because calling an object only looks up
+the __call__ method directly on the object’s type. The following example shows
+this in action.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">A</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;__call__&#39;</span>
+    <span class="k">def</span> <span class="fm">__getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">attr</span> <span class="o">==</span> <span class="s1">&#39;__call__&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">lambda</span><span class="p">:</span> <span class="s1">&#39;__getattribute__&#39;</span>
+<span class="n">a</span> <span class="o">=</span> <span class="n">A</span><span class="p">()</span>
+<span class="k">assert</span> <span class="n">a</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;__call__&#39;</span>
+<span class="k">assert</span> <span class="n">a</span><span class="o">.</span><span class="fm">__call__</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;__getattribute__&#39;</span>
+</pre></div>
+</div>
+<p>In any case, this issue goes away entirely because classic calls to
+<code class="docutils literal notranslate"><span class="pre">super(&lt;class&gt;,</span> <span class="pre">&lt;instance&gt;)</span></code> are still supported with the same meaning.</p>
+</div>
+</div>
+<div class="section" id="alternative-proposals">
+<h2><a class="toc-backref" href="#id11">Alternative Proposals</a><a class="headerlink" href="#alternative-proposals" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="no-changes">
+<h3><a class="toc-backref" href="#id12">No Changes</a><a class="headerlink" href="#no-changes" title="Permalink to this headline">¶</a></h3>
+<p>Although its always attractive to just keep things how they are, people have
+sought a change in the usage of super calling for some time, and for good
+reason, all mentioned previously.</p>
+<ul class="simple">
+<li>Decoupling from the class name (which might not even be bound to the
+right class anymore!)</li>
+<li>Simpler looking, cleaner super calls would be better</li>
+</ul>
+</div>
+<div class="section" id="dynamic-attribute-on-super-type">
+<h3><a class="toc-backref" href="#id13">Dynamic attribute on super type</a><a class="headerlink" href="#dynamic-attribute-on-super-type" title="Permalink to this headline">¶</a></h3>
+<p>The proposal adds a dynamic attribute lookup to the super type, which will
+automatically determine the proper class and instance parameters. Each super
+attribute lookup identifies these parameters and performs the super lookup on
+the instance, as the current super implementation does with the explicit
+invokation of a super instance upon a class and instance.</p>
+<p>This proposal relies on sys._getframe(), which is not appropriate for anything
+except a prototype implementation.</p>
+</div>
+<div class="section" id="self-super-foo-args">
+<h3><a class="toc-backref" href="#id14">self.__super__.foo(*args)</a><a class="headerlink" href="#self-super-foo-args" title="Permalink to this headline">¶</a></h3>
+<p>The __super__ attribute is mentioned in this PEP in several places, and could
+be a candidate for the complete solution, actually using it explicitly instead
+of any super usage directly. However, double-underscore names are usually an
+internal detail, and attempted to be kept out of everyday code.</p>
+</div>
+<div class="section" id="super-self-args-or-super-self-args">
+<h3><a class="toc-backref" href="#id15">super(self, *args) or __super__(self, *args)</a><a class="headerlink" href="#super-self-args-or-super-self-args" title="Permalink to this headline">¶</a></h3>
+<p>This solution only solves the problem of the type indication, does not handle
+differently named super methods, and is explicit about the name of the
+instance. It is less flexible without being able to enacted on other method
+names, in cases where that is needed. One use case this fails is where a base-
+class has a factory classmethod and a subclass has two factory classmethods,
+both of which needing to properly make super calls to the one in the base-
+class.</p>
+</div>
+<div class="section" id="super-foo-self-args">
+<h3><a class="toc-backref" href="#id16">super.foo(self, *args)</a><a class="headerlink" href="#super-foo-self-args" title="Permalink to this headline">¶</a></h3>
+<p>This variation actually eliminates the problems with locating the proper
+instance, and if any of the alternatives were pushed into the spotlight, I
+would want it to be this one.</p>
+</div>
+<div class="section" id="super-p-kw">
+<h3><a class="toc-backref" href="#id17">super(*p, **kw)</a><a class="headerlink" href="#super-p-kw" title="Permalink to this headline">¶</a></h3>
+<p>There has been the proposal that directly calling <code class="docutils literal notranslate"><span class="pre">super(*p,</span> <span class="pre">**kw)</span></code> would
+be equivalent to calling the method on the <code class="docutils literal notranslate"><span class="pre">super</span></code> object with the same name
+as the method currently being executed i.e. the following two methods would be
+equivalent:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">p</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="nb">super</span><span class="o">.</span><span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">p</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">p</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="nb">super</span><span class="p">(</span><span class="o">*</span><span class="n">p</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>There is strong sentiment for and against this, but implementation and style
+concerns are obvious. Guido has suggested that this should be excluded from
+this PEP on the principle of KISS (Keep It Simple Stupid).</p>
+</div>
+</div>
+<div class="section" id="history">
+<h2><a class="toc-backref" href="#id18">History</a><a class="headerlink" href="#history" title="Permalink to this headline">¶</a></h2>
+<p>12-Mar-2009 - Updated to reflect the current state of implementation.</p>
+<dl class="simple">
+<dt>29-Apr-2007 - Changed title from “Super As A Keyword” to “New Super”</dt><dd><ul class="simple">
+<li>Updated much of the language and added a terminology section
+for clarification in confusing places.</li>
+<li>Added reference implementation and history sections.</li>
+</ul>
+</dd>
+<dt>06-May-2007 - Updated by Tim Delaney to reflect discussions on the python-3000</dt><dd>and python-dev mailing lists.</dd>
+</dl>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id19">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id1"><span class="brackets">1</span></dt>
+<dd>Fixing super anyone?
+(<a class="reference external" href="https://mail.python.org/pipermail/python-3000/2007-April/006667.html">https://mail.python.org/pipermail/python-3000/2007-April/006667.html</a>)</dd>
+<dt class="label" id="id2"><span class="brackets">2</span></dt>
+<dd>PEP 3130: Access to Module/Class/Function Currently Being Defined (this)
+(<a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2007-April/000542.html">https://mail.python.org/pipermail/python-ideas/2007-April/000542.html</a>)</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id20">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-3135.txt">https://github.com/python/peps/blob/master/pep-3135.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-3135.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-3134.html">PEP 3134</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-3136.html">PEP 3136</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 3135 – New Super</a><ul>
+<li><a class="reference internal" href="#numbering-note">Numbering Note</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#closed-issues">Closed Issues</a><ul>
+<li><a class="reference internal" href="#determining-the-class-object-to-use">Determining the class object to use</a></li>
+<li><a class="reference internal" href="#should-super-actually-become-a-keyword">Should <code class="docutils literal notranslate"><span class="pre">super</span></code> actually become a keyword?</a></li>
+<li><a class="reference internal" href="#super-used-with-call-attributes">super used with __call__ attributes</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#alternative-proposals">Alternative Proposals</a><ul>
+<li><a class="reference internal" href="#no-changes">No Changes</a></li>
+<li><a class="reference internal" href="#dynamic-attribute-on-super-type">Dynamic attribute on super type</a></li>
+<li><a class="reference internal" href="#self-super-foo-args">self.__super__.foo(*args)</a></li>
+<li><a class="reference internal" href="#super-self-args-or-super-self-args">super(self, *args) or __super__(self, *args)</a></li>
+<li><a class="reference internal" href="#super-foo-self-args">super.foo(self, *args)</a></li>
+<li><a class="reference internal" href="#super-p-kw">super(*p, **kw)</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#history">History</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

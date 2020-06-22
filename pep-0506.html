@@ -1,0 +1,558 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 506 – Adding A Secrets Module To The Standard Library &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 507 – Migrate CPython to Git and GitLab" href="pep-0507.html" />
+    <link rel="prev" title="PEP 505 – None-aware operators" href="pep-0505.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 506 – Adding A Secrets Module To The Standard Library</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-506-adding-a-secrets-module-to-the-standard-library">
+<h1 class="page-title">PEP 506 – Adding A Secrets Module To The Standard Library<a class="headerlink" href="#pep-506-adding-a-secrets-module-to-the-standard-library" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">506</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Adding A Secrets Module To The Standard Library</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Steven D’Aprano &lt;steve&#32;&#97;t&#32;pearwood.info&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">19-Sep-2015</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.6</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id77">Abstract</a></li>
+<li><a class="reference internal" href="#definitions" id="id78">Definitions</a></li>
+<li><a class="reference internal" href="#rationale" id="id79">Rationale</a></li>
+<li><a class="reference internal" href="#proposal" id="id80">Proposal</a></li>
+<li><a class="reference internal" href="#api-and-implementation" id="id81">API and Implementation</a><ul>
+<li><a class="reference internal" href="#default-arguments" id="id82">Default arguments</a></li>
+<li><a class="reference internal" href="#naming-conventions" id="id83">Naming conventions</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#alternatives" id="id84">Alternatives</a></li>
+<li><a class="reference internal" href="#comparison-to-other-languages" id="id85">Comparison To Other Languages</a></li>
+<li><a class="reference internal" href="#what-should-be-the-name-of-the-module" id="id86">What Should Be The Name Of The Module?</a></li>
+<li><a class="reference internal" href="#frequently-asked-questions" id="id87">Frequently Asked Questions</a></li>
+<li><a class="reference internal" href="#references" id="id88">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id89">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id77">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes the addition of a module for common security-related
+functions such as generating tokens to the Python standard library.</p>
+</div>
+<div class="section" id="definitions">
+<h2><a class="toc-backref" href="#id78">Definitions</a><a class="headerlink" href="#definitions" title="Permalink to this headline">¶</a></h2>
+<p>Some common abbreviations used in this proposal:</p>
+<ul>
+<li><p>PRNG:</p>
+<p>Pseudo Random Number Generator.  A deterministic algorithm used
+to produce random-looking numbers with certain desirable
+statistical properties.</p>
+</li>
+<li><p>CSPRNG:</p>
+<p>Cryptographically Strong Pseudo Random Number Generator.  An
+algorithm used to produce random-looking numbers which are
+resistant to prediction.</p>
+</li>
+<li><p>MT:</p>
+<p>Mersenne Twister.  An extensively studied PRNG which is currently
+used by the <code class="docutils literal notranslate"><span class="pre">random</span></code> module as the default.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id79">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>This proposal is motivated by concerns that Python’s standard library
+makes it too easy for developers to inadvertently make serious security
+errors.  Theo de Raadt, the founder of OpenBSD, contacted Guido van Rossum
+and expressed some concern <a class="footnote-reference brackets" href="#id39" id="id1">1</a> about the use of MT for generating sensitive
+information such as passwords, secure tokens, session keys and similar.</p>
+<p>Although the documentation for the <code class="docutils literal notranslate"><span class="pre">random</span></code> module explicitly states that
+the default is not suitable for security purposes <a class="footnote-reference brackets" href="#id40" id="id2">2</a>, it is strongly
+believed that this warning may be missed, ignored or misunderstood by
+many Python developers.  In particular:</p>
+<ul class="simple">
+<li>developers may not have read the documentation and consequently
+not seen the warning;</li>
+<li>they may not realise that their specific use of the module has security
+implications; or</li>
+<li>not realising that there could be a problem, they have copied code
+(or learned techniques) from websites which don’t offer best
+practises.</li>
+</ul>
+<p>The first <a class="footnote-reference brackets" href="#id41" id="id3">3</a> hit when searching for “python how to generate passwords” on
+Google is a tutorial that uses the default functions from the <code class="docutils literal notranslate"><span class="pre">random</span></code>
+module <a class="footnote-reference brackets" href="#id42" id="id4">4</a>.  Although it is not intended for use in web applications, it is
+likely that similar techniques find themselves used in that situation.
+The second hit is to a StackOverflow question about generating
+passwords <a class="footnote-reference brackets" href="#id43" id="id5">5</a>.  Most of the answers given, including the accepted one, use
+the default functions.  When one user warned that the default could be
+easily compromised, they were told “I think you worry too much.” <a class="footnote-reference brackets" href="#id44" id="id6">6</a></p>
+<p>This strongly suggests that the existing <code class="docutils literal notranslate"><span class="pre">random</span></code> module is an attractive
+nuisance when it comes to generating (for example) passwords or secure
+tokens.</p>
+<p>Additional motivation (of a more philosophical bent) can be found in the
+post which first proposed this idea <a class="footnote-reference brackets" href="#id45" id="id7">7</a>.</p>
+</div>
+<div class="section" id="proposal">
+<h2><a class="toc-backref" href="#id80">Proposal</a><a class="headerlink" href="#proposal" title="Permalink to this headline">¶</a></h2>
+<p>Alternative proposals have focused on the default PRNG in the <code class="docutils literal notranslate"><span class="pre">random</span></code>
+module, with the aim of providing “secure by default” cryptographically
+strong primitives that developers can build upon without thinking about
+security.  (See Alternatives below.)  This proposes a different approach:</p>
+<ul class="simple">
+<li>The standard library already provides cryptographically strong
+primitives, but many users don’t know they exist or when to use them.</li>
+<li>Instead of requiring crypto-naive users to write secure code, the
+standard library should include a set of ready-to-use “batteries” for
+the most common needs, such as generating secure tokens.  This code
+will both directly satisfy a need (“How do I generate a password reset
+token?”), and act as an example of acceptable practises which
+developers can learn from <a class="footnote-reference brackets" href="#id46" id="id8">8</a>.</li>
+</ul>
+<p>To do this, this PEP proposes that we add a new module to the standard
+library, with the suggested name <code class="docutils literal notranslate"><span class="pre">secrets</span></code>.  This module will contain a
+set of ready-to-use functions for common activities with security
+implications, together with some lower-level primitives.</p>
+<p>The suggestion is that <code class="docutils literal notranslate"><span class="pre">secrets</span></code> becomes the go-to module for dealing
+with anything which should remain secret (passwords, tokens, etc.)
+while the <code class="docutils literal notranslate"><span class="pre">random</span></code> module remains backward-compatible.</p>
+</div>
+<div class="section" id="api-and-implementation">
+<h2><a class="toc-backref" href="#id81">API and Implementation</a><a class="headerlink" href="#api-and-implementation" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes the following functions for the <code class="docutils literal notranslate"><span class="pre">secrets</span></code> module:</p>
+<ul class="simple">
+<li>Functions for generating tokens suitable for use in (e.g.) password
+recovery, as session keys, etc., in the following formats:<ul>
+<li>as bytes, <code class="docutils literal notranslate"><span class="pre">secrets.token_bytes</span></code>;</li>
+<li>as text, using hexadecimal digits, <code class="docutils literal notranslate"><span class="pre">secrets.token_hex</span></code>;</li>
+<li>as text, using URL-safe base-64 encoding, <code class="docutils literal notranslate"><span class="pre">secrets.token_urlsafe</span></code>.</li>
+</ul>
+</li>
+<li>A limited interface to the system CSPRNG, using either <code class="docutils literal notranslate"><span class="pre">os.urandom</span></code>
+directly or <code class="docutils literal notranslate"><span class="pre">random.SystemRandom</span></code>.  Unlike the <code class="docutils literal notranslate"><span class="pre">random</span></code> module, this
+does not need to provide methods for seeding, getting or setting the
+state, or any non-uniform distributions.  It should provide the
+following:<ul>
+<li>A function for choosing items from a sequence, <code class="docutils literal notranslate"><span class="pre">secrets.choice</span></code>.</li>
+<li>A function for generating a given number of random bits and/or bytes
+as an integer, <code class="docutils literal notranslate"><span class="pre">secrets.randbits</span></code>.</li>
+<li>A function for returning a random integer in the half-open range
+0 to the given upper limit, <code class="docutils literal notranslate"><span class="pre">secrets.randbelow</span></code> <a class="footnote-reference brackets" href="#id47" id="id9">9</a>.</li>
+</ul>
+</li>
+<li>A function for comparing text or bytes digests for equality while being
+resistant to timing attacks, <code class="docutils literal notranslate"><span class="pre">secrets.compare_digest</span></code>.</li>
+</ul>
+<p>The consensus appears to be that there is no need to add a new CSPRNG to
+the <code class="docutils literal notranslate"><span class="pre">random</span></code> module to support these uses, <code class="docutils literal notranslate"><span class="pre">SystemRandom</span></code> will be
+sufficient.</p>
+<p>Some illustrative implementations have been given by Nick Coghlan <a class="footnote-reference brackets" href="#id48" id="id10">10</a>
+and a minimalist API by Tim Peters <a class="footnote-reference brackets" href="#id49" id="id11">11</a>. This idea has also been discussed
+on the issue tracker for the “cryptography” module <a class="footnote-reference brackets" href="#id50" id="id12">12</a>.  The following
+pseudo-code should be taken as the starting point for the real
+implementation:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">random</span> <span class="kn">import</span> <span class="n">SystemRandom</span>
+<span class="kn">from</span> <span class="nn">hmac</span> <span class="kn">import</span> <span class="n">compare_digest</span>
+
+<span class="n">_sysrand</span> <span class="o">=</span> <span class="n">SystemRandom</span><span class="p">()</span>
+
+<span class="n">randbits</span> <span class="o">=</span> <span class="n">_sysrand</span><span class="o">.</span><span class="n">getrandbits</span>
+<span class="n">choice</span> <span class="o">=</span> <span class="n">_sysrand</span><span class="o">.</span><span class="n">choice</span>
+
+<span class="k">def</span> <span class="nf">randbelow</span><span class="p">(</span><span class="n">exclusive_upper_bound</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">_sysrand</span><span class="o">.</span><span class="n">_randbelow</span><span class="p">(</span><span class="n">exclusive_upper_bound</span><span class="p">)</span>
+
+<span class="n">DEFAULT_ENTROPY</span> <span class="o">=</span> <span class="mi">32</span>  <span class="c1"># bytes</span>
+
+<span class="k">def</span> <span class="nf">token_bytes</span><span class="p">(</span><span class="n">nbytes</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">nbytes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">nbytes</span> <span class="o">=</span> <span class="n">DEFAULT_ENTROPY</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">urandom</span><span class="p">(</span><span class="n">nbytes</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">token_hex</span><span class="p">(</span><span class="n">nbytes</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">binascii</span><span class="o">.</span><span class="n">hexlify</span><span class="p">(</span><span class="n">token_bytes</span><span class="p">(</span><span class="n">nbytes</span><span class="p">))</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;ascii&#39;</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">token_urlsafe</span><span class="p">(</span><span class="n">nbytes</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">tok</span> <span class="o">=</span> <span class="n">token_bytes</span><span class="p">(</span><span class="n">nbytes</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">base64</span><span class="o">.</span><span class="n">urlsafe_b64encode</span><span class="p">(</span><span class="n">tok</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;=&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;ascii&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">secrets</span></code> module itself will be pure Python, and other Python
+implementations can easily make use of it unchanged, or adapt it as
+necessary. An implementation can be found on BitBucket <a class="footnote-reference brackets" href="#id51" id="id13">13</a>.</p>
+<div class="section" id="default-arguments">
+<h3><a class="toc-backref" href="#id82">Default arguments</a><a class="headerlink" href="#default-arguments" title="Permalink to this headline">¶</a></h3>
+<p>One difficult question is “How many bytes should my token be?”.  We can
+help with this question by providing a default amount of entropy for the
+“token_*” functions. If the <code class="docutils literal notranslate"><span class="pre">nbytes</span></code> argument is None or not given, the
+default entropy will be used. This default value should be large enough
+to be expected to be secure for medium-security uses, but is expected to
+change in the future, possibly even in a maintenance release <a class="footnote-reference brackets" href="#id52" id="id14">14</a>.</p>
+</div>
+<div class="section" id="naming-conventions">
+<h3><a class="toc-backref" href="#id83">Naming conventions</a><a class="headerlink" href="#naming-conventions" title="Permalink to this headline">¶</a></h3>
+<p>One question is the naming conventions used in the module <a class="footnote-reference brackets" href="#id53" id="id15">15</a>, whether to
+use C-like naming conventions such as “randrange” or more Pythonic names
+such as “random_range”.</p>
+<p>Functions which are simply bound methods of the private <code class="docutils literal notranslate"><span class="pre">SystemRandom</span></code>
+instance (e.g. <code class="docutils literal notranslate"><span class="pre">randrange</span></code>), or a thin wrapper around such, should keep
+the familiar names. Those which are something new (such as the various
+<code class="docutils literal notranslate"><span class="pre">token_*</span></code> functions) will use more Pythonic names.</p>
+</div>
+</div>
+<div class="section" id="alternatives">
+<h2><a class="toc-backref" href="#id84">Alternatives</a><a class="headerlink" href="#alternatives" title="Permalink to this headline">¶</a></h2>
+<p>One alternative is to change the default PRNG provided by the <code class="docutils literal notranslate"><span class="pre">random</span></code>
+module <a class="footnote-reference brackets" href="#id54" id="id16">16</a>.  This received considerable scepticism and outright opposition:</p>
+<ul class="simple">
+<li>There is fear that a CSPRNG may be slower than the current PRNG (which
+in the case of MT is already quite slow).</li>
+<li>Some applications (such as scientific simulations, and replaying
+gameplay) require the ability to seed the PRNG into a known state,
+which a CSPRNG lacks by design.</li>
+<li>Another major use of the <code class="docutils literal notranslate"><span class="pre">random</span></code> module is for simple “guess a number”
+games written by beginners, and many people are loath to make any
+change to the <code class="docutils literal notranslate"><span class="pre">random</span></code> module which may make that harder.</li>
+<li>Although there is no proposal to remove MT from the <code class="docutils literal notranslate"><span class="pre">random</span></code> module,
+there was considerable hostility to the idea of having to opt-in to
+a non-CSPRNG or any backwards-incompatible changes.</li>
+<li>Demonstrated attacks against MT are typically against PHP applications.
+It is believed that PHP’s version of MT is a significantly softer target
+than Python’s version, due to a poor seeding technique <a class="footnote-reference brackets" href="#id55" id="id17">17</a>.  Consequently,
+without a proven attack against Python applications, many people object
+to a backwards-incompatible change.</li>
+</ul>
+<p>Nick Coghlan made an earlier suggestion for a globally configurable PRNG
+which uses the system CSPRNG by default <a class="footnote-reference brackets" href="#id56" id="id18">18</a>, but has since withdrawn it
+in favour of this proposal.</p>
+</div>
+<div class="section" id="comparison-to-other-languages">
+<h2><a class="toc-backref" href="#id85">Comparison To Other Languages</a><a class="headerlink" href="#comparison-to-other-languages" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p>PHP</p>
+<p>PHP includes a function <code class="docutils literal notranslate"><span class="pre">uniqid</span></code> <a class="footnote-reference brackets" href="#id57" id="id19">19</a> which by default returns a
+thirteen character string based on the current time in microseconds.
+Translated into Python syntax, it has the following signature:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">uniqid</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">more_entropy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">-&gt;</span><span class="nb">str</span>
+</pre></div>
+</div>
+<p>The PHP documentation warns that this function is not suitable for
+security purposes.  Nevertheless, various mature, well-known PHP
+applications use it for that purpose (citation needed).</p>
+<p>PHP 5.3 and better also includes a function <code class="docutils literal notranslate"><span class="pre">openssl_random_pseudo_bytes</span></code>
+<a class="footnote-reference brackets" href="#id58" id="id20">20</a>.  Translated into Python syntax, it has roughly the following
+signature:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">openssl_random_pseudo_bytes</span><span class="p">(</span><span class="n">length</span><span class="p">:</span><span class="nb">int</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>This function returns a pseudo-random string of bytes of the given
+length, and a boolean flag giving whether the string is considered
+cryptographically strong.  The PHP manual suggests that returning
+anything but True should be rare except for old or broken platforms.</p>
+</li>
+<li><p>JavaScript</p>
+<p>Based on a rather cursory search <a class="footnote-reference brackets" href="#id59" id="id21">21</a>, there do not appear to be any
+well-known standard functions for producing strong random values in
+JavaScript. <code class="docutils literal notranslate"><span class="pre">Math.random</span></code> is often used, despite serious weaknesses
+making it unsuitable for cryptographic purposes <a class="footnote-reference brackets" href="#id60" id="id22">22</a>. In recent years
+the majority of browsers have gained support for <code class="docutils literal notranslate"><span class="pre">window.crypto.getRandomValues</span></code> <a class="footnote-reference brackets" href="#id61" id="id23">23</a>.</p>
+<p>Node.js offers a rich cryptographic module, <code class="docutils literal notranslate"><span class="pre">crypto</span></code> <a class="footnote-reference brackets" href="#id62" id="id24">24</a>, most of
+which is beyond the scope of this PEP. It does include a single function
+for generating random bytes, <code class="docutils literal notranslate"><span class="pre">crypto.randomBytes</span></code>.</p>
+</li>
+<li><p>Ruby</p>
+<p>The Ruby standard library includes a module <code class="docutils literal notranslate"><span class="pre">SecureRandom</span></code> <a class="footnote-reference brackets" href="#id63" id="id25">25</a>
+which includes the following methods:</p>
+<ul class="simple">
+<li>base64 - returns a Base64 encoded random string.</li>
+<li>hex - returns a random hexadecimal string.</li>
+<li>random_bytes - returns a random byte string.</li>
+<li>random_number - depending on the argument, returns either a random
+integer in the range(0, n), or a random float between 0.0 and 1.0.</li>
+<li>urlsafe_base64 - returns a random URL-safe Base64 encoded string.</li>
+<li>uuid - return a version 4 random Universally Unique IDentifier.</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="what-should-be-the-name-of-the-module">
+<h2><a class="toc-backref" href="#id86">What Should Be The Name Of The Module?</a><a class="headerlink" href="#what-should-be-the-name-of-the-module" title="Permalink to this headline">¶</a></h2>
+<p>There was a proposal to add a “random.safe” submodule, quoting the Zen
+of Python “Namespaces are one honking great idea” koan.  However, the
+author of the Zen, Tim Peters, has come out against this idea <a class="footnote-reference brackets" href="#id64" id="id26">26</a>, and
+recommends a top-level module.</p>
+<p>In discussion on the python-ideas mailing list so far, the name “secrets”
+has received some approval, and no strong opposition.</p>
+<p>There is already an existing third-party module with the same name <a class="footnote-reference brackets" href="#id65" id="id27">27</a>,
+but it appears to be unused and abandoned.</p>
+</div>
+<div class="section" id="frequently-asked-questions">
+<h2><a class="toc-backref" href="#id87">Frequently Asked Questions</a><a class="headerlink" href="#frequently-asked-questions" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p>Q: Is this a real problem? Surely MT is random enough that nobody can
+predict its output.</p>
+<p>A: The consensus among security professionals is that MT is not safe
+in security contexts.  It is not difficult to reconstruct the internal
+state of MT <a class="footnote-reference brackets" href="#id66" id="id28">28</a> <a class="footnote-reference brackets" href="#id67" id="id29">29</a> and so predict all past and future values.  There
+are a number of known, practical attacks on systems using MT for
+randomness <a class="footnote-reference brackets" href="#id68" id="id30">30</a>.</p>
+</li>
+<li><p>Q: Attacks on PHP are one thing, but are there any known attacks on
+Python software?</p>
+<p>A: Yes.  There have been vulnerabilities in Zope and Plone at the very
+least.  Hanno Schlichting commented <a class="footnote-reference brackets" href="#id69" id="id31">31</a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;In the context of Plone and Zope a practical attack was</span>
+<span class="n">demonstrated</span><span class="p">,</span> <span class="n">but</span> <span class="n">I</span> <span class="n">can</span><span class="s1">&#39;t find any good non-broken links about</span>
+<span class="n">this</span> <span class="n">anymore</span><span class="o">.</span>  <span class="n">IIRC</span> <span class="n">Plone</span> <span class="n">generated</span> <span class="n">a</span> <span class="n">random</span> <span class="n">number</span> <span class="ow">and</span> <span class="n">exposed</span>
+<span class="n">this</span> <span class="n">on</span> <span class="n">each</span> <span class="n">error</span> <span class="n">page</span> <span class="n">along</span> <span class="n">the</span> <span class="n">lines</span> <span class="n">of</span> <span class="s1">&#39;Sorry, you encountered</span>
+<span class="n">an</span> <span class="n">error</span><span class="p">,</span> <span class="n">your</span> <span class="n">problem</span> <span class="n">has</span> <span class="n">been</span> <span class="n">filed</span> <span class="k">as</span> <span class="o">&lt;</span><span class="n">random</span> <span class="n">number</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">please</span>
+<span class="n">include</span> <span class="n">this</span> <span class="n">when</span> <span class="n">you</span> <span class="n">contact</span> <span class="n">us</span><span class="s1">&#39;.  This allowed anyone to do large</span>
+<span class="n">numbers</span> <span class="n">of</span> <span class="n">requests</span> <span class="n">to</span> <span class="n">this</span> <span class="n">page</span> <span class="ow">and</span> <span class="n">get</span> <span class="n">enough</span> <span class="n">random</span> <span class="n">values</span> <span class="n">to</span>
+<span class="n">reconstruct</span> <span class="n">the</span> <span class="n">MT</span> <span class="n">state</span><span class="o">.</span>  <span class="n">A</span> <span class="n">couple</span> <span class="n">of</span> <span class="n">security</span> <span class="n">related</span> <span class="n">modules</span> <span class="n">used</span>
+<span class="n">random</span> <span class="n">instead</span> <span class="n">of</span> <span class="n">system</span> <span class="n">random</span> <span class="p">(</span><span class="n">cookie</span> <span class="n">session</span> <span class="n">ids</span><span class="p">,</span> <span class="n">password</span> <span class="n">reset</span>
+<span class="n">links</span><span class="p">,</span> <span class="n">auth</span> <span class="n">token</span><span class="p">),</span> <span class="n">so</span> <span class="n">the</span> <span class="n">attacker</span> <span class="n">could</span> <span class="k">break</span> <span class="nb">all</span> <span class="n">of</span> <span class="n">those</span><span class="o">.</span><span class="s2">&quot;</span>
+</pre></div>
+</div>
+<p>Christian Heimes reported this issue to the Zope security team in 2012 <a class="footnote-reference brackets" href="#id70" id="id32">32</a>,
+there are at least two related CVE vulnerabilities <a class="footnote-reference brackets" href="#id71" id="id33">33</a>, and at least one
+work-around for this issue in Django <a class="footnote-reference brackets" href="#id72" id="id34">34</a>.</p>
+</li>
+<li><p>Q: Is this an alternative to specialist cryptographic software such as SSL?</p>
+<p>A: No. This is a “batteries included” solution, not a full-featured
+“nuclear reactor”.  It is intended to mitigate against some basic
+security errors, not be a solution to all security-related issues. To
+quote Nick Coghlan referring to his earlier proposal <a class="footnote-reference brackets" href="#id73" id="id35">35</a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;...folks really are better off learning to use things like</span>
+<span class="n">cryptography</span><span class="o">.</span><span class="n">io</span> <span class="k">for</span> <span class="n">security</span> <span class="n">sensitive</span> <span class="n">software</span><span class="p">,</span> <span class="n">so</span> <span class="n">this</span> <span class="n">change</span>
+<span class="ow">is</span> <span class="n">just</span> <span class="n">about</span> <span class="n">harm</span> <span class="n">mitigation</span> <span class="n">given</span> <span class="n">that</span> <span class="n">it</span><span class="s1">&#39;s inevitable that a</span>
+<span class="n">non</span><span class="o">-</span><span class="n">trivial</span> <span class="n">proportion</span> <span class="n">of</span> <span class="n">the</span> <span class="n">millions</span> <span class="n">of</span> <span class="n">current</span> <span class="ow">and</span> <span class="n">future</span>
+<span class="n">Python</span> <span class="n">developers</span> <span class="n">won</span><span class="s1">&#39;t do that.&quot;</span>
+</pre></div>
+</div>
+</li>
+<li><p>Q: What about a password generator?</p>
+<p>A: The consensus is that the requirements for password generators are too
+variable for it to be a good match for the standard library <a class="footnote-reference brackets" href="#id74" id="id36">36</a>. No password
+generator will be included in the initial release of the module, instead it
+will be given in the documentation as a recipe (à la the recipes in the
+<code class="docutils literal notranslate"><span class="pre">itertools</span></code> module) <a class="footnote-reference brackets" href="#id75" id="id37">37</a>.</p>
+</li>
+<li><p>Q: Will <code class="docutils literal notranslate"><span class="pre">secrets</span></code> use /dev/random (which blocks) or /dev/urandom (which
+doesn’t block) on Linux? What about other platforms?</p>
+<p>A: <code class="docutils literal notranslate"><span class="pre">secrets</span></code> will be based on <code class="docutils literal notranslate"><span class="pre">os.urandom</span></code> and <code class="docutils literal notranslate"><span class="pre">random.SystemRandom</span></code>,
+which are interfaces to your operating system’s best source of cryptographic
+randomness. On Linux, that may be <code class="docutils literal notranslate"><span class="pre">/dev/urandom</span></code> <a class="footnote-reference brackets" href="#id76" id="id38">38</a>, on Windows it may be
+<code class="docutils literal notranslate"><span class="pre">CryptGenRandom()</span></code>, but see the documentation and/or source code for the
+detailed implementation details.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id88">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id39"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2015-September/035820.html">https://mail.python.org/pipermail/python-ideas/2015-September/035820.html</a></dd>
+<dt class="label" id="id40"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/library/random.html">https://docs.python.org/3/library/random.html</a></dd>
+<dt class="label" id="id41"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd>As of the date of writing. Also, as Google search terms may be
+automatically customised for the user without their knowledge, some
+readers may see different results.</dd>
+<dt class="label" id="id42"><span class="brackets"><a class="fn-backref" href="#id4">4</a></span></dt>
+<dd><a class="reference external" href="http://interactivepython.org/runestone/static/everyday/2013/01/3_password.html">http://interactivepython.org/runestone/static/everyday/2013/01/3_password.html</a></dd>
+<dt class="label" id="id43"><span class="brackets"><a class="fn-backref" href="#id5">5</a></span></dt>
+<dd><a class="reference external" href="http://stackoverflow.com/questions/3854692/generate-password-in-python">http://stackoverflow.com/questions/3854692/generate-password-in-python</a></dd>
+<dt class="label" id="id44"><span class="brackets"><a class="fn-backref" href="#id6">6</a></span></dt>
+<dd><a class="reference external" href="http://stackoverflow.com/questions/3854692/generate-password-in-python/3854766#3854766">http://stackoverflow.com/questions/3854692/generate-password-in-python/3854766#3854766</a></dd>
+<dt class="label" id="id45"><span class="brackets"><a class="fn-backref" href="#id7">7</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2015-September/036238.html">https://mail.python.org/pipermail/python-ideas/2015-September/036238.html</a></dd>
+<dt class="label" id="id46"><span class="brackets"><a class="fn-backref" href="#id8">8</a></span></dt>
+<dd>At least those who are motivated to read the source code and documentation.</dd>
+<dt class="label" id="id47"><span class="brackets"><a class="fn-backref" href="#id9">9</a></span></dt>
+<dd>After considerable discussion, Guido ruled that the module need only
+provide <code class="docutils literal notranslate"><span class="pre">randbelow</span></code>, and not similar functions <code class="docutils literal notranslate"><span class="pre">randrange</span></code> or
+<code class="docutils literal notranslate"><span class="pre">randint</span></code>.  <a class="reference external" href="http://code.activestate.com/lists/python-dev/138375/">http://code.activestate.com/lists/python-dev/138375/</a></dd>
+<dt class="label" id="id48"><span class="brackets"><a class="fn-backref" href="#id10">10</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2015-September/036271.html">https://mail.python.org/pipermail/python-ideas/2015-September/036271.html</a></dd>
+<dt class="label" id="id49"><span class="brackets"><a class="fn-backref" href="#id11">11</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2015-September/036350.html">https://mail.python.org/pipermail/python-ideas/2015-September/036350.html</a></dd>
+<dt class="label" id="id50"><span class="brackets"><a class="fn-backref" href="#id12">12</a></span></dt>
+<dd><a class="reference external" href="https://github.com/pyca/cryptography/issues/2347">https://github.com/pyca/cryptography/issues/2347</a></dd>
+<dt class="label" id="id51"><span class="brackets"><a class="fn-backref" href="#id13">13</a></span></dt>
+<dd><a class="reference external" href="https://bitbucket.org/sdaprano/secrets">https://bitbucket.org/sdaprano/secrets</a></dd>
+<dt class="label" id="id52"><span class="brackets"><a class="fn-backref" href="#id14">14</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2015-September/036517.html">https://mail.python.org/pipermail/python-ideas/2015-September/036517.html</a>
+<a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2015-September/036515.html">https://mail.python.org/pipermail/python-ideas/2015-September/036515.html</a></dd>
+<dt class="label" id="id53"><span class="brackets"><a class="fn-backref" href="#id15">15</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2015-September/036474.html">https://mail.python.org/pipermail/python-ideas/2015-September/036474.html</a></dd>
+<dt class="label" id="id54"><span class="brackets"><a class="fn-backref" href="#id16">16</a></span></dt>
+<dd>Link needed.</dd>
+<dt class="label" id="id55"><span class="brackets"><a class="fn-backref" href="#id17">17</a></span></dt>
+<dd>By default PHP seeds the MT PRNG with the time (citation needed),
+which is exploitable by attackers, while Python seeds the PRNG with
+output from the system CSPRNG, which is believed to be much harder to
+exploit.</dd>
+<dt class="label" id="id56"><span class="brackets"><a class="fn-backref" href="#id18">18</a></span></dt>
+<dd><a class="reference external" href="http://legacy.python.org/dev/peps/pep-0504/">http://legacy.python.org/dev/peps/pep-0504/</a></dd>
+<dt class="label" id="id57"><span class="brackets"><a class="fn-backref" href="#id19">19</a></span></dt>
+<dd><a class="reference external" href="http://php.net/manual/en/function.uniqid.php">http://php.net/manual/en/function.uniqid.php</a></dd>
+<dt class="label" id="id58"><span class="brackets"><a class="fn-backref" href="#id20">20</a></span></dt>
+<dd><a class="reference external" href="http://php.net/manual/en/function.openssl-random-pseudo-bytes.php">http://php.net/manual/en/function.openssl-random-pseudo-bytes.php</a></dd>
+<dt class="label" id="id59"><span class="brackets"><a class="fn-backref" href="#id21">21</a></span></dt>
+<dd>Volunteers and patches are welcome.</dd>
+<dt class="label" id="id60"><span class="brackets"><a class="fn-backref" href="#id22">22</a></span></dt>
+<dd><a class="reference external" href="http://ifsec.blogspot.fr/2012/05/cross-domain-mathrandom-prediction.html">http://ifsec.blogspot.fr/2012/05/cross-domain-mathrandom-prediction.html</a></dd>
+<dt class="label" id="id61"><span class="brackets"><a class="fn-backref" href="#id23">23</a></span></dt>
+<dd><a class="reference external" href="https://developer.mozilla.org/en-US/docs/Web/API/RandomSource/getRandomValues">https://developer.mozilla.org/en-US/docs/Web/API/RandomSource/getRandomValues</a></dd>
+<dt class="label" id="id62"><span class="brackets"><a class="fn-backref" href="#id24">24</a></span></dt>
+<dd><a class="reference external" href="https://nodejs.org/api/crypto.html">https://nodejs.org/api/crypto.html</a></dd>
+<dt class="label" id="id63"><span class="brackets"><a class="fn-backref" href="#id25">25</a></span></dt>
+<dd><a class="reference external" href="http://ruby-doc.org/stdlib-2.1.2/libdoc/securerandom/rdoc/SecureRandom.html">http://ruby-doc.org/stdlib-2.1.2/libdoc/securerandom/rdoc/SecureRandom.html</a></dd>
+<dt class="label" id="id64"><span class="brackets"><a class="fn-backref" href="#id26">26</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2015-September/036254.html">https://mail.python.org/pipermail/python-ideas/2015-September/036254.html</a></dd>
+<dt class="label" id="id65"><span class="brackets"><a class="fn-backref" href="#id27">27</a></span></dt>
+<dd><a class="reference external" href="https://pypi.python.org/pypi/secrets">https://pypi.python.org/pypi/secrets</a></dd>
+<dt class="label" id="id66"><span class="brackets"><a class="fn-backref" href="#id28">28</a></span></dt>
+<dd><a class="reference external" href="https://jazzy.id.au/2010/09/22/cracking_random_number_generators_part_3.html">https://jazzy.id.au/2010/09/22/cracking_random_number_generators_part_3.html</a></dd>
+<dt class="label" id="id67"><span class="brackets"><a class="fn-backref" href="#id29">29</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2015-September/036077.html">https://mail.python.org/pipermail/python-ideas/2015-September/036077.html</a></dd>
+<dt class="label" id="id68"><span class="brackets"><a class="fn-backref" href="#id30">30</a></span></dt>
+<dd><a class="reference external" href="https://media.blackhat.com/bh-us-12/Briefings/Argyros/BH_US_12_Argyros_PRNG_WP.pdf">https://media.blackhat.com/bh-us-12/Briefings/Argyros/BH_US_12_Argyros_PRNG_WP.pdf</a></dd>
+<dt class="label" id="id69"><span class="brackets"><a class="fn-backref" href="#id31">31</a></span></dt>
+<dd>Personal communication, 2016-08-24.</dd>
+<dt class="label" id="id70"><span class="brackets"><a class="fn-backref" href="#id32">32</a></span></dt>
+<dd><a class="reference external" href="https://bugs.launchpad.net/zope2/+bug/1071067">https://bugs.launchpad.net/zope2/+bug/1071067</a></dd>
+<dt class="label" id="id71"><span class="brackets"><a class="fn-backref" href="#id33">33</a></span></dt>
+<dd><a class="reference external" href="http://www.cvedetails.com/cve/CVE-2012-5508/">http://www.cvedetails.com/cve/CVE-2012-5508/</a>
+<a class="reference external" href="http://www.cvedetails.com/cve/CVE-2012-6661/">http://www.cvedetails.com/cve/CVE-2012-6661/</a></dd>
+<dt class="label" id="id72"><span class="brackets"><a class="fn-backref" href="#id34">34</a></span></dt>
+<dd><a class="reference external" href="https://github.com/django/django/commit/1525874238fd705ec17a066291935a9316bd3044">https://github.com/django/django/commit/1525874238fd705ec17a066291935a9316bd3044</a></dd>
+<dt class="label" id="id73"><span class="brackets"><a class="fn-backref" href="#id35">35</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2015-September/036157.html">https://mail.python.org/pipermail/python-ideas/2015-September/036157.html</a></dd>
+<dt class="label" id="id74"><span class="brackets"><a class="fn-backref" href="#id36">36</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2015-September/036476.html">https://mail.python.org/pipermail/python-ideas/2015-September/036476.html</a>
+<a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2015-September/036478.html">https://mail.python.org/pipermail/python-ideas/2015-September/036478.html</a></dd>
+<dt class="label" id="id75"><span class="brackets"><a class="fn-backref" href="#id37">37</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2015-September/036488.html">https://mail.python.org/pipermail/python-ideas/2015-September/036488.html</a></dd>
+<dt class="label" id="id76"><span class="brackets"><a class="fn-backref" href="#id38">38</a></span></dt>
+<dd><a class="reference external" href="http://sockpuppet.org/blog/2014/02/25/safely-generate-random-numbers/">http://sockpuppet.org/blog/2014/02/25/safely-generate-random-numbers/</a>
+<a class="reference external" href="http://www.2uo.de/myths-about-urandom/">http://www.2uo.de/myths-about-urandom/</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id89">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0506.txt">https://github.com/python/peps/blob/master/pep-0506.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0506.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0505.html">PEP 0505</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0507.html">PEP 0507</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 506 – Adding A Secrets Module To The Standard Library</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#definitions">Definitions</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#proposal">Proposal</a></li>
+<li><a class="reference internal" href="#api-and-implementation">API and Implementation</a><ul>
+<li><a class="reference internal" href="#default-arguments">Default arguments</a></li>
+<li><a class="reference internal" href="#naming-conventions">Naming conventions</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#alternatives">Alternatives</a></li>
+<li><a class="reference internal" href="#comparison-to-other-languages">Comparison To Other Languages</a></li>
+<li><a class="reference internal" href="#what-should-be-the-name-of-the-module">What Should Be The Name Of The Module?</a></li>
+<li><a class="reference internal" href="#frequently-asked-questions">Frequently Asked Questions</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

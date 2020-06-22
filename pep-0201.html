@@ -1,0 +1,399 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 201 – Lockstep Iteration &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 202 – List Comprehensions" href="pep-0202.html" />
+    <link rel="prev" title="PEP 200 – Python 2.0 Release Schedule" href="pep-0200.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 201 – Lockstep Iteration</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-201-lockstep-iteration">
+<h1 class="page-title">PEP 201 – Lockstep Iteration<a class="headerlink" href="#pep-201-lockstep-iteration" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">201</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Lockstep Iteration</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">barry&#32;&#97;t&#32;python.org (Barry Warsaw)</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">13-Jul-2000</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.0</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">27-Jul-2000</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#introduction" id="id5">Introduction</a></li>
+<li><a class="reference internal" href="#motivation" id="id6">Motivation</a></li>
+<li><a class="reference internal" href="#lockstep-for-loops" id="id7">Lockstep For-Loops</a></li>
+<li><a class="reference internal" href="#the-proposed-solution" id="id8">The Proposed Solution</a></li>
+<li><a class="reference internal" href="#return-value" id="id9">Return Value</a></li>
+<li><a class="reference internal" href="#examples" id="id10">Examples</a></li>
+<li><a class="reference internal" href="#reference-implementation" id="id11">Reference Implementation</a></li>
+<li><a class="reference internal" href="#bdfl-pronouncements" id="id12">BDFL Pronouncements</a></li>
+<li><a class="reference internal" href="#subsequent-change-to-zip" id="id13">Subsequent Change to <code class="docutils literal notranslate"><span class="pre">zip()</span></code></a></li>
+<li><a class="reference internal" href="#other-changes" id="id14">Other Changes</a></li>
+<li><a class="reference internal" href="#references" id="id15">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id16">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="introduction">
+<h2><a class="toc-backref" href="#id5">Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>This PEP describes the ‘lockstep iteration’ proposal.  This PEP tracks
+the status and ownership of this feature, slated for introduction in
+Python 2.0.  It contains a description of the feature and outlines
+changes necessary to support the feature. This PEP summarizes
+discussions held in mailing list forums, and provides URLs for further
+information, where appropriate.  The CVS revision history of this file
+contains the definitive historical record.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id6">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>Standard for-loops in Python iterate over every element in a sequence
+until the sequence is exhausted <a class="footnote-reference brackets" href="#id3" id="id1">1</a>.  However, for-loops iterate over
+only a single sequence, and it is often desirable to loop over more
+than one sequence in a lock-step fashion.  In other words, in a way
+such that the i-th iteration through the loop returns an object
+containing the i-th element from each sequence.</p>
+<p>The common idioms used to accomplish this are unintuitive.  This PEP
+proposes a standard way of performing such iterations by introducing a
+new builtin function called <code class="docutils literal notranslate"><span class="pre">zip</span></code>.</p>
+<p>While the primary motivation for zip() comes from lock-step iteration,
+by implementing zip() as a built-in function, it has additional
+utility in contexts other than for-loops.</p>
+</div>
+<div class="section" id="lockstep-for-loops">
+<h2><a class="toc-backref" href="#id7">Lockstep For-Loops</a><a class="headerlink" href="#lockstep-for-loops" title="Permalink to this headline">¶</a></h2>
+<p>Lockstep for-loops are non-nested iterations over two or more
+sequences, such that at each pass through the loop, one element from
+each sequence is taken to compose the target.  This behavior can
+already be accomplished in Python through the use of the map() built-
+in function:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">map</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span> <span class="nb">print</span> <span class="n">i</span>
+<span class="gp">...</span>
+<span class="go">(1, 4)</span>
+<span class="go">(2, 5)</span>
+<span class="go">(3, 6)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">map</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+<span class="go">[(1, 4), (2, 5), (3, 6)]</span>
+</pre></div>
+</div>
+<p>The for-loop simply iterates over this list as normal.</p>
+<p>While the map() idiom is a common one in Python, it has several
+disadvantages:</p>
+<ul>
+<li><p>It is non-obvious to programmers without a functional programming
+background.</p>
+</li>
+<li><p>The use of the magic <code class="docutils literal notranslate"><span class="pre">None</span></code> first argument is non-obvious.</p>
+</li>
+<li><p>It has arbitrary, often unintended, and inflexible semantics when
+the lists are not of the same length: the shorter sequences are
+padded with <code class="docutils literal notranslate"><span class="pre">None</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">c</span> <span class="o">=</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">map</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>
+<span class="go">[(1, 4), (2, 5), (3, 6), (None, 7)]</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<p>For these reasons, several proposals were floated in the Python 2.0
+beta time frame for syntactic support of lockstep for-loops. Here are
+two suggestions:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">seq1</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">seq2</span><span class="p">:</span>
+  <span class="c1"># stuff</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">seq1</span><span class="p">,</span> <span class="n">seq2</span><span class="p">:</span>
+  <span class="c1"># stuff</span>
+</pre></div>
+</div>
+<p>Neither of these forms would work, since they both already mean
+something in Python and changing the meanings would break existing
+code.  All other suggestions for new syntax suffered the same problem,
+or were in conflict with other another proposed feature called ‘list
+comprehensions’ (see PEP 202).</p>
+</div>
+<div class="section" id="the-proposed-solution">
+<h2><a class="toc-backref" href="#id8">The Proposed Solution</a><a class="headerlink" href="#the-proposed-solution" title="Permalink to this headline">¶</a></h2>
+<p>The proposed solution is to introduce a new built-in sequence
+generator function, available in the <code class="docutils literal notranslate"><span class="pre">__builtin__</span></code> module.  This
+function is to be called <code class="docutils literal notranslate"><span class="pre">zip</span></code> and has the following signature:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">zip</span><span class="p">(</span><span class="n">seqa</span><span class="p">,</span> <span class="p">[</span><span class="n">seqb</span><span class="p">,</span> <span class="p">[</span><span class="o">...</span><span class="p">]])</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">zip()</span></code> takes one or more sequences and weaves their elements
+together, just as <code class="docutils literal notranslate"><span class="pre">map(None,</span> <span class="pre">...)</span></code> does with sequences of equal
+length.  The weaving stops when the shortest sequence is exhausted.</p>
+</div>
+<div class="section" id="return-value">
+<h2><a class="toc-backref" href="#id9">Return Value</a><a class="headerlink" href="#return-value" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">zip()</span></code> returns a real Python list, the same way <code class="docutils literal notranslate"><span class="pre">map()</span></code> does.</p>
+</div>
+<div class="section" id="examples">
+<h2><a class="toc-backref" href="#id10">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<p>Here are some examples, based on the reference implementation below:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">c</span> <span class="o">=</span> <span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">11</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span> <span class="o">=</span> <span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">13</span><span class="p">)</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">zip</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+<span class="go">[(1, 5), (2, 6), (3, 7), (4, 8)]</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">zip</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">d</span><span class="p">)</span>
+<span class="go">[(1, 12), (2, 13)]</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">zip</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">d</span><span class="p">)</span>
+<span class="go">[(1, 5, 9, 12), (2, 6, 10, 13)]</span>
+</pre></div>
+</div>
+<p>Note that when the sequences are of the same length, <code class="docutils literal notranslate"><span class="pre">zip()</span></code> is
+reversible:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">x</span><span class="p">)</span> <span class="c1"># alternatively, apply(zip, x)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">z</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">y</span><span class="p">)</span> <span class="c1"># alternatively, apply(zip, y)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span>
+<span class="go">[(1, 4), (2, 5), (3, 6)]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span>
+<span class="go">[(1, 2, 3), (4, 5, 6)]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">z</span>
+<span class="go">[(1, 4), (2, 5), (3, 6)]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">==</span> <span class="n">z</span>
+<span class="go">1</span>
+</pre></div>
+</div>
+<p>It is not possible to reverse zip this way when the sequences are not
+all the same length.</p>
+</div>
+<div class="section" id="reference-implementation">
+<h2><a class="toc-backref" href="#id11">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>Here is a reference implementation, in Python of the zip() built-in
+function.  This will be replaced with a C implementation after final
+approval:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">zip</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;zip() expects one or more sequence arguments&#39;</span><span class="p">)</span>
+    <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">while</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">item</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+                <span class="n">item</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ret</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="bdfl-pronouncements">
+<h2><a class="toc-backref" href="#id12">BDFL Pronouncements</a><a class="headerlink" href="#bdfl-pronouncements" title="Permalink to this headline">¶</a></h2>
+<p>Note: the BDFL refers to Guido van Rossum, Python’s Benevolent
+Dictator For Life.</p>
+<ul class="simple">
+<li>The function’s name.  An earlier version of this PEP included an
+open issue listing 20+ proposed alternative names to <code class="docutils literal notranslate"><span class="pre">zip()</span></code>.  In
+the face of no overwhelmingly better choice, the BDFL strongly
+prefers <code class="docutils literal notranslate"><span class="pre">zip()</span></code> due to its Haskell <a class="footnote-reference brackets" href="#id4" id="id2">2</a> heritage.  See version 1.7
+of this PEP for the list of alternatives.</li>
+<li><code class="docutils literal notranslate"><span class="pre">zip()</span></code> shall be a built-in function.</li>
+<li>Optional padding.  An earlier version of this PEP proposed an
+optional <code class="docutils literal notranslate"><span class="pre">pad</span></code> keyword argument, which would be used when the
+argument sequences were not the same length.  This is similar
+behavior to the <code class="docutils literal notranslate"><span class="pre">map(None,</span> <span class="pre">...)</span></code> semantics except that the user
+would be able to specify pad object.  This has been rejected by the
+BDFL in favor of always truncating to the shortest sequence, because
+of the KISS principle.  If there’s a true need, it is easier to add
+later.  If it is not needed, it would still be impossible to delete
+it in the future.</li>
+<li>Lazy evaluation.  An earlier version of this PEP proposed that
+<code class="docutils literal notranslate"><span class="pre">zip()</span></code> return a built-in object that performed lazy evaluation
+using <code class="docutils literal notranslate"><span class="pre">__getitem__()</span></code> protocol.  This has been strongly rejected
+by the BDFL in favor of returning a real Python list.  If lazy
+evaluation is desired in the future, the BDFL suggests an <code class="docutils literal notranslate"><span class="pre">xzip()</span></code>
+function be added.</li>
+<li><code class="docutils literal notranslate"><span class="pre">zip()</span></code> with no arguments.  the BDFL strongly prefers this raise a
+TypeError exception.</li>
+<li><code class="docutils literal notranslate"><span class="pre">zip()</span></code> with one argument.  the BDFL strongly prefers that this
+return a list of 1-tuples.</li>
+<li>Inner and outer container control.  An earlier version of this PEP
+contains a rather lengthy discussion on a feature that some people
+wanted, namely the ability to control what the inner and outer
+container types were (they are tuples and list respectively in this
+version of the PEP).  Given the simplified API and implementation,
+this elaboration is rejected.  For a more detailed analysis, see
+version 1.7 of this PEP.</li>
+</ul>
+</div>
+<div class="section" id="subsequent-change-to-zip">
+<h2><a class="toc-backref" href="#id13">Subsequent Change to <code class="docutils literal notranslate"><span class="pre">zip()</span></code></a><a class="headerlink" href="#subsequent-change-to-zip" title="Permalink to this headline">¶</a></h2>
+<p>In Python 2.4, zip() with no arguments was modified to return an empty
+list rather than raising a TypeError exception.  The rationale for the
+original behavior was that the absence of arguments was thought to
+indicate a programming error.  However, that thinking did not
+anticipate the use of zip() with the <code class="docutils literal notranslate"><span class="pre">*</span></code> operator for unpacking
+variable length argument lists.  For example, the inverse of zip could
+be defined as:  <code class="docutils literal notranslate"><span class="pre">unzip</span> <span class="pre">=</span> <span class="pre">lambda</span> <span class="pre">s:</span> <span class="pre">zip(*s)</span></code>.  That transformation
+also defines a matrix transpose or an equivalent row/column swap for
+tables defined as lists of tuples.  The latter transformation is
+commonly used when reading data files with records as rows and fields
+as columns.  For example, the code:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">date</span><span class="p">,</span> <span class="n">rain</span><span class="p">,</span> <span class="n">high</span><span class="p">,</span> <span class="n">low</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">file</span><span class="p">(</span><span class="s2">&quot;weather.csv&quot;</span><span class="p">)))</span>
+</pre></div>
+</div>
+<p>rearranges columnar data so that each field is collected into
+individual tuples for straightforward looping and summarization:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span> <span class="s2">&quot;Total rainfall&quot;</span><span class="p">,</span> <span class="nb">sum</span><span class="p">(</span><span class="n">rain</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Using <code class="docutils literal notranslate"><span class="pre">zip(*args)</span></code> is more easily coded if <code class="docutils literal notranslate"><span class="pre">zip(*[])</span></code> is handled
+as an allowable case rather than an exception.  This is especially
+helpful when data is either built up from or recursed down to a null
+case with no records.</p>
+<p>Seeing this possibility, the BDFL agreed (with some misgivings) to
+have the behavior changed for Py2.4.</p>
+</div>
+<div class="section" id="other-changes">
+<h2><a class="toc-backref" href="#id14">Other Changes</a><a class="headerlink" href="#other-changes" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">xzip()</span></code> function discussed above was implemented in Py2.3 in
+the <code class="docutils literal notranslate"><span class="pre">itertools</span></code> module as <code class="docutils literal notranslate"><span class="pre">itertools.izip()</span></code>.  This function
+provides lazy behavior, consuming single elements and producing a
+single tuple on each pass.  The “just-in-time” style saves memory
+and runs faster than its list based counterpart, <code class="docutils literal notranslate"><span class="pre">zip()</span></code>.</p>
+</li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">itertools</span></code> module also added <code class="docutils literal notranslate"><span class="pre">itertools.repeat()</span></code> and
+<code class="docutils literal notranslate"><span class="pre">itertools.chain()</span></code>.  These tools can be used together to pad
+sequences with <code class="docutils literal notranslate"><span class="pre">None</span></code> (to match the behavior of <code class="docutils literal notranslate"><span class="pre">map(None,</span>
+<span class="pre">seqn)</span></code>):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">zip</span><span class="p">(</span><span class="n">firstseq</span><span class="p">,</span> <span class="n">chain</span><span class="p">(</span><span class="n">secondseq</span><span class="p">,</span> <span class="n">repeat</span><span class="p">(</span><span class="kc">None</span><span class="p">)))</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id15">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id3"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><a class="reference external" href="http://docs.python.org/reference/compound_stmts.html#for">http://docs.python.org/reference/compound_stmts.html#for</a></dd>
+<dt class="label" id="id4"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd><a class="reference external" href="http://www.haskell.org/onlinereport/standard-prelude.html#$vzip">http://www.haskell.org/onlinereport/standard-prelude.html#$vzip</a></dd>
+</dl>
+<p>Greg Wilson’s questionnaire on proposed syntax to some CS grad students
+<a class="reference external" href="http://www.python.org/pipermail/python-dev/2000-July/013139.html">http://www.python.org/pipermail/python-dev/2000-July/013139.html</a></p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id16">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0201.txt">https://github.com/python/peps/blob/master/pep-0201.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0201.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0200.html">PEP 0200</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0202.html">PEP 0202</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 201 – Lockstep Iteration</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#lockstep-for-loops">Lockstep For-Loops</a></li>
+<li><a class="reference internal" href="#the-proposed-solution">The Proposed Solution</a></li>
+<li><a class="reference internal" href="#return-value">Return Value</a></li>
+<li><a class="reference internal" href="#examples">Examples</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#bdfl-pronouncements">BDFL Pronouncements</a></li>
+<li><a class="reference internal" href="#subsequent-change-to-zip">Subsequent Change to <code class="docutils literal notranslate"><span class="pre">zip()</span></code></a></li>
+<li><a class="reference internal" href="#other-changes">Other Changes</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

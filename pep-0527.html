@@ -1,0 +1,348 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 527 – Removing Un(der)used file types/extensions on PyPI &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 528 – Change Windows console encoding to UTF-8" href="pep-0528.html" />
+    <link rel="prev" title="PEP 526 – Syntax for Variable Annotations" href="pep-0526.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 527 – Removing Un(der)used file types/extensions on PyPI</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-527-removing-un-der-used-file-types-extensions-on-pypi">
+<h1 class="page-title">PEP 527 – Removing Un(der)used file types/extensions on PyPI<a class="headerlink" href="#pep-527-removing-un-der-used-file-types-extensions-on-pypi" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">527</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Removing Un(der)used file types/extensions on PyPI</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Donald Stufft &lt;donald&#32;&#97;t&#32;stufft.io&gt;</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even">Nick Coghlan &lt;ncoghlan&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-odd">Discussions-To</dt>
+<dd class="field-odd"><a class="reference external" href="mailto:distutils-sig&#37;&#52;&#48;python&#46;org?subject=PEP%20527">distutils-sig&#32;&#97;t&#32;python.org</a></dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Accepted</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Process</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">23-Aug-2016</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd">23-Aug-2016</dd>
+<dt class="field-even">Resolution</dt>
+<dd class="field-even"><a class="reference external" href="https://mail.python.org/pipermail/distutils-sig/2016-September/029624.html">https://mail.python.org/pipermail/distutils-sig/2016-September/029624.html</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id2">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id3">Rationale</a><ul>
+<li><a class="reference internal" href="#file-formats" id="id4">File Formats</a><ul>
+<li><a class="reference internal" href="#bdist-dumb" id="id5">bdist_dumb</a></li>
+<li><a class="reference internal" href="#bdist-rpm" id="id6">bdist_rpm</a></li>
+<li><a class="reference internal" href="#bdist-dmg-bdist-msi-and-bdist-wininst" id="id7">bdist_dmg, bdist_msi, and bdist_wininst</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#file-extensions" id="id8">File Extensions</a></li>
+<li><a class="reference internal" href="#limiting-number-of-sdists-per-release" id="id9">Limiting number of sdists per release</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#removal-process" id="id10">Removal Process</a></li>
+<li><a class="reference internal" href="#copyright" id="id11">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id2">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP recommends deprecating, and ultimately removing, support for uploading
+certain unused or under used file types and extensions to PyPI. In particular
+it recommends disallowing further uploads of any files of the types
+<code class="docutils literal notranslate"><span class="pre">bdist_dumb</span></code>, <code class="docutils literal notranslate"><span class="pre">bdist_rpm</span></code>, <code class="docutils literal notranslate"><span class="pre">bdist_dmg</span></code>, <code class="docutils literal notranslate"><span class="pre">bdist_msi</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">bdist_wininst</span></code>, leaving PyPI to only accept new uploads of the <code class="docutils literal notranslate"><span class="pre">sdist</span></code>,
+<code class="docutils literal notranslate"><span class="pre">bdist_wheel</span></code>, and <code class="docutils literal notranslate"><span class="pre">bdist_egg</span></code> file types.</p>
+<p>In addition, this PEP proposes removing support for new uploads of sdists using
+the <code class="docutils literal notranslate"><span class="pre">.tar</span></code>, <code class="docutils literal notranslate"><span class="pre">.tar.bz2</span></code>, <code class="docutils literal notranslate"><span class="pre">.tar.xz</span></code>, <code class="docutils literal notranslate"><span class="pre">.tar.Z</span></code>, <code class="docutils literal notranslate"><span class="pre">.tgz</span></code>, <code class="docutils literal notranslate"><span class="pre">.tbz</span></code>, and
+any other extension besides <code class="docutils literal notranslate"><span class="pre">.tar.gz</span></code> and <code class="docutils literal notranslate"><span class="pre">.zip</span></code>.</p>
+<p>Finally, this PEP also proposes limiting the number of allowed sdist uploads
+for each individual release of a project on PyPI to one instead of one for each
+allowed extension.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id3">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="file-formats">
+<h3><a class="toc-backref" href="#id4">File Formats</a><a class="headerlink" href="#file-formats" title="Permalink to this headline">¶</a></h3>
+<p>Currently PyPI supports the following file types:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">sdist</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">bdist_wheel</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">bdist_egg</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">bdist_wininst</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">bdist_msi</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">bdist_dmg</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">bdist_rpm</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">bdist_dumb</span></code></li>
+</ul>
+<p>However, these different types of files have varying amounts of usefulness or
+general use in the ecosystem. Continuing to support them adds a maintenance
+burden on PyPI as well as tool authors and incurs a cost in both bandwidth and
+disk space not only on PyPI itself, but also on any mirrors of PyPI.</p>
+<p>Python packaging is a multi-level ecosystem where PyPI is primarily suited and
+used to distribute virtual environment compatible packages directly from their
+respective project owners. These packages are then consumed either directly
+by end-users, or by downstream distributors that take these packages and turn
+them into their respective system level packages (such as RPM, deb, MSI, etc).</p>
+<p>While PyPI itself only directly works with these Python specific but platform
+agnostic packages, we encourage community-driven and commercial conversions of
+these packages to downstream formats for particular target environments, like:</p>
+<ul class="simple">
+<li>The conda cross-platform data analysis ecosystem (conda-forge)</li>
+<li>The deb based Linux ecosystem (Debian, Ubuntu, etc)</li>
+<li>The RPM based Linux ecosystem (Fedora, openSuSE, Mageia, etc)</li>
+<li>The homebrew, MacPorts and fink ecosystems for Mac OS X</li>
+<li>The Windows Package Management ecosystem (NuGet, Chocolatey, etc)</li>
+<li>3rd party creation of Windows MSIs and installers (e.g. Christoph Gohlke’s
+work at <a class="reference external" href="http://www.lfd.uci.edu/~gohlke/pythonlibs/">http://www.lfd.uci.edu/~gohlke/pythonlibs/</a> )</li>
+<li>other commercial redistribution formats (ActiveState’s PyPM, Enthought
+Canopy, etc)</li>
+<li>other open source community redistribution formats (Nix, Gentoo, Arch, *BSD,
+etc)</li>
+</ul>
+<p>It is the belief of this PEP that the entire ecosystem is best supported by
+keeping PyPI focused on the platform agnostic formats, where the limited amount
+of time by volunteers can be best used instead of spreading the available time
+out amongst several platforms. Further more, this PEP believes that the people
+best positioned to provide well integrated packages for a particular platform
+are people focused on that platform, and not across all possible platforms.</p>
+<div class="section" id="bdist-dumb">
+<h4><a class="toc-backref" href="#id5">bdist_dumb</a><a class="headerlink" href="#bdist-dumb" title="Permalink to this headline">¶</a></h4>
+<p>As it’s name implies, <code class="docutils literal notranslate"><span class="pre">bdist_dumb</span></code> is not a very complex format, however it
+is so simple as to be worthless for actual usage.</p>
+<p>For instance, if you’re using something like pyenv on macOS and you’re building
+a library using Python 3.5, then <code class="docutils literal notranslate"><span class="pre">bdist_dumb</span></code> will produce a <code class="docutils literal notranslate"><span class="pre">.tar.gz</span></code> file
+named something like <code class="docutils literal notranslate"><span class="pre">exampleproject-1.0.macosx-10.11-x86_64.tar.gz</span></code>. Right
+off the bat this file name is somewhat difficult to differentiate from an
+<code class="docutils literal notranslate"><span class="pre">sdist</span></code> since they both use the same file extension (and with the legacy pre
+PEP 440 versions, <code class="docutils literal notranslate"><span class="pre">1.0-macosx-10.11-x86_64</span></code> is a valid, although quite silly,
+version number). However, once you open up the created <code class="docutils literal notranslate"><span class="pre">.tar.gz</span></code>, you’d find
+that there is no metadata inside that could be used for things like dependency
+discovery and in fact, it is quite simply a tarball containing hardcoded paths
+to wherever files would have been installed on the computer creating the
+<code class="docutils literal notranslate"><span class="pre">bdist_dumb</span></code>. Going back to our pyenv on macOS example, this means that if I
+created it, it would contain files like:</p>
+<p><code class="docutils literal notranslate"><span class="pre">Users/dstufft/.pyenv/versions/3.5.2/lib/python3.5/site-packages/example.py</span></code></p>
+</div>
+<div class="section" id="bdist-rpm">
+<h4><a class="toc-backref" href="#id6">bdist_rpm</a><a class="headerlink" href="#bdist-rpm" title="Permalink to this headline">¶</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">bdist_rpm</span></code> format on PyPI allows people to upload <code class="docutils literal notranslate"><span class="pre">.rpm</span></code> files for
+end users to manually download by hand and then manually install by hand.
+However, the common usage of <code class="docutils literal notranslate"><span class="pre">rpm</span></code> is with a specially designed repository
+that allows automatic installation of dependencies, upgrades, etc which PyPI
+does not provide. Thus, it is a type of file that is barely being used on PyPI
+with only ~460 files of this type having been uploaded to PyPI (out a total of
+662,544).</p>
+<p>In addition, services like <a class="reference external" href="https://copr.fedorainfracloud.org/">COPR</a> provide
+a better supported mechanism for publishing and using RPM files than we’re ever
+likely to get on PyPI.</p>
+</div>
+<div class="section" id="bdist-dmg-bdist-msi-and-bdist-wininst">
+<h4><a class="toc-backref" href="#id7">bdist_dmg, bdist_msi, and bdist_wininst</a><a class="headerlink" href="#bdist-dmg-bdist-msi-and-bdist-wininst" title="Permalink to this headline">¶</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">bdist_dmg</span></code>, <code class="docutils literal notranslate"><span class="pre">bdist_msi</span></code>, and <code class="docutils literal notranslate"><span class="pre">bdist_winist</span></code> formats are similar in
+that they are an OS specific installer that will only install a library into an
+environment and are not designed for real user facing installs of applications
+(which would require things like bundling a Python interpreter and the like).</p>
+<p>Out of these three, the usage for <code class="docutils literal notranslate"><span class="pre">bdist_dmg</span></code> and <code class="docutils literal notranslate"><span class="pre">bdist_msi</span></code> is very low,
+with only ~500 <code class="docutils literal notranslate"><span class="pre">bdist_msi</span></code> files and ~50 <code class="docutils literal notranslate"><span class="pre">bdist_dmg</span></code> files having been
+uploaded to PyPI. The <code class="docutils literal notranslate"><span class="pre">bdist_wininst</span></code> format has more use, with ~14,000 files
+having ever been uploaded to PyPI.</p>
+<p>It’s quite easy to look at the low usage of <code class="docutils literal notranslate"><span class="pre">bdist_dmg</span></code> and <code class="docutils literal notranslate"><span class="pre">bdist_msi</span></code> and
+conclude that removing them will be fairly low impact, however
+<code class="docutils literal notranslate"><span class="pre">bdist_wininst</span></code> has several orders of magnitude more usage. This is somewhat
+misleading though, because although it has more people <em>uploading</em> those files
+the actual usage of those uploaded files is fairly low. Taking a look at the
+previous 30 days, we can see that 90% of all downloads of <code class="docutils literal notranslate"><span class="pre">bdist_winist</span></code>
+files from PyPI were generated by the mirroring infrastructure and 7% of them
+were generated by setuptools (which can currently be better covered by
+<code class="docutils literal notranslate"><span class="pre">bdist_egg</span></code> files).</p>
+<p>Given the small number of files uploaded for <code class="docutils literal notranslate"><span class="pre">bdist_dmg</span></code> and <code class="docutils literal notranslate"><span class="pre">bdist_msi</span></code>
+and that <code class="docutils literal notranslate"><span class="pre">bdist_wininst</span></code> is largely existing to either consume bandwidth and
+disk space via the mirroring infrastructure <em>or</em> could be trivially replaced
+with <code class="docutils literal notranslate"><span class="pre">bdist_egg</span></code>, this PEP proposes to include these three formats in the
+list of those to be disallowed.</p>
+</div>
+</div>
+<div class="section" id="file-extensions">
+<h3><a class="toc-backref" href="#id8">File Extensions</a><a class="headerlink" href="#file-extensions" title="Permalink to this headline">¶</a></h3>
+<p>Currently <code class="docutils literal notranslate"><span class="pre">sdist</span></code> supports a wide variety of file extensions like <code class="docutils literal notranslate"><span class="pre">.tar.gz</span></code>,
+<code class="docutils literal notranslate"><span class="pre">.tar</span></code>, <code class="docutils literal notranslate"><span class="pre">.tar.bz2</span></code>, <code class="docutils literal notranslate"><span class="pre">.tar.xz</span></code>, <code class="docutils literal notranslate"><span class="pre">.zip</span></code>, <code class="docutils literal notranslate"><span class="pre">.tar.Z</span></code>, <code class="docutils literal notranslate"><span class="pre">.tgz</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">.tbz</span></code>. However, of those the only extensions which get anything more than
+negligible usage is <code class="docutils literal notranslate"><span class="pre">.tar.gz</span></code> with 444,338 sdists currently, <code class="docutils literal notranslate"><span class="pre">.zip</span></code> with
+58,774 sdists currently, and <code class="docutils literal notranslate"><span class="pre">.tar.bz2</span></code> with 3,265 sdists currently.</p>
+<p>Having multiple formats accepted requires tooling both within PyPI and outside
+of PyPI to handle all of the various extensions that <em>might</em> be used (even if
+nobody is currently using them). This doesn’t only affect PyPI, but ripples out
+throughout the ecosystem. In addition, the different formats all have different
+requirements for what optional C libraries Python was linked against and
+different requirements for what versions of Python they support. In addition,
+multiple formats also create a weird situation where there may be two
+<code class="docutils literal notranslate"><span class="pre">sdist</span></code> files for a particular project/release with subtly different content.</p>
+<p>It’s easy to advocate that anything outside of <code class="docutils literal notranslate"><span class="pre">.tar.gz</span></code>, <code class="docutils literal notranslate"><span class="pre">.zip</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">.tar.bz2</span></code> should be disallowed. Outside of a tiny handful, nobody has
+actively been uploading these other types of files in the ~15 years of PyPI’s
+existence so they’ve obviously not been particularly useful. In addition, while
+<code class="docutils literal notranslate"><span class="pre">.tar.xz</span></code> is theoretically a nicer format than the other <code class="docutils literal notranslate"><span class="pre">.tar.*</span></code> formats
+due to the better compression ratio achieved by LZMA, it is only available in
+Python 3.3+ and has an optional dependency on the lzma C library.</p>
+<p>Looking at the three extensions we <em>do</em> have in current use, it’s also fairly
+easy to conclude that <code class="docutils literal notranslate"><span class="pre">.tar.bz2</span></code> can be disallowed as well. It has a fairly
+small number of files ever uploaded with it and it requires an additional
+optional C library to handle the bzip2 compression.</p>
+<p>Finally we get down to <code class="docutils literal notranslate"><span class="pre">.tar.gz</span></code> and <code class="docutils literal notranslate"><span class="pre">.zip</span></code>. Looking at the pure numbers
+for these two, we can see that <code class="docutils literal notranslate"><span class="pre">.tar.gz</span></code> is by far the most uploaded format,
+with 444,338 total uploaded compared to <code class="docutils literal notranslate"><span class="pre">.zip</span></code>’s 58,774 and on POSIX
+operating systems <code class="docutils literal notranslate"><span class="pre">.tar.gz</span></code> is also the default produced by all currently
+released versions of Python and setuptools. In addition, these two file types
+both use the same C library (<code class="docutils literal notranslate"><span class="pre">zlib</span></code>) which is also required for
+<code class="docutils literal notranslate"><span class="pre">bdist_wheel</span></code> and <code class="docutils literal notranslate"><span class="pre">bdist_egg</span></code>. The two wrinkles with deciding between
+<code class="docutils literal notranslate"><span class="pre">.tar.gz</span></code> and <code class="docutils literal notranslate"><span class="pre">.zip</span></code> is that while on POSIX operating systems <code class="docutils literal notranslate"><span class="pre">.tar.gz</span></code>
+is the default, on Windows <code class="docutils literal notranslate"><span class="pre">.zip</span></code> is the default and the <code class="docutils literal notranslate"><span class="pre">bdist_wheel</span></code>
+format also uses zip.</p>
+<p>Instead of trying to standardize on either <code class="docutils literal notranslate"><span class="pre">.tar.gz</span></code> or <code class="docutils literal notranslate"><span class="pre">.zip</span></code>, this PEP
+proposes that we allow <em>either</em> <code class="docutils literal notranslate"><span class="pre">.tar.gz</span></code> or <code class="docutils literal notranslate"><span class="pre">.zip</span></code> for sdists.</p>
+</div>
+<div class="section" id="limiting-number-of-sdists-per-release">
+<h3><a class="toc-backref" href="#id9">Limiting number of sdists per release</a><a class="headerlink" href="#limiting-number-of-sdists-per-release" title="Permalink to this headline">¶</a></h3>
+<p>A sdist on PyPI should be a single source of truth for a particular release of
+software. However, currently PyPI allows you to upload one sdist for each of
+the sdist file extensions it allows. Currently this allows something like 10
+different sdists for a project, but even with this PEP it allows two different
+sources of truth for a single version. Having multiple sdists often times can
+account for strange bugs that only expose themselves based on which sdist that
+the person used.</p>
+<p>To resolve this, this PEP proposes to allow one, and only one, sdist per
+release of a project.</p>
+</div>
+</div>
+<div class="section" id="removal-process">
+<h2><a class="toc-backref" href="#id10">Removal Process</a><a class="headerlink" href="#removal-process" title="Permalink to this headline">¶</a></h2>
+<p>This PEP does <strong>NOT</strong> propose removing any existing files from PyPI, only
+disallowing new ones from being uploaded. This restriction will be phased in on
+a per-project basis to allow projects to adjust to the new restrictions where
+applicable.</p>
+<p>First, any <em>existing</em> projects will be flagged to allow legacy file types to be
+uploaded, and any project without that flag (i.e. new projects) will not be
+able to upload anything but <code class="docutils literal notranslate"><span class="pre">sdist</span></code> with a <code class="docutils literal notranslate"><span class="pre">.tar.gz</span></code> or <code class="docutils literal notranslate"><span class="pre">.zip</span></code> extension,
+<code class="docutils literal notranslate"><span class="pre">bdist_wheel</span></code>, and <code class="docutils literal notranslate"><span class="pre">bdist_egg</span></code>. Then, any existing projects that have never
+uploaded a file that requires the legacy file type flag will have that flag
+removed, also making them fall under the new restrictions. Finally, an email
+will be generated to the maintainers of all projects still given the legacy
+flag, which will inform them of the upcoming new restrictions on uploads and
+tell them that these restrictions will be applied to future uploads to their
+projects starting in 1 month. Finally, after 1 month all projects will have the
+legacy file type flag removed, and support for uploading these types of files
+will cease to exist on PyPI.</p>
+<p>This plan should provide minimal disruption since it does not remove any
+existing files, and the types of files it does prevent from being uploaded are
+either not particularly useful (or used) types of files <em>or</em> they can continue
+to upload a similar type of file with a slight change to their process.</p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id11">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0527.txt">https://github.com/python/peps/blob/master/pep-0527.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0527.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0526.html">PEP 0526</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0528.html">PEP 0528</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 527 – Removing Un(der)used file types/extensions on PyPI</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a><ul>
+<li><a class="reference internal" href="#file-formats">File Formats</a><ul>
+<li><a class="reference internal" href="#bdist-dumb">bdist_dumb</a></li>
+<li><a class="reference internal" href="#bdist-rpm">bdist_rpm</a></li>
+<li><a class="reference internal" href="#bdist-dmg-bdist-msi-and-bdist-wininst">bdist_dmg, bdist_msi, and bdist_wininst</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#file-extensions">File Extensions</a></li>
+<li><a class="reference internal" href="#limiting-number-of-sdists-per-release">Limiting number of sdists per release</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#removal-process">Removal Process</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

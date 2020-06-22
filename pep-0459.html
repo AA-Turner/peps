@@ -1,0 +1,753 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 459 – Standard Metadata Extensions for Python Software Packages &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 460 – Add binary interpolation and formatting" href="pep-0460.html" />
+    <link rel="prev" title="PEP 458 – Secure PyPI downloads with signed repository metadata" href="pep-0458.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 459 – Standard Metadata Extensions for Python Software Packages</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-459-standard-metadata-extensions-for-python-software-packages">
+<h1 class="page-title">PEP 459 – Standard Metadata Extensions for Python Software Packages<a class="headerlink" href="#pep-459-standard-metadata-extensions-for-python-software-packages" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">459</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Standard Metadata Extensions for Python Software Packages</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Nick Coghlan &lt;ncoghlan&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even">Nick Coghlan &lt;ncoghlan&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-odd">Discussions-To</dt>
+<dd class="field-odd">Distutils SIG &lt;<a class="reference external" href="mailto:distutils-sig&#37;&#52;&#48;python&#46;org?subject=PEP%20459">distutils-sig&#32;&#97;t&#32;python.org</a>&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Withdrawn</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Requires</dt>
+<dd class="field-even"><a class="reference external" href="./pep-0426.html">426</a></dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">11 Nov 2013</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">21 Dec 2013</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#pep-withdrawal" id="id2">PEP Withdrawal</a></li>
+<li><a class="reference internal" href="#abstract" id="id3">Abstract</a></li>
+<li><a class="reference internal" href="#standard-extension-namespace" id="id4">Standard Extension Namespace</a></li>
+<li><a class="reference internal" href="#the-python-details-extension" id="id5">The <code class="docutils literal notranslate"><span class="pre">python.details</span></code> extension</a><ul>
+<li><a class="reference internal" href="#license" id="id6">License</a></li>
+<li><a class="reference internal" href="#keywords" id="id7">Keywords</a></li>
+<li><a class="reference internal" href="#classifiers" id="id8">Classifiers</a></li>
+<li><a class="reference internal" href="#document-names" id="id9">Document names</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#the-python-project-extension" id="id10">The <code class="docutils literal notranslate"><span class="pre">python.project</span></code> extension</a><ul>
+<li><a class="reference internal" href="#contact-information" id="id11">Contact information</a></li>
+<li><a class="reference internal" href="#contacts" id="id12">Contacts</a></li>
+<li><a class="reference internal" href="#contributors" id="id13">Contributors</a></li>
+<li><a class="reference internal" href="#project-urls" id="id14">Project URLs</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#the-python-integrator-extension" id="id15">The <code class="docutils literal notranslate"><span class="pre">python.integrator</span></code> extension</a></li>
+<li><a class="reference internal" href="#the-python-exports-extension" id="id16">The <code class="docutils literal notranslate"><span class="pre">python.exports</span></code> extension</a><ul>
+<li><a class="reference internal" href="#export-specifiers" id="id17">Export specifiers</a></li>
+<li><a class="reference internal" href="#modules" id="id18">Modules</a></li>
+<li><a class="reference internal" href="#namespaces" id="id19">Namespaces</a></li>
+<li><a class="reference internal" href="#exports" id="id20">Exports</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#the-python-commands-extension" id="id21">The <code class="docutils literal notranslate"><span class="pre">python.commands</span></code> extension</a></li>
+<li><a class="reference internal" href="#the-python-constraints-extension" id="id22">The <code class="docutils literal notranslate"><span class="pre">python.constraints</span></code> extension</a><ul>
+<li><a class="reference internal" href="#supported-environments" id="id23">Supported Environments</a></li>
+<li><a class="reference internal" href="#extension-metadata-constraints" id="id24">Extension metadata constraints</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#copyright" id="id25">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="pep-withdrawal">
+<h2><a class="toc-backref" href="#id2">PEP Withdrawal</a><a class="headerlink" href="#pep-withdrawal" title="Permalink to this headline">¶</a></h2>
+<p>This PEP depends on PEP 426, which has itself been withdrawn. See the
+PEP Withdrawal section in that PEP for details.</p>
+<p>In the meantime, metadata extensions will continue to be handled as they
+have been for past examples like <code class="docutils literal notranslate"><span class="pre">entry_points.txt</span></code>: as additional files
+installed into metadata directories alongside the main <cite>METADATA</cite> file.</p>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id3">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP describes several standard extensions to the Python metadata.</p>
+<p>Like all metadata extensions, each standard extension format is
+independently versioned. Changing any of the formats requires an update
+to this PEP, but does not require an update to the core packaging metadata.</p>
+</div>
+<div class="section" id="standard-extension-namespace">
+<h2><a class="toc-backref" href="#id4">Standard Extension Namespace</a><a class="headerlink" href="#standard-extension-namespace" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">python</span></code> project on the Python Package Index refers to the CPython
+reference interpreter. This namespace is used as the namespace for the
+standard metadata extensions.</p>
+<p>The currently defined standard extensions are:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">python.details</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">python.project</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">python.integrator</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">python.exports</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">python.commands</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">python.constraints</span></code></li>
+</ul>
+<p>All standard extensions are currently at version <code class="docutils literal notranslate"><span class="pre">1.0</span></code>, and thus the
+<code class="docutils literal notranslate"><span class="pre">extension_metadata</span></code> field may be omitted without losing access to any
+functionality.</p>
+</div>
+<div class="section" id="the-python-details-extension">
+<h2><a class="toc-backref" href="#id5">The <code class="docutils literal notranslate"><span class="pre">python.details</span></code> extension</a><a class="headerlink" href="#the-python-details-extension" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">python.details</span></code> extension allows for more information to be provided
+regarding the software distribution.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">python.details</span></code> extension contains four custom subfields:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">license</span></code>: the copyright license for the distribution</li>
+<li><code class="docutils literal notranslate"><span class="pre">keywords</span></code>: package index keywords for the distribution</li>
+<li><code class="docutils literal notranslate"><span class="pre">classifiers</span></code>: package index Trove classifiers for the distribution</li>
+<li><code class="docutils literal notranslate"><span class="pre">document_names</span></code>: the names of additional metadata files</li>
+</ul>
+<p>All of these fields are optional. Automated tools MUST operate correctly if
+a distribution does not provide them, including failing cleanly when an
+operation depending on one of these fields is requested.</p>
+<div class="section" id="license">
+<h3><a class="toc-backref" href="#id6">License</a><a class="headerlink" href="#license" title="Permalink to this headline">¶</a></h3>
+<p>A short string summarising the license used for this distribution.</p>
+<p>Note that distributions that provide this field should still specify any
+applicable license Trove classifiers in the <a class="reference internal" href="#classifiers">Classifiers</a> field. Even
+when an appropriate Trove classifier is available, the license summary can
+be a good way to specify a particular version of that license, or to
+indicate any variations or exception to the license.</p>
+<p>This field SHOULD contain fewer than 512 characters and MUST contain fewer
+than 2048.</p>
+<p>This field SHOULD NOT contain any line breaks.</p>
+<p>The full license text SHOULD be included as a separate file in the source
+archive for the distribution. See <a class="reference internal" href="#document-names">Document names</a> for details.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;license&quot;</span><span class="p">:</span> <span class="s2">&quot;GPL version 3, excluding DRM provisions&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="keywords">
+<h3><a class="toc-backref" href="#id7">Keywords</a><a class="headerlink" href="#keywords" title="Permalink to this headline">¶</a></h3>
+<p>A list of additional keywords to be used to assist searching for the
+distribution in a larger catalog.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;keywords&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;comfy&quot;</span><span class="p">,</span> <span class="s2">&quot;chair&quot;</span><span class="p">,</span> <span class="s2">&quot;cushions&quot;</span><span class="p">,</span> <span class="s2">&quot;too silly&quot;</span><span class="p">,</span> <span class="s2">&quot;monty python&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="classifiers">
+<h3><a class="toc-backref" href="#id8">Classifiers</a><a class="headerlink" href="#classifiers" title="Permalink to this headline">¶</a></h3>
+<p>A list of strings, with each giving a single classification value
+for the distribution.  Classifiers are described in PEP 301 [2].</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;classifiers&quot;</span><span class="p">:</span> <span class="p">[</span>
+  <span class="s2">&quot;Development Status :: 4 - Beta&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;Environment :: Console (Text Based)&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;License :: OSI Approved :: GNU General Public License v3 (GPLv3)&quot;</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="document-names">
+<h3><a class="toc-backref" href="#id9">Document names</a><a class="headerlink" href="#document-names" title="Permalink to this headline">¶</a></h3>
+<p>Filenames for supporting documents included in the distribution’s
+<code class="docutils literal notranslate"><span class="pre">dist-info</span></code> metadata directory.</p>
+<p>The following supporting documents can be named:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">description</span></code>: a file containing a long description of the distribution</li>
+<li><code class="docutils literal notranslate"><span class="pre">license</span></code>: a file with the full text of the distribution’s license</li>
+<li><code class="docutils literal notranslate"><span class="pre">changelog</span></code>: a file describing changes made to the distribution</li>
+</ul>
+<p>Supporting documents MUST be included directly in the <code class="docutils literal notranslate"><span class="pre">dist-info</span></code>
+directory. Directory separators are NOT permitted in document names.</p>
+<p>The markup format (if any) for the file is indicated by the file extension.
+This allows index servers and other automated tools to render included
+text documents correctly and provide feedback on rendering errors, rather
+than having to guess the intended format.</p>
+<p>If the filename has no extension, or the extension is not recognised, the
+default rendering format MUST be plain text.</p>
+<p>The following markup renderers SHOULD be used for the specified file
+extensions:</p>
+<ul class="simple">
+<li>Plain text: <code class="docutils literal notranslate"><span class="pre">.txt</span></code>, no extension, unknown extension</li>
+<li>reStructured Text: <code class="docutils literal notranslate"><span class="pre">.rst</span></code></li>
+<li>Markdown: <code class="docutils literal notranslate"><span class="pre">.md</span></code></li>
+<li>AsciiDoc: <code class="docutils literal notranslate"><span class="pre">.adoc</span></code>, <code class="docutils literal notranslate"><span class="pre">.asc</span></code>, <code class="docutils literal notranslate"><span class="pre">.asciidoc</span></code></li>
+<li>HTML: <code class="docutils literal notranslate"><span class="pre">.html</span></code>, <code class="docutils literal notranslate"><span class="pre">.htm</span></code></li>
+</ul>
+<p>Automated tools MAY render one or more of the specified formats as plain
+text and MAY render other markup formats beyond those listed.</p>
+<p>Automated tools SHOULD NOT make any assumptions regarding the maximum length
+of supporting document content, except as necessary to protect the
+integrity of a service.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;document_names&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;README.rst&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;license&quot;</span><span class="p">:</span> <span class="s2">&quot;LICENSE.rst&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;changelog&quot;</span><span class="p">:</span> <span class="s2">&quot;NEWS&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="the-python-project-extension">
+<h2><a class="toc-backref" href="#id10">The <code class="docutils literal notranslate"><span class="pre">python.project</span></code> extension</a><a class="headerlink" href="#the-python-project-extension" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">python.project</span></code> extension allows for more information to be provided
+regarding the creation and maintenance of the distribution.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">python.project</span></code> extension contains three custom subfields:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">contacts</span></code>: key contact points for the distribution</li>
+<li><code class="docutils literal notranslate"><span class="pre">contributors</span></code>: other contributors to the distribution</li>
+<li><code class="docutils literal notranslate"><span class="pre">project_urls</span></code>: relevant URLs for the distribution</li>
+</ul>
+<div class="section" id="contact-information">
+<h3><a class="toc-backref" href="#id11">Contact information</a><a class="headerlink" href="#contact-information" title="Permalink to this headline">¶</a></h3>
+<p>Details on individuals and organisations are recorded as mappings with
+the following subfields:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">name</span></code>: the name of an individual or group</li>
+<li><code class="docutils literal notranslate"><span class="pre">email</span></code>: an email address (this may be a mailing list)</li>
+<li><code class="docutils literal notranslate"><span class="pre">url</span></code>: a URL (such as a profile page on a source code hosting service)</li>
+<li><code class="docutils literal notranslate"><span class="pre">role</span></code>: one of <code class="docutils literal notranslate"><span class="pre">&quot;author&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;maintainer&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;contributor&quot;</span></code></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">name</span></code> subfield is required, the other subfields are optional.</p>
+<p>If no specific role is stated, the default is <code class="docutils literal notranslate"><span class="pre">contributor</span></code>.</p>
+<p>Email addresses must be in the form <code class="docutils literal notranslate"><span class="pre">local-part&#64;domain</span></code> where the
+local-part may be up to 64 characters long and the entire email address
+contains no more than 254 characters. The formal specification of the
+format is in RFC 5322 (sections 3.2.3 and 3.4.1) and RFC 5321, with a more
+readable form given in the informational RFC 3696 and the associated errata.</p>
+<p>The defined contributor roles are as follows:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">author</span></code>: the original creator of a distribution</li>
+<li><code class="docutils literal notranslate"><span class="pre">maintainer</span></code>: the current lead contributor for a distribution, when
+they are not the original creator</li>
+<li><code class="docutils literal notranslate"><span class="pre">contributor</span></code>: any other individuals or organizations involved in the
+creation of the distribution</li>
+</ul>
+<p>Contact and contributor metadata is optional. Automated tools MUST operate
+correctly if a distribution does not provide it, including failing cleanly
+when an operation depending on one of these fields is requested.</p>
+</div>
+<div class="section" id="contacts">
+<h3><a class="toc-backref" href="#id12">Contacts</a><a class="headerlink" href="#contacts" title="Permalink to this headline">¶</a></h3>
+<p>A list of contributor entries giving the recommended contact points for
+getting more information about the project.</p>
+<p>The example below would be suitable for a project that was in the process
+of handing over from the original author to a new lead maintainer, while
+operating as part of a larger development group.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;contacts&quot;</span><span class="p">:</span> <span class="p">[</span>
+  <span class="p">{</span>
+    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Python Packaging Authority/Distutils-SIG&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="s2">&quot;distutils-sig@python.org&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;https://bitbucket.org/pypa/&quot;</span>
+  <span class="p">},</span>
+  <span class="p">{</span>
+    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Samantha C.&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;maintainer&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="s2">&quot;dontblameme@example.org&quot;</span>
+  <span class="p">},</span>
+  <span class="p">{</span>
+    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Charlotte C.&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;author&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="s2">&quot;iambecomingasketchcomedian@example.com&quot;</span>
+  <span class="p">}</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="contributors">
+<h3><a class="toc-backref" href="#id13">Contributors</a><a class="headerlink" href="#contributors" title="Permalink to this headline">¶</a></h3>
+<p>A list of contributor entries for other contributors not already listed as
+current project points of contact. The subfields within the list elements
+are the same as those for the main contact field.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;contributors&quot;</span><span class="p">:</span> <span class="p">[</span>
+  <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;John C.&quot;</span><span class="p">},</span>
+  <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Erik I.&quot;</span><span class="p">},</span>
+  <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Terry G.&quot;</span><span class="p">},</span>
+  <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Mike P.&quot;</span><span class="p">},</span>
+  <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Graeme C.&quot;</span><span class="p">},</span>
+  <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Terry J.&quot;</span><span class="p">}</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="project-urls">
+<h3><a class="toc-backref" href="#id14">Project URLs</a><a class="headerlink" href="#project-urls" title="Permalink to this headline">¶</a></h3>
+<p>A mapping of arbitrary text labels to additional URLs relevant to the
+project.</p>
+<p>While projects are free to choose their own labels and specific URLs,
+it is RECOMMENDED that home page, source control, issue tracker and
+documentation links be provided using the labels in the example below.</p>
+<p>URL labels MUST be treated as case insensitive by automated tools, but they
+are not required to be valid Python identifiers. Any legal JSON string is
+permitted as a URL label.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;project_urls&quot;</span><span class="p">:</span> <span class="p">{</span>
+  <span class="s2">&quot;Documentation&quot;</span><span class="p">:</span> <span class="s2">&quot;https://distlib.readthedocs.org&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;Home&quot;</span><span class="p">:</span> <span class="s2">&quot;https://bitbucket.org/pypa/distlib&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;Repository&quot;</span><span class="p">:</span> <span class="s2">&quot;https://bitbucket.org/pypa/distlib/src&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;Tracker&quot;</span><span class="p">:</span> <span class="s2">&quot;https://bitbucket.org/pypa/distlib/issues&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="the-python-integrator-extension">
+<h2><a class="toc-backref" href="#id15">The <code class="docutils literal notranslate"><span class="pre">python.integrator</span></code> extension</a><a class="headerlink" href="#the-python-integrator-extension" title="Permalink to this headline">¶</a></h2>
+<p>Structurally, this extension is largely identical to the <code class="docutils literal notranslate"><span class="pre">python.project</span></code>
+extension (the extension name is the only difference).</p>
+<p>However, where the <code class="docutils literal notranslate"><span class="pre">project</span></code> metadata refers to the upstream creators
+of the software, the <code class="docutils literal notranslate"><span class="pre">integrator</span></code> metadata refers to the downstream
+redistributor of a modified version.</p>
+<p>If the software is being redistributed unmodified, then typically this
+extension will not be used. However, if the software has been patched (for
+example, backporting compatible fixes from a later version, or addressing
+a platform compatibility issue), then this extension SHOULD be used, and
+a local version label added to the distribution’s version identifier.</p>
+<p>If there are multiple redistributors in the chain, each one just overwrites
+this extension with their particular metadata.</p>
+</div>
+<div class="section" id="the-python-exports-extension">
+<h2><a class="toc-backref" href="#id16">The <code class="docutils literal notranslate"><span class="pre">python.exports</span></code> extension</a><a class="headerlink" href="#the-python-exports-extension" title="Permalink to this headline">¶</a></h2>
+<p>Most Python distributions expose packages and modules for import through
+the Python module namespace. Distributions may also expose other
+interfaces when installed.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">python.exports</span></code> extension contains three custom subfields:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">modules</span></code>: modules exported by the distribution</li>
+<li><code class="docutils literal notranslate"><span class="pre">namespaces</span></code>: namespace packages that the distribution contributes to</li>
+<li><code class="docutils literal notranslate"><span class="pre">exports</span></code>: other Python interfaces exported by the distribution</li>
+</ul>
+<div class="section" id="export-specifiers">
+<h3><a class="toc-backref" href="#id17">Export specifiers</a><a class="headerlink" href="#export-specifiers" title="Permalink to this headline">¶</a></h3>
+<p>An export specifier is a string consisting of a fully qualified name, as
+well as an optional extra name enclosed in square brackets. This gives the
+following four possible forms for an export specifier:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">module</span>
+<span class="n">module</span><span class="p">:</span><span class="n">name</span>
+<span class="n">module</span><span class="p">[</span><span class="n">requires_extra</span><span class="p">]</span>
+<span class="n">module</span><span class="p">:</span><span class="n">name</span><span class="p">[</span><span class="n">requires_extra</span><span class="p">]</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The jsonschema file currently restricts qualified names using the
+Python 2 ASCII identifier rules. This may need to be reconsidered
+given the more relaxed identifier rules in Python 3.</p>
+</div>
+<p>The meaning of the subfields is as follows:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">module</span></code>: the module providing the export</li>
+<li><code class="docutils literal notranslate"><span class="pre">name</span></code>: if applicable, the qualified name of the export within the module</li>
+<li><code class="docutils literal notranslate"><span class="pre">requires_extra</span></code>: indicates the export will only work correctly if the
+additional dependencies named in the given extra are available in the
+installed environment</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>I tried this as a mapping with subfields, and it made the examples below
+unreadable. While this PEP is mostly for tool use, readability still
+matters to some degree for debugging purposes, and because I expect
+snippets of the format to be reused elsewhere.</p>
+</div>
+</div>
+<div class="section" id="modules">
+<h3><a class="toc-backref" href="#id18">Modules</a><a class="headerlink" href="#modules" title="Permalink to this headline">¶</a></h3>
+<p>A list of qualified names of modules and packages that the distribution
+provides for import.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The jsonschema file currently restricts qualified names using the
+Python 2 ASCII identifier rules. This may need to be reconsidered
+given the more relaxed identifier rules in Python 3.</p>
+</div>
+<p>For names that contain dots, the portion of the name before the final dot
+MUST appear either in the installed module list or in the namespace package
+list.</p>
+<p>To help avoid name conflicts, it is RECOMMENDED that distributions provide
+a single top level module or package that matches the distribution name
+(or a lower case equivalent). This requires that the distribution name also
+meet the requirements of a Python identifier, which are stricter than
+those for distribution names). This practice will also make it easier to
+find authoritative sources for modules.</p>
+<p>Index servers SHOULD allow multiple distributions to publish the same
+modules, but MAY notify distribution authors of potential conflicts.</p>
+<p>Installation tools SHOULD report an error when asked to install a
+distribution that provides a module that is also provided by a different,
+previously installed, distribution.</p>
+<p>Note that attempting to import some declared modules may result in an
+exception if the appropriate extras are not installed.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;modules&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;chair&quot;</span><span class="p">,</span> <span class="s2">&quot;chair.cushions&quot;</span><span class="p">,</span> <span class="s2">&quot;python_sketches.nobody_expects&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Making this a list of export specifiers instead would allow a distribution
+to declare when a particular module requires a particular extra in order
+to run correctly. On the other hand, there’s an argument to be made that
+that is the point where it starts to become worthwhile to split out a
+separate distribution rather than using extras.</p>
+</div>
+</div>
+<div class="section" id="namespaces">
+<h3><a class="toc-backref" href="#id19">Namespaces</a><a class="headerlink" href="#namespaces" title="Permalink to this headline">¶</a></h3>
+<p>A list of qualified names of namespace packages that the distribution
+contributes modules to.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The jsonschema file currently restricts qualified names using the
+Python 2 ASCII identifier rules. This may need to be reconsidered
+given the more relaxed identifier rules in Python 3.</p>
+</div>
+<p>On versions of Python prior to Python 3.3 (which provides native namespace
+package support), installation tools SHOULD emit a suitable <code class="docutils literal notranslate"><span class="pre">__init__.py</span></code>
+file to properly initialise the namespace rather than using a distribution
+provided file.</p>
+<p>Installation tools SHOULD emit a warning and MAY emit an error if a
+distribution declares a namespace package that conflicts with the name of
+an already installed module or vice-versa.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;namespaces&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;python_sketches&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="exports">
+<h3><a class="toc-backref" href="#id20">Exports</a><a class="headerlink" href="#exports" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">exports</span></code> field is a mapping containing prefixed names as keys. Each
+key identifies an export group containing one or more exports published by
+the distribution.</p>
+<p>Export group names are defined by distributions that will then make use of
+the published export information in some way. The primary use case is for
+distributions that support a plugin model: defining an export group allows
+other distributions to indicate which plugins they provide, how they
+can be imported and accessed, and which additional dependencies (if any)
+are needed for the plugin to work correctly.</p>
+<p>To reduce the chance of name conflicts, export group names SHOULD use a
+prefix that corresponds to a module name in the distribution that defines
+the meaning of the export group. This practice will also make it easier to
+find authoritative documentation for export groups.</p>
+<p>Each individual export group is then a mapping of arbitrary non-empty string
+keys to export specifiers. The meaning of export names within an export
+group is up to the distribution that defines the export group. Creating an
+appropriate definition for the export name format can allow the importing
+distribution to determine whether or not an export is relevant without
+needing to import every exporting module.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;exports&quot;</span><span class="p">:</span> <span class="p">{</span>
+  <span class="s2">&quot;nose.plugins.0.10&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">&quot;chairtest&quot;</span><span class="p">:</span> <span class="s2">&quot;chair:NosePlugin&quot;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="the-python-commands-extension">
+<h2><a class="toc-backref" href="#id21">The <code class="docutils literal notranslate"><span class="pre">python.commands</span></code> extension</a><a class="headerlink" href="#the-python-commands-extension" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">python.commands</span></code> extension contains three custom subfields:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">wrap_console</span></code>: console wrapper scripts to be generated by the installer</li>
+<li><code class="docutils literal notranslate"><span class="pre">wrap_gui</span></code>: GUI wrapper scripts to be generated by the installer</li>
+<li><code class="docutils literal notranslate"><span class="pre">prebuilt</span></code>: scripts created by the distribution’s build process and
+installed directly to the configured scripts directory</li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">wrap_console</span></code> and <code class="docutils literal notranslate"><span class="pre">wrap_gui</span></code> are both mappings of script names to
+export specifiers. The script names must follow the same naming rules as
+distribution names.</p>
+<p>The export specifiers for wrapper scripts must refer to either a package
+with a __main__ submodule (if no <code class="docutils literal notranslate"><span class="pre">name</span></code> subfield is given in the export
+specifier) or else to a callable inside the named module.</p>
+<p>Installation tools should generate appropriate wrappers as part of the
+installation process.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Still needs more detail on what “appropriate wrappers” means. For now,
+refer to what setuptools and zc.buildout generate as wrapper scripts.</p>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">prebuilt</span></code> is a list of script paths, relative to the scripts directory in
+a wheel file or following installation. They are provided for informational
+purpose only - installing them is handled through the normal processes for
+files created when building a distribution.</p>
+<p>Build tools SHOULD mark this extension as requiring handling by installers.</p>
+<p>Index servers SHOULD allow multiple distributions to publish the same
+commands, but MAY notify distribution authors of potential conflicts.</p>
+<p>Installation tools SHOULD report an error when asked to install a
+distribution that provides a command that is also provided by a different,
+previously installed, distribution.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;python.commands&quot;</span><span class="p">:</span> <span class="p">{</span>
+  <span class="s2">&quot;installer_must_handle&quot;</span><span class="p">:</span> <span class="n">true</span><span class="p">,</span>
+  <span class="s2">&quot;wrap_console&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&quot;chair&quot;</span><span class="p">:</span> <span class="s2">&quot;chair:run_cli&quot;</span><span class="p">}],</span>
+  <span class="s2">&quot;wrap_gui&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&quot;chair-gui&quot;</span><span class="p">:</span> <span class="s2">&quot;chair:run_gui&quot;</span><span class="p">}],</span>
+  <span class="s2">&quot;prebuilt&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;reduniforms&quot;</span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="the-python-constraints-extension">
+<h2><a class="toc-backref" href="#id22">The <code class="docutils literal notranslate"><span class="pre">python.constraints</span></code> extension</a><a class="headerlink" href="#the-python-constraints-extension" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">python.constraints</span></code> extension contains two custom subfields:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">environments</span></code>: supported installation environments</li>
+<li><code class="docutils literal notranslate"><span class="pre">extension_metadata</span></code>: required exact matches in extension metadata
+fields published by other installed components</li>
+</ul>
+<p>Build tools SHOULD mark this extension as requiring handling by installers.</p>
+<p>Index servers SHOULD allow distributions to be uploaded with constraints
+that cannot be satisfied using that index, but MAY notify distribution
+authors of any such potential compatibility issues.</p>
+<p>Installation tools SHOULD report an error if constraints are specified by
+the distribution and the target installation environment fails to satisfy
+them, MUST at least emit a warning, and MAY allow the user to
+force the installation to proceed regardless.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;python.constraints&quot;</span><span class="p">:</span> <span class="p">{</span>
+  <span class="s2">&quot;installer_must_handle&quot;</span><span class="p">:</span> <span class="n">true</span><span class="p">,</span>
+  <span class="s2">&quot;environments&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;python_version &gt;= 2.6&quot;</span><span class="p">],</span>
+  <span class="s2">&quot;extension_metadata&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">&quot;fortranlib&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s2">&quot;fortranlib.compatibility&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;fortran_abi&quot;</span><span class="p">:</span> <span class="s2">&quot;openblas-g77&quot;</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<div class="section" id="supported-environments">
+<h3><a class="toc-backref" href="#id23">Supported Environments</a><a class="headerlink" href="#supported-environments" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">environments</span></code> subfield is a list of strings specifying the
+environments that the distribution explicitly supports. An environment is
+considered supported if it matches at least one of the environment markers
+given.</p>
+<p>If this field is not given in the metadata, it is assumed that the
+distribution supports any platform supported by Python.</p>
+<p>Individual entries are environment markers, as described in <span class="target" id="index-0"></span><a class="pep reference external" href="./pep-0426.html"><strong>PEP 426</strong></a>.</p>
+<p>The two main uses of this field are to declare which versions of Python
+and which underlying operating systems are supported.</p>
+<p>Examples indicating supported Python versions:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Supports Python 2.6+</span>
+<span class="s2">&quot;environments&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;python_version &gt;= &#39;2.6&#39;&quot;</span><span class="p">]</span>
+
+<span class="c1"># Supports Python 2.6+ (for 2.x) or 3.3+ (for 3.x)</span>
+<span class="s2">&quot;environments&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;python_version &gt;= &#39;3.3&#39;&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;&#39;3.0&#39; &gt; python_version &gt;= &#39;2.6&#39;&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Examples indicating supported operating systems:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Windows only</span>
+<span class="s2">&quot;environments&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;sys_platform == &#39;win32&#39;&quot;</span><span class="p">]</span>
+
+<span class="c1"># Anything except Windows</span>
+<span class="s2">&quot;environments&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;sys_platform != &#39;win32&#39;&quot;</span><span class="p">]</span>
+
+<span class="c1"># Linux or BSD only</span>
+<span class="s2">&quot;environments&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;&#39;linux&#39; in sys_platform&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;&#39;bsd&#39; in sys_platform&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Example where the supported Python version varies by platform:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># The standard library&#39;s os module has long supported atomic renaming</span>
+<span class="c1"># on POSIX systems, but only gained atomic renaming on Windows in Python</span>
+<span class="c1"># 3.3. A distribution that needs atomic renaming support for reliable</span>
+<span class="c1"># operation might declare the following supported environments.</span>
+<span class="s2">&quot;environment&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;python_version &gt;= &#39;2.6&#39; and sys_platform != &#39;win32&#39;&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;python_version &gt;= &#39;3.3&#39; and sys_platform == &#39;win32&#39;&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="extension-metadata-constraints">
+<h3><a class="toc-backref" href="#id24">Extension metadata constraints</a><a class="headerlink" href="#extension-metadata-constraints" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">extension_metadata</span></code> subfield is a mapping from distribution names
+to extension metadata snippets that are expected to exactly match the
+metadata of the named distribution in the target installation environment.</p>
+<p>Each submapping then consists of a mapping from metadata extension names to
+the exact expected values of a subset of fields.</p>
+<p>For example, a distribution called <code class="docutils literal notranslate"><span class="pre">fortranlib</span></code> may publish a different
+FORTRAN ABI depending on how it is built, and any related projects that are
+installed into the same runtime environment should use matching build
+options. This can be handled by having the base distribution publish a
+custom extension that indicates the build option that was used to create
+the binary extensions:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;extensions&quot;</span><span class="p">:</span> <span class="p">{</span>
+  <span class="s2">&quot;fortranlib.compatibility&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">&quot;fortran_abi&quot;</span><span class="p">:</span> <span class="s2">&quot;openblas-g77&quot;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Other distributions that contain binary extensions that need to be compatible
+with the base distribution would then define a suitable constraint in their
+own metadata:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;python.constraints&quot;</span><span class="p">:</span> <span class="p">{</span>
+  <span class="s2">&quot;installer_must_handle&quot;</span><span class="p">:</span> <span class="n">true</span><span class="p">,</span>
+  <span class="s2">&quot;extension_metadata&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">&quot;fortranlib&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s2">&quot;fortranlib.compatibility&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;fortran_abi&quot;</span><span class="p">:</span> <span class="s2">&quot;openblas-g77&quot;</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>This constraint specifies that:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">fortranlib</span></code> must be installed (this should also be expressed as a
+normal dependency so that installers ensure it is satisfied)</li>
+<li>The installed version of <code class="docutils literal notranslate"><span class="pre">fortranlib</span></code> must include the custom
+<code class="docutils literal notranslate"><span class="pre">fortranlib.compatibility</span></code> extension in its published metadata</li>
+<li>The <code class="docutils literal notranslate"><span class="pre">fortan_abi</span></code> subfield of that extension must have the <em>exact</em>
+value <code class="docutils literal notranslate"><span class="pre">openblas-g77</span></code>.</li>
+</ul>
+<p>If all of these conditions are met (the distribution is installed, the
+specified extension is included in the metadata, the specified subfields
+have the exact specified value), then the constraint is considered to be
+satisfied.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The primary intended use case here is allowing C extensions with additional
+ABI compatibility requirements to declare those in a way that any
+installation tool can enforce without needing to understand the details.
+In particular, many NumPy based scientific libraries need to be built
+using a consistent set of FORTRAN libraries, hence the “fortranlib”
+example.</p>
+<p>This is the reason there’s no support for pattern matching or boolean
+logic: even the “simple” version of this extension is relatively
+complex, and there’s currently no compelling rationale for making it
+more complicated than it already is.</p>
+</div>
+</div>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id25">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0459.txt">https://github.com/python/peps/blob/master/pep-0459.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0459.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0458.html">PEP 0458</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0460.html">PEP 0460</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 459 – Standard Metadata Extensions for Python Software Packages</a><ul>
+<li><a class="reference internal" href="#pep-withdrawal">PEP Withdrawal</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#standard-extension-namespace">Standard Extension Namespace</a></li>
+<li><a class="reference internal" href="#the-python-details-extension">The <code class="docutils literal notranslate"><span class="pre">python.details</span></code> extension</a><ul>
+<li><a class="reference internal" href="#license">License</a></li>
+<li><a class="reference internal" href="#keywords">Keywords</a></li>
+<li><a class="reference internal" href="#classifiers">Classifiers</a></li>
+<li><a class="reference internal" href="#document-names">Document names</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#the-python-project-extension">The <code class="docutils literal notranslate"><span class="pre">python.project</span></code> extension</a><ul>
+<li><a class="reference internal" href="#contact-information">Contact information</a></li>
+<li><a class="reference internal" href="#contacts">Contacts</a></li>
+<li><a class="reference internal" href="#contributors">Contributors</a></li>
+<li><a class="reference internal" href="#project-urls">Project URLs</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#the-python-integrator-extension">The <code class="docutils literal notranslate"><span class="pre">python.integrator</span></code> extension</a></li>
+<li><a class="reference internal" href="#the-python-exports-extension">The <code class="docutils literal notranslate"><span class="pre">python.exports</span></code> extension</a><ul>
+<li><a class="reference internal" href="#export-specifiers">Export specifiers</a></li>
+<li><a class="reference internal" href="#modules">Modules</a></li>
+<li><a class="reference internal" href="#namespaces">Namespaces</a></li>
+<li><a class="reference internal" href="#exports">Exports</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#the-python-commands-extension">The <code class="docutils literal notranslate"><span class="pre">python.commands</span></code> extension</a></li>
+<li><a class="reference internal" href="#the-python-constraints-extension">The <code class="docutils literal notranslate"><span class="pre">python.constraints</span></code> extension</a><ul>
+<li><a class="reference internal" href="#supported-environments">Supported Environments</a></li>
+<li><a class="reference internal" href="#extension-metadata-constraints">Extension metadata constraints</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

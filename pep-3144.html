@@ -1,0 +1,288 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 3144 – IP Address Manipulation Library for the Python Standard Library &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 3145 – Asynchronous I/O For subprocess.Popen" href="pep-3145.html" />
+    <link rel="prev" title="PEP 3143 – Standard daemon process library" href="pep-3143.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 3144 – IP Address Manipulation Library for the Python Standard Library</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-3144-ip-address-manipulation-library-for-the-python-standard-library">
+<h1 class="page-title">PEP 3144 – IP Address Manipulation Library for the Python Standard Library<a class="headerlink" href="#pep-3144-ip-address-manipulation-library-for-the-python-standard-library" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">3144</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">IP Address Manipulation Library for the Python Standard Library</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Peter Moody &lt;pmoody&#32;&#97;t&#32;google.com&gt;</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even">Nick Coghlan</dd>
+<dt class="field-odd">Discussions-To</dt>
+<dd class="field-odd">&lt;<a class="reference external" href="mailto:ipaddr-py-dev&#37;&#52;&#48;googlegroups&#46;com?subject=PEP%203144">ipaddr-py-dev&#32;&#97;t&#32;googlegroups.com</a>&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">6-Feb-2012</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.3</dd>
+<dt class="field-even">Resolution</dt>
+<dd class="field-even"><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2012-May/119474.html">https://mail.python.org/pipermail/python-dev/2012-May/119474.html</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id3">Abstract</a></li>
+<li><a class="reference internal" href="#pep-acceptance" id="id4">PEP Acceptance</a></li>
+<li><a class="reference internal" href="#motivation" id="id5">Motivation</a></li>
+<li><a class="reference internal" href="#rationale" id="id6">Rationale</a></li>
+<li><a class="reference internal" href="#background" id="id7">Background</a></li>
+<li><a class="reference internal" href="#specification" id="id8">Specification</a></li>
+<li><a class="reference internal" href="#reference-implementation" id="id9">Reference Implementation</a></li>
+<li><a class="reference internal" href="#references" id="id10">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id11">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id3">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes a design and for an IP address manipulation module for
+python.</p>
+</div>
+<div class="section" id="pep-acceptance">
+<h2><a class="toc-backref" href="#id4">PEP Acceptance</a><a class="headerlink" href="#pep-acceptance" title="Permalink to this headline">¶</a></h2>
+<p>This PEP was accepted by Nick Coghlan on the 15th of May, 2012.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id5">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>Several very good IP address modules for python already exist.
+The truth is that all of them struggle with the balance between
+adherence to Pythonic principals and the shorthand upon which
+network engineers and administrators rely.  <code class="docutils literal notranslate"><span class="pre">ipaddress</span></code> aims to
+strike the right balance.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id6">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>The existence of several Python IP address manipulation modules is
+evidence of an outstanding need for the functionality this module
+seeks to provide.</p>
+</div>
+<div class="section" id="background">
+<h2><a class="toc-backref" href="#id7">Background</a><a class="headerlink" href="#background" title="Permalink to this headline">¶</a></h2>
+<p>PEP 3144 and <code class="docutils literal notranslate"><span class="pre">ipaddr</span></code> have been up for inclusion before.  The
+version of the library specified here is backwards incompatible
+with the version on PyPI and the one which was discussed before.
+In order to avoid confusing users of the current <code class="docutils literal notranslate"><span class="pre">ipaddr</span></code>, I’ve
+renamed this version of the library <code class="docutils literal notranslate"><span class="pre">ipaddress</span></code>.</p>
+<p>The main differences between ipaddr and ipaddress are:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">ipaddress</span></code> *Network classes are equivalent to the <code class="docutils literal notranslate"><span class="pre">ipaddr</span></code> *Network
+class counterparts with the <code class="docutils literal notranslate"><span class="pre">strict</span></code> flag set to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">ipaddress</span></code> *Interface classes are equivalent to the <code class="docutils literal notranslate"><span class="pre">ipaddr</span></code>
+*Network class counterparts with the <code class="docutils literal notranslate"><span class="pre">strict</span></code> flag set to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</li>
+<li>The factory functions in <code class="docutils literal notranslate"><span class="pre">ipaddress</span></code> were renamed to disambiguate
+them from classes.</li>
+<li>A few attributes were renamed to disambiguate their purpose as
+well. (eg. <code class="docutils literal notranslate"><span class="pre">network</span></code>, <code class="docutils literal notranslate"><span class="pre">network_address</span></code>)</li>
+<li>A number of methods and functions which returned containers in <code class="docutils literal notranslate"><span class="pre">ipaddr</span></code> now
+return iterators. This includes <code class="docutils literal notranslate"><span class="pre">subnets</span></code>, <code class="docutils literal notranslate"><span class="pre">address_exclude</span></code>,
+<code class="docutils literal notranslate"><span class="pre">summarize_address_range</span></code> and <code class="docutils literal notranslate"><span class="pre">collapse_address_list</span></code>.</li>
+</ul>
+<p>Due to the backwards incompatible API changes between <code class="docutils literal notranslate"><span class="pre">ipaddress</span></code> and <code class="docutils literal notranslate"><span class="pre">ipaddr</span></code>,
+the proposal is to add the module using the new provisional API status:</p>
+<ul class="simple">
+<li><a class="reference external" href="http://docs.python.org/dev/glossary.html#term-provisional-package">http://docs.python.org/dev/glossary.html#term-provisional-package</a></li>
+</ul>
+<p>Relevant messages on python-dev:</p>
+<ul class="simple">
+<li><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2012-January/116016.html">https://mail.python.org/pipermail/python-dev/2012-January/116016.html</a></li>
+<li><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2012-February/116656.html">https://mail.python.org/pipermail/python-dev/2012-February/116656.html</a></li>
+<li><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2012-February/116688.html">https://mail.python.org/pipermail/python-dev/2012-February/116688.html</a></li>
+</ul>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id8">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">ipaddr</span></code> module defines a total of 6 new public classes, 3 for
+manipulating IPv4 objects and 3 for manipulating IPv6 objects.
+The classes are as follows:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">IPv4Address</span></code>/<code class="docutils literal notranslate"><span class="pre">IPv6Address</span></code> - These define individual addresses, for
+example the IPv4 address returned by an A record query for
+www.google.com (74.125.224.84) or the IPv6 address returned by a
+AAAA record query for ipv6.google.com (2001:4860:4001:801::1011).</li>
+<li><code class="docutils literal notranslate"><span class="pre">IPv4Network</span></code>/<code class="docutils literal notranslate"><span class="pre">IPv6Network</span></code> - These define networks or groups of
+addresses, for example the IPv4 network reserved for multicast use
+(224.0.0.0/4) or the IPv6 network reserved for multicast
+(ff00::/8, wow, that’s big).</li>
+<li><code class="docutils literal notranslate"><span class="pre">IPv4Interface</span></code>/<code class="docutils literal notranslate"><span class="pre">IPv6Interface</span></code> - These hybrid classes refer to an
+individual address on a given network.  For example, the IPV4
+address 192.0.2.1 on the network 192.0.2.0/24 could be referred to
+as 192.0.2.1/24.  Likewise, the IPv6 address 2001:DB8::1 on the
+network 2001:DB8::/96 could be referred to as 2001:DB8::1/96.
+It’s very common to refer to addresses assigned to computer
+network interfaces like this, hence the Interface name.</li>
+</ul>
+<p>All IPv4 classes share certain characteristics and methods; the
+number of bits needed to represent them, whether or not they
+belong to certain special IPv4 network ranges, etc.  Similarly,
+all IPv6 classes share characteristics and methods.</p>
+<p><code class="docutils literal notranslate"><span class="pre">ipaddr</span></code> makes extensive use of inheritance to avoid code
+duplication as much as possible.  The parent classes are private,
+but they are outlined here:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">_IPAddrBase</span></code> - Provides methods common to all <code class="docutils literal notranslate"><span class="pre">ipaddr</span></code> objects.</li>
+<li><code class="docutils literal notranslate"><span class="pre">_BaseAddress</span></code> - Provides methods common to <code class="docutils literal notranslate"><span class="pre">IPv4Address</span></code> and
+<code class="docutils literal notranslate"><span class="pre">IPv6Address</span></code>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">_BaseInterface</span></code> - Provides methods common to <code class="docutils literal notranslate"><span class="pre">IPv4Interface</span></code> and
+<code class="docutils literal notranslate"><span class="pre">IPv6Interface</span></code>, as well as <code class="docutils literal notranslate"><span class="pre">IPv4Network</span></code> and <code class="docutils literal notranslate"><span class="pre">IPv6Network</span></code> (<code class="docutils literal notranslate"><span class="pre">ipaddr</span></code>
+treats the Network classes as a special case of Interface).</li>
+<li><code class="docutils literal notranslate"><span class="pre">_BaseV4</span></code> - Provides methods and variables (eg, <code class="docutils literal notranslate"><span class="pre">_max_prefixlen</span></code>)
+common to all IPv4 classes.</li>
+<li><code class="docutils literal notranslate"><span class="pre">_BaseV6</span></code> - Provides methods and variables common to all IPv6 classes.</li>
+</ul>
+<p>Comparisons between objects of differing IP versions results in a
+<code class="docutils literal notranslate"><span class="pre">TypeError</span></code> <a class="footnote-reference brackets" href="#id2" id="id1">1</a>.  Additionally, comparisons of objects with
+different _Base parent classes results in a <code class="docutils literal notranslate"><span class="pre">TypeError</span></code>.  The effect
+of the _Base parent class limitation is that <code class="docutils literal notranslate"><span class="pre">IPv4Interface</span></code>’s can
+be compared to <code class="docutils literal notranslate"><span class="pre">IPv4Network</span></code>’s and <code class="docutils literal notranslate"><span class="pre">IPv6Interface</span></code>’s can be compared
+to <code class="docutils literal notranslate"><span class="pre">IPv6Network</span></code>’s.</p>
+</div>
+<div class="section" id="reference-implementation">
+<h2><a class="toc-backref" href="#id9">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>The current reference implementation can be found at:</p>
+<p><a class="reference external" href="http://code.google.com/p/ipaddress-py/source/browse/ipaddress.py">http://code.google.com/p/ipaddress-py/source/browse/ipaddress.py</a></p>
+<p>Or see the tarball to include the README and unittests.
+<a class="reference external" href="http://code.google.com/p/ipaddress-py/downloads/detail?name=ipaddress-1.0.tar.gz">http://code.google.com/p/ipaddress-py/downloads/detail?name=ipaddress-1.0.tar.gz</a></p>
+<p>More information about using the reference implementation can be
+found at: <a class="reference external" href="http://code.google.com/p/ipaddr-py/wiki/Using3144">http://code.google.com/p/ipaddr-py/wiki/Using3144</a></p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id10">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p>Appealing to authority is a logical fallacy, but Vint Cerf is an
+authority who can’t be ignored. Full text of the email
+follows:</p>
+<blockquote>
+<div><p>I have seen a substantial amount of traffic about IPv4 and
+IPv6 comparisons and the general consensus is that these are
+not comparable.</p>
+<p>If we were to take a very simple minded view, we might treat
+these as pure integers in which case there is an ordering but
+not a useful one.</p>
+<p>In the IPv4 world, “length” is important because we take
+longest (most specific) address first for routing.  Length is
+determine by the mask, as you know.</p>
+<p>Assuming that the same style of argument works in IPv6, we
+would have to conclude that treating an IPv6 value purely as
+an integer for comparison with IPv4 would lead to some really
+strange results.</p>
+<p>All of IPv4 space would lie in the host space of 0::0/96
+prefix of IPv6. For any useful interpretation of IPv4, this is
+a non-starter.</p>
+<p>I think the only sensible conclusion is that IPv4 values and
+IPv6 values should be treated as non-comparable.</p>
+<p>Vint</p>
+</div></blockquote>
+</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id11">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-3144.txt">https://github.com/python/peps/blob/master/pep-3144.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-3144.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-3143.html">PEP 3143</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-3145.html">PEP 3145</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 3144 – IP Address Manipulation Library for the Python Standard Library</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#pep-acceptance">PEP Acceptance</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#background">Background</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

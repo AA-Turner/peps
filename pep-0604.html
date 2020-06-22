@@ -1,0 +1,309 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 604 – Complementary syntax for ``Union[]`` &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 605 – A rolling feature release stream for CPython" href="pep-0605.html" />
+    <link rel="prev" title="PEP 603 – Adding a frozenmap type to collections" href="pep-0603.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 604 – Complementary syntax for ``Union[]``</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-604-complementary-syntax-for-union">
+<h1 class="page-title">PEP 604 – Complementary syntax for ``Union[]``<a class="headerlink" href="#pep-604-complementary-syntax-for-union" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">604</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Complementary syntax for <code class="docutils literal notranslate"><span class="pre">Union[]</span></code></dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Philippe PRADOS &lt;python&#32;&#97;t&#32;prados.fr&gt;</dd>
+<dt class="field-even">Sponsor</dt>
+<dd class="field-even">Chris Angelico &lt;rosuav&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-odd">BDFL-Delegate</dt>
+<dd class="field-odd">Ivan Levkivskyi &lt;levkivskyi&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Draft</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">28-Aug-2019</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.9</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id8">Abstract</a></li>
+<li><a class="reference internal" href="#motivation" id="id9">Motivation</a></li>
+<li><a class="reference internal" href="#proposal" id="id10">Proposal</a></li>
+<li><a class="reference internal" href="#examples" id="id11">Examples</a></li>
+<li><a class="reference internal" href="#technical-point-of-view" id="id12">Technical point of view</a></li>
+<li><a class="reference internal" href="#incompatible-changes" id="id13">Incompatible changes</a></li>
+<li><a class="reference internal" href="#objections-and-responses" id="id14">Objections and responses</a><ul>
+<li><a class="reference internal" href="#add-a-new-operator-for-union-type1-type2" id="id15">1. Add a new operator for <code class="docutils literal notranslate"><span class="pre">Union[type1|type2]</span></code>?</a><ul>
+<li><a class="reference internal" href="#change-only-the-pep-484-type-hints-to-accept-the-syntax-type1-type2" id="id16">Change only the PEP 484 (Type hints) to accept the syntax <code class="docutils literal notranslate"><span class="pre">type1</span> <span class="pre">|</span> <span class="pre">type2</span></code> ?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#extend-isinstance-and-issubclass-to-accept-union" id="id17">2. Extend <code class="docutils literal notranslate"><span class="pre">isinstance()</span></code> and <code class="docutils literal notranslate"><span class="pre">issubclass()</span></code> to accept <code class="docutils literal notranslate"><span class="pre">Union</span></code> ?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#reference-implementation" id="id18">Reference Implementation</a></li>
+<li><a class="reference internal" href="#references" id="id19">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id20">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id8">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes a complementary syntax for <code class="docutils literal notranslate"><span class="pre">Union[X,Y]</span></code> and extends its
+purpose to <code class="docutils literal notranslate"><span class="pre">isinstance</span></code> and <code class="docutils literal notranslate"><span class="pre">issubclass</span></code>.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id9">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>PEP 484 and PEP 526 propose a generic syntax to add typing to variables,
+parameters and function returns. PEP 585 proposes to
+<a class="reference external" href="https://www.python.org/dev/peps/pep-0585/#id7">expose parameters to generics at runtime</a>.
+MyPy <a class="footnote-reference brackets" href="#id5" id="id1">1</a> accepts a syntax which looks like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>annotation: name_type
+name_type: NAME (args)?
+args: &#39;[&#39; paramslist &#39;]&#39;
+paramslist: annotation (&#39;,&#39; annotation)* [&#39;,&#39;]
+</pre></div>
+</div>
+<ul class="simple">
+<li>To describe a disjunction, the user must use <code class="docutils literal notranslate"><span class="pre">Union[X,Y]</span></code>.</li>
+</ul>
+<p>The verbosity of this syntax does not help the adoption.</p>
+</div>
+<div class="section" id="proposal">
+<h2><a class="toc-backref" href="#id10">Proposal</a><a class="headerlink" href="#proposal" title="Permalink to this headline">¶</a></h2>
+<p>Inspired by Scala language <a class="footnote-reference brackets" href="#id6" id="id2">2</a> and Pike <a class="footnote-reference brackets" href="#id7" id="id3">3</a>, this proposal adds operator <code class="docutils literal notranslate"><span class="pre">type.__or__()</span></code>.
+With this new operator, it is possible to write <code class="docutils literal notranslate"><span class="pre">int</span> <span class="pre">|</span> <span class="pre">str</span></code> instead of
+<code class="docutils literal notranslate"><span class="pre">Union[int,str]</span></code>. The result of this expression would then be valid in
+<code class="docutils literal notranslate"><span class="pre">isinstance()</span></code> and <code class="docutils literal notranslate"><span class="pre">issubclass()</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">isinstance</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span><span class="p">)</span>
+<span class="nb">issubclass</span><span class="p">(</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="examples">
+<h2><a class="toc-backref" href="#id11">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<p>Here are some examples of what we can do with this feature.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># in place of</span>
+<span class="c1"># def f(list: List[Union[int, str]], param: Optional[int]) -&gt; Union[float, str]</span>
+<span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="nb">list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span><span class="p">],</span> <span class="n">param</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">pass</span>
+
+<span class="n">f</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;abc&quot;</span><span class="p">],</span> <span class="kc">None</span><span class="p">)</span>
+
+<span class="k">assert</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">==</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span><span class="nb">int</span><span class="p">]</span>
+<span class="k">assert</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">==</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>
+
+<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span><span class="p">)</span>
+<span class="k">assert</span> <span class="nb">issubclass</span><span class="p">(</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Once the Python language is extended, MyPy <a class="footnote-reference brackets" href="#id5" id="id4">1</a> and other type checkers will
+need to be updated to accept this new syntax.</p>
+</div>
+<div class="section" id="technical-point-of-view">
+<h2><a class="toc-backref" href="#id12">Technical point of view</a><a class="headerlink" href="#technical-point-of-view" title="Permalink to this headline">¶</a></h2>
+<p>To accept to extend <code class="docutils literal notranslate"><span class="pre">isinstance()</span></code> and <code class="docutils literal notranslate"><span class="pre">issubclass()</span></code>, the object <code class="docutils literal notranslate"><span class="pre">_GenericAlias</span></code> must be available as a core,
+that doesn’t have a directly-accessible name but via alias in typing module..</p>
+</div>
+<div class="section" id="incompatible-changes">
+<h2><a class="toc-backref" href="#id13">Incompatible changes</a><a class="headerlink" href="#incompatible-changes" title="Permalink to this headline">¶</a></h2>
+<p>In some situations, some exceptions will not be raised as expected.</p>
+<p>For backward compatibility, <code class="docutils literal notranslate"><span class="pre">typing.py</span></code> must say <code class="docutils literal notranslate"><span class="pre">_GenericAlias</span> <span class="pre">=</span> <span class="pre">_GenericAlias</span></code>.</p>
+<p>If a metaclass implements the <code class="docutils literal notranslate"><span class="pre">__or__</span></code> operator, it will override this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">M</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
+<span class="gp">... </span>        <span class="k">def</span> <span class="fm">__or__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span> <span class="k">return</span> <span class="s2">&quot;Hello&quot;</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">C</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">M</span><span class="p">):</span><span class="k">pass</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">C</span> <span class="o">|</span> <span class="nb">int</span>
+<span class="go">&#39;Hello&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">int</span> <span class="o">|</span> <span class="n">C</span>
+<span class="go">typing.Union[int, __main__.C]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Union</span><span class="p">[</span><span class="n">C</span><span class="p">,</span><span class="nb">int</span><span class="p">]</span>
+<span class="go">typing.Union[__main__.C, int]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="objections-and-responses">
+<h2><a class="toc-backref" href="#id14">Objections and responses</a><a class="headerlink" href="#objections-and-responses" title="Permalink to this headline">¶</a></h2>
+<p>For more details about discussions, see links below:</p>
+<ul class="simple">
+<li><a class="reference external" href="https://mail.python.org/archives/list/python-ideas&#64;python.org/thread/FCTXGDT2NNKRJQ6CDEPWUXHVG2AAQZZY/">Discussion in python-ideas</a></li>
+<li><a class="reference external" href="https://mail.python.org/archives/list/typing-sig&#64;python.org/thread/D5HCB4NT4S3WSK33WI26WZSFEXCEMNHN/">Discussion in typing-sig</a></li>
+</ul>
+<div class="section" id="add-a-new-operator-for-union-type1-type2">
+<h3><a class="toc-backref" href="#id15">1. Add a new operator for <code class="docutils literal notranslate"><span class="pre">Union[type1|type2]</span></code>?</a><a class="headerlink" href="#add-a-new-operator-for-union-type1-type2" title="Permalink to this headline">¶</a></h3>
+<p>PROS:</p>
+<ul class="simple">
+<li>This syntax can be more readable, and is similary to others languages (Scala, …)</li>
+<li>At runtime, <code class="docutils literal notranslate"><span class="pre">int|str</span></code> might return a simple object in 3.9, rather than everything that
+you’d need to grab from importing <code class="docutils literal notranslate"><span class="pre">typing</span></code></li>
+</ul>
+<p>CONS:</p>
+<ul class="simple">
+<li>Adding this operator introduce a dependency between <code class="docutils literal notranslate"><span class="pre">typing</span></code> and <code class="docutils literal notranslate"><span class="pre">builtins</span></code></li>
+<li>As breaking the backport (in that <code class="docutils literal notranslate"><span class="pre">typing</span></code> can easily be backported but core <code class="docutils literal notranslate"><span class="pre">types</span></code> can’t)</li>
+<li>If Python itself doesn’t have to be changed, we’d still need to implement it in mypy, Pyre, PyCharm,
+Pytype, and who knows what else (it’s a minor change see “Reference Implementation”</li>
+</ul>
+<div class="section" id="change-only-the-pep-484-type-hints-to-accept-the-syntax-type1-type2">
+<h4><a class="toc-backref" href="#id16">Change only the PEP 484 (Type hints) to accept the syntax <code class="docutils literal notranslate"><span class="pre">type1</span> <span class="pre">|</span> <span class="pre">type2</span></code> ?</a><a class="headerlink" href="#change-only-the-pep-484-type-hints-to-accept-the-syntax-type1-type2" title="Permalink to this headline">¶</a></h4>
+<p>PEP 563 (Postponed Evaluation of Annotations) is enough to accept this proposition,
+if we accept to not be compatible with the dynamic evaluation of annotations (<code class="docutils literal notranslate"><span class="pre">eval()</span></code>).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">foo</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span><span class="p">:</span> <span class="k">pass</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">eval</span><span class="p">(</span><span class="n">foo</span><span class="o">.</span><span class="vm">__annotations__</span><span class="p">[</span><span class="s1">&#39;return&#39;</span><span class="p">])</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+  File <span class="nb">&quot;&lt;string&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">TypeError</span>: <span class="n">unsupported operand type(s) for |: &#39;type&#39; and &#39;type&#39;</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="extend-isinstance-and-issubclass-to-accept-union">
+<h3><a class="toc-backref" href="#id17">2. Extend <code class="docutils literal notranslate"><span class="pre">isinstance()</span></code> and <code class="docutils literal notranslate"><span class="pre">issubclass()</span></code> to accept <code class="docutils literal notranslate"><span class="pre">Union</span></code> ?</a><a class="headerlink" href="#extend-isinstance-and-issubclass-to-accept-union" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span><span class="p">)</span> <span class="o">==&gt;</span> <span class="s2">&quot;is x an instance of str or int&quot;</span>
+</pre></div>
+</div>
+<p>PROS:</p>
+<ul class="simple">
+<li>If they were permitted, then instance checking could use an extremely clean-looking notation</li>
+<li>The implementation can use the tuple present in <code class="docutils literal notranslate"><span class="pre">Union</span></code> parameter, without create a new instance</li>
+</ul>
+<p>CONS:</p>
+<ul class="simple">
+<li>Must migrate all the <code class="docutils literal notranslate"><span class="pre">typing</span></code> module in <code class="docutils literal notranslate"><span class="pre">builtin</span></code></li>
+</ul>
+</div>
+</div>
+<div class="section" id="reference-implementation">
+<h2><a class="toc-backref" href="#id18">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>A proposed implementation for <a class="reference external" href="https://github.com/pprados/cpython/tree/PEP604">cpython is here</a>.
+A proposed implementation for <a class="reference external" href="https://github.com/pprados/mypy/tree/PEP604">mypy is here</a>.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id19">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id5"><span class="brackets">1</span><span class='fn-backref'><em> (<a href="#id1">1</a>, <a href="#id4">2</a>) </em></span></dt>
+<dd>MyPy
+<a class="reference external" href="http://mypy-lang.org/">http://mypy-lang.org/</a></dd>
+<dt class="label" id="id6"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>Scala Union Types
+<a class="reference external" href="https://dotty.epfl.ch/docs/reference/new-types/union-types.html">https://dotty.epfl.ch/docs/reference/new-types/union-types.html</a></dd>
+<dt class="label" id="id7"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd>Pike
+<a class="reference external" href="http://pike.lysator.liu.se/docs/man/chapter_3.html#3.5">http://pike.lysator.liu.se/docs/man/chapter_3.html#3.5</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id20">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document is placed in the public domain or under the CC0-1.0-Universal license, whichever is more permissive.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0604.rst">https://github.com/python/peps/blob/master/pep-0604.rst</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0604.rst.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0603.html">PEP 0603</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0605.html">PEP 0605</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 604 – Complementary syntax for ``Union[]``</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#proposal">Proposal</a></li>
+<li><a class="reference internal" href="#examples">Examples</a></li>
+<li><a class="reference internal" href="#technical-point-of-view">Technical point of view</a></li>
+<li><a class="reference internal" href="#incompatible-changes">Incompatible changes</a></li>
+<li><a class="reference internal" href="#objections-and-responses">Objections and responses</a><ul>
+<li><a class="reference internal" href="#add-a-new-operator-for-union-type1-type2">1. Add a new operator for <code class="docutils literal notranslate"><span class="pre">Union[type1|type2]</span></code>?</a><ul>
+<li><a class="reference internal" href="#change-only-the-pep-484-type-hints-to-accept-the-syntax-type1-type2">Change only the PEP 484 (Type hints) to accept the syntax <code class="docutils literal notranslate"><span class="pre">type1</span> <span class="pre">|</span> <span class="pre">type2</span></code> ?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#extend-isinstance-and-issubclass-to-accept-union">2. Extend <code class="docutils literal notranslate"><span class="pre">isinstance()</span></code> and <code class="docutils literal notranslate"><span class="pre">issubclass()</span></code> to accept <code class="docutils literal notranslate"><span class="pre">Union</span></code> ?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

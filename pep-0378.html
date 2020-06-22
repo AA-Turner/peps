@@ -1,0 +1,340 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 378 – Format Specifier for Thousands Separator &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 379 – Adding an Assignment Expression" href="pep-0379.html" />
+    <link rel="prev" title="PEP 377 – Allow __enter__() methods to skip the statement body" href="pep-0377.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 378 – Format Specifier for Thousands Separator</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-378-format-specifier-for-thousands-separator">
+<h1 class="page-title">PEP 378 – Format Specifier for Thousands Separator<a class="headerlink" href="#pep-378-format-specifier-for-thousands-separator" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">378</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Format Specifier for Thousands Separator</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Raymond Hettinger &lt;python&#32;&#97;t&#32;rcn.com&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">12-Mar-2009</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.7 and 3.1</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">12-Mar-2009</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#motivation" id="id20">Motivation</a></li>
+<li><a class="reference internal" href="#main-proposal-from-nick-coghlan-originally-called-proposal-i" id="id21">Main Proposal (from Nick Coghlan, originally called Proposal I)</a></li>
+<li><a class="reference internal" href="#current-version-of-the-mini-language" id="id22">Current Version of the Mini-Language</a></li>
+<li><a class="reference internal" href="#research-into-what-other-languages-do" id="id23">Research into what Other Languages Do</a></li>
+<li><a class="reference internal" href="#alternative-proposal-from-eric-smith-originally-called-proposal-ii" id="id24">Alternative Proposal (from Eric Smith, originally called Proposal II)</a></li>
+<li><a class="reference internal" href="#commentary" id="id25">Commentary</a></li>
+<li><a class="reference internal" href="#id1" id="id26">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id27">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id20">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>Provide a simple, non-locale aware way to format a number
+with a thousands separator.</p>
+<p>Adding thousands separators is one of the simplest ways to
+humanize a program’s output, improving its professional appearance
+and readability.</p>
+<p>In the finance world, output with thousands separators is the norm.
+Finance users and non-professional programmers find the locale
+approach to be frustrating, arcane and non-obvious.</p>
+<p>The locale module presents two other challenges.  First, it is
+a global setting and not suitable for multi-threaded apps that
+need to serve-up requests in multiple locales.  Second, the
+name of a relevant locale (such as “de_DE”) can vary from
+platform to platform or may not be defined at all.  The docs
+for the locale module describe these and <a class="reference external" href="https://docs.python.org/2.6/library/locale.html#background-details-hints-tips-and-caveats">many other challenges</a> <a class="footnote-reference brackets" href="#id2" id="id3">1</a>
+in detail.</p>
+<p>It is not the goal to replace the locale module, to perform
+internationalization tasks, or accommodate every possible
+convention.  Such tasks are better suited to robust tools like
+<a class="reference external" href="http://babel.edgewall.org/">Babel</a> <a class="footnote-reference brackets" href="#id4" id="id5">2</a>. Instead, the goal is to make a common, everyday
+task easier for many users.</p>
+</div>
+<div class="section" id="main-proposal-from-nick-coghlan-originally-called-proposal-i">
+<h2><a class="toc-backref" href="#id21">Main Proposal (from Nick Coghlan, originally called Proposal I)</a><a class="headerlink" href="#main-proposal-from-nick-coghlan-originally-called-proposal-i" title="Permalink to this headline">¶</a></h2>
+<p>A comma will be added to the format() specifier mini-language:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[[</span><span class="n">fill</span><span class="p">]</span><span class="n">align</span><span class="p">][</span><span class="n">sign</span><span class="p">][</span><span class="c1">#][0][width][,][.precision][type]</span>
+</pre></div>
+</div>
+<p>The ‘,’ option indicates that commas should be included in the
+output as a thousands separator. As with locales which do not
+use a period as the decimal point, locales which use a
+different convention for digit separation will need to use the
+locale module to obtain appropriate formatting.</p>
+<p>The proposal works well with floats, ints, and decimals.
+It also allows easy substitution for other separators.
+For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">format</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="s2">&quot;6,d&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This technique is completely general but it is awkward in the
+one case where the commas and periods need to be swapped:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">format</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="s2">&quot;6,f&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">,</span> <span class="s2">&quot;X&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="s2">&quot;,&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;X&quot;</span><span class="p">,</span> <span class="s2">&quot;.&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <em>width</em> argument means the total length including the commas
+and decimal point:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">format</span><span class="p">(</span><span class="mi">1234</span><span class="p">,</span> <span class="s2">&quot;08,d&quot;</span><span class="p">)</span>     <span class="o">--&gt;</span>    <span class="s1">&#39;0001,234&#39;</span>
+<span class="nb">format</span><span class="p">(</span><span class="mf">1234.5</span><span class="p">,</span> <span class="s2">&quot;08,.1f&quot;</span><span class="p">)</span> <span class="o">--&gt;</span>    <span class="s1">&#39;01,234.5&#39;</span>
+</pre></div>
+</div>
+<p>The ‘,’ option is defined as shown above for types ‘d’, ‘e’,
+‘f’, ‘g’, ‘E’, ‘G’, ‘%’, ‘F’ and ‘’. To allow future extensions, it is
+undefined for other types: binary, octal, hex, character,
+etc.</p>
+<p>This proposal has the virtue of being simpler than the alternative
+proposal but is much less flexible and meets the needs of fewer
+users right out of the box.  It is expected that some other
+solution will arise for specifying alternative separators.</p>
+</div>
+<div class="section" id="current-version-of-the-mini-language">
+<h2><a class="toc-backref" href="#id22">Current Version of the Mini-Language</a><a class="headerlink" href="#current-version-of-the-mini-language" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference external" href="https://docs.python.org/2.6/library/string.html#formatstrings">Python 2.6 docs</a> <a class="footnote-reference brackets" href="#id6" id="id7">3</a></li>
+<li>PEP 3101 Advanced String Formatting</li>
+</ul>
+</div>
+<div class="section" id="research-into-what-other-languages-do">
+<h2><a class="toc-backref" href="#id23">Research into what Other Languages Do</a><a class="headerlink" href="#research-into-what-other-languages-do" title="Permalink to this headline">¶</a></h2>
+<p>Scanning the web, I’ve found that thousands separators are
+usually one of COMMA, DOT, SPACE, APOSTROPHE or UNDERSCORE.</p>
+<p><a class="reference external" href="http://blog.stevex.net/index.php/string-formatting-in-csharp/">C-Sharp</a> <a class="footnote-reference brackets" href="#id8" id="id9">4</a> provides both styles (picture formatting and type specifiers).
+The type specifier approach is locale aware.  The picture formatting only
+offers a COMMA as a thousands separator:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">String</span><span class="o">.</span><span class="n">Format</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0:n}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="mi">12400</span><span class="p">)</span>     <span class="o">==&gt;</span>    <span class="s2">&quot;12,400&quot;</span>
+<span class="n">String</span><span class="o">.</span><span class="n">Format</span><span class="p">(</span><span class="s2">&quot;{0:0,0}&quot;</span><span class="p">,</span> <span class="mi">12400</span><span class="p">)</span>   <span class="o">==&gt;</span>    <span class="s2">&quot;12,400&quot;</span>
+</pre></div>
+</div>
+<p><a class="reference external" href="http://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node200.html">Common Lisp</a> <a class="footnote-reference brackets" href="#id10" id="id11">5</a> uses a COLON before the <code class="docutils literal notranslate"><span class="pre">~D</span></code> decimal type specifier to
+emit a COMMA as a thousands separator.  The  general form of <code class="docutils literal notranslate"><span class="pre">~D</span></code> is
+<code class="docutils literal notranslate"><span class="pre">~mincol,padchar,commachar,commaintervalD</span></code>.  The <em>padchar</em> defaults
+to SPACE.  The <em>commachar</em> defaults to COMMA.  The <em>commainterval</em>
+defaults to three.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="nb">format</span> <span class="n">nil</span> <span class="s2">&quot;~:D&quot;</span> <span class="mi">229345007</span><span class="p">)</span>   <span class="o">=&gt;</span>   <span class="s2">&quot;229,345,007&quot;</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li>The <a class="reference external" href="http://archive.adaic.com/standards/83lrm/html/lrm-02-04.html">ADA language</a> <a class="footnote-reference brackets" href="#id12" id="id13">6</a> allows UNDERSCORES in its numeric literals.</li>
+</ul>
+<p>Visual Basic and its brethren (like <a class="reference external" href="http://www.brainbell.com/tutorials/ms-office/excel/Create_Custom_Number_Formats.htm">MS Excel</a> <a class="footnote-reference brackets" href="#id14" id="id15">7</a>) use a completely
+different style and have ultra-flexible custom format
+specifiers like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;_($* #,##0_)&quot;</span><span class="o">.</span>
+</pre></div>
+</div>
+<p><a class="reference external" href="http://en.wikipedia.org/wiki/Cobol#Syntactic_features">COBOL</a> <a class="footnote-reference brackets" href="#id16" id="id17">8</a> uses picture clauses like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>PICTURE $***,**9.99CR
+</pre></div>
+</div>
+<p>Java offers a <a class="reference external" href="http://java.sun.com/javase/6/docs/api/java/text/DecimalFormat.html">Decimal.Format Class</a> <a class="footnote-reference brackets" href="#id18" id="id19">9</a> that uses picture patterns (one
+for positive numbers and an optional one for negatives) such as:
+<code class="docutils literal notranslate"><span class="pre">&quot;#,##0.00;(#,##0.00)&quot;</span></code>. It allows arbitrary groupings including
+hundreds and ten-thousands and uneven groupings.  The special pattern
+characters are non-localized (using a DOT for a decimal separator and
+a COMMA for a grouping separator).  The user can supply an alternate
+set of symbols using the formatter’s <em>DecimalFormatSymbols</em> object.</p>
+</div>
+<div class="section" id="alternative-proposal-from-eric-smith-originally-called-proposal-ii">
+<h2><a class="toc-backref" href="#id24">Alternative Proposal (from Eric Smith, originally called Proposal II)</a><a class="headerlink" href="#alternative-proposal-from-eric-smith-originally-called-proposal-ii" title="Permalink to this headline">¶</a></h2>
+<p>Make both the thousands separator and decimal separator user
+specifiable but not locale aware.  For simplicity, limit the
+choices to a COMMA, DOT, SPACE, APOSTROPHE or UNDERSCORE.
+The SPACE can be either U+0020 or U+00A0.</p>
+<p>Whenever a separator is followed by a precision, it is a
+decimal separator and an optional separator preceding it is a
+thousands separator.  When the precision is absent, a lone
+specifier means a thousands separator:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[[</span><span class="n">fill</span><span class="p">]</span><span class="n">align</span><span class="p">][</span><span class="n">sign</span><span class="p">][</span><span class="c1">#][0][width][tsep][dsep precision][type]</span>
+</pre></div>
+</div>
+<p>Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">format</span><span class="p">(</span><span class="mi">1234</span><span class="p">,</span> <span class="s2">&quot;8.1f&quot;</span><span class="p">)</span>     <span class="o">--&gt;</span>    <span class="s1">&#39;  1234.0&#39;</span>
+<span class="nb">format</span><span class="p">(</span><span class="mi">1234</span><span class="p">,</span> <span class="s2">&quot;8,1f&quot;</span><span class="p">)</span>     <span class="o">--&gt;</span>    <span class="s1">&#39;  1234,0&#39;</span>
+<span class="nb">format</span><span class="p">(</span><span class="mi">1234</span><span class="p">,</span> <span class="s2">&quot;8.,1f&quot;</span><span class="p">)</span>    <span class="o">--&gt;</span>    <span class="s1">&#39; 1.234,0&#39;</span>
+<span class="nb">format</span><span class="p">(</span><span class="mi">1234</span><span class="p">,</span> <span class="s2">&quot;8 ,f&quot;</span><span class="p">)</span>     <span class="o">--&gt;</span>    <span class="s1">&#39; 1 234,0&#39;</span>
+<span class="nb">format</span><span class="p">(</span><span class="mi">1234</span><span class="p">,</span> <span class="s2">&quot;8d&quot;</span><span class="p">)</span>       <span class="o">--&gt;</span>    <span class="s1">&#39;    1234&#39;</span>
+<span class="nb">format</span><span class="p">(</span><span class="mi">1234</span><span class="p">,</span> <span class="s2">&quot;8,d&quot;</span><span class="p">)</span>      <span class="o">--&gt;</span>    <span class="s1">&#39;   1,234&#39;</span>
+<span class="nb">format</span><span class="p">(</span><span class="mi">1234</span><span class="p">,</span> <span class="s2">&quot;8_d&quot;</span><span class="p">)</span>      <span class="o">--&gt;</span>    <span class="s1">&#39;   1_234&#39;</span>
+</pre></div>
+</div>
+<p>This proposal meets mosts needs, but it comes at the expense
+of taking a bit more effort to parse.  Not every possible
+convention is covered, but at least one of the options (spaces
+or underscores) should be readable, understandable, and useful
+to folks from many diverse backgrounds.</p>
+<p>As shown in the examples, the <em>width</em> argument means the total
+length including the thousands separators and decimal separators.</p>
+<p>No change is proposed for the locale module.</p>
+<p>The thousands separator is defined as shown above for types
+‘d’, ‘e’, ‘f’, ‘g’, ‘%’, ‘E’, ‘G’ and ‘F’. To allow future
+extensions, it is undefined for other types: binary, octal,
+hex, character, etc.</p>
+<p>The drawback to this alternative proposal is the difficulty
+of mentally parsing whether a single separator is a thousands
+separator or decimal separator.  Perhaps it is too arcane
+to link the decimal separator with the precision specifier.</p>
+</div>
+<div class="section" id="commentary">
+<h2><a class="toc-backref" href="#id25">Commentary</a><a class="headerlink" href="#commentary" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Some commenters do not like the idea of format strings at all
+and find them to be unreadable.  Suggested alternatives include
+the COBOL style PICTURE approach or a convenience function with
+keyword arguments for every possible combination.</li>
+<li>Some newsgroup respondants think there is no place for any
+scripts that are not internationalized and that it is a step
+backwards to provide a simple way to hardwire a particular choice
+(thus reducing incentive to use a locale sensitive approach).</li>
+<li>Another thought is that embedding some particular convention in
+individual format strings makes it hard to change that convention
+later.  No workable alternative was suggested but the general idea
+is to set the convention once and have it apply everywhere (others
+commented that locale already provides a way to do this).</li>
+<li>There are some precedents for grouping digits in the fractional
+part of a floating point number, but this PEP does not venture into
+that territory.  Only digits to the left of the decimal point are
+grouped.  This does not preclude future extensions; it just focuses
+on a single, generally useful extension to the formatting language.</li>
+<li>James Knight observed that Indian/Pakistani numbering systems
+group by hundreds.   Ben Finney noted that Chinese group by
+ten-thousands.  Eric Smith pointed-out that these are already
+handled by the “n” specifier in the locale module (albeit only
+for integers).  This PEP does not attempt to support all of those
+possibilities.  It focuses on a single, relatively common grouping
+convention that offers a quick way to improve readability in many
+(though not all) contexts.</li>
+</ul>
+</div>
+<div class="section" id="id1">
+<h2><a class="toc-backref" href="#id26">References</a><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id3">1</a></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/2.6/library/locale.html#background-details-hints-tips-and-caveats">https://docs.python.org/2.6/library/locale.html#background-details-hints-tips-and-caveats</a></dd>
+<dt class="label" id="id4"><span class="brackets"><a class="fn-backref" href="#id5">2</a></span></dt>
+<dd><a class="reference external" href="http://babel.edgewall.org/">http://babel.edgewall.org/</a></dd>
+<dt class="label" id="id6"><span class="brackets"><a class="fn-backref" href="#id7">3</a></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/2.6/library/string.html#formatstrings">https://docs.python.org/2.6/library/string.html#formatstrings</a></dd>
+<dt class="label" id="id8"><span class="brackets"><a class="fn-backref" href="#id9">4</a></span></dt>
+<dd><a class="reference external" href="http://blog.stevex.net/index.php/string-formatting-in-csharp/">http://blog.stevex.net/index.php/string-formatting-in-csharp/</a></dd>
+<dt class="label" id="id10"><span class="brackets"><a class="fn-backref" href="#id11">5</a></span></dt>
+<dd><a class="reference external" href="http://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node200.html">http://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node200.html</a></dd>
+<dt class="label" id="id12"><span class="brackets"><a class="fn-backref" href="#id13">6</a></span></dt>
+<dd><a class="reference external" href="http://archive.adaic.com/standards/83lrm/html/lrm-02-04.html">http://archive.adaic.com/standards/83lrm/html/lrm-02-04.html</a></dd>
+<dt class="label" id="id14"><span class="brackets"><a class="fn-backref" href="#id15">7</a></span></dt>
+<dd><a class="reference external" href="http://www.brainbell.com/tutorials/ms-office/excel/Create_Custom_Number_Formats.htm">http://www.brainbell.com/tutorials/ms-office/excel/Create_Custom_Number_Formats.htm</a></dd>
+<dt class="label" id="id16"><span class="brackets"><a class="fn-backref" href="#id17">8</a></span></dt>
+<dd><a class="reference external" href="http://en.wikipedia.org/wiki/Cobol#Syntactic_features">http://en.wikipedia.org/wiki/Cobol#Syntactic_features</a></dd>
+<dt class="label" id="id18"><span class="brackets"><a class="fn-backref" href="#id19">9</a></span></dt>
+<dd><a class="reference external" href="http://java.sun.com/javase/6/docs/api/java/text/DecimalFormat.html">http://java.sun.com/javase/6/docs/api/java/text/DecimalFormat.html</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id27">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0378.txt">https://github.com/python/peps/blob/master/pep-0378.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0378.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0377.html">PEP 0377</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0379.html">PEP 0379</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 378 – Format Specifier for Thousands Separator</a><ul>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#main-proposal-from-nick-coghlan-originally-called-proposal-i">Main Proposal (from Nick Coghlan, originally called Proposal I)</a></li>
+<li><a class="reference internal" href="#current-version-of-the-mini-language">Current Version of the Mini-Language</a></li>
+<li><a class="reference internal" href="#research-into-what-other-languages-do">Research into what Other Languages Do</a></li>
+<li><a class="reference internal" href="#alternative-proposal-from-eric-smith-originally-called-proposal-ii">Alternative Proposal (from Eric Smith, originally called Proposal II)</a></li>
+<li><a class="reference internal" href="#commentary">Commentary</a></li>
+<li><a class="reference internal" href="#id1">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

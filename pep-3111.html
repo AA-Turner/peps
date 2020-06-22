@@ -1,0 +1,261 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 3111 – Simple input built-in in Python 3000 &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 3112 – Bytes literals in Python 3000" href="pep-3112.html" />
+    <link rel="prev" title="PEP 3110 – Catching Exceptions in Python 3000" href="pep-3110.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 3111 – Simple input built-in in Python 3000</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-3111-simple-input-built-in-in-python-3000">
+<h1 class="page-title">PEP 3111 – Simple input built-in in Python 3000<a class="headerlink" href="#pep-3111-simple-input-built-in-in-python-3000" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">3111</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Simple input built-in in Python 3000</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Andre Roberge &lt;andre.roberge at gmail.com &gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">13-Sep-2006</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.0</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">22-Dec-2006</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id12">Abstract</a></li>
+<li><a class="reference internal" href="#motivation" id="id13">Motivation</a></li>
+<li><a class="reference internal" href="#rationale" id="id14">Rationale</a></li>
+<li><a class="reference internal" href="#specification" id="id15">Specification</a></li>
+<li><a class="reference internal" href="#naming-discussion" id="id16">Naming Discussion</a></li>
+<li><a class="reference internal" href="#references" id="id17">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id18">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id12">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Input and output are core features of computer programs.  Currently,
+Python provides a simple means of output through the print keyword
+and two simple means of interactive input through the input()
+and raw_input() built-in functions.</p>
+<p>Python 3.0 will introduce various incompatible changes with previous
+Python versions<a class="footnote-reference brackets" href="#id7" id="id1">1</a>.  Among the proposed changes, print will become a built-in
+function, print(), while input() and raw_input() would be removed completely
+from the built-in namespace, requiring importing some module to provide
+even the most basic input capability.</p>
+<p>This PEP proposes that Python 3.0 retains some simple interactive user
+input capability, equivalent to raw_input(), within the built-in namespace.</p>
+<p>It was accepted by the BDFL in December 2006 <a class="footnote-reference brackets" href="#id11" id="id2">5</a>.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id13">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>With its easy readability and its support for many programming styles
+(e.g. procedural, object-oriented, etc.) among others, Python is perhaps
+the best computer language to use in introductory programming classes.
+Simple programs often need to provide information to the user (output)
+and to obtain information from the user (interactive input).
+Any computer language intended to be used in an educational setting should
+provide straightforward methods for both output and interactive input.</p>
+<p>The current proposals for Python 3.0 <a class="footnote-reference brackets" href="#id7" id="id3">1</a> include a simple output pathway
+via a built-in function named print(), but a more complicated method for
+input [e.g. via sys.stdin.readline()], one that requires importing an external
+module.  Current versions of Python (pre-3.0) include raw_input() as a
+built-in function.  With the availability of such a function, programs that
+require simple input/output can be written from day one, without requiring
+discussions of importing modules, streams, etc.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id14">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Current built-in functions, like input() and raw_input(), are found to be
+extremely useful in traditional teaching settings. (For more details,
+see <a class="footnote-reference brackets" href="#id8" id="id4">2</a> and the discussion that followed.)
+While the BDFL has clearly stated <a class="footnote-reference brackets" href="#id9" id="id5">3</a> that input() was not to be kept in
+Python 3000, he has also stated that he was not against revising the
+decision of killing raw_input().</p>
+<p>raw_input() provides a simple mean to ask a question and obtain a response
+from a user.  The proposed plans for Python 3.0 would require the replacement
+of the single statement:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">name</span> <span class="o">=</span> <span class="n">raw_input</span><span class="p">(</span><span class="s2">&quot;What is your name?&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>by the more complicated:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;What is your name?&quot;</span><span class="p">)</span>
+<span class="n">same</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>However, from the point of view of many Python beginners and educators, the
+use of sys.stdin.readline() presents the following problems:</p>
+<p>1. Compared to the name “raw_input”, the name “sys.stdin.readline()”
+is clunky and inelegant.</p>
+<p>2. The names “sys” and “stdin” have no meaning for most beginners,
+who are mainly interested in <em>what</em> the function does, and not <em>where</em>
+in the package structure it is located.  The lack of meaning also makes
+it difficult to remember:
+is it “sys.stdin.readline()”, or ” stdin.sys.readline()”?
+To a programming novice, there is not any obvious reason to prefer
+one over the other. In contrast, functions simple and direct names like
+print, input, and raw_input, and open are easier to remember.</p>
+<p>3. The use of “.” notation is unmotivated and confusing to many beginners.
+For example, it may lead some beginners to think “.”  is a standard
+character that could be used in any identifier.</p>
+<p>4. There is an asymmetry with the print function: why is print not called
+sys.stdout.print()?</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id15">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>The existing <code class="docutils literal notranslate"><span class="pre">raw_input()</span></code> function will be renamed to <code class="docutils literal notranslate"><span class="pre">input()</span></code>.</p>
+<p>The Python 2 to 3 conversion tool will replace calls to <code class="docutils literal notranslate"><span class="pre">input()</span></code> with
+<code class="docutils literal notranslate"><span class="pre">eval(input())</span></code> and <code class="docutils literal notranslate"><span class="pre">raw_input()</span></code> with <code class="docutils literal notranslate"><span class="pre">input()</span></code>.</p>
+</div>
+<div class="section" id="naming-discussion">
+<h2><a class="toc-backref" href="#id16">Naming Discussion</a><a class="headerlink" href="#naming-discussion" title="Permalink to this headline">¶</a></h2>
+<p>With <code class="docutils literal notranslate"><span class="pre">input()</span></code> effectively removed from the language,
+the name <code class="docutils literal notranslate"><span class="pre">raw_input()</span></code> makes much less sense and alternatives should be
+considered.  The various possibilities mentioned in various forums include:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ask</span><span class="p">()</span>
+<span class="n">ask_user</span><span class="p">()</span>
+<span class="n">get_string</span><span class="p">()</span>
+<span class="nb">input</span><span class="p">()</span>  <span class="c1"># initially rejected by BDFL, later accepted</span>
+<span class="n">prompt</span><span class="p">()</span>
+<span class="n">read</span><span class="p">()</span>
+<span class="n">user_input</span><span class="p">()</span>
+<span class="n">get_response</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>While it was initially rejected by the BDFL, it has been suggested that the
+most direct solution would be to rename “raw_input” to “input” in Python 3000.
+The main objection is that Python 2.x already has a function named “input”,
+and, even though it is not going to be included in Python 3000,
+having a built-in function with the same name but different semantics may
+confuse programmers migrating from 2.x to 3000.  Certainly, this is no problem
+for beginners, and the scope of the problem is unclear for more experienced
+programmers, since raw_input(), while popular with many, is not in
+universal use.  In this instance, the good it does for beginners could be
+seen to outweigh the harm it does to experienced programmers -
+although it could cause confusion for people reading older books or tutorials.</p>
+<p>The rationale for accepting the renaming can be found here <a class="footnote-reference brackets" href="#id10" id="id6">4</a>.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id17">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id7"><span class="brackets">1</span><span class='fn-backref'><em> (<a href="#id1">1</a>, <a href="#id3">2</a>) </em></span></dt>
+<dd>PEP 3100, Miscellaneous Python 3.0 Plans, Kuchling, Cannon
+<a class="reference external" href="http://www.python.org/dev/peps/pep-3100/">http://www.python.org/dev/peps/pep-3100/</a></dd>
+<dt class="label" id="id8"><span class="brackets"><a class="fn-backref" href="#id4">2</a></span></dt>
+<dd>The fate of raw_input() in Python 3000
+<a class="reference external" href="https://mail.python.org/pipermail/edu-sig/2006-September/006967.html">https://mail.python.org/pipermail/edu-sig/2006-September/006967.html</a></dd>
+<dt class="label" id="id9"><span class="brackets"><a class="fn-backref" href="#id5">3</a></span></dt>
+<dd>Educational aspects of Python 3000
+<a class="reference external" href="https://mail.python.org/pipermail/python-3000/2006-September/003589.html">https://mail.python.org/pipermail/python-3000/2006-September/003589.html</a></dd>
+<dt class="label" id="id10"><span class="brackets"><a class="fn-backref" href="#id6">4</a></span></dt>
+<dd>Rationale for going with the straight renaming
+<a class="reference external" href="https://mail.python.org/pipermail/python-3000/2006-December/005249.html">https://mail.python.org/pipermail/python-3000/2006-December/005249.html</a></dd>
+<dt class="label" id="id11"><span class="brackets"><a class="fn-backref" href="#id2">5</a></span></dt>
+<dd>BDFL acceptance of the PEP
+<a class="reference external" href="https://mail.python.org/pipermail/python-3000/2006-December/005257.html">https://mail.python.org/pipermail/python-3000/2006-December/005257.html</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id18">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-3111.txt">https://github.com/python/peps/blob/master/pep-3111.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-3111.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-3110.html">PEP 3110</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-3112.html">PEP 3112</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 3111 – Simple input built-in in Python 3000</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#naming-discussion">Naming Discussion</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

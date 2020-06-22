@@ -1,0 +1,411 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 588 – GitHub Issues Migration Plan &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 589 – TypedDict: Type Hints for Dictionaries with a Fixed Set of Keys" href="pep-0589.html" />
+    <link rel="prev" title="PEP 587 – Python Initialization Configuration" href="pep-0587.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 588 – GitHub Issues Migration Plan</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-588-github-issues-migration-plan">
+<h1 class="page-title">PEP 588 – GitHub Issues Migration Plan<a class="headerlink" href="#pep-588-github-issues-migration-plan" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">588</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">GitHub Issues Migration Plan</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Mariatta &lt;mariatta&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even">Barry Warsaw &lt;barry&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-odd">Discussions-To</dt>
+<dd class="field-odd">Core-Workflow Category on Discourse</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Draft</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Informational</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">27-Mar-2019</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id13">Abstract</a></li>
+<li><a class="reference internal" href="#migration-plan" id="id14">Migration Plan</a><ul>
+<li><a class="reference internal" href="#hire-a-professional-project-manager" id="id15">Hire a professional project manager</a></li>
+<li><a class="reference internal" href="#create-a-playground-cpython-issue-tracker-on-github" id="id16">Create a playground CPython issue tracker on GitHub</a></li>
+<li><a class="reference internal" href="#backup-of-github-data" id="id17">Backup of GitHub data</a></li>
+<li><a class="reference internal" href="#update-the-cla-host" id="id18">Update the CLA host</a></li>
+<li><a class="reference internal" href="#create-python-triage-team-on-github" id="id19">Create “Python Triage” team on GitHub</a></li>
+<li><a class="reference internal" href="#create-labels-for-issue-triage" id="id20">Create labels for issue triage</a></li>
+<li><a class="reference internal" href="#create-issue-templates" id="id21">Create issue templates</a></li>
+<li><a class="reference internal" href="#updates-to-bedevere" id="id22">Updates to bedevere</a></li>
+<li><a class="reference internal" href="#update-the-devguide" id="id23">Update the devguide</a></li>
+<li><a class="reference internal" href="#add-a-button-in-bpo-to-migrate-the-issue-to-github" id="id24">Add a button in bpo to migrate the issue to GitHub</a></li>
+<li><a class="reference internal" href="#migrated-issues" id="id25">Migrated issues</a></li>
+<li><a class="reference internal" href="#make-bpo-read-only" id="id26">Make bpo read-only</a></li>
+<li><a class="reference internal" href="#mapping-between-issues-from-bpo-and-github" id="id27">Mapping between issues from bpo and GitHub</a></li>
+<li><a class="reference internal" href="#nosy-ing-the-expert" id="id28">Nosy-ing the expert</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#open-issues" id="id29">Open issues</a><ul>
+<li><a class="reference internal" href="#a-github-account-should-not-be-a-requirement" id="id30">A GitHub account should not be a requirement</a></li>
+<li><a class="reference internal" href="#trim-off-the-components-list" id="id31">Trim off the “Components” list</a></li>
+<li><a class="reference internal" href="#priority-list" id="id32">Priority list</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#further-questions-and-discussions" id="id33">Further questions and discussions</a></li>
+<li><a class="reference internal" href="#acknowledgements" id="id34">Acknowledgements</a></li>
+<li><a class="reference internal" href="#references" id="id35">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id36">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id13">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP describes the detailed plan for migrating from Python’s issue
+tracker on Roundup to GitHub issues.  See PEP 581 for rationale and
+background.  PEP 588 also describes the detailed timeline for the
+migration.</p>
+</div>
+<div class="section" id="migration-plan">
+<h2><a class="toc-backref" href="#id14">Migration Plan</a><a class="headerlink" href="#migration-plan" title="Permalink to this headline">¶</a></h2>
+<p>Here we outline the tasks, steps, and core decisions we need to make
+in order to migrate bug tracking to GitHub, with the least impact on
+CPython developer productivity.</p>
+<div class="section" id="hire-a-professional-project-manager">
+<h3><a class="toc-backref" href="#id15">Hire a professional project manager</a><a class="headerlink" href="#hire-a-professional-project-manager" title="Permalink to this headline">¶</a></h3>
+<p>Having a professional project manager to handle the migration, similar to how
+the Warehouse project was managed, would help ensure the success of this project.</p>
+</div>
+<div class="section" id="create-a-playground-cpython-issue-tracker-on-github">
+<h3><a class="toc-backref" href="#id16">Create a playground CPython issue tracker on GitHub</a><a class="headerlink" href="#create-a-playground-cpython-issue-tracker-on-github" title="Permalink to this headline">¶</a></h3>
+<p>We should create a playground issue tracker on GitHub where we can experiment
+and test out the new workflow.</p>
+</div>
+<div class="section" id="backup-of-github-data">
+<h3><a class="toc-backref" href="#id17">Backup of GitHub data</a><a class="headerlink" href="#backup-of-github-data" title="Permalink to this headline">¶</a></h3>
+<p>This effort has been started and is being tracked as an issue in
+core-workflow <a class="footnote-reference brackets" href="#id7" id="id1">1</a>. We’re using GitHub’s Migrations API <a class="footnote-reference brackets" href="#id8" id="id2">2</a> to
+download GitHub data for CPython on a daily basis. The archives will
+be dropped in a S3 bucket.</p>
+<p>Thanks to Ernest W. Durbin III for working on this.</p>
+</div>
+<div class="section" id="update-the-cla-host">
+<h3><a class="toc-backref" href="#id18">Update the CLA host</a><a class="headerlink" href="#update-the-cla-host" title="Permalink to this headline">¶</a></h3>
+<p>At the moment, the CLA is hosted within bpo. It needs to be updated such that
+signing the CLA does not require a bpo account, and it should be hosted outside
+of the bpo.</p>
+<p>The current CLA process itself is not ideal. Currently, contributors to
+devguide, peps, and core-workflow need to sign a CLA, and it requires a bpo
+account. A bpo account should not be required for those projects.</p>
+<p>There is an ongoing effort to start using our own instance of CLA
+assistant instead of the current CLA process in place. Discussion
+about this has been started in <a class="reference external" href="https://mail.python.org/archives/list/core-workflow&#64;python.org/thread/JBV3XJVD2DLDX5DY7TZEA6CO5YPNHJ2C/">core-workflow mailing list</a>
+as well as on <a class="reference external" href="https://discuss.python.org/t/using-cla-assistant-for-python/990">Discourse</a>.</p>
+<p>This effort <a class="reference external" href="https://discuss.python.org/t/cla-assistant-is-no-go/2066/">is currently stalled</a>
+because cla-assistant does not yet support CLA signed on behalf of organization.</p>
+</div>
+<div class="section" id="create-python-triage-team-on-github">
+<h3><a class="toc-backref" href="#id19">Create “Python Triage” team on GitHub</a><a class="headerlink" href="#create-python-triage-team-on-github" title="Permalink to this headline">¶</a></h3>
+<p>The bug triagers on bpo are valuable to the core Python workflow, and we
+definitely would need even more help with triaging issues on GitHub.</p>
+<p>It has been <a class="reference external" href="https://discuss.python.org/t/proposal-create-bug-triage-team-on-github/992/5">proposed on Discourse</a>
+for us to create a “bug triage” team on GitHub to help with closing
+issues, notifying the appropriate parties, as well as applying labels
+to issues and pull requests.</p>
+<p>The new Triage role on GitHub is currently in beta, and the Python organization
+has been granted access to this role, and we can begin taking advantage of it.</p>
+<p>The “Python Triage” team has been created. A description and expectations of the
+triage role <a class="reference external" href="https://devguide.python.org/triaging/#python-triage-team">have been added to Devguide</a>.</p>
+<p>Progress of this project can be
+tracked in <a class="reference external" href="https://github.com/python/core-workflow/projects/3">“Adding Triagers” project board</a>.</p>
+</div>
+<div class="section" id="create-labels-for-issue-triage">
+<h3><a class="toc-backref" href="#id20">Create labels for issue triage</a><a class="headerlink" href="#create-labels-for-issue-triage" title="Permalink to this headline">¶</a></h3>
+<p>In bpo, we currently have the following fields for each issue:</p>
+<p>Types: <code class="docutils literal notranslate"><span class="pre">behavior</span></code>, <code class="docutils literal notranslate"><span class="pre">crash</span></code>, <code class="docutils literal notranslate"><span class="pre">compile</span> <span class="pre">error</span></code>, <code class="docutils literal notranslate"><span class="pre">resource</span>
+<span class="pre">usage</span></code>, <code class="docutils literal notranslate"><span class="pre">security</span></code>, <code class="docutils literal notranslate"><span class="pre">performance</span></code>, <code class="docutils literal notranslate"><span class="pre">enhancement</span></code>.</p>
+<p>Components: <code class="docutils literal notranslate"><span class="pre">2to3</span></code>, <code class="docutils literal notranslate"><span class="pre">Argument</span> <span class="pre">Clinic</span></code>, <code class="docutils literal notranslate"><span class="pre">asyncio</span></code>, <code class="docutils literal notranslate"><span class="pre">Build</span></code>,
+<code class="docutils literal notranslate"><span class="pre">Cross-build</span></code>, <code class="docutils literal notranslate"><span class="pre">ctypes</span></code>, …</p>
+<p>Priority: <code class="docutils literal notranslate"><span class="pre">release</span> <span class="pre">blocker</span></code>, <code class="docutils literal notranslate"><span class="pre">deferred</span> <span class="pre">blocker</span></code>, <code class="docutils literal notranslate"><span class="pre">critical</span></code>,
+<code class="docutils literal notranslate"><span class="pre">high</span></code>, <code class="docutils literal notranslate"><span class="pre">normal</span></code>, <code class="docutils literal notranslate"><span class="pre">low</span></code></p>
+<p>We will create the corresponding labels:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">type</span><span class="o">-</span><span class="n">behavior</span><span class="p">,</span> <span class="nb">type</span><span class="o">-</span><span class="n">crash</span><span class="p">,</span> <span class="nb">type</span><span class="o">-</span><span class="nb">compile</span> <span class="n">error</span><span class="p">,</span> <span class="nb">type</span><span class="o">-</span><span class="n">resource</span> <span class="n">usage</span><span class="p">,</span> <span class="o">...</span>
+
+<span class="n">components</span><span class="o">-</span><span class="mi">2</span><span class="n">to3</span><span class="p">,</span> <span class="n">components</span><span class="o">-</span><span class="n">argument</span> <span class="n">clinic</span><span class="p">,</span> <span class="n">components</span><span class="o">-</span><span class="n">asyncio</span><span class="p">,</span> <span class="o">...</span>
+
+<span class="n">priority</span><span class="o">-</span><span class="n">release</span> <span class="n">blocker</span><span class="p">,</span> <span class="n">priority</span><span class="o">-</span><span class="n">deferred</span> <span class="n">blocker</span><span class="p">,</span> <span class="n">priority</span><span class="o">-</span><span class="n">critical</span><span class="p">,</span> <span class="o">...</span>
+</pre></div>
+</div>
+<p>In addition, we’ll create a <code class="docutils literal notranslate"><span class="pre">needs</span> <span class="pre">triage</span></code> label.</p>
+<p>The final “labels” to be created can be decided at a later time when
+it is time to start switching to GitHub issues.</p>
+<p>A test repository containing all possible labels and color schema has been
+created by Carol Willing and can be reviewed at <a class="reference external" href="https://github.com/willingc/test-581/labels">https://github.com/willingc/test-581/labels</a>.</p>
+</div>
+<div class="section" id="create-issue-templates">
+<h3><a class="toc-backref" href="#id21">Create issue templates</a><a class="headerlink" href="#create-issue-templates" title="Permalink to this headline">¶</a></h3>
+<p>We will create an issue template and add the following headers:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">---</span>
+<span class="n">Type</span><span class="p">:</span> <span class="n">behavior</span> <span class="o">|</span> <span class="n">crash</span> <span class="o">|</span> <span class="nb">compile</span> <span class="n">error</span> <span class="o">|</span> <span class="n">resource</span> <span class="n">usage</span> <span class="p">(</span><span class="n">choose</span> <span class="n">one</span><span class="p">)</span>
+<span class="n">Components</span><span class="p">:</span> <span class="mi">2</span><span class="n">to3</span> <span class="o">|</span> <span class="n">Argument</span> <span class="n">Clinic</span> <span class="o">|</span> <span class="n">asyncio</span> <span class="o">|</span> <span class="n">Build</span> <span class="o">|</span> <span class="o">...</span> <span class="p">(</span><span class="n">can</span> <span class="n">select</span> <span class="n">more</span> <span class="n">than</span> <span class="n">one</span><span class="p">)</span>
+<span class="n">Priority</span><span class="p">:</span> <span class="n">release</span> <span class="n">blocker</span> <span class="o">|</span> <span class="n">deferred</span> <span class="n">blocker</span> <span class="o">|</span> <span class="n">critical</span> <span class="o">|</span> <span class="o">...</span>
+<span class="n">Needs</span> <span class="n">backport</span> <span class="n">to</span><span class="p">:</span> <span class="mf">2.7</span> <span class="o">|</span> <span class="mf">3.6</span> <span class="o">|</span> <span class="mf">3.7</span>
+<span class="o">---</span>
+</pre></div>
+</div>
+<p>The idea is to allow the issue creator to help us triage the issue.
+The above values are pre-filled in the template. The issue creator will remove
+texts that do not apply to their issue.</p>
+<p>Based on the above headers, bedevere-bot can apply the necessary
+labels to the issue. If the issue creator did not supply the above
+headers, the bot will apply the <code class="docutils literal notranslate"><span class="pre">needs</span> <span class="pre">triage</span></code> label. At that point,
+it will require a core developer to properly label the issue.</p>
+<p>We can also take advantage of GitHub’s multiple issue template
+feature, and the ability to automatically set issue assignee and
+labels by using issue templates.</p>
+</div>
+<div class="section" id="updates-to-bedevere">
+<h3><a class="toc-backref" href="#id22">Updates to bedevere</a><a class="headerlink" href="#updates-to-bedevere" title="Permalink to this headline">¶</a></h3>
+<p>Bedevere-bot will need to be updated to recognize the issue headers described
+above and apply the proper labels.</p>
+<p>Bedevere-bot can also copy over the labels to pull requests that correspond to
+the issue.</p>
+</div>
+<div class="section" id="update-the-devguide">
+<h3><a class="toc-backref" href="#id23">Update the devguide</a><a class="headerlink" href="#update-the-devguide" title="Permalink to this headline">¶</a></h3>
+<p>Devguide should be updated with information about the new workflow of using GitHub
+issues. It can be done as a separate branch, and it should be done ahead of the
+migration, not after.</p>
+</div>
+<div class="section" id="add-a-button-in-bpo-to-migrate-the-issue-to-github">
+<h3><a class="toc-backref" href="#id24">Add a button in bpo to migrate the issue to GitHub</a><a class="headerlink" href="#add-a-button-in-bpo-to-migrate-the-issue-to-github" title="Permalink to this headline">¶</a></h3>
+<p>This will require the bpo to be updated. But I believe the effort needed for
+this is much less than a complete overhaul.</p>
+<p>We will create a button in bpo, that will copy over the issue description
+and associated comments into a GitHub issue.</p>
+<p>We need to add a new status: “moved” with the url of the GitHub issue.</p>
+<p>We should not be moving all open issues to GitHub. Only when someone
+is interested in continuing work or discussion about the issue, that
+the issue should be “moved” to GitHub.</p>
+</div>
+<div class="section" id="migrated-issues">
+<h3><a class="toc-backref" href="#id25">Migrated issues</a><a class="headerlink" href="#migrated-issues" title="Permalink to this headline">¶</a></h3>
+<p>When an issue is marked as “moved”, this issue should be in read-only mode. bpo
+should forbid the edition of the issue.</p>
+</div>
+<div class="section" id="make-bpo-read-only">
+<h3><a class="toc-backref" href="#id26">Make bpo read-only</a><a class="headerlink" href="#make-bpo-read-only" title="Permalink to this headline">¶</a></h3>
+<p>This should be the final step. Once we start using GitHub issues, make bpo
+read-only, instead of shutting it down.
+Do not accept new registrations. Do not allow comments or issues to be created.</p>
+</div>
+<div class="section" id="mapping-between-issues-from-bpo-and-github">
+<h3><a class="toc-backref" href="#id27">Mapping between issues from bpo and GitHub</a><a class="headerlink" href="#mapping-between-issues-from-bpo-and-github" title="Permalink to this headline">¶</a></h3>
+<p>Usually when we reference an issue from bpo, we use bpo-XYZ but with
+Github, we will have a new reference with this format
+<code class="docutils literal notranslate"><span class="pre">https://github.com/python/cpython/issue/XYZ</span></code>.</p>
+<p>Because we will migrate the issues from bpo to GitHub, we need to have a new
+field on bpo for the reference to the issues on GitHub, and the same thing on
+Github for the ‘eventual’ reference from bpo.</p>
+<p>For GitHub, we need to add <code class="docutils literal notranslate"><span class="pre">origin:</span> <span class="pre">https://bugs.python.org/issueXYZ</span></code>.
+For bpo, add a new field <code class="docutils literal notranslate"><span class="pre">moved</span> <span class="pre">to:</span>
+<span class="pre">https://github.com/python/cpython/issue/XYZ</span></code>.</p>
+</div>
+<div class="section" id="nosy-ing-the-expert">
+<h3><a class="toc-backref" href="#id28">Nosy-ing the expert</a><a class="headerlink" href="#nosy-ing-the-expert" title="Permalink to this headline">¶</a></h3>
+<p>A current functionality in bpo is to automatically nosy people who are listed
+as an expert of certain area. Several Python core developers have expressed that
+they prefer not having to subscribe to everything on GitHub, but only getting notified
+for issues related to their area of interest and expertise.</p>
+<p>To help with this situation, we can develop a bot that can notify people
+whenever an issue has been categorized using labels. For example, when an issue
+was labeled with <cite>area-windows</cite>, the windows experts can be notified.
+The notification can be in the form of email notification, or &#64;-mention on GitHub.</p>
+</div>
+</div>
+<div class="section" id="open-issues">
+<h2><a class="toc-backref" href="#id29">Open issues</a><a class="headerlink" href="#open-issues" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="a-github-account-should-not-be-a-requirement">
+<h3><a class="toc-backref" href="#id30">A GitHub account should not be a requirement</a><a class="headerlink" href="#a-github-account-should-not-be-a-requirement" title="Permalink to this headline">¶</a></h3>
+<p>Back when moving the CPython codebase from Mercurial to GitHub was
+being discussed <a class="footnote-reference brackets" href="#id9" id="id3">3</a> <a class="footnote-reference brackets" href="#id10" id="id4">4</a>, it was brought up that we still needed to
+allow uploading of patches on bpo, and that a GitHub account should
+not be a requirement in order to contribute to Python.</p>
+<p>If bpo is made read-only, we’ll need to come up with a different solution to
+allow people to contribute when they don’t have a GitHub account.</p>
+<p>One solution is to create a new “python-issues” mailing list, similar to the
+<a class="reference external" href="mailto:docs&#37;&#52;&#48;python&#46;org">docs<span>&#64;</span>python<span>&#46;</span>org</a> <a class="footnote-reference brackets" href="#id11" id="id5">5</a> mailing list, to allow people to submit their issues
+there.</p>
+<p>Related to this, since the migration to GitHub in 2017, I recall one
+case <a class="footnote-reference brackets" href="#id12" id="id6">6</a> where there was a contributor, who submitted a patch to
+Mercurial and refused to create a GitHub account. Because of this, our
+bot was unable to detect whether they had signed the CLA. Another
+person had volunteered to upload their patch to GitHub. But it was
+still required that both people sign the CLA.</p>
+<p>That particular situation was complicated. It took up five core
+developers’ time to investigate and manually check the CLA, causing
+confusion.</p>
+</div>
+<div class="section" id="trim-off-the-components-list">
+<h3><a class="toc-backref" href="#id31">Trim off the “Components” list</a><a class="headerlink" href="#trim-off-the-components-list" title="Permalink to this headline">¶</a></h3>
+<p>Is the current “components” list still making sense and relevant?
+Can the list be shortened?</p>
+</div>
+<div class="section" id="priority-list">
+<h3><a class="toc-backref" href="#id32">Priority list</a><a class="headerlink" href="#priority-list" title="Permalink to this headline">¶</a></h3>
+<p>Is the current “priority” list useful? Nick Coghlan noted that perhaps only
+<code class="docutils literal notranslate"><span class="pre">release</span> <span class="pre">blocker</span></code> and <code class="docutils literal notranslate"><span class="pre">deferred</span> <span class="pre">blocker</span></code> are useful.</p>
+</div>
+</div>
+<div class="section" id="further-questions-and-discussions">
+<h2><a class="toc-backref" href="#id33">Further questions and discussions</a><a class="headerlink" href="#further-questions-and-discussions" title="Permalink to this headline">¶</a></h2>
+<p>You can post questions on Discourse under the
+<a class="reference external" href="https://discuss.python.org/c/core-workflow">Core-Workflow</a> category.</p>
+</div>
+<div class="section" id="acknowledgements">
+<h2><a class="toc-backref" href="#id34">Acknowledgements</a><a class="headerlink" href="#acknowledgements" title="Permalink to this headline">¶</a></h2>
+<p>Thanks to Guido van Rossum, Brett Cannon, and Nick Coghlan, who were consulted
+in the early stage and research of this PEP. Their feedback, concerns, input,
+and ideas have been valuable.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id35">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id7"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>Backup GitHub information
+(<a class="reference external" href="https://github.com/python/core-workflow/issues/20">https://github.com/python/core-workflow/issues/20</a>)</dd>
+<dt class="label" id="id8"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>GitHub’s Migrations API
+(<a class="reference external" href="https://developer.github.com/v3/migrations/orgs/">https://developer.github.com/v3/migrations/orgs/</a>)</dd>
+<dt class="label" id="id9"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd>Python-committers email
+(<a class="reference external" href="https://mail.python.org/pipermail/python-committers/2015-December/003642.html">https://mail.python.org/pipermail/python-committers/2015-December/003642.html</a>)</dd>
+<dt class="label" id="id10"><span class="brackets"><a class="fn-backref" href="#id4">4</a></span></dt>
+<dd>Python-committers email
+(<a class="reference external" href="https://mail.python.org/pipermail/python-committers/2015-December/003645.html">https://mail.python.org/pipermail/python-committers/2015-December/003645.html</a>)</dd>
+<dt class="label" id="id11"><span class="brackets"><a class="fn-backref" href="#id5">5</a></span></dt>
+<dd>docs mailing list
+(<a class="reference external" href="https://mail.python.org/mailman/listinfo/docs">https://mail.python.org/mailman/listinfo/docs</a>)</dd>
+<dt class="label" id="id12"><span class="brackets"><a class="fn-backref" href="#id6">6</a></span></dt>
+<dd>CPython GitHub pull request 1505
+(<a class="reference external" href="https://github.com/python/cpython/pull/1505">https://github.com/python/cpython/pull/1505</a>)</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id36">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0588.rst">https://github.com/python/peps/blob/master/pep-0588.rst</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0588.rst.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0587.html">PEP 0587</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0589.html">PEP 0589</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 588 – GitHub Issues Migration Plan</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#migration-plan">Migration Plan</a><ul>
+<li><a class="reference internal" href="#hire-a-professional-project-manager">Hire a professional project manager</a></li>
+<li><a class="reference internal" href="#create-a-playground-cpython-issue-tracker-on-github">Create a playground CPython issue tracker on GitHub</a></li>
+<li><a class="reference internal" href="#backup-of-github-data">Backup of GitHub data</a></li>
+<li><a class="reference internal" href="#update-the-cla-host">Update the CLA host</a></li>
+<li><a class="reference internal" href="#create-python-triage-team-on-github">Create “Python Triage” team on GitHub</a></li>
+<li><a class="reference internal" href="#create-labels-for-issue-triage">Create labels for issue triage</a></li>
+<li><a class="reference internal" href="#create-issue-templates">Create issue templates</a></li>
+<li><a class="reference internal" href="#updates-to-bedevere">Updates to bedevere</a></li>
+<li><a class="reference internal" href="#update-the-devguide">Update the devguide</a></li>
+<li><a class="reference internal" href="#add-a-button-in-bpo-to-migrate-the-issue-to-github">Add a button in bpo to migrate the issue to GitHub</a></li>
+<li><a class="reference internal" href="#migrated-issues">Migrated issues</a></li>
+<li><a class="reference internal" href="#make-bpo-read-only">Make bpo read-only</a></li>
+<li><a class="reference internal" href="#mapping-between-issues-from-bpo-and-github">Mapping between issues from bpo and GitHub</a></li>
+<li><a class="reference internal" href="#nosy-ing-the-expert">Nosy-ing the expert</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#open-issues">Open issues</a><ul>
+<li><a class="reference internal" href="#a-github-account-should-not-be-a-requirement">A GitHub account should not be a requirement</a></li>
+<li><a class="reference internal" href="#trim-off-the-components-list">Trim off the “Components” list</a></li>
+<li><a class="reference internal" href="#priority-list">Priority list</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#further-questions-and-discussions">Further questions and discussions</a></li>
+<li><a class="reference internal" href="#acknowledgements">Acknowledgements</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

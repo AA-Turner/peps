@@ -1,0 +1,853 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 433 – Easier suppression of file descriptor inheritance &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 434 – IDLE Enhancement Exception for All Branches" href="pep-0434.html" />
+    <link rel="prev" title="PEP 432 – Restructuring the CPython startup sequence" href="pep-0432.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 433 – Easier suppression of file descriptor inheritance</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-433-easier-suppression-of-file-descriptor-inheritance">
+<h1 class="page-title">PEP 433 – Easier suppression of file descriptor inheritance<a class="headerlink" href="#pep-433-easier-suppression-of-file-descriptor-inheritance" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">433</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Easier suppression of file descriptor inheritance</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Victor Stinner &lt;vstinner&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Superseded</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">10-January-2013</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.4</dd>
+<dt class="field-even">Superseded-By</dt>
+<dd class="field-even"><a class="reference external" href="./pep-0446.html">446</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id5">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id6">Rationale</a><ul>
+<li><a class="reference internal" href="#status-in-python-3-3" id="id7">Status in Python 3.3</a></li>
+<li><a class="reference internal" href="#inherited-file-descriptors-issues" id="id8">Inherited file descriptors issues</a></li>
+<li><a class="reference internal" href="#security" id="id9">Security</a></li>
+<li><a class="reference internal" href="#atomicity" id="id10">Atomicity</a></li>
+<li><a class="reference internal" href="#portability" id="id11">Portability</a></li>
+<li><a class="reference internal" href="#scope" id="id12">Scope</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#proposal" id="id13">Proposal</a></li>
+<li><a class="reference internal" href="#alternatives" id="id14">Alternatives</a><ul>
+<li><a class="reference internal" href="#inheritance-enabled-by-default-default-no-configurable" id="id15">Inheritance enabled by default, default no configurable</a></li>
+<li><a class="reference internal" href="#inheritance-enabled-by-default-default-can-only-be-set-to-true" id="id16">Inheritance enabled by default, default can only be set to True</a></li>
+<li><a class="reference internal" href="#disable-inheritance-by-default" id="id17">Disable inheritance by default</a></li>
+<li><a class="reference internal" href="#close-file-descriptors-after-fork" id="id18">Close file descriptors after fork</a></li>
+<li><a class="reference internal" href="#open-add-e-flag-to-mode" id="id19">open(): add “e” flag to mode</a></li>
+<li><a class="reference internal" href="#bikeshedding-on-the-name-of-the-new-parameter" id="id20">Bikeshedding on the name of the new parameter</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#applications-using-inheritance-of-file-descriptors" id="id21">Applications using inheritance of file descriptors</a></li>
+<li><a class="reference internal" href="#performances" id="id22">Performances</a></li>
+<li><a class="reference internal" href="#implementation" id="id23">Implementation</a><ul>
+<li><a class="reference internal" href="#os-get-cloexec-fd" id="id24">os.get_cloexec(fd)</a></li>
+<li><a class="reference internal" href="#os-set-cloexec-fd-cloexec-true" id="id25">os.set_cloexec(fd, cloexec=True)</a></li>
+<li><a class="reference internal" href="#open" id="id26">open()</a></li>
+<li><a class="reference internal" href="#os-dup" id="id27">os.dup()</a></li>
+<li><a class="reference internal" href="#os-dup2" id="id28">os.dup2()</a></li>
+<li><a class="reference internal" href="#os-pipe" id="id29">os.pipe()</a></li>
+<li><a class="reference internal" href="#socket-socket" id="id30">socket.socket()</a></li>
+<li><a class="reference internal" href="#socket-socketpair" id="id31">socket.socketpair()</a></li>
+<li><a class="reference internal" href="#socket-socket-accept" id="id32">socket.socket.accept()</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#backward-compatibility" id="id33">Backward compatibility</a></li>
+<li><a class="reference internal" href="#appendix-operating-system-support" id="id34">Appendix: Operating system support</a><ul>
+<li><a class="reference internal" href="#windows" id="id35">Windows</a></li>
+<li><a class="reference internal" href="#ioctl" id="id36">ioctl</a></li>
+<li><a class="reference internal" href="#fcntl" id="id37">fcntl</a></li>
+<li><a class="reference internal" href="#atomic-flags" id="id38">Atomic flags</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#links" id="id39">Links</a></li>
+<li><a class="reference internal" href="#footnotes" id="id40">Footnotes</a></li>
+<li><a class="reference internal" href="#id2" id="id41">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id42">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id5">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Add a new optional <em>cloexec</em> parameter on functions creating file
+descriptors, add different ways to change default values of this
+parameter, and add four new functions:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">os.get_cloexec(fd)</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">os.set_cloexec(fd,</span> <span class="pre">cloexec=True)</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">sys.getdefaultcloexec()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">sys.setdefaultcloexec(cloexec)</span></code></li>
+</ul>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id6">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>A file descriptor has a close-on-exec flag which indicates if the file
+descriptor will be inherited or not.</p>
+<p>On UNIX, if the close-on-exec flag is set, the file descriptor is not
+inherited: it will be closed at the execution of child processes;
+otherwise the file descriptor is inherited by child processes.</p>
+<p>On Windows, if the close-on-exec flag is set, the file descriptor is not
+inherited; the file descriptor is inherited by child processes if the
+close-on-exec flag is cleared and if <code class="docutils literal notranslate"><span class="pre">CreateProcess()</span></code> is called with
+the <em>bInheritHandles</em> parameter set to <code class="docutils literal notranslate"><span class="pre">TRUE</span></code> (when
+<code class="docutils literal notranslate"><span class="pre">subprocess.Popen</span></code> is created with <code class="docutils literal notranslate"><span class="pre">close_fds=False</span></code> for example).
+Windows does not have “close-on-exec” flag but an inheritance flag which
+is just the opposite value. For example, setting close-on-exec flag
+means clearing the <code class="docutils literal notranslate"><span class="pre">HANDLE_FLAG_INHERIT</span></code> flag of a handle.</p>
+<div class="section" id="status-in-python-3-3">
+<h3><a class="toc-backref" href="#id7">Status in Python 3.3</a><a class="headerlink" href="#status-in-python-3-3" title="Permalink to this headline">¶</a></h3>
+<p>On UNIX, the subprocess module closes file descriptors greater than 2 by
+default since Python 3.2 <a class="footnote-reference brackets" href="#subprocess-close" id="id1">1</a>. All file descriptors
+created by the parent process are automatically closed in the child
+process.</p>
+<p><code class="docutils literal notranslate"><span class="pre">xmlrpc.server.SimpleXMLRPCServer</span></code> sets the close-on-exec flag of
+the listening socket, the parent class <code class="docutils literal notranslate"><span class="pre">socketserver.TCPServer</span></code>
+does not set this flag.</p>
+<p>There are other cases creating a subprocess or executing a new program
+where file descriptors are not closed: functions of the <code class="docutils literal notranslate"><span class="pre">os.spawn*()</span></code>
+and the <code class="docutils literal notranslate"><span class="pre">os.exec*()</span></code> families and third party modules calling
+<code class="docutils literal notranslate"><span class="pre">exec()</span></code> or <code class="docutils literal notranslate"><span class="pre">fork()</span></code> + <code class="docutils literal notranslate"><span class="pre">exec()</span></code>. In this case, file descriptors
+are shared between the parent and the child processes which is usually
+unexpected and causes various issues.</p>
+<p>This PEP proposes to continue the work started with the change in the
+subprocess in Python 3.2, to fix the issue in any code, and not just
+code using subprocess.</p>
+</div>
+<div class="section" id="inherited-file-descriptors-issues">
+<h3><a class="toc-backref" href="#id8">Inherited file descriptors issues</a><a class="headerlink" href="#inherited-file-descriptors-issues" title="Permalink to this headline">¶</a></h3>
+<p>Closing the file descriptor in the parent process does not close the
+related resource (file, socket, …) because it is still open in the
+child process.</p>
+<p>The listening socket of TCPServer is not closed on <code class="docutils literal notranslate"><span class="pre">exec()</span></code>: the child
+process is able to get connection from new clients; if the parent closes
+the listening socket and create a new listening socket on the same
+address, it would get an “address already is used” error.</p>
+<p>Not closing file descriptors can lead to resource exhaustion: even if
+the parent closes all files, creating a new file descriptor may fail
+with “too many files” because files are still open in the child process.</p>
+<p>See also the following issues:</p>
+<ul class="simple">
+<li><a class="reference external" href="http://bugs.python.org/issue2320">Issue #2320: Race condition in subprocess using stdin</a> (2008)</li>
+<li><a class="reference external" href="http://bugs.python.org/issue3006">Issue #3006: subprocess.Popen causes socket to remain open after
+close</a> (2008)</li>
+<li><a class="reference external" href="http://bugs.python.org/issue7213">Issue #7213: subprocess leaks open file descriptors between Popen
+instances causing hangs</a> (2009)</li>
+<li><a class="reference external" href="http://bugs.python.org/issue12786">Issue #12786: subprocess wait() hangs when stdin is closed</a> (2011)</li>
+</ul>
+</div>
+<div class="section" id="security">
+<h3><a class="toc-backref" href="#id9">Security</a><a class="headerlink" href="#security" title="Permalink to this headline">¶</a></h3>
+<p>Leaking file descriptors is a major security vulnerability. An
+untrusted child process can read sensitive data like passwords and
+take control of the parent process though leaked file descriptors. It
+is for example a known vulnerability to escape from a chroot.</p>
+<p>See also the CERT recommendation:
+<a class="reference external" href="https://www.securecoding.cert.org/confluence/display/seccode/FIO42-C.+Ensure+files+are+properly+closed+when+they+are+no+longer+needed">FIO42-C. Ensure files are properly closed when they are no longer needed</a>.</p>
+<p>Example of vulnerabilities:</p>
+<ul class="simple">
+<li><a class="reference external" href="http://www.openssh.com/txt/portable-keysign-rand-helper.adv">OpenSSH Security Advisory: portable-keysign-rand-helper.adv</a>
+(April 2011)</li>
+<li><a class="reference external" href="http://cwe.mitre.org/data/definitions/403.html">CWE-403: Exposure of File Descriptor to Unintended Control Sphere</a> (2008)</li>
+<li><a class="reference external" href="http://www.securityfocus.com/archive/1/348368">Hijacking Apache https by mod_php</a> (Dec 2003)<ul>
+<li>Apache: <a class="reference external" href="https://issues.apache.org/bugzilla/show_bug.cgi?id=46425">Apr should set FD_CLOEXEC if APR_FOPEN_NOCLEANUP is not set</a>
+(fixed in 2009)</li>
+<li>PHP: <a class="reference external" href="https://bugs.php.net/bug.php?id=38915">system() (and similar) don’t cleanup opened handles of Apache</a> (not fixed in January
+2013)</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="atomicity">
+<h3><a class="toc-backref" href="#id10">Atomicity</a><a class="headerlink" href="#atomicity" title="Permalink to this headline">¶</a></h3>
+<p>Using <code class="docutils literal notranslate"><span class="pre">fcntl()</span></code> to set the close-on-exec flag is not safe in a
+multithreaded application. If a thread calls <code class="docutils literal notranslate"><span class="pre">fork()</span></code> and <code class="docutils literal notranslate"><span class="pre">exec()</span></code>
+between the creation of the file descriptor and the call to
+<code class="docutils literal notranslate"><span class="pre">fcntl(fd,</span> <span class="pre">F_SETFD,</span> <span class="pre">new_flags)</span></code>: the file descriptor will be
+inherited by the child process. Modern operating systems offer
+functions to set the flag during the creation of the file descriptor,
+which avoids the race condition.</p>
+</div>
+<div class="section" id="portability">
+<h3><a class="toc-backref" href="#id11">Portability</a><a class="headerlink" href="#portability" title="Permalink to this headline">¶</a></h3>
+<p>Python 3.2 added <code class="docutils literal notranslate"><span class="pre">socket.SOCK_CLOEXEC</span></code> flag, Python 3.3 added
+<code class="docutils literal notranslate"><span class="pre">os.O_CLOEXEC</span></code> flag and <code class="docutils literal notranslate"><span class="pre">os.pipe2()</span></code> function. It is already
+possible to set atomically close-on-exec flag in Python 3.3 when
+opening a file and creating a pipe or socket.</p>
+<p>The problem is that these flags and functions are not portable: only
+recent versions of operating systems support them. <code class="docutils literal notranslate"><span class="pre">O_CLOEXEC</span></code> and
+<code class="docutils literal notranslate"><span class="pre">SOCK_CLOEXEC</span></code> flags are ignored by old Linux versions and so
+<code class="docutils literal notranslate"><span class="pre">FD_CLOEXEC</span></code> flag must be checked using <code class="docutils literal notranslate"><span class="pre">fcntl(fd,</span> <span class="pre">F_GETFD)</span></code>.  If
+the kernel ignores <code class="docutils literal notranslate"><span class="pre">O_CLOEXEC</span></code> or <code class="docutils literal notranslate"><span class="pre">SOCK_CLOEXEC</span></code> flag, a call to
+<code class="docutils literal notranslate"><span class="pre">fcntl(fd,</span> <span class="pre">F_SETFD,</span> <span class="pre">flags)</span></code> is required to set close-on-exec flag.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>OpenBSD older 5.2 does not close the file descriptor with
+close-on-exec flag set if <code class="docutils literal notranslate"><span class="pre">fork()</span></code> is used before <code class="docutils literal notranslate"><span class="pre">exec()</span></code>, but
+it works correctly if <code class="docutils literal notranslate"><span class="pre">exec()</span></code> is called without <code class="docutils literal notranslate"><span class="pre">fork()</span></code>. Try
+<a class="reference external" href="http://hg.python.org/peps/file/tip/pep-0433/openbsd_bug.py">openbsd_bug.py</a>.</p>
+</div>
+</div>
+<div class="section" id="scope">
+<h3><a class="toc-backref" href="#id12">Scope</a><a class="headerlink" href="#scope" title="Permalink to this headline">¶</a></h3>
+<p>Applications still have to close explicitly file descriptors after a
+<code class="docutils literal notranslate"><span class="pre">fork()</span></code>.  The close-on-exec flag only closes file descriptors after
+<code class="docutils literal notranslate"><span class="pre">exec()</span></code>, and so after <code class="docutils literal notranslate"><span class="pre">fork()</span></code> + <code class="docutils literal notranslate"><span class="pre">exec()</span></code>.</p>
+<p>This PEP only change the close-on-exec flag of file descriptors
+created by the Python standard library, or by modules using the
+standard library.  Third party modules not using the standard library
+should be modified to conform to this PEP. The new
+<code class="docutils literal notranslate"><span class="pre">os.set_cloexec()</span></code> function can be used for example.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>See <a class="reference internal" href="#close-file-descriptors-after-fork">Close file descriptors after fork</a> for a possible solution
+for <code class="docutils literal notranslate"><span class="pre">fork()</span></code> without <code class="docutils literal notranslate"><span class="pre">exec()</span></code>.</p>
+</div>
+</div>
+</div>
+<div class="section" id="proposal">
+<h2><a class="toc-backref" href="#id13">Proposal</a><a class="headerlink" href="#proposal" title="Permalink to this headline">¶</a></h2>
+<p>Add a new optional <em>cloexec</em> parameter on functions creating file
+descriptors and different ways to change default value of this
+parameter.</p>
+<p>Add new functions:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">os.get_cloexec(fd:int)</span> <span class="pre">-&gt;</span> <span class="pre">bool</span></code>: get the
+close-on-exec flag of a file descriptor. Not available on all
+platforms.</li>
+<li><code class="docutils literal notranslate"><span class="pre">os.set_cloexec(fd:int,</span> <span class="pre">cloexec:bool=True)</span></code>: set or clear the
+close-on-exec flag on a file descriptor. Not available on all
+platforms.</li>
+<li><code class="docutils literal notranslate"><span class="pre">sys.getdefaultcloexec()</span> <span class="pre">-&gt;</span> <span class="pre">bool</span></code>: get the current default value
+of the <em>cloexec</em> parameter</li>
+<li><code class="docutils literal notranslate"><span class="pre">sys.setdefaultcloexec(cloexec:</span> <span class="pre">bool)</span></code>: set the default value
+of the <em>cloexec</em> parameter</li>
+</ul>
+<p>Add a new optional <em>cloexec</em> parameter to:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">asyncore.dispatcher.create_socket()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">io.FileIO</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">io.open()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">open()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">os.dup()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">os.dup2()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">os.fdopen()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">os.open()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">os.openpty()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">os.pipe()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">select.devpoll()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">select.epoll()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">select.kqueue()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">socket.socket()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">socket.socket.accept()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">socket.socket.dup()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">socket.socket.fromfd</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">socket.socketpair()</span></code></li>
+</ul>
+<p>The default value of the <em>cloexec</em> parameter is
+<code class="docutils literal notranslate"><span class="pre">sys.getdefaultcloexec()</span></code>.</p>
+<p>Add a new command line option <code class="docutils literal notranslate"><span class="pre">-e</span></code> and an environment variable
+<code class="docutils literal notranslate"><span class="pre">PYTHONCLOEXEC</span></code> to the set close-on-exec flag by default.</p>
+<p><code class="docutils literal notranslate"><span class="pre">subprocess</span></code> clears the close-on-exec flag of file descriptors of the
+<code class="docutils literal notranslate"><span class="pre">pass_fds</span></code> parameter.</p>
+<p>All functions creating file descriptors in the standard library must
+respect the default value of the <em>cloexec</em> parameter:
+<code class="docutils literal notranslate"><span class="pre">sys.getdefaultcloexec()</span></code>.</p>
+<p>File descriptors 0 (stdin), 1 (stdout) and 2 (stderr) are expected to be
+inherited, but Python does not handle them differently. When
+<code class="docutils literal notranslate"><span class="pre">os.dup2()</span></code> is used to replace standard streams, <code class="docutils literal notranslate"><span class="pre">cloexec=False</span></code>
+must be specified explicitly.</p>
+<p>Drawbacks of the proposal:</p>
+<ul class="simple">
+<li>It is not more possible to know if the close-on-exec flag will be
+set or not on a newly created file descriptor just by reading the
+source code.</li>
+<li>If the inheritance of a file descriptor matters, the <em>cloexec</em>
+parameter must now be specified explicitly, or the library or the
+application will not work depending on the default value of the
+<em>cloexec</em> parameter.</li>
+</ul>
+</div>
+<div class="section" id="alternatives">
+<h2><a class="toc-backref" href="#id14">Alternatives</a><a class="headerlink" href="#alternatives" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="inheritance-enabled-by-default-default-no-configurable">
+<h3><a class="toc-backref" href="#id15">Inheritance enabled by default, default no configurable</a><a class="headerlink" href="#inheritance-enabled-by-default-default-no-configurable" title="Permalink to this headline">¶</a></h3>
+<p>Add a new optional parameter <em>cloexec</em> on functions creating file
+descriptors. The default value of the <em>cloexec</em> parameter is <code class="docutils literal notranslate"><span class="pre">False</span></code>,
+and this default cannot be changed. File descriptor inheritance enabled by
+default is also the default on POSIX and on Windows. This alternative is
+the most conservative option.</p>
+<p>This option does not solve issues listed in the <a class="reference internal" href="#rationale">Rationale</a>
+section, it only provides a helper to fix them. All functions creating
+file descriptors have to be modified to set <em>cloexec=True</em> in each
+module used by an application to fix all these issues.</p>
+</div>
+<div class="section" id="inheritance-enabled-by-default-default-can-only-be-set-to-true">
+<h3><a class="toc-backref" href="#id16">Inheritance enabled by default, default can only be set to True</a><a class="headerlink" href="#inheritance-enabled-by-default-default-can-only-be-set-to-true" title="Permalink to this headline">¶</a></h3>
+<p>This alternative is based on the proposal: the only difference is that
+<code class="docutils literal notranslate"><span class="pre">sys.setdefaultcloexec()</span></code> does not take any argument, it can only be
+used to set the default value of the <em>cloexec</em> parameter to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+</div>
+<div class="section" id="disable-inheritance-by-default">
+<h3><a class="toc-backref" href="#id17">Disable inheritance by default</a><a class="headerlink" href="#disable-inheritance-by-default" title="Permalink to this headline">¶</a></h3>
+<p>This alternative is based on the proposal: the only difference is that
+the default value of the <em>cloexec</em> parameter is <code class="docutils literal notranslate"><span class="pre">True</span></code> (instead of
+<code class="docutils literal notranslate"><span class="pre">False</span></code>).</p>
+<p>If a file must be inherited by child processes, <code class="docutils literal notranslate"><span class="pre">cloexec=False</span></code>
+parameter can be used.</p>
+<p>Advantages of setting close-on-exec flag by default:</p>
+<ul class="simple">
+<li>There are far more programs that are bitten by FD inheritance upon
+exec (see <a class="reference internal" href="#inherited-file-descriptors-issues">Inherited file descriptors issues</a> and <a class="reference internal" href="#security">Security</a>)
+than programs relying on it (see <a class="reference internal" href="#applications-using-inheritance-of-file-descriptors">Applications using inheritance of
+file descriptors</a>).</li>
+</ul>
+<p>Drawbacks of setting close-on-exec flag by default:</p>
+<ul class="simple">
+<li>It violates the principle of least surprise.  Developers using the
+os module may expect that Python respects the POSIX standard and so
+that close-on-exec flag is not set by default.</li>
+<li>The os module is written as a thin wrapper to system calls (to
+functions of the C standard library). If atomic flags to set
+close-on-exec flag are not supported (see <a class="reference internal" href="#appendix-operating-system-support">Appendix: Operating
+system support</a>), a single Python function call may call 2 or 3
+system calls (see <a class="reference internal" href="#performances">Performances</a> section).</li>
+<li>Extra system calls, if any, may slow down Python: see
+<a class="reference internal" href="#performances">Performances</a>.</li>
+</ul>
+<p>Backward compatibility: only a few programs rely on inheritance of file
+descriptors, and they only pass a few file descriptors, usually just
+one.  These programs will fail immediately with <code class="docutils literal notranslate"><span class="pre">EBADF</span></code> error, and it
+will be simple to fix them: add <code class="docutils literal notranslate"><span class="pre">cloexec=False</span></code> parameter or use
+<code class="docutils literal notranslate"><span class="pre">os.set_cloexec(fd,</span> <span class="pre">False)</span></code>.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">subprocess</span></code> module will be changed anyway to clear
+close-on-exec flag on file descriptors listed in the <code class="docutils literal notranslate"><span class="pre">pass_fds</span></code>
+parameter of Popen constructor. So it possible that these programs will
+not need any fix if they use the <code class="docutils literal notranslate"><span class="pre">subprocess</span></code> module.</p>
+</div>
+<div class="section" id="close-file-descriptors-after-fork">
+<h3><a class="toc-backref" href="#id18">Close file descriptors after fork</a><a class="headerlink" href="#close-file-descriptors-after-fork" title="Permalink to this headline">¶</a></h3>
+<p>This PEP does not fix issues with applications using <code class="docutils literal notranslate"><span class="pre">fork()</span></code>
+without <code class="docutils literal notranslate"><span class="pre">exec()</span></code>. Python needs a generic process to register
+callbacks which would be called after a fork, see <a class="reference external" href="http://bugs.python.org/issue16500">#16500:
+Add an atfork module</a> <a class="footnote-reference brackets" href="#id3" id="id4">2</a>.  Such registry could be used to close file
+descriptors just after a <code class="docutils literal notranslate"><span class="pre">fork()</span></code>.</p>
+<p>Drawbacks:</p>
+<ul class="simple">
+<li>It does not solve the problem on Windows: <code class="docutils literal notranslate"><span class="pre">fork()</span></code> does not exist
+on Windows</li>
+<li>This alternative does not solve the problem for programs using
+<code class="docutils literal notranslate"><span class="pre">exec()</span></code> without <code class="docutils literal notranslate"><span class="pre">fork()</span></code>.</li>
+<li>A third party module may call directly the C function <code class="docutils literal notranslate"><span class="pre">fork()</span></code>
+which will not call “atfork” callbacks.</li>
+<li>All functions creating file descriptors must be changed to register
+a callback and then unregister their callback when the file is
+closed. Or a list of <em>all</em> open file descriptors must be
+maintained.</li>
+<li>The operating system is a better place than Python to close
+automatically file descriptors. For example, it is not easy to
+avoid a race condition between closing the file and unregistering
+the callback closing the file.</li>
+</ul>
+</div>
+<div class="section" id="open-add-e-flag-to-mode">
+<h3><a class="toc-backref" href="#id19">open(): add “e” flag to mode</a><a class="headerlink" href="#open-add-e-flag-to-mode" title="Permalink to this headline">¶</a></h3>
+<p>A new “e” mode would set close-on-exec flag (best-effort).</p>
+<p>This alternative only solves the problem for <code class="docutils literal notranslate"><span class="pre">open()</span></code>.
+socket.socket() and os.pipe() do not have a <code class="docutils literal notranslate"><span class="pre">mode</span></code> parameter for
+example.</p>
+<p>Since its version 2.7, the GNU libc supports <code class="docutils literal notranslate"><span class="pre">&quot;e&quot;</span></code> flag for
+<code class="docutils literal notranslate"><span class="pre">fopen()</span></code>.  It uses <code class="docutils literal notranslate"><span class="pre">O_CLOEXEC</span></code> if available, or use <code class="docutils literal notranslate"><span class="pre">fcntl(fd,</span>
+<span class="pre">F_SETFD,</span> <span class="pre">FD_CLOEXEC)</span></code>.  With Visual Studio, fopen() accepts a “N”
+flag which uses <code class="docutils literal notranslate"><span class="pre">O_NOINHERIT</span></code>.</p>
+</div>
+<div class="section" id="bikeshedding-on-the-name-of-the-new-parameter">
+<h3><a class="toc-backref" href="#id20">Bikeshedding on the name of the new parameter</a><a class="headerlink" href="#bikeshedding-on-the-name-of-the-new-parameter" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">inherit</span></code>, <code class="docutils literal notranslate"><span class="pre">inherited</span></code>: closer to Windows definition</li>
+<li><code class="docutils literal notranslate"><span class="pre">sensitive</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">sterile</span></code>: “Does not produce offspring.”</li>
+</ul>
+</div>
+</div>
+<div class="section" id="applications-using-inheritance-of-file-descriptors">
+<h2><a class="toc-backref" href="#id21">Applications using inheritance of file descriptors</a><a class="headerlink" href="#applications-using-inheritance-of-file-descriptors" title="Permalink to this headline">¶</a></h2>
+<p>Most developers don’t know that file descriptors are inherited by
+default. Most programs do not rely on inheritance of file descriptors.
+For example, <code class="docutils literal notranslate"><span class="pre">subprocess.Popen</span></code> was changed in Python 3.2 to close
+all file descriptors greater than 2 in the child process by default.
+No user complained about this behavior change yet.</p>
+<p>Network servers using fork may want to pass the client socket to the
+child process. For example, on UNIX a CGI server pass the socket
+client through file descriptors 0 (stdin) and 1 (stdout) using
+<code class="docutils literal notranslate"><span class="pre">dup2()</span></code>.</p>
+<p>To access a restricted resource like creating a socket listening on a
+TCP port lower than 1024 or reading a file containing sensitive data
+like passwords, a common practice is: start as the root user, create a
+file descriptor, create a child process, drop privileges (ex: change the
+current user), pass the file descriptor to the child process and exit
+the parent process.</p>
+<p>Security is very important in such use case: leaking another file
+descriptor would be a critical security vulnerability (see <a class="reference internal" href="#security">Security</a>).
+The root process may not exit but monitors the child process instead,
+and restarts a new child process and pass the same file descriptor if
+the previous child process crashed.</p>
+<p>Example of programs taking file descriptors from the parent process
+using a command line option:</p>
+<ul class="simple">
+<li>gpg: <code class="docutils literal notranslate"><span class="pre">--status-fd</span> <span class="pre">&lt;fd&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">--logger-fd</span> <span class="pre">&lt;fd&gt;</span></code>, etc.</li>
+<li>openssl: <code class="docutils literal notranslate"><span class="pre">-pass</span> <span class="pre">fd:&lt;fd&gt;</span></code></li>
+<li>qemu: <code class="docutils literal notranslate"><span class="pre">-add-fd</span> <span class="pre">&lt;fd&gt;</span></code></li>
+<li>valgrind: <code class="docutils literal notranslate"><span class="pre">--log-fd=&lt;fd&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">--input-fd=&lt;fd&gt;</span></code>, etc.</li>
+<li>xterm: <code class="docutils literal notranslate"><span class="pre">-S</span> <span class="pre">&lt;fd&gt;</span></code></li>
+</ul>
+<p>On Linux, it is possible to use <code class="docutils literal notranslate"><span class="pre">&quot;/dev/fd/&lt;fd&gt;&quot;</span></code> filename to pass a
+file descriptor to a program expecting a filename.</p>
+</div>
+<div class="section" id="performances">
+<h2><a class="toc-backref" href="#id22">Performances</a><a class="headerlink" href="#performances" title="Permalink to this headline">¶</a></h2>
+<p>Setting close-on-exec flag may require additional system calls for
+each creation of new file descriptors. The number of additional system
+calls depends on the method used to set the flag:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">O_NOINHERIT</span></code>: no additional system call</li>
+<li><code class="docutils literal notranslate"><span class="pre">O_CLOEXEC</span></code>: one additional system call, but only at the creation
+of the first file descriptor, to check if the flag is supported. If
+the flag is not supported, Python has to fallback to the next method.</li>
+<li><code class="docutils literal notranslate"><span class="pre">ioctl(fd,</span> <span class="pre">FIOCLEX)</span></code>: one additional system call per file
+descriptor</li>
+<li><code class="docutils literal notranslate"><span class="pre">fcntl(fd,</span> <span class="pre">F_SETFD,</span> <span class="pre">flags)</span></code>: two additional system calls per file
+descriptor, one to get old flags and one to set new flags</li>
+</ul>
+<p>On Linux, setting the close-on-flag has a low overhead on performances.
+Results of
+<a class="reference external" href="http://hg.python.org/peps/file/tip/pep-0433/bench_cloexec.py">bench_cloexec.py</a>
+on Linux 3.6:</p>
+<ul class="simple">
+<li>close-on-flag not set: 7.8 us</li>
+<li><code class="docutils literal notranslate"><span class="pre">O_CLOEXEC</span></code>: 1% slower (7.9 us)</li>
+<li><code class="docutils literal notranslate"><span class="pre">ioctl()</span></code>: 3% slower (8.0 us)</li>
+<li><code class="docutils literal notranslate"><span class="pre">fcntl()</span></code>: 3% slower (8.0 us)</li>
+</ul>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id23">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="os-get-cloexec-fd">
+<h3><a class="toc-backref" href="#id24">os.get_cloexec(fd)</a><a class="headerlink" href="#os-get-cloexec-fd" title="Permalink to this headline">¶</a></h3>
+<p>Get the close-on-exec flag of a file descriptor.</p>
+<p>Pseudo-code:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;nt&#39;</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">get_cloexec</span><span class="p">(</span><span class="n">fd</span><span class="p">):</span>
+        <span class="n">handle</span> <span class="o">=</span> <span class="n">_winapi</span><span class="o">.</span><span class="n">_get_osfhandle</span><span class="p">(</span><span class="n">fd</span><span class="p">);</span>
+        <span class="n">flags</span> <span class="o">=</span> <span class="n">_winapi</span><span class="o">.</span><span class="n">GetHandleInformation</span><span class="p">(</span><span class="n">handle</span><span class="p">)</span>
+        <span class="k">return</span> <span class="ow">not</span><span class="p">(</span><span class="n">flags</span> <span class="o">&amp;</span> <span class="n">_winapi</span><span class="o">.</span><span class="n">HANDLE_FLAG_INHERIT</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">fcntl</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">def</span> <span class="nf">get_cloexec</span><span class="p">(</span><span class="n">fd</span><span class="p">):</span>
+            <span class="n">flags</span> <span class="o">=</span> <span class="n">fcntl</span><span class="o">.</span><span class="n">fcntl</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">fcntl</span><span class="o">.</span><span class="n">F_GETFD</span><span class="p">)</span>
+            <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">flags</span> <span class="o">&amp;</span> <span class="n">fcntl</span><span class="o">.</span><span class="n">FD_CLOEXEC</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="os-set-cloexec-fd-cloexec-true">
+<h3><a class="toc-backref" href="#id25">os.set_cloexec(fd, cloexec=True)</a><a class="headerlink" href="#os-set-cloexec-fd-cloexec-true" title="Permalink to this headline">¶</a></h3>
+<p>Set or clear the close-on-exec flag on a file descriptor. The flag
+is set after the creation of the file descriptor and so it is not
+atomic.</p>
+<p>Pseudo-code:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;nt&#39;</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">set_cloexec</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">cloexec</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">handle</span> <span class="o">=</span> <span class="n">_winapi</span><span class="o">.</span><span class="n">_get_osfhandle</span><span class="p">(</span><span class="n">fd</span><span class="p">);</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">_winapi</span><span class="o">.</span><span class="n">HANDLE_FLAG_INHERIT</span>
+        <span class="k">if</span> <span class="n">cloexec</span><span class="p">:</span>
+            <span class="n">flags</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">flags</span> <span class="o">=</span> <span class="n">mask</span>
+        <span class="n">_winapi</span><span class="o">.</span><span class="n">SetHandleInformation</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">flags</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">fnctl</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">ioctl</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">ioctl</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">fcntl</span>
+        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+            <span class="k">pass</span>
+    <span class="k">if</span> <span class="n">ioctl</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="s1">&#39;FIOCLEX&#39;</span><span class="p">,</span> <span class="n">ioctl</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">set_cloexec</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">cloexec</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">cloexec</span><span class="p">:</span>
+                <span class="n">ioctl</span><span class="o">.</span><span class="n">ioctl</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">ioctl</span><span class="o">.</span><span class="n">FIOCLEX</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ioctl</span><span class="o">.</span><span class="n">ioctl</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">ioctl</span><span class="o">.</span><span class="n">FIONCLEX</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">fnctl</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">def</span> <span class="nf">set_cloexec</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">cloexec</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+            <span class="n">flags</span> <span class="o">=</span> <span class="n">fcntl</span><span class="o">.</span><span class="n">fcntl</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">fcntl</span><span class="o">.</span><span class="n">F_GETFD</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">cloexec</span><span class="p">:</span>
+                <span class="n">flags</span> <span class="o">|=</span> <span class="n">FD_CLOEXEC</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">flags</span> <span class="o">&amp;=</span> <span class="o">~</span><span class="n">FD_CLOEXEC</span>
+            <span class="n">fcntl</span><span class="o">.</span><span class="n">fcntl</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">fcntl</span><span class="o">.</span><span class="n">F_SETFD</span><span class="p">,</span> <span class="n">flags</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>ioctl is preferred over fcntl because it requires only one syscall,
+instead of two syscalls for fcntl.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">fcntl(fd,</span> <span class="pre">F_SETFD,</span> <span class="pre">flags)</span></code> only supports one flag
+(<code class="docutils literal notranslate"><span class="pre">FD_CLOEXEC</span></code>), so it would be possible to avoid <code class="docutils literal notranslate"><span class="pre">fcntl(fd,</span>
+<span class="pre">F_GETFD)</span></code>. But it may drop other flags in the future, and so it is
+safer to keep the two functions calls.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">fopen()</span></code> function of the GNU libc ignores the error if
+<code class="docutils literal notranslate"><span class="pre">fcntl(fd,</span> <span class="pre">F_SETFD,</span> <span class="pre">flags)</span></code> failed.</p>
+</div>
+</div>
+<div class="section" id="open">
+<h3><a class="toc-backref" href="#id26">open()</a><a class="headerlink" href="#open" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Windows: <code class="docutils literal notranslate"><span class="pre">open()</span></code> with <code class="docutils literal notranslate"><span class="pre">O_NOINHERIT</span></code> flag [atomic]</li>
+<li><code class="docutils literal notranslate"><span class="pre">open()</span></code> with <code class="docutils literal notranslate"><span class="pre">O_CLOEXEC</span> <span class="pre">flag</span></code> [atomic]</li>
+<li><code class="docutils literal notranslate"><span class="pre">open()</span></code> + <code class="docutils literal notranslate"><span class="pre">os.set_cloexec(fd,</span> <span class="pre">True)</span></code> [best-effort]</li>
+</ul>
+</div>
+<div class="section" id="os-dup">
+<h3><a class="toc-backref" href="#id27">os.dup()</a><a class="headerlink" href="#os-dup" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Windows: <code class="docutils literal notranslate"><span class="pre">DuplicateHandle()</span></code> [atomic]</li>
+<li><code class="docutils literal notranslate"><span class="pre">fcntl(fd,</span> <span class="pre">F_DUPFD_CLOEXEC)</span></code> [atomic]</li>
+<li><code class="docutils literal notranslate"><span class="pre">dup()</span></code> + <code class="docutils literal notranslate"><span class="pre">os.set_cloexec(fd,</span> <span class="pre">True)</span></code> [best-effort]</li>
+</ul>
+</div>
+<div class="section" id="os-dup2">
+<h3><a class="toc-backref" href="#id28">os.dup2()</a><a class="headerlink" href="#os-dup2" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">fcntl(fd,</span> <span class="pre">F_DUP2FD_CLOEXEC,</span> <span class="pre">fd2)</span></code> [atomic]</li>
+<li><code class="docutils literal notranslate"><span class="pre">dup3()</span></code> with <code class="docutils literal notranslate"><span class="pre">O_CLOEXEC</span></code> flag [atomic]</li>
+<li><code class="docutils literal notranslate"><span class="pre">dup2()</span></code> + <code class="docutils literal notranslate"><span class="pre">os.set_cloexec(fd,</span> <span class="pre">True)</span></code> [best-effort]</li>
+</ul>
+</div>
+<div class="section" id="os-pipe">
+<h3><a class="toc-backref" href="#id29">os.pipe()</a><a class="headerlink" href="#os-pipe" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Windows: <code class="docutils literal notranslate"><span class="pre">CreatePipe()</span></code> with
+<code class="docutils literal notranslate"><span class="pre">SECURITY_ATTRIBUTES.bInheritHandle=TRUE</span></code>, or <code class="docutils literal notranslate"><span class="pre">_pipe()</span></code> with
+<code class="docutils literal notranslate"><span class="pre">O_NOINHERIT</span></code> flag [atomic]</li>
+<li><code class="docutils literal notranslate"><span class="pre">pipe2()</span></code> with <code class="docutils literal notranslate"><span class="pre">O_CLOEXEC</span></code> flag [atomic]</li>
+<li><code class="docutils literal notranslate"><span class="pre">pipe()</span></code> + <code class="docutils literal notranslate"><span class="pre">os.set_cloexec(fd,</span> <span class="pre">True)</span></code> [best-effort]</li>
+</ul>
+</div>
+<div class="section" id="socket-socket">
+<h3><a class="toc-backref" href="#id30">socket.socket()</a><a class="headerlink" href="#socket-socket" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Windows: <code class="docutils literal notranslate"><span class="pre">WSASocket()</span></code> with <code class="docutils literal notranslate"><span class="pre">WSA_FLAG_NO_HANDLE_INHERIT</span></code> flag
+[atomic]</li>
+<li><code class="docutils literal notranslate"><span class="pre">socket()</span></code> with <code class="docutils literal notranslate"><span class="pre">SOCK_CLOEXEC</span></code> flag [atomic]</li>
+<li><code class="docutils literal notranslate"><span class="pre">socket()</span></code> + <code class="docutils literal notranslate"><span class="pre">os.set_cloexec(fd,</span> <span class="pre">True)</span></code> [best-effort]</li>
+</ul>
+</div>
+<div class="section" id="socket-socketpair">
+<h3><a class="toc-backref" href="#id31">socket.socketpair()</a><a class="headerlink" href="#socket-socketpair" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">socketpair()</span></code> with <code class="docutils literal notranslate"><span class="pre">SOCK_CLOEXEC</span></code> flag [atomic]</li>
+<li><code class="docutils literal notranslate"><span class="pre">socketpair()</span></code> + <code class="docutils literal notranslate"><span class="pre">os.set_cloexec(fd,</span> <span class="pre">True)</span></code> [best-effort]</li>
+</ul>
+</div>
+<div class="section" id="socket-socket-accept">
+<h3><a class="toc-backref" href="#id32">socket.socket.accept()</a><a class="headerlink" href="#socket-socket-accept" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">accept4()</span></code> with <code class="docutils literal notranslate"><span class="pre">SOCK_CLOEXEC</span></code> flag [atomic]</li>
+<li><code class="docutils literal notranslate"><span class="pre">accept()</span></code> + <code class="docutils literal notranslate"><span class="pre">os.set_cloexec(fd,</span> <span class="pre">True)</span></code> [best-effort]</li>
+</ul>
+</div>
+</div>
+<div class="section" id="backward-compatibility">
+<h2><a class="toc-backref" href="#id33">Backward compatibility</a><a class="headerlink" href="#backward-compatibility" title="Permalink to this headline">¶</a></h2>
+<p>There is no backward incompatible change. The default behaviour is
+unchanged: the close-on-exec flag is not set by default.</p>
+</div>
+<div class="section" id="appendix-operating-system-support">
+<h2><a class="toc-backref" href="#id34">Appendix: Operating system support</a><a class="headerlink" href="#appendix-operating-system-support" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="windows">
+<h3><a class="toc-backref" href="#id35">Windows</a><a class="headerlink" href="#windows" title="Permalink to this headline">¶</a></h3>
+<p>Windows has an <code class="docutils literal notranslate"><span class="pre">O_NOINHERIT</span></code> flag: “Do not inherit in child
+processes”.</p>
+<p>For example, it is supported by <code class="docutils literal notranslate"><span class="pre">open()</span></code> and <code class="docutils literal notranslate"><span class="pre">_pipe()</span></code>.</p>
+<p>The flag can be cleared using
+<code class="docutils literal notranslate"><span class="pre">SetHandleInformation(fd,</span> <span class="pre">HANDLE_FLAG_INHERIT,</span> <span class="pre">0)</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">CreateProcess()</span></code> has an <code class="docutils literal notranslate"><span class="pre">bInheritHandles</span></code> parameter: if it is
+<code class="docutils literal notranslate"><span class="pre">FALSE</span></code>, the handles are not inherited. If it is <code class="docutils literal notranslate"><span class="pre">TRUE</span></code>, handles
+with <code class="docutils literal notranslate"><span class="pre">HANDLE_FLAG_INHERIT</span></code> flag set are inherited.
+<code class="docutils literal notranslate"><span class="pre">subprocess.Popen</span></code> uses <code class="docutils literal notranslate"><span class="pre">close_fds</span></code> option to define
+<code class="docutils literal notranslate"><span class="pre">bInheritHandles</span></code>.</p>
+</div>
+<div class="section" id="ioctl">
+<h3><a class="toc-backref" href="#id36">ioctl</a><a class="headerlink" href="#ioctl" title="Permalink to this headline">¶</a></h3>
+<p>Functions:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">ioctl(fd,</span> <span class="pre">FIOCLEX,</span> <span class="pre">0)</span></code>: set the close-on-exec flag</li>
+<li><code class="docutils literal notranslate"><span class="pre">ioctl(fd,</span> <span class="pre">FIONCLEX,</span> <span class="pre">0)</span></code>: clear the close-on-exec flag</li>
+</ul>
+<p>Availability: Linux, Mac OS X, QNX, NetBSD, OpenBSD, FreeBSD.</p>
+</div>
+<div class="section" id="fcntl">
+<h3><a class="toc-backref" href="#id37">fcntl</a><a class="headerlink" href="#fcntl" title="Permalink to this headline">¶</a></h3>
+<p>Functions:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">flags</span> <span class="pre">=</span> <span class="pre">fcntl(fd,</span> <span class="pre">F_GETFD);</span> <span class="pre">fcntl(fd,</span> <span class="pre">F_SETFD,</span> <span class="pre">flags</span> <span class="pre">|</span> <span class="pre">FD_CLOEXEC)</span></code>:
+set the close-on-exec flag</li>
+<li><code class="docutils literal notranslate"><span class="pre">flags</span> <span class="pre">=</span> <span class="pre">fcntl(fd,</span> <span class="pre">F_GETFD);</span> <span class="pre">fcntl(fd,</span> <span class="pre">F_SETFD,</span> <span class="pre">flags</span> <span class="pre">&amp;</span> <span class="pre">~FD_CLOEXEC)</span></code>:
+clear the close-on-exec flag</li>
+</ul>
+<p>Availability: AIX, Digital UNIX, FreeBSD, HP-UX, IRIX, Linux, Mac OS
+X, OpenBSD, Solaris, SunOS, Unicos.</p>
+</div>
+<div class="section" id="atomic-flags">
+<h3><a class="toc-backref" href="#id38">Atomic flags</a><a class="headerlink" href="#atomic-flags" title="Permalink to this headline">¶</a></h3>
+<p>New flags:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">O_CLOEXEC</span></code>: available on Linux (2.6.23), FreeBSD (8.3),
+OpenBSD 5.0, Solaris 11, QNX, BeOS, next NetBSD release (6.1?).
+This flag is part of POSIX.1-2008.</li>
+<li><code class="docutils literal notranslate"><span class="pre">SOCK_CLOEXEC</span></code> flag for <code class="docutils literal notranslate"><span class="pre">socket()</span></code> and <code class="docutils literal notranslate"><span class="pre">socketpair()</span></code>,
+available on Linux 2.6.27, OpenBSD 5.2, NetBSD 6.0.</li>
+<li><code class="docutils literal notranslate"><span class="pre">WSA_FLAG_NO_HANDLE_INHERIT</span></code> flag for <code class="docutils literal notranslate"><span class="pre">WSASocket()</span></code>:  supported
+on Windows 7 with SP1, Windows Server 2008 R2 with SP1, and later</li>
+<li><code class="docutils literal notranslate"><span class="pre">fcntl()</span></code>: <code class="docutils literal notranslate"><span class="pre">F_DUPFD_CLOEXEC</span></code> flag, available on Linux 2.6.24,
+OpenBSD 5.0, FreeBSD 9.1, NetBSD 6.0, Solaris 11. This flag is part
+of POSIX.1-2008.</li>
+<li><code class="docutils literal notranslate"><span class="pre">fcntl()</span></code>: <code class="docutils literal notranslate"><span class="pre">F_DUP2FD_CLOEXEC</span></code> flag, available on FreeBSD 9.1
+and Solaris 11.</li>
+<li><code class="docutils literal notranslate"><span class="pre">recvmsg()</span></code>: <code class="docutils literal notranslate"><span class="pre">MSG_CMSG_CLOEXEC</span></code>, available on Linux 2.6.23,
+NetBSD 6.0.</li>
+</ul>
+<p>On Linux older than 2.6.23, <code class="docutils literal notranslate"><span class="pre">O_CLOEXEC</span></code> flag is simply ignored. So
+we have to check that the flag is supported by calling <code class="docutils literal notranslate"><span class="pre">fcntl()</span></code>. If
+it does not work, we have to set the flag using <code class="docutils literal notranslate"><span class="pre">ioctl()</span></code> or
+<code class="docutils literal notranslate"><span class="pre">fcntl()</span></code>.</p>
+<p>On Linux older than 2.6.27, if the <code class="docutils literal notranslate"><span class="pre">SOCK_CLOEXEC</span></code> flag is set in the
+socket type, <code class="docutils literal notranslate"><span class="pre">socket()</span></code> or <code class="docutils literal notranslate"><span class="pre">socketpair()</span></code> fail and <code class="docutils literal notranslate"><span class="pre">errno</span></code> is set
+to <code class="docutils literal notranslate"><span class="pre">EINVAL</span></code>.</p>
+<p>On Windows XPS3, <code class="docutils literal notranslate"><span class="pre">WSASocket()</span></code> with <code class="docutils literal notranslate"><span class="pre">WSAEPROTOTYPE</span></code> when
+<code class="docutils literal notranslate"><span class="pre">WSA_FLAG_NO_HANDLE_INHERIT</span></code> flag is used.</p>
+<p>New functions:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">dup3()</span></code>: available on Linux 2.6.27 (and glibc 2.9)</li>
+<li><code class="docutils literal notranslate"><span class="pre">pipe2()</span></code>: available on Linux 2.6.27 (and glibc 2.9)</li>
+<li><code class="docutils literal notranslate"><span class="pre">accept4()</span></code>: available on Linux 2.6.28 (and glibc 2.10)</li>
+</ul>
+<p>If <code class="docutils literal notranslate"><span class="pre">accept4()</span></code> is called on Linux older than 2.6.28, <code class="docutils literal notranslate"><span class="pre">accept4()</span></code>
+returns <code class="docutils literal notranslate"><span class="pre">-1</span></code> (fail) and <code class="docutils literal notranslate"><span class="pre">errno</span></code> is set to <code class="docutils literal notranslate"><span class="pre">ENOSYS</span></code>.</p>
+</div>
+</div>
+<div class="section" id="links">
+<h2><a class="toc-backref" href="#id39">Links</a><a class="headerlink" href="#links" title="Permalink to this headline">¶</a></h2>
+<p>Links:</p>
+<ul class="simple">
+<li><a class="reference external" href="http://udrepper.livejournal.com/20407.html">Secure File Descriptor Handling</a> (Ulrich Drepper,
+2008)</li>
+<li><a class="reference external" href="https://bitbucket.org/pvl/gaeseries-tornado/src/c2671cea1842/tornado/win32_support.py">win32_support.py of the Tornado project</a>:
+emulate fcntl(fd, F_SETFD, FD_CLOEXEC) using
+<code class="docutils literal notranslate"><span class="pre">SetHandleInformation(fd,</span> <span class="pre">HANDLE_FLAG_INHERIT,</span> <span class="pre">1)</span></code></li>
+<li><a class="reference external" href="https://lkml.org/lkml/2012/4/1/71">LKML: [PATCH] nextfd(2)</a></li>
+</ul>
+<p>Python issues:</p>
+<ul class="simple">
+<li><a class="reference external" href="http://bugs.python.org/issue10115">#10115: Support accept4() for atomic setting of flags at socket
+creation</a></li>
+<li><a class="reference external" href="http://bugs.python.org/issue12105">#12105: open() does not able to set flags, such as O_CLOEXEC</a></li>
+<li><a class="reference external" href="http://bugs.python.org/issue12107">#12107: TCP listening sockets created without FD_CLOEXEC flag</a></li>
+<li><a class="reference external" href="http://bugs.python.org/issue16500">#16500: Add an atfork module</a></li>
+<li><a class="reference external" href="http://bugs.python.org/issue16850">#16850: Add “e” mode to open(): close-and-exec
+(O_CLOEXEC) / O_NOINHERIT</a></li>
+<li><a class="reference external" href="http://bugs.python.org/issue16860">#16860: Use O_CLOEXEC in the tempfile module</a></li>
+<li><a class="reference external" href="http://bugs.python.org/issue17036">#17036: Implementation of the PEP 433</a></li>
+<li><a class="reference external" href="http://bugs.python.org/issue16946">#16946: subprocess: _close_open_fd_range_safe() does not set
+close-on-exec flag on Linux &lt; 2.6.23 if O_CLOEXEC is defined</a></li>
+<li><a class="reference external" href="http://bugs.python.org/issue17070">#17070: PEP 433: Use the new cloexec to improve security and avoid
+bugs</a></li>
+</ul>
+<p>Other languages:</p>
+<ul class="simple">
+<li>Perl sets the close-on-exec flag on newly created file descriptor if
+their number is greater than <code class="docutils literal notranslate"><span class="pre">$SYSTEM_FD_MAX</span></code> (<code class="docutils literal notranslate"><span class="pre">$^F</span></code>).
+See <a class="reference external" href="http://perldoc.perl.org/perlvar.html#%24SYSTEM_FD_MAX">$SYSTEM_FD_MAX documentation</a>. Perl does
+this since the creation of Perl (it was already present in Perl 1).</li>
+<li>Ruby: <a class="reference external" href="http://bugs.ruby-lang.org/issues/5041">Set FD_CLOEXEC for all fds (except 0, 1, 2)</a></li>
+<li>Ruby: <a class="reference external" href="http://bugs.ruby-lang.org/issues/1291">O_CLOEXEC flag missing for Kernel::open</a>: the
+<a class="reference external" href="http://bugs.ruby-lang.org/projects/ruby-trunk/repository/revisions/31643">commit was reverted later</a></li>
+<li>OCaml: <a class="reference external" href="http://caml.inria.fr/mantis/view.php?id=5256">PR#5256: Processes opened using Unix.open_process* inherit
+all opened file descriptors (including sockets)</a>. OCaml has a
+<code class="docutils literal notranslate"><span class="pre">Unix.set_close_on_exec</span></code> function.</li>
+</ul>
+</div>
+<div class="section" id="footnotes">
+<h2><a class="toc-backref" href="#id40">Footnotes</a><a class="headerlink" href="#footnotes" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="subprocess-close"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>On UNIX since Python 3.2, subprocess.Popen()
+closes all file descriptors by default: <code class="docutils literal notranslate"><span class="pre">close_fds=True</span></code>. It
+closes file descriptors in range 3 inclusive to <code class="docutils literal notranslate"><span class="pre">local_max_fd</span></code>
+exclusive, where <code class="docutils literal notranslate"><span class="pre">local_max_fd</span></code> is <code class="docutils literal notranslate"><span class="pre">fcntl(0,</span> <span class="pre">F_MAXFD)</span></code> on
+NetBSD, or <code class="docutils literal notranslate"><span class="pre">sysconf(_SC_OPEN_MAX)</span></code> otherwise. If the error pipe
+has a descriptor smaller than 3, <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> is raised.</dd>
+</dl>
+</div>
+<div class="section" id="id2">
+<h2><a class="toc-backref" href="#id41">References</a><a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id3"><span class="brackets"><a class="fn-backref" href="#id4">2</a></span></dt>
+<dd><a class="reference external" href="http://bugs.python.org/issue16500">http://bugs.python.org/issue16500</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id42">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0433.txt">https://github.com/python/peps/blob/master/pep-0433.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0433.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0432.html">PEP 0432</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0434.html">PEP 0434</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 433 – Easier suppression of file descriptor inheritance</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a><ul>
+<li><a class="reference internal" href="#status-in-python-3-3">Status in Python 3.3</a></li>
+<li><a class="reference internal" href="#inherited-file-descriptors-issues">Inherited file descriptors issues</a></li>
+<li><a class="reference internal" href="#security">Security</a></li>
+<li><a class="reference internal" href="#atomicity">Atomicity</a></li>
+<li><a class="reference internal" href="#portability">Portability</a></li>
+<li><a class="reference internal" href="#scope">Scope</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#proposal">Proposal</a></li>
+<li><a class="reference internal" href="#alternatives">Alternatives</a><ul>
+<li><a class="reference internal" href="#inheritance-enabled-by-default-default-no-configurable">Inheritance enabled by default, default no configurable</a></li>
+<li><a class="reference internal" href="#inheritance-enabled-by-default-default-can-only-be-set-to-true">Inheritance enabled by default, default can only be set to True</a></li>
+<li><a class="reference internal" href="#disable-inheritance-by-default">Disable inheritance by default</a></li>
+<li><a class="reference internal" href="#close-file-descriptors-after-fork">Close file descriptors after fork</a></li>
+<li><a class="reference internal" href="#open-add-e-flag-to-mode">open(): add “e” flag to mode</a></li>
+<li><a class="reference internal" href="#bikeshedding-on-the-name-of-the-new-parameter">Bikeshedding on the name of the new parameter</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#applications-using-inheritance-of-file-descriptors">Applications using inheritance of file descriptors</a></li>
+<li><a class="reference internal" href="#performances">Performances</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a><ul>
+<li><a class="reference internal" href="#os-get-cloexec-fd">os.get_cloexec(fd)</a></li>
+<li><a class="reference internal" href="#os-set-cloexec-fd-cloexec-true">os.set_cloexec(fd, cloexec=True)</a></li>
+<li><a class="reference internal" href="#open">open()</a></li>
+<li><a class="reference internal" href="#os-dup">os.dup()</a></li>
+<li><a class="reference internal" href="#os-dup2">os.dup2()</a></li>
+<li><a class="reference internal" href="#os-pipe">os.pipe()</a></li>
+<li><a class="reference internal" href="#socket-socket">socket.socket()</a></li>
+<li><a class="reference internal" href="#socket-socketpair">socket.socketpair()</a></li>
+<li><a class="reference internal" href="#socket-socket-accept">socket.socket.accept()</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#backward-compatibility">Backward compatibility</a></li>
+<li><a class="reference internal" href="#appendix-operating-system-support">Appendix: Operating system support</a><ul>
+<li><a class="reference internal" href="#windows">Windows</a></li>
+<li><a class="reference internal" href="#ioctl">ioctl</a></li>
+<li><a class="reference internal" href="#fcntl">fcntl</a></li>
+<li><a class="reference internal" href="#atomic-flags">Atomic flags</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#links">Links</a></li>
+<li><a class="reference internal" href="#footnotes">Footnotes</a></li>
+<li><a class="reference internal" href="#id2">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

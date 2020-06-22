@@ -1,0 +1,398 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 581 – Using GitHub Issues for CPython &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 582 – Python local packages directory" href="pep-0582.html" />
+    <link rel="prev" title="PEP 580 – The C call protocol" href="pep-0580.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 581 – Using GitHub Issues for CPython</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-581-using-github-issues-for-cpython">
+<h1 class="page-title">PEP 581 – Using GitHub Issues for CPython<a class="headerlink" href="#pep-581-using-github-issues-for-cpython" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">581</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Using GitHub Issues for CPython</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Mariatta &lt;mariatta&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even">Barry Warsaw &lt;barry&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-odd">Discussions-To</dt>
+<dd class="field-odd">Core-Workflow Category on Discourse</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Accepted</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Process</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">20-Jun-2018</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd">7-Mar-2019</dd>
+<dt class="field-even">Resolution</dt>
+<dd class="field-even"><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2019-May/157399.html">https://mail.python.org/pipermail/python-dev/2019-May/157399.html</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id39">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id40">Rationale</a><ul>
+<li><a class="reference internal" href="#why-github" id="id41">Why GitHub?</a></li>
+<li><a class="reference internal" href="#issues-with-roundup-bpo" id="id42">Issues with Roundup / bpo</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#why-not-gitlab" id="id43">Why not GitLab?</a></li>
+<li><a class="reference internal" href="#why-not-another-issue-tracker" id="id44">Why not another issue tracker?</a></li>
+<li><a class="reference internal" href="#why-not-focus-on-improving-roundup-bpo" id="id45">Why not focus on improving Roundup / bpo?</a></li>
+<li><a class="reference internal" href="#downsides-of-github" id="id46">Downsides of GitHub</a></li>
+<li><a class="reference internal" href="#further-questions-and-discussions" id="id47">Further questions and discussions</a></li>
+<li><a class="reference internal" href="#acknowledgements" id="id48">Acknowledgements</a></li>
+<li><a class="reference internal" href="#references" id="id49">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id50">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id39">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP outlines the rationale for migration from Python’s issue
+tracker on Roundup to GitHub issues.  See PEP 588 for the detailed
+migration plan.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id40">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>CPython’s development moved to GitHub in February 2017. All other
+projects within the PSF’s organization are hosted on GitHub and are
+using GitHub issues.  CPython is still using Roundup as the issue
+tracker on bugs.python.org (bpo) <a class="footnote-reference brackets" href="#id20" id="id1">1</a>.</p>
+<div class="section" id="why-github">
+<h3><a class="toc-backref" href="#id41">Why GitHub?</a><a class="headerlink" href="#why-github" title="Permalink to this headline">¶</a></h3>
+<p>GitHub has a lot of nice features, readily available out of the box. Some of
+these aren’t readily available on Roundup / bpo.</p>
+<ul class="simple">
+<li>APIs that can be used to build integrations and automations. There are various
+existing integrations and applications available from GitHub Marketplace to
+help with the workflow. New applications are easily installed and enabled.
+In addition, we’ve had great success with building our own GitHub bots, like
+miss-islington <a class="footnote-reference brackets" href="#id21" id="id2">2</a>, bedevere <a class="footnote-reference brackets" href="#id22" id="id3">3</a>, and the-knights-who-say-ni <a class="footnote-reference brackets" href="#id23" id="id4">4</a>.</li>
+<li>Ability to embed/drag and drop screenshots and debug log files into GitHub
+pull requests and issues.</li>
+<li>Administrators and core developers can edit issues, comments, and pull requests.</li>
+<li>Ability to reply to issue and pull request conversations via email.</li>
+<li>Support for two factor authentication.</li>
+<li>Support for markdown and emoji.</li>
+<li>Preview tab, showing how a comment will be rendered, prior to
+actually posting.</li>
+<li>Support for voting via reactions.</li>
+<li>Support for permalinks <a class="footnote-reference brackets" href="#id24" id="id5">5</a>, allowing easy quoting and copying &amp; pasting of
+source code. It is possible to automatically embed code snippet on GitHub
+by pasting a permalink.</li>
+<li>Core developers, volunteers, and the PSF don’t have to maintain the
+issue infrastructure/site, giving us more time and resources to focus on the
+development of Python.</li>
+<li>Ability to automatically close issues when a PR has been merged <a class="footnote-reference brackets" href="#id25" id="id6">6</a>.<ul>
+<li>Note that this feature exists in bpo too.</li>
+</ul>
+</li>
+<li>Lower barrier to contribution. With more than 28 million users, an open
+source contributor is more likely to already have an account and be familiar
+with GitHub’s interface, making it easier to start contributing.</li>
+<li>Email notifications containing metadata <a class="footnote-reference brackets" href="#id26" id="id7">7</a>, integrated with Gmail, allowing
+systematic filtering of emails. While Roundup emails contain some metadata,
+they’re not as extensive.</li>
+<li>Additional privacy, such as offering the user a choice to hide an
+email address, while still allowing communication with the user
+through &#64;-mentions.</li>
+</ul>
+</div>
+<div class="section" id="issues-with-roundup-bpo">
+<h3><a class="toc-backref" href="#id42">Issues with Roundup / bpo</a><a class="headerlink" href="#issues-with-roundup-bpo" title="Permalink to this headline">¶</a></h3>
+<ul>
+<li><p>Less than five people maintain bpo. Some of them are core developers.</p>
+</li>
+<li><p>The upstream Roundup code is in Mercurial. Without any CI available,
+it puts heavy burden on the few existing maintainers in terms of
+reviewing, testing, and applying patches. While there is an unofficial mirror
+of Roundup on GitHub <a class="footnote-reference brackets" href="#id27" id="id8">8</a>, Mercurial patches are still the main way to contribute
+to it.</p>
+<p>There is an open discussion about moving the source code of bpo to
+GitHub <a class="footnote-reference brackets" href="#id28" id="id9">9</a>. If the source code of bpo does move to GitHub, it will
+become difficult to update patches from upstream. But as long as it
+is in Mercurial, it is difficult to maintain and onboard new
+contributors.</p>
+</li>
+<li><p>In its current state, the project is not equipped to accept lots of
+contributions from people who aren’t already familiar with the code
+base.</p>
+</li>
+<li><p>The user interface needs an update and redesign. It will require UX/UI research
+to keep it up to date with current web standards, including accessibility.</p>
+</li>
+<li><p>Users email addresses were exposed.</p>
+<ul class="simple">
+<li>Note: Exposing email address to registered and logged in users was a decision
+taken when bpo instance was setup. This behavior has been recently modified
+after PEP 581’s acceptance.</li>
+</ul>
+</li>
+<li><p>REST API is not currently available in bpo. There was an open issue in Roundup
+for adding REST API  <a class="footnote-reference brackets" href="#id29" id="id10">10</a>. At the time PEP 581 was proposed, the ticket received
+no activity since 2016. REST API has been integrated in Roundup in February 2019,
+however it is not yet integrated to bpo.</p>
+</li>
+<li><p>It sends a number of unnecessary emails and notifications. An example is the nosy email,
+where email notifications are sent whenever someone adds themselves as “nosy”.
+An issue has been filed in upstream Roundup about this since 2012 with
+little traction <a class="footnote-reference brackets" href="#id30" id="id11">11</a>. While it can be configured, the request to configure it
+was not addressed/ignored.</p>
+</li>
+<li><p>Creating an account has been a hassle. There have been reports of people
+having trouble creating accounts or logging in. Some examples of open tickets:
+“Commas in username causes error in nosy list” <a class="footnote-reference brackets" href="#id31" id="id12">12</a>, “An error has occurred ..” <a class="footnote-reference brackets" href="#id32" id="id13">13</a>,
+“It is not sending me the confirmation email …” <a class="footnote-reference brackets" href="#id33" id="id14">14</a>.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="why-not-gitlab">
+<h2><a class="toc-backref" href="#id43">Why not GitLab?</a><a class="headerlink" href="#why-not-gitlab" title="Permalink to this headline">¶</a></h2>
+<p>Had we migrated to GitLab instead of GitHub in 2017, this PEP would have been
+titled “Using GitLab Issues for CPython”.</p>
+</div>
+<div class="section" id="why-not-another-issue-tracker">
+<h2><a class="toc-backref" href="#id44">Why not another issue tracker?</a><a class="headerlink" href="#why-not-another-issue-tracker" title="Permalink to this headline">¶</a></h2>
+<p>Using another issue tracker will require yet another learning curve, for having
+to learn and get used to a different interface. We’ll also need to learn and
+figure out how to build the integrations with GitHub.</p>
+<p>By using GitHub issues, where the CPython source code is currently
+hosted and where pull requests are taking place, we’ll be providing
+consistent experience to contributors and maintainers, while not
+having to jump from one interface to another.</p>
+</div>
+<div class="section" id="why-not-focus-on-improving-roundup-bpo">
+<h2><a class="toc-backref" href="#id45">Why not focus on improving Roundup / bpo?</a><a class="headerlink" href="#why-not-focus-on-improving-roundup-bpo" title="Permalink to this headline">¶</a></h2>
+<p>GitHub has many features we like that are already available. We still need to
+build out additional integrations and update our bots, but this is something
+we already know how to do.</p>
+<p>In order to really improve Roundup / bpo, it needs to first migrate to GitHub
+and add CI and bots. As I understand it, there is hesitation because upstream
+Roundup is still in Mercurial. Someone more familiar with Roundup / bpo needs
+to champion this effort. (I’m not volunteering, I’m sorry).</p>
+<p>I believe the effort of creating and maintaining GitHub integrations and bots
+is much less than the effort needed to get Roundup up to speed and then to
+continue maintaining it.</p>
+</div>
+<div class="section" id="downsides-of-github">
+<h2><a class="toc-backref" href="#id46">Downsides of GitHub</a><a class="headerlink" href="#downsides-of-github" title="Permalink to this headline">¶</a></h2>
+<p>GitHub is not the perfect issue tracker. Several issues we need to be aware of:</p>
+<ul class="simple">
+<li>Fear of uncertainty and vendor lock in. GitHub is proprietary and there is
+risk of vendor lock-in. However, this is an existing problem since CPython’s
+codebase is already on GitHub. This is also not a unique problem to CPython.
+As a precautionary step, CPython’s repository on GitHub has
+been backed up on daily basis since June 2018. <a class="footnote-reference brackets" href="#id34" id="id15">15</a></li>
+<li>Bots maintenance costs money, and also takes up volunteer time. We would
+be shifting maintenance burden from Roundup to the bots. At the very least,
+so far we’ve been able to address any bugs/issues related to the bots/GitHub
+APIs rather quickly, in a matter of days, instead of months or years. GitHub
+APIs are extensive, and used not only by CPython’s bots but also by the wider
+Python community. It makes GitHub APIs more approachable compared to
+the maintenance of Roundup/bpo.</li>
+<li>Using GitHub could possibly increase the triaging effort. This was first raised
+as a Zulip topic <a class="footnote-reference brackets" href="#id35" id="id16">16</a>, and also brought up during Core Python sprint in
+September 2018 <a class="footnote-reference brackets" href="#id36" id="id17">17</a>. A few solutions have been proposed and considered, such as
+creating a special triage team <a class="footnote-reference brackets" href="#id37" id="id18">18</a>.  After PEP 581’s acceptance, GitHub released a
+new triaging role, currently in beta. The PSF has been in touch with GitHub
+to have this enabled for Python organization. This is pending GitHub’s review <a class="footnote-reference brackets" href="#id38" id="id19">19</a>.</li>
+<li>Using GitHub could make it easier for people to post disruptive or spammy comments.
+It is true that there has been incidents where core developers have to moderate
+and lock disruptive discussions on GitHub. Thankfully, GitHub interface makes
+it easy for core developers to moderate discussions. In addition, incidents
+can be escalated to GitHub.</li>
+<li>Manually editing issue templates can be cumbersome and error-prone. However,
+for most people, creating issues on GitHub will be a much better experience
+than creating issue on bpo. The numerous fields and textbox to choose from
+can be confusing and intimidating to a newcomer, and it is not possible
+to “edit” a message. On GitHub, issue creator can preview their submission,
+and edit their mistake after posting.</li>
+<li>bpo uses a number of fields to specify several metadata, and these might not
+be easily transferable to GitHub. The intended way to handle custom metadata
+on GitHub is by using labels. The details of which labels to create will be
+further discussed in PEP 588.</li>
+</ul>
+</div>
+<div class="section" id="further-questions-and-discussions">
+<h2><a class="toc-backref" href="#id47">Further questions and discussions</a><a class="headerlink" href="#further-questions-and-discussions" title="Permalink to this headline">¶</a></h2>
+<p>You can post questions on Discourse under the
+<a class="reference external" href="https://discuss.python.org/c/core-workflow">Core-Workflow</a> category.</p>
+</div>
+<div class="section" id="acknowledgements">
+<h2><a class="toc-backref" href="#id48">Acknowledgements</a><a class="headerlink" href="#acknowledgements" title="Permalink to this headline">¶</a></h2>
+<p>Thanks to Guido van Rossum, Brett Cannon, and Nick Coghlan, who were consulted
+in the early stage and research of this PEP. Their feedback, concerns, input,
+and ideas have been valuable.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id49">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id20"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>bugs.python.org
+(<a class="reference external" href="https://bugs.python.org/">https://bugs.python.org/</a>)</dd>
+<dt class="label" id="id21"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>miss-islington
+(<a class="reference external" href="https://github.com/python/miss-islington">https://github.com/python/miss-islington</a>)</dd>
+<dt class="label" id="id22"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd>bedevere
+(<a class="reference external" href="https://github.com/python/bedevere">https://github.com/python/bedevere</a>)</dd>
+<dt class="label" id="id23"><span class="brackets"><a class="fn-backref" href="#id4">4</a></span></dt>
+<dd>the-knights-who-say-ni
+(<a class="reference external" href="https://github.com/python/the-knights-who-say-ni">https://github.com/python/the-knights-who-say-ni</a>)</dd>
+<dt class="label" id="id24"><span class="brackets"><a class="fn-backref" href="#id5">5</a></span></dt>
+<dd>Getting permanent links to files
+(<a class="reference external" href="https://help.github.com/articles/getting-permanent-links-to-files/">https://help.github.com/articles/getting-permanent-links-to-files/</a>)</dd>
+<dt class="label" id="id25"><span class="brackets"><a class="fn-backref" href="#id6">6</a></span></dt>
+<dd>Closing issues using keywords
+(<a class="reference external" href="https://help.github.com/articles/closing-issues-using-keywords/">https://help.github.com/articles/closing-issues-using-keywords/</a>)</dd>
+<dt class="label" id="id26"><span class="brackets"><a class="fn-backref" href="#id7">7</a></span></dt>
+<dd>About GitHub email notifications
+(<a class="reference external" href="https://help.github.com/articles/about-email-notifications/">https://help.github.com/articles/about-email-notifications/</a>)</dd>
+<dt class="label" id="id27"><span class="brackets"><a class="fn-backref" href="#id8">8</a></span></dt>
+<dd>Unofficial GitHub mirror of Roundup
+(<a class="reference external" href="https://github.com/roundup-tracker/roundup">https://github.com/roundup-tracker/roundup</a>)</dd>
+<dt class="label" id="id28"><span class="brackets"><a class="fn-backref" href="#id9">9</a></span></dt>
+<dd>Consider whether or not to migrate bugs.python.org source code
+to GitHub repo
+(<a class="reference external" href="https://github.com/python/bugs.python.org/issues/2">https://github.com/python/bugs.python.org/issues/2</a>)</dd>
+<dt class="label" id="id29"><span class="brackets"><a class="fn-backref" href="#id10">10</a></span></dt>
+<dd>Roundup issue 2550734: Expose roundup via a RESTful interface
+(<a class="reference external" href="http://issues.roundup-tracker.org/issue2550734">http://issues.roundup-tracker.org/issue2550734</a>)</dd>
+<dt class="label" id="id30"><span class="brackets"><a class="fn-backref" href="#id11">11</a></span></dt>
+<dd>Roundup issue 2550742: Do not send email by default when adding
+or removing oneself from the Nosy list
+(<a class="reference external" href="http://issues.roundup-tracker.org/issue2550742">http://issues.roundup-tracker.org/issue2550742</a>)</dd>
+<dt class="label" id="id31"><span class="brackets"><a class="fn-backref" href="#id12">12</a></span></dt>
+<dd>Commas in username causes error
+(<a class="reference external" href="https://github.com/python/bugs.python.org/issues/26">https://github.com/python/bugs.python.org/issues/26</a>)</dd>
+<dt class="label" id="id32"><span class="brackets"><a class="fn-backref" href="#id13">13</a></span></dt>
+<dd>It is not sending me the confirmation email
+(<a class="reference external" href="https://github.com/python/bugs.python.org/issues/27">https://github.com/python/bugs.python.org/issues/27</a>)</dd>
+<dt class="label" id="id33"><span class="brackets"><a class="fn-backref" href="#id14">14</a></span></dt>
+<dd>An error has occurred
+(<a class="reference external" href="https://github.com/python/bugs.python.org/issues/26">https://github.com/python/bugs.python.org/issues/26</a>)</dd>
+<dt class="label" id="id34"><span class="brackets"><a class="fn-backref" href="#id15">15</a></span></dt>
+<dd>Backup GitHub information
+(<a class="reference external" href="https://github.com/python/core-workflow/issues/20#issuecomment-396709762">https://github.com/python/core-workflow/issues/20#issuecomment-396709762</a>)</dd>
+<dt class="label" id="id35"><span class="brackets"><a class="fn-backref" href="#id16">16</a></span></dt>
+<dd>s/n ratio – Python – Zulip
+(<a class="reference external" href="https://python.zulipchat.com/#narrow/stream/130206-pep581/topic/s.2Fn.20ratio">https://python.zulipchat.com/#narrow/stream/130206-pep581/topic/s.2Fn.20ratio</a>)</dd>
+<dt class="label" id="id36"><span class="brackets"><a class="fn-backref" href="#id17">17</a></span></dt>
+<dd>PEP 581 discussion at Python Core Sprint 2018
+(<a class="reference external" href="https://mariatta.ca/core-sprint-2018-part-2.html">https://mariatta.ca/core-sprint-2018-part-2.html</a>)</dd>
+<dt class="label" id="id37"><span class="brackets"><a class="fn-backref" href="#id18">18</a></span></dt>
+<dd>Proposal: Create Bug Triage team on GitHub
+(<a class="reference external" href="https://discuss.python.org/t/proposal-create-bug-triage-team-on-github/992">https://discuss.python.org/t/proposal-create-bug-triage-team-on-github/992</a>)</dd>
+<dt class="label" id="id38"><span class="brackets"><a class="fn-backref" href="#id19">19</a></span></dt>
+<dd>Request to enable triage role on GitHub
+(<a class="reference external" href="https://discuss.python.org/t/proposal-create-bug-triage-team-on-github/992/16">https://discuss.python.org/t/proposal-create-bug-triage-team-on-github/992/16</a>)</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id50">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0581.rst">https://github.com/python/peps/blob/master/pep-0581.rst</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0581.rst.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0580.html">PEP 0580</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0582.html">PEP 0582</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 581 – Using GitHub Issues for CPython</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a><ul>
+<li><a class="reference internal" href="#why-github">Why GitHub?</a></li>
+<li><a class="reference internal" href="#issues-with-roundup-bpo">Issues with Roundup / bpo</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#why-not-gitlab">Why not GitLab?</a></li>
+<li><a class="reference internal" href="#why-not-another-issue-tracker">Why not another issue tracker?</a></li>
+<li><a class="reference internal" href="#why-not-focus-on-improving-roundup-bpo">Why not focus on improving Roundup / bpo?</a></li>
+<li><a class="reference internal" href="#downsides-of-github">Downsides of GitHub</a></li>
+<li><a class="reference internal" href="#further-questions-and-discussions">Further questions and discussions</a></li>
+<li><a class="reference internal" href="#acknowledgements">Acknowledgements</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

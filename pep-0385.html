@@ -1,0 +1,596 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 385 – Migrating from Subversion to Mercurial &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 386 – Changing the version comparison module in Distutils" href="pep-0386.html" />
+    <link rel="prev" title="PEP 384 – Defining a Stable ABI" href="pep-0384.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 385 – Migrating from Subversion to Mercurial</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-385-migrating-from-subversion-to-mercurial">
+<h1 class="page-title">PEP 385 – Migrating from Subversion to Mercurial<a class="headerlink" href="#pep-385-migrating-from-subversion-to-mercurial" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">385</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Migrating from Subversion to Mercurial</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Dirkjan Ochtman &lt;dirkjan&#32;&#97;t&#32;ochtman.nl&gt;,
+Antoine Pitrou &lt;solipsis&#32;&#97;t&#32;pitrou.net&gt;,
+Georg Brandl &lt;georg&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Process</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">25-May-2009</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#motivation" id="id26">Motivation</a></li>
+<li><a class="reference internal" href="#timeline" id="id27">Timeline</a></li>
+<li><a class="reference internal" href="#transition-plan" id="id28">Transition plan</a><ul>
+<li><a class="reference internal" href="#branch-strategy" id="id29">Branch strategy</a></li>
+<li><a class="reference internal" href="#history-management" id="id30">History management</a></li>
+<li><a class="reference internal" href="#converting-tags" id="id31">Converting tags</a></li>
+<li><a class="reference internal" href="#author-map" id="id32">Author map</a></li>
+<li><a class="reference internal" href="#generating-hgignore" id="id33">Generating .hgignore</a></li>
+<li><a class="reference internal" href="#repository-size" id="id34">Repository size</a></li>
+<li><a class="reference internal" href="#other-repositories" id="id35">Other repositories</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#infrastructure" id="id36">Infrastructure</a><ul>
+<li><a class="reference internal" href="#hg-ssh" id="id37">hg-ssh</a></li>
+<li><a class="reference internal" href="#hooks" id="id38">Hooks</a></li>
+<li><a class="reference internal" href="#end-of-line-conversions" id="id39">End-of-line conversions</a></li>
+<li><a class="reference internal" href="#hgwebdir" id="id40">hgwebdir</a></li>
+<li><a class="reference internal" href="#roundup" id="id41">roundup</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#after-migration" id="id42">After migration</a><ul>
+<li><a class="reference internal" href="#where-to-get-code" id="id43">Where to get code</a></li>
+<li><a class="reference internal" href="#python-specific-documentation" id="id44">Python-specific documentation</a></li>
+<li><a class="reference internal" href="#proposed-workflow" id="id45">Proposed workflow</a></li>
+<li><a class="reference internal" href="#the-future-of-subversion" id="id46">The future of Subversion</a></li>
+<li><a class="reference internal" href="#build-identification" id="id47">Build identification</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#footnotes" id="id48">Footnotes</a></li>
+<li><a class="reference internal" href="#id5" id="id49">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id50">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id26">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>After having decided to switch to the Mercurial DVCS, the actual
+migration still has to be performed.  In the case of an important
+piece of infrastructure like the version control system for a large,
+distributed project like Python, this is a significant effort.  This
+PEP is an attempt to describe the steps that must be taken for further
+discussion.  It’s somewhat similar to <a class="reference external" href="http://www.python.org/dev/peps/pep-0347/">PEP 347</a> <a class="footnote-reference brackets" href="#id6" id="id7">3</a>, which discussed the
+migration to SVN.</p>
+<p>To make the most of hg, we would like to make a high-fidelity
+conversion, such that (a) as much of the svn metadata as possible is
+retained, and (b) all metadata is converted to formats that are common
+in Mercurial.  This way, tools written for Mercurial can be optimally
+used.  In order to do this, we want to use the <a class="reference external" href="http://bitbucket.org/durin42/hgsubversion/">hgsubversion</a> <a class="footnote-reference brackets" href="#id8" id="id9">4</a>
+software to do an initial conversion.  This hg extension is focused on
+providing high-quality conversion from Subversion to Mercurial for use
+in two-way correspondence, meaning it doesn’t throw away as much
+available metadata as other solutions.</p>
+<p>Such a conversion also seems like a good time to reconsider the
+contents of the repository and determine if some things are still
+valuable.  In this spirit, the following sections also propose
+discarding some of the older metadata.</p>
+</div>
+<div class="section" id="timeline">
+<h2><a class="toc-backref" href="#id27">Timeline</a><a class="headerlink" href="#timeline" title="Permalink to this headline">¶</a></h2>
+<p>The current schedule for conversion milestones:</p>
+<ul>
+<li><p>2011-02-24: availability of a test repo at hg.python.org</p>
+<p>Test commits will be allowed (and encouraged) from all committers to
+the Subversion repository.  The test repository and all test commits
+will be removed once the final conversion is done.  The server-side
+hooks will be installed for the test repository, in order to test
+buildbot, diff-email and whitespace checking integration.</p>
+</li>
+<li><p>2011-03-05: final conversion (tentative)</p>
+<p>Commits to the Subversion branches now maintained in Mercurial will
+be blocked.  Developers should refrain from pushing to the Mercurial
+repositories until all infrastructure is ensured to work after their
+switch over to the new repository.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="transition-plan">
+<h2><a class="toc-backref" href="#id28">Transition plan</a><a class="headerlink" href="#transition-plan" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="branch-strategy">
+<h3><a class="toc-backref" href="#id29">Branch strategy</a><a class="headerlink" href="#branch-strategy" title="Permalink to this headline">¶</a></h3>
+<p>Mercurial has two basic ways of using branches: cloned branches, where
+each branch is kept in a separate repository, and named branches,
+where each revision keeps metadata to note on which branch it belongs.
+The former makes it easier to distinguish branches, at the expense of
+requiring more disk space on the client.  The latter makes it a little
+easier to switch between branches, but all branch names are a
+persistent part of history. <a class="footnote-reference brackets" href="#id3" id="id1">1</a></p>
+<p>Differences between named branches and cloned branches:</p>
+<ul class="simple">
+<li>Tags in a different (maintenance) clone aren’t available in the
+local clone</li>
+<li>Clones with named branches will be larger, since they contain more
+data</li>
+</ul>
+<p>We propose to use named branches for release branches and adopt cloned
+branches for feature branches.</p>
+</div>
+<div class="section" id="history-management">
+<h3><a class="toc-backref" href="#id30">History management</a><a class="headerlink" href="#history-management" title="Permalink to this headline">¶</a></h3>
+<p>In order to minimize the loss of information due to the conversion, we
+propose to provide several repositories as a conversion result:</p>
+<ul>
+<li><p>A repository trimmed to the mainline trunk (and py3k), as well as
+past and present maintenance branches – this is called the
+“working” repo and is where development continues.  This repository has
+all the history needed for development work, including annotating
+source files with changes back up to 1990 and other common history-digging
+operations.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">default</span></code> branch in that repo is what is known as <code class="docutils literal notranslate"><span class="pre">py3k</span></code> in
+Subversion, while the Subversion trunk lives on with the branch name
+<code class="docutils literal notranslate"><span class="pre">legacy-trunk</span></code>; however in Mercurial this branch will be closed.
+Release branches are named after their major.minor version, e.g. <code class="docutils literal notranslate"><span class="pre">3.2</span></code>.</p>
+</li>
+<li><p>A repository with the full, unedited conversion of the Subversion
+repository (actually, its /python subdirectory) – this is called
+the “historic” or “archive” repo and will be offered as a read-only
+resource. <a class="footnote-reference brackets" href="#id4" id="id2">2</a></p>
+</li>
+<li><p>One more repository per active feature branch; “active” means that
+at least one core developer asks for the branch to be provided.  Each
+such repository will contain both the feature branch and all ancestor
+changesets from mainline (coming from <code class="docutils literal notranslate"><span class="pre">trunk</span></code> and/or <code class="docutils literal notranslate"><span class="pre">py3k</span></code> in SVN).</p>
+</li>
+</ul>
+<p>Since all branches are present in the historic repo, they can later be
+extracted as separate repositories at any time should it prove to be
+necessary.</p>
+<p>The final revision map between SVN revision numbers, Mercurial changesets
+and SVN branch names will be made available in a file stored in the <code class="docutils literal notranslate"><span class="pre">Misc</span></code>
+directory.  Its format is as following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="o">...</span><span class="p">]</span>
+<span class="mi">88483</span> <span class="n">e65daae6cf4499a0863cb7645109a4798c28d83e</span> <span class="n">issue10276</span><span class="o">-</span><span class="n">snowleopard</span>
+<span class="mi">88484</span> <span class="mi">835</span><span class="n">cb57abffeceaff0d85c2a3aa0625458dd3e31</span> <span class="n">py3k</span>
+<span class="mi">88485</span> <span class="n">d880f9d8492f597a030772c7485a34aadb6c4ece</span> <span class="n">release32</span><span class="o">-</span><span class="n">maint</span>
+<span class="mi">88486</span> <span class="mi">0</span><span class="n">c431b8c22f5dbeb591414c154acb7890c1809df</span> <span class="n">py3k</span>
+<span class="mi">88487</span> <span class="mi">82</span><span class="n">cda1f21396bbd10db8083ea20146d296cb630b</span> <span class="n">release32</span><span class="o">-</span><span class="n">maint</span>
+<span class="mi">88488</span> <span class="mi">8174</span><span class="n">d00d07972d6f109ed57efca8273a4d59302c</span> <span class="n">release27</span><span class="o">-</span><span class="n">maint</span>
+<span class="p">[</span><span class="o">...</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="converting-tags">
+<h3><a class="toc-backref" href="#id31">Converting tags</a><a class="headerlink" href="#converting-tags" title="Permalink to this headline">¶</a></h3>
+<p>The SVN tags directory contains a lot of old stuff.  Some of these are
+not, in fact, full tags, but contain only a smaller subset of the
+repository.  All release tags will be kept; other tags will be
+included based on requests from the developer community.  We propose
+to make the tag naming scheme consistent, in this style: <code class="docutils literal notranslate"><span class="pre">v3.2.1a2</span></code>.</p>
+</div>
+<div class="section" id="author-map">
+<h3><a class="toc-backref" href="#id32">Author map</a><a class="headerlink" href="#author-map" title="Permalink to this headline">¶</a></h3>
+<p>In order to provide user names the way they are common in hg (in the
+‘First Last &lt;<a class="reference external" href="mailto:user&#37;&#52;&#48;example&#46;org">user<span>&#64;</span>example<span>&#46;</span>org</a>&gt;’ format), we need an author map to map
+cvs and svn user names to real names and their email addresses.  We
+have a complete version of such a map in the migration tools
+repository (not publicly accessible to avoid leaking addresses to
+harvesters).  The email addresses in it might be out of date; that’s
+bound to happen, although it would be nice to try and have as many
+people as possible review it for addresses that are out of date.  The
+current version also still seems to contain some encoding problems.</p>
+</div>
+<div class="section" id="generating-hgignore">
+<h3><a class="toc-backref" href="#id33">Generating .hgignore</a><a class="headerlink" href="#generating-hgignore" title="Permalink to this headline">¶</a></h3>
+<p>The .hgignore file can be used in Mercurial repositories to help
+ignore files that are not eligible for version control.  It does this
+by employing several possible forms of pattern matching.  The current
+Python repository already includes a rudimentary .hgignore file to
+help with using the hg mirrors.</p>
+<p>Since the current Python repository already includes a .hgignore file
+(for use with hg mirrors), we’ll just use that.  Generating full
+history of the file was debated but deemed impractical (because it’s
+relatively hard with fairly little gain, since ignoring is less
+important for older revisions).</p>
+</div>
+<div class="section" id="repository-size">
+<h3><a class="toc-backref" href="#id34">Repository size</a><a class="headerlink" href="#repository-size" title="Permalink to this headline">¶</a></h3>
+<p>A bare conversion result of the current Python repository weighs 1.9
+GB; although this is smaller than the Subversion repository (2.7 GB)
+it is not feasible.</p>
+<p>The size becomes more manageable by the trimming applied to the
+working repository, and by a process called “revlog reordering” that
+optimizes the layout of internal Mercurial storage very efficiently.</p>
+<p>After all optimizations done, the size of the working repository is
+around 180 MB on disk.  The amount of data transferred over the
+network when cloning is estimated to be around 80 MB.</p>
+</div>
+<div class="section" id="other-repositories">
+<h3><a class="toc-backref" href="#id35">Other repositories</a><a class="headerlink" href="#other-repositories" title="Permalink to this headline">¶</a></h3>
+<p>There are a number of other projects hosted in svn.python.org’s
+“projects” repository.  The “peps” directory will be converted along
+with the main Python one.  Richard Tew has indicated that he’d like the
+Stackless repository to also be converted.  What other projects in the
+svn.python.org repository should be converted?</p>
+<p>There’s now an initial stab at converting the Jython repository.  The
+current tip of hgsubversion unfortunately fails at some point.
+Pending investigation.</p>
+<p>Other repositories that would like to converted to Mercurial can
+announce themselves to me after the main Python migration is done, and
+I’ll take care of their needs.</p>
+</div>
+</div>
+<div class="section" id="infrastructure">
+<h2><a class="toc-backref" href="#id36">Infrastructure</a><a class="headerlink" href="#infrastructure" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="hg-ssh">
+<h3><a class="toc-backref" href="#id37">hg-ssh</a><a class="headerlink" href="#hg-ssh" title="Permalink to this headline">¶</a></h3>
+<p>Developers should access the repositories through ssh, similar to the
+current setup.  Public keys can be used to grant people access to a
+shared hg&#64; account.  A hgwebdir instance also has been set up at
+<code class="docutils literal notranslate"><span class="pre">hg.python.org</span></code> for easy browsing and read-only access.  It is
+configured so that developers can trivially start new clones (for
+longer-term features that profit from development in a separate
+repository).</p>
+<p>Also, direct creation of public repositories is allowed for core developers,
+although it is not yet decided which naming scheme will be enforced:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ hg init ssh://hg@hg.python.org/sandbox/mywork
+repo created, public URL is http://hg.python.org/sandbox/mywork
+</pre></div>
+</div>
+</div>
+<div class="section" id="hooks">
+<h3><a class="toc-backref" href="#id38">Hooks</a><a class="headerlink" href="#hooks" title="Permalink to this headline">¶</a></h3>
+<p>A number of hooks is currently in use.  The hg equivalents for these
+should be developed and deployed.  The following hooks are being used:</p>
+<ul class="simple">
+<li>check whitespace: a hook to reject commits in case the whitespace
+doesn’t match the rules for the Python codebase.  In a changegroup,
+only the tip is checked (this allows cleanup commits for changes
+pulled from third-party repos).  We can also offer a whitespace hook
+for use with client-side repositories that people can use; it could
+either warn about whitespace issues and/or truncate trailing
+whitespace from changed lines.</li>
+<li>push mails: Emails will include diffs for each changeset pushed
+to the public repository, including the username which pushed the
+changesets (this is not necessarily the same as the author recorded
+in the changesets).</li>
+<li>buildbots: the python.org build master will be notified of each changeset
+pushed to the <code class="docutils literal notranslate"><span class="pre">cpython</span></code> repository, and will trigger an appropriate build
+on every build slave for the branch in which the changeset occurs.</li>
+</ul>
+<p>The <a class="reference external" href="http://hg.python.org/hooks/">hooks repository</a> <a class="footnote-reference brackets" href="#id10" id="id11">5</a> contains ports of these server-side hooks to
+Mercurial, as well as a couple additional ones:</p>
+<ul class="simple">
+<li>check branch heads: a hook to reject pushes which create a new head on
+an existing branch.  The pusher then has to merge the excess heads
+and try pushing again.</li>
+<li>check branches: a hook to reject all changesets not on an allowed named
+branch.  This hook’s whitelist will have to be updated when we want to
+create new maintenance branches.</li>
+<li>check line endings: a hook, based on the <a class="reference external" href="http://mercurial.selenic.com/wiki/EolExtension">eol extension</a> <a class="footnote-reference brackets" href="#id12" id="id13">6</a>, to reject all
+changesets committing files with the wrong line endings.  The commits then
+have to be stripped and redone, possibly with the <a class="reference external" href="http://mercurial.selenic.com/wiki/EolExtension">eol extension</a> <a class="footnote-reference brackets" href="#id12" id="id14">6</a> enabled
+on the comitter’s computer.</li>
+</ul>
+<p>One additional hook could be beneficial:</p>
+<ul class="simple">
+<li>check contributors: in the current setup, all changesets bear the
+username of committers, who must have signed the contributor
+agreement.  We might want to use a hook to check if the committer is
+a contributor if we keep a list of registered contributors.  Then,
+the hook might warn users that push a group of revisions containing
+changesets from unknown contributors.</li>
+</ul>
+</div>
+<div class="section" id="end-of-line-conversions">
+<h3><a class="toc-backref" href="#id39">End-of-line conversions</a><a class="headerlink" href="#end-of-line-conversions" title="Permalink to this headline">¶</a></h3>
+<p>Discussion about the lack of end-of-line conversion support in
+Mercurial, which was provided initially by the <a class="reference external" href="http://mercurial.selenic.com/wiki/Win32TextExtension">win32text extension</a> <a class="footnote-reference brackets" href="#id16" id="id17">7</a>,
+led to the development of the new <a class="reference external" href="http://mercurial.selenic.com/wiki/EolExtension">eol extension</a> <a class="footnote-reference brackets" href="#id12" id="id15">6</a> that supports a
+versioned management of line-ending conventions on a file-by-file
+basis, akin to Subversion’s <code class="docutils literal notranslate"><span class="pre">svn:eol-style</span></code> properties.  This
+information is kept in a versioned file called <code class="docutils literal notranslate"><span class="pre">.hgeol</span></code>, and such a
+file has already been checked into the Subversion repository.</p>
+<p>A hook also exists on the server side to reject any changeset
+introducing inconsistent newline data (see above).</p>
+</div>
+<div class="section" id="hgwebdir">
+<h3><a class="toc-backref" href="#id40">hgwebdir</a><a class="headerlink" href="#hgwebdir" title="Permalink to this headline">¶</a></h3>
+<p>A more or less stock hgwebdir installation should be set up.  We might
+want to come up with a style to match the Python website.</p>
+<p>A small WSGI application has been written that can look up
+Subversion revisions and redirect to the appropriate hgweb page for
+the given changeset, regardless in which repository the converted
+revision ended up (since one big Subversion repository is converted
+into several Mercurial repositories).  It can also look up Mercurial
+changesets by their hexadecimal ID.</p>
+</div>
+<div class="section" id="roundup">
+<h3><a class="toc-backref" href="#id41">roundup</a><a class="headerlink" href="#roundup" title="Permalink to this headline">¶</a></h3>
+<p>By pointing Roundup to the URL of the lookup script mentioned above,
+links to SVN revisions will continue to work, and links to Mercurial
+changesets can be created as well, without having to give repository
+<em>and</em> changeset ID.</p>
+</div>
+</div>
+<div class="section" id="after-migration">
+<h2><a class="toc-backref" href="#id42">After migration</a><a class="headerlink" href="#after-migration" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="where-to-get-code">
+<h3><a class="toc-backref" href="#id43">Where to get code</a><a class="headerlink" href="#where-to-get-code" title="Permalink to this headline">¶</a></h3>
+<p>After migration, the hgwebdir will live at hg.python.org.  This is an
+accepted standard for many organizations, and an easy parallel to
+svn.python.org.  The working repo might live at
+<a class="reference external" href="http://hg.python.org/cpython/">http://hg.python.org/cpython/</a>, for example, with the archive repo at
+<a class="reference external" href="http://hg.python.org/cpython-archive/">http://hg.python.org/cpython-archive/</a>.  For write access, developers
+will have to use ssh, which could be <a class="reference external" href="ssh://hg&#64;hg.python.org/cpython/">ssh://hg&#64;hg.python.org/cpython/</a>.</p>
+<p>code.python.org was also proposed as the hostname.  We think that
+using the VCS name in the hostname is good because it prevents
+confusion: it should be clear that you can’t use svn or bzr for
+hg.python.org.</p>
+<p>hgwebdir can already provide tarballs for every changeset.  This
+obviates the need for daily snapshots; we can just point users to
+tip.tar.gz instead, meaning they will get the latest.  If desired, we
+could even use buildbot results to point to the last good changeset.</p>
+</div>
+<div class="section" id="python-specific-documentation">
+<h3><a class="toc-backref" href="#id44">Python-specific documentation</a><a class="headerlink" href="#python-specific-documentation" title="Permalink to this headline">¶</a></h3>
+<p>hg comes with good built-in documentation (available through hg help)
+and a <a class="reference external" href="http://mercurial.selenic.com/wiki/">wiki</a> <a class="footnote-reference brackets" href="#id22" id="id23">10</a> that’s full of useful information and recipes, not to
+mention a popular <a class="reference external" href="http://hgbook.red-bean.com/">book</a> <a class="footnote-reference brackets" href="#id24" id="id25">11</a> (readable online).</p>
+<p>In addition to that, the recently overhauled <a class="reference external" href="http://docs.python.org/devguide/">Python Developer’s
+Guide</a> <a class="footnote-reference brackets" href="#id18" id="id19">8</a> already has a branch with instructions for Mercurial instead
+of Subversion; an online <a class="reference external" href="http://potrou.net/hgdevguide/">build of this branch</a> <a class="footnote-reference brackets" href="#id20" id="id21">9</a> is also available.</p>
+</div>
+<div class="section" id="proposed-workflow">
+<h3><a class="toc-backref" href="#id45">Proposed workflow</a><a class="headerlink" href="#proposed-workflow" title="Permalink to this headline">¶</a></h3>
+<p>We propose two workflows for the migration of patches between several
+branches.</p>
+<p>For migration within 2.x or 3.x branches, we propose a patch always
+gets committed to the oldest branch where it applies first.  Then, the
+resulting changeset can be merged using hg merge to all newer branches
+within that series (2.x or 3.x).  If it does not apply as-is to the
+newer branch, hg revert can be used to easily revert to the
+new-branch-native head, patch in some alternative version of the patch
+(or none, if it’s not applicable), then commit the merge.  The premise
+here is that all changesets from an older branch within the series are
+eventually merged to all newer branches within the series.</p>
+<p>The upshot is that this provides for the most painless merging
+procedure.  This means that in the general case, people have to think
+about the oldest branch to which the patch should be applied before
+actually applying it.  Usually, that is one of only two branches: the
+latest maintenance branch and the trunk, except for security fixes
+applicable to older branches in security-fix-only mode.</p>
+<p>For merging bug fixes from the 3.x to the 2.7 maintenance branch (2.6
+and 2.5 are in security-fix-only mode and their maintenance will
+continue in the Subversion repository), changesets should be
+transplanted (not merged) in some other way.  The transplant
+extension, import/export and bundle/unbundle work equally well here.</p>
+<p>Choosing this approach allows 3.x not to carry all of the 2.x
+history-since-it-was-branched, meaning the clone is not as big and the
+merges not as complicated.</p>
+</div>
+<div class="section" id="the-future-of-subversion">
+<h3><a class="toc-backref" href="#id46">The future of Subversion</a><a class="headerlink" href="#the-future-of-subversion" title="Permalink to this headline">¶</a></h3>
+<p>What happens to the Subversion repositories after the migration?
+Since the svn server contains a bunch of repositories, not just the
+CPython one, it will probably live on for a bit as not every project
+may want to migrate or it takes longer for other projects to migrate.
+To prevent people from staying behind, we may want to move migrated
+projects from the repository to a new, read-only repository with a new
+name.</p>
+</div>
+<div class="section" id="build-identification">
+<h3><a class="toc-backref" href="#id47">Build identification</a><a class="headerlink" href="#build-identification" title="Permalink to this headline">¶</a></h3>
+<p>Python currently provides the sys.subversion tuple to allow Python
+code to find out exactly what version of Python it’s running against.
+The current version looks something like this:</p>
+<ul class="simple">
+<li>(‘CPython’, ‘tags/r262’, ‘71600’)</li>
+<li>(‘CPython’, ‘trunk’, ‘73128M’)</li>
+</ul>
+<p>Another value is returned from Py_GetBuildInfo() in the C API, and
+available to Python code as part of sys.version:</p>
+<ul class="simple">
+<li>‘r262:71600, Jun  2 2009, 09:58:33’</li>
+<li>‘trunk:73128M, Jun  2 2009, 01:24:14’</li>
+</ul>
+<p>I propose that the revision identifier will be the short version of
+hg’s revision hash, for example ‘dd3ebf81af43’, augmented with ‘+’
+(instead of ‘M’) if the working directory from which it was built was
+modified.  This mirrors the output of the hg id command, which is
+intended for this kind of usage.  The sys.subversion value will also
+be renamed to sys.mercurial to reflect the change in VCS.</p>
+<p>For the tag/branch identifier, I propose that hg will check for tags
+on the currently checked out revision, use the tag if there is one
+(‘tip’ doesn’t count), and uses the branch name otherwise.
+sys.subversion becomes</p>
+<ul class="simple">
+<li>(‘CPython’, ‘v2.6.2’, ‘dd3ebf81af43’)</li>
+<li>(‘CPython’, ‘default’, ‘af694c6a888c+’)</li>
+</ul>
+<p>and the build info string becomes</p>
+<ul class="simple">
+<li>‘v2.6.2:dd3ebf81af43, Jun  2 2009, 09:58:33’</li>
+<li>‘default:af694c6a888c+, Jun  2 2009, 01:24:14’</li>
+</ul>
+<p>This reflects that the default branch in hg is called ‘default’
+instead of Subversion’s ‘trunk’, and reflects the proposed new tag
+format.</p>
+<p>Mercurial also allows to find out the latest tag and the number of
+changesets separating the current changeset from that tag, allowing for
+a descriptive version string:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ hg parent --template &quot;{latesttag}+{latesttagdistance}-{node|short}\n&quot;
+v3.2+37-4b5d0d260e72
+$ hg up 2.7
+3316 files updated, 0 files merged, 379 files removed, 0 files unresolved
+$ hg parent --template &quot;{latesttag}+{latesttagdistance}-{node|short}\n&quot;
+v2.7.1+216-9619d21d8198
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="footnotes">
+<h2><a class="toc-backref" href="#id48">Footnotes</a><a class="headerlink" href="#footnotes" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id3"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>The Mercurial book discourages the use of named branches, but
+it is, in this respect, somewhat outdated.  Named branches have
+gotten much easier to use since that comment was written, due to
+improvements in hg.</dd>
+<dt class="label" id="id4"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>Since the initial working repo is a subset of the archive repo,
+it would also be feasible to pull changes from the working repo
+into the archive repo periodically.</dd>
+</dl>
+</div>
+<div class="section" id="id5">
+<h2><a class="toc-backref" href="#id49">References</a><a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id6"><span class="brackets"><a class="fn-backref" href="#id7">3</a></span></dt>
+<dd><a class="reference external" href="http://www.python.org/dev/peps/pep-0347/">http://www.python.org/dev/peps/pep-0347/</a></dd>
+<dt class="label" id="id8"><span class="brackets"><a class="fn-backref" href="#id9">4</a></span></dt>
+<dd><a class="reference external" href="http://bitbucket.org/durin42/hgsubversion/">http://bitbucket.org/durin42/hgsubversion/</a></dd>
+<dt class="label" id="id10"><span class="brackets"><a class="fn-backref" href="#id11">5</a></span></dt>
+<dd><a class="reference external" href="http://hg.python.org/hooks/">http://hg.python.org/hooks/</a></dd>
+<dt class="label" id="id12"><span class="brackets">6</span><span class='fn-backref'><em> (<a href="#id13">1</a>, <a href="#id14">2</a>, <a href="#id15">3</a>) </em></span></dt>
+<dd><a class="reference external" href="http://mercurial.selenic.com/wiki/EolExtension">http://mercurial.selenic.com/wiki/EolExtension</a></dd>
+<dt class="label" id="id16"><span class="brackets"><a class="fn-backref" href="#id17">7</a></span></dt>
+<dd><a class="reference external" href="http://mercurial.selenic.com/wiki/Win32TextExtension">http://mercurial.selenic.com/wiki/Win32TextExtension</a></dd>
+<dt class="label" id="id18"><span class="brackets"><a class="fn-backref" href="#id19">8</a></span></dt>
+<dd><a class="reference external" href="http://docs.python.org/devguide/">http://docs.python.org/devguide/</a></dd>
+<dt class="label" id="id20"><span class="brackets"><a class="fn-backref" href="#id21">9</a></span></dt>
+<dd><a class="reference external" href="http://potrou.net/hgdevguide/">http://potrou.net/hgdevguide/</a></dd>
+<dt class="label" id="id22"><span class="brackets"><a class="fn-backref" href="#id23">10</a></span></dt>
+<dd><a class="reference external" href="http://mercurial.selenic.com/wiki/">http://mercurial.selenic.com/wiki/</a></dd>
+<dt class="label" id="id24"><span class="brackets"><a class="fn-backref" href="#id25">11</a></span></dt>
+<dd><a class="reference external" href="http://hgbook.red-bean.com/">http://hgbook.red-bean.com/</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id50">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0385.txt">https://github.com/python/peps/blob/master/pep-0385.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0385.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0384.html">PEP 0384</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0386.html">PEP 0386</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 385 – Migrating from Subversion to Mercurial</a><ul>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#timeline">Timeline</a></li>
+<li><a class="reference internal" href="#transition-plan">Transition plan</a><ul>
+<li><a class="reference internal" href="#branch-strategy">Branch strategy</a></li>
+<li><a class="reference internal" href="#history-management">History management</a></li>
+<li><a class="reference internal" href="#converting-tags">Converting tags</a></li>
+<li><a class="reference internal" href="#author-map">Author map</a></li>
+<li><a class="reference internal" href="#generating-hgignore">Generating .hgignore</a></li>
+<li><a class="reference internal" href="#repository-size">Repository size</a></li>
+<li><a class="reference internal" href="#other-repositories">Other repositories</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#infrastructure">Infrastructure</a><ul>
+<li><a class="reference internal" href="#hg-ssh">hg-ssh</a></li>
+<li><a class="reference internal" href="#hooks">Hooks</a></li>
+<li><a class="reference internal" href="#end-of-line-conversions">End-of-line conversions</a></li>
+<li><a class="reference internal" href="#hgwebdir">hgwebdir</a></li>
+<li><a class="reference internal" href="#roundup">roundup</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#after-migration">After migration</a><ul>
+<li><a class="reference internal" href="#where-to-get-code">Where to get code</a></li>
+<li><a class="reference internal" href="#python-specific-documentation">Python-specific documentation</a></li>
+<li><a class="reference internal" href="#proposed-workflow">Proposed workflow</a></li>
+<li><a class="reference internal" href="#the-future-of-subversion">The future of Subversion</a></li>
+<li><a class="reference internal" href="#build-identification">Build identification</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#footnotes">Footnotes</a></li>
+<li><a class="reference internal" href="#id5">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

@@ -1,0 +1,388 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 608 – Coordinated Python release &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 609 – PyPA Governance" href="pep-0609.html" />
+    <link rel="prev" title="PEP 607 – Reducing CPython’s Feature Delivery Latency" href="pep-0607.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 608 – Coordinated Python release</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-608-coordinated-python-release">
+<h1 class="page-title">PEP 608 – Coordinated Python release<a class="headerlink" href="#pep-608-coordinated-python-release" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">608</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Coordinated Python release</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Miro Hrončok &lt;miro&#32;&#97;t&#32;hroncok.cz&gt;,
+Victor Stinner &lt;vstinner&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Rejected</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">25-Oct-2019</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.9</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id2">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id3">Rationale</a><ul>
+<li><a class="reference internal" href="#too-few-projects-are-involved-in-the-python-beta-phase" id="id4">Too few projects are involved in the Python beta phase</a></li>
+<li><a class="reference internal" href="#deprecationwarning-is-being-ignored" id="id5">DeprecationWarning is being ignored</a></li>
+<li><a class="reference internal" href="#need-to-coordinate" id="id6">Need to coordinate</a></li>
+<li><a class="reference internal" href="#shorter-python-release-schedule" id="id7">Shorter Python release schedule</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#specification" id="id8">Specification</a><ul>
+<li><a class="reference internal" href="#limit-the-delay" id="id9">Limit the delay</a></li>
+<li><a class="reference internal" href="#selected-projects" id="id10">Selected projects</a></li>
+<li><a class="reference internal" href="#how-projects-are-selected" id="id11">How projects are selected</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#incompatible-changes" id="id12">Incompatible changes</a><ul>
+<li><a class="reference internal" href="#examples" id="id13">Examples</a></li>
+<li><a class="reference internal" href="#cleaning-up-python-and-deprecationwarning" id="id14">Cleaning up Python and DeprecationWarning</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#distributed-ci" id="id15">Distributed CI</a></li>
+<li><a class="reference internal" href="#copyright" id="id16">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id2">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Block a Python release until a compatible version of selected projects
+is available.</p>
+<p>The Python release manager can decide to release Python even if a
+project is not compatible, if they decide that the project is going to
+be fixed soon enough, or if the issue severity is low enough.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id3">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>The PEP involves maintainers of the selected projects in the Python
+release cycle. There are multiple benefit:</p>
+<ul class="simple">
+<li>Detect more bugs before a Python final release</li>
+<li>Discuss and maybe revert incompatible changes before a Python final
+release</li>
+<li>Increase the number of compatible projects when the new Python final
+version is released</li>
+</ul>
+<div class="section" id="too-few-projects-are-involved-in-the-python-beta-phase">
+<h3><a class="toc-backref" href="#id4">Too few projects are involved in the Python beta phase</a><a class="headerlink" href="#too-few-projects-are-involved-in-the-python-beta-phase" title="Permalink to this headline">¶</a></h3>
+<p>Currently, Python beta versions are available four months before the
+final 3.x.0 release.</p>
+<p>Bugs reported during the beta phase can be easily fixed and can block a
+release if they are serious enough.</p>
+<p>Incompatible changes are discussed during the beta phase: enhance
+documentation explaining how to update code, or consider to revert these
+changes.</p>
+<p>Even if more and more projects are tested on the master branch of Python
+in their CI, too many projects of the top 50 PyPI projects are only
+compatible with the new Python a few weeks, or even months, after the
+final Python release.</p>
+</div>
+<div class="section" id="deprecationwarning-is-being-ignored">
+<h3><a class="toc-backref" href="#id5">DeprecationWarning is being ignored</a><a class="headerlink" href="#deprecationwarning-is-being-ignored" title="Permalink to this headline">¶</a></h3>
+<p>Python has well defined process to deprecate features. A
+DeprecationWarning must be emitted during at least one Python release,
+before a feature can be removed.</p>
+<p>In practice, DeprecationWarning warnings are ignored for years in major
+Python projects. Usually, maintainers explain that there are too many
+warnings and so they simply ignore warnings. Moreover, DeprecationWarning
+is silent by default (except in the <code class="docutils literal notranslate"><span class="pre">__main__</span></code> module: <a class="reference external" href="https://www.python.org/dev/peps/pep-0565/">PEP 565</a>).</p>
+<p>Even if more and more projects are running their test suite with
+warnings treated as errors (<code class="docutils literal notranslate"><span class="pre">-Werror</span></code>), Python core developers still
+have no idea how many projects are broken when a feature is removed.</p>
+</div>
+<div class="section" id="need-to-coordinate">
+<h3><a class="toc-backref" href="#id6">Need to coordinate</a><a class="headerlink" href="#need-to-coordinate" title="Permalink to this headline">¶</a></h3>
+<p>When issues and incompatible changes are discovered and discussed after
+the final Python release, it becomes way more complicated and expensive
+to fix Python.  Once an API is part of an official final release, Python
+should provide backward compatibility for the whole 3.x release
+lifetime. Some operating systems can be shipped with the buggy final
+release and can take several months before being updated.</p>
+<p>Too many projects are only updated to the new Python after the final
+Python release, which makes this new Python version barely usable to run
+large applications when Python is released.</p>
+<p>It is proposed to block a Python release until a compatible version of
+all selected projects is available.</p>
+</div>
+<div class="section" id="shorter-python-release-schedule">
+<h3><a class="toc-backref" href="#id7">Shorter Python release schedule</a><a class="headerlink" href="#shorter-python-release-schedule" title="Permalink to this headline">¶</a></h3>
+<p>The <a class="reference external" href="https://www.python.org/dev/peps/pep-0602/">PEP 602: Annual Release Cycle for Python</a> and the <a class="reference external" href="https://www.python.org/dev/peps/pep-0605/">PEP 605: A
+rolling feature release stream for CPython</a> would like to release
+Python more often to ship new features more quickly.</p>
+<p>The problem is that each Python <code class="docutils literal notranslate"><span class="pre">3.x</span></code> release breaks many projects.</p>
+<p>Coordinated Python releases reduces the number of broken projects and
+makes new Python release more usable.</p>
+</div>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id8">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>By default, a Python release is blocked until a compatible version of
+all selected projects is available.</p>
+<p>Before releasing the final Python version, the Python release manager is
+responsible to send a report of the compatibility status of each project
+of the selected projects. It is recommended to send such report at
+each beta release to see the evolution and detects issues as soon as
+possible.</p>
+<p>The Python release manager can decide to release Python even if a
+project is not compatible, if they decide that the project is going to
+be fixed soon enough, or if the issue severity is low enough.</p>
+<p>After each Python release, the project list can be updated to remove
+projects and add new ones. For example, to remove old unused
+dependencies and add new ones. The list can grow if the whole process
+doesn’t block Python releases for too long.</p>
+<div class="section" id="limit-the-delay">
+<h3><a class="toc-backref" href="#id9">Limit the delay</a><a class="headerlink" href="#limit-the-delay" title="Permalink to this headline">¶</a></h3>
+<p>When a build or test issue with the next Python version is reported to a
+project, maintainers have one month to answer. With no answer, the
+project can be excluded from the list of projects blocking the Python
+release.</p>
+<p>Multiple projects are already tested on the master branch of Python in a
+CI. Problems can be detected very early in a Python release which should
+provide enough time to handle them. More CI can be added for projects
+which are not tested on the next Python yet.</p>
+<p>Once selected projects issues are known, exceptions can be discussed
+between the Python release manager and involved project maintainers on a
+case by case basis. Not all issues deserve to block a Python release.</p>
+</div>
+<div class="section" id="selected-projects">
+<h3><a class="toc-backref" href="#id10">Selected projects</a><a class="headerlink" href="#selected-projects" title="Permalink to this headline">¶</a></h3>
+<p>List of projects blocking a Python release (total: 27):</p>
+<ul class="simple">
+<li>Projects (13):<ul>
+<li>aiohttp</li>
+<li>cryptography</li>
+<li>Cython</li>
+<li>Django</li>
+<li>numpy</li>
+<li>pandas</li>
+<li>pip</li>
+<li>requests</li>
+<li>scipy</li>
+<li>Sphinx (needed to build Python)</li>
+<li>sqlalchemy</li>
+<li>pytest</li>
+<li>tox</li>
+</ul>
+</li>
+<li>Direct and indirect dependencies (14):<ul>
+<li>certifi (needed by urllib3)</li>
+<li>cffi (needed by cryptography)</li>
+<li>chardet (needed by Sphinx)</li>
+<li>colorama (needed by pip)</li>
+<li>docutils (needed by Sphinx)</li>
+<li>idna (needed by Sphinx and requests)</li>
+<li>jinja2 (needed by Sphinx)</li>
+<li>MarkupSafe (needed by Sphinx)</li>
+<li>psycopg2 (needed by Django)</li>
+<li>pycparser (needed by cffi)</li>
+<li>setuptools (needed by pip and tons of Python projects)</li>
+<li>six (needed by tons of Python projects)</li>
+<li>urllib3 (needed by requests)</li>
+<li>wheel (needed by pip)</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="how-projects-are-selected">
+<h3><a class="toc-backref" href="#id11">How projects are selected</a><a class="headerlink" href="#how-projects-are-selected" title="Permalink to this headline">¶</a></h3>
+<p>Projects used by to build Python should be in the list, like Sphinx.</p>
+<p>Most popular projects are picked from the most downloaded PyPI projects.</p>
+<p>Most of project dependencies are included in the list as well, since a
+single incompatible dependency can block a whole project. Some
+dependencies are excluded to reduce the list length.</p>
+<p>Test dependencies as pytest and tox should be included as well. If a
+project cannot be tested, a new version cannot be shipped neither.</p>
+<p>The list should be long enough to have a good idea of the cost of
+porting a project to the next Python, but small enough to not block a
+Python release for too long.</p>
+<p>Obviously, projects which are not part of the list also are encouraged
+to report issues with the next Python and to have a CI running on the
+next Python version.</p>
+</div>
+</div>
+<div class="section" id="incompatible-changes">
+<h2><a class="toc-backref" href="#id12">Incompatible changes</a><a class="headerlink" href="#incompatible-changes" title="Permalink to this headline">¶</a></h2>
+<p>The definition here is large: any Python change which cause an issue
+when building or testing a project.</p>
+<p>See also the <a class="reference external" href="https://www.python.org/dev/peps/pep-0606/">PEP 606: Python Compatibility Version</a> for more examples of
+incompatible changes.</p>
+<div class="section" id="examples">
+<h3><a class="toc-backref" href="#id13">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h3>
+<p>There are different kinds of incompatible changes:</p>
+<ul class="simple">
+<li>Change in the Python build. For example, Python 3.8 removed <code class="docutils literal notranslate"><span class="pre">'m'</span></code>
+(which stands for pymalloc) from <code class="docutils literal notranslate"><span class="pre">sys.abiflags</span></code> which impacts Python
+vendors like Linux distributions.</li>
+<li>Change in the C extensions build. For example, Python 3.8 no longer
+links C extensions to libpython, and Python 3.7 removed
+<code class="docutils literal notranslate"><span class="pre">os.errno</span></code> alias to the <code class="docutils literal notranslate"><span class="pre">errno</span></code> module.</li>
+<li>Removed function. For example, collections aliases to ABC classes
+have been removed in Python 3.9.</li>
+<li>Changed function signature:<ul>
+<li>Reject a type which was previously accepted (ex: only accept <code class="docutils literal notranslate"><span class="pre">int</span></code>,
+reject <code class="docutils literal notranslate"><span class="pre">float</span></code>).</li>
+<li>Add a new mandatory parameter.</li>
+<li>Convert a positional-or-keyword parameter to positional-only.</li>
+</ul>
+</li>
+<li>Behavior change. For example, Python 3.8 now serializes XML attributes
+in their insertion order, rather than sorting them by name.</li>
+<li>New warning. Since more and more projects are tested with all warnings
+treated as errors, any new warning can cause a project test to fail.</li>
+<li>Function removed from the C API.</li>
+<li>Structure made opaque in the C API. For example, PyInterpreterState
+became opaque in Python 3.8 which broke projects accessing
+<code class="docutils literal notranslate"><span class="pre">interp-&gt;modules</span></code> (<code class="docutils literal notranslate"><span class="pre">PyImport_GetModuleDict()</span></code> should be used
+instead).</li>
+</ul>
+</div>
+<div class="section" id="cleaning-up-python-and-deprecationwarning">
+<h3><a class="toc-backref" href="#id14">Cleaning up Python and DeprecationWarning</a><a class="headerlink" href="#cleaning-up-python-and-deprecationwarning" title="Permalink to this headline">¶</a></h3>
+<p>One of the <a class="reference external" href="https://www.python.org/dev/peps/pep-0020/">Zen of Python (PEP 20)</a> motto is:</p>
+<blockquote>
+<div>There should be one– and preferably only one –obvious way to do
+it.</div></blockquote>
+<p>When Python evolves, new ways emerge inevitably. <code class="docutils literal notranslate"><span class="pre">DeprecationWarning</span></code>
+are emitted to suggest to use the new way, but many developers ignore
+these warnings which are silent by default.</p>
+<p>Sometimes, supporting both ways has a minor maintenance cost, but Python
+core developers prefer to drop the old way to clean up the Python code
+base and standard library. Such kind of change is backward incompatible.</p>
+<p>More incompatible changes than usual should be expected with the end of
+the Python 2 support which is a good opportunity to cleaning up old
+Python code.</p>
+</div>
+</div>
+<div class="section" id="distributed-ci">
+<h2><a class="toc-backref" href="#id15">Distributed CI</a><a class="headerlink" href="#distributed-ci" title="Permalink to this headline">¶</a></h2>
+<p>Checking if selected projects are compatible with the master branch
+of Python can be automated using a distributed CI.</p>
+<p>Existing CIs can be reused.</p>
+<p>New CIs can be added for projects which are not tested on the next
+Python yet.</p>
+<p>It is recommended to treat DeprecationWarning warnings as errors when
+testing on the next Python.</p>
+<p>A job testing a project on the next Python doesn’t have to be
+“mandatory” (block the whole CI). It is fine to have failures during the
+beta phase of a Python release. The job only has to pass for the final
+Python release.</p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id16">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document is placed in the public domain or under the
+CC0-1.0-Universal license, whichever is more permissive.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0608.rst">https://github.com/python/peps/blob/master/pep-0608.rst</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0608.rst.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0607.html">PEP 0607</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0609.html">PEP 0609</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 608 – Coordinated Python release</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a><ul>
+<li><a class="reference internal" href="#too-few-projects-are-involved-in-the-python-beta-phase">Too few projects are involved in the Python beta phase</a></li>
+<li><a class="reference internal" href="#deprecationwarning-is-being-ignored">DeprecationWarning is being ignored</a></li>
+<li><a class="reference internal" href="#need-to-coordinate">Need to coordinate</a></li>
+<li><a class="reference internal" href="#shorter-python-release-schedule">Shorter Python release schedule</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#limit-the-delay">Limit the delay</a></li>
+<li><a class="reference internal" href="#selected-projects">Selected projects</a></li>
+<li><a class="reference internal" href="#how-projects-are-selected">How projects are selected</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#incompatible-changes">Incompatible changes</a><ul>
+<li><a class="reference internal" href="#examples">Examples</a></li>
+<li><a class="reference internal" href="#cleaning-up-python-and-deprecationwarning">Cleaning up Python and DeprecationWarning</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#distributed-ci">Distributed CI</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

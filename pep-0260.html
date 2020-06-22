@@ -1,0 +1,194 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 260 – Simplify xrange() &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 261 – Support for “wide” Unicode characters" href="pep-0261.html" />
+    <link rel="prev" title="PEP 259 – Omit printing newline after newline" href="pep-0259.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 260 – Simplify xrange()</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-260-simplify-xrange">
+<h1 class="page-title">PEP 260 – Simplify xrange()<a class="headerlink" href="#pep-260-simplify-xrange" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">260</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Simplify xrange()</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">guido&#32;&#97;t&#32;python.org (Guido van Rossum)</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">26-Jun-2001</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.2</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">26-Jun-2001</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id2">Abstract</a></li>
+<li><a class="reference internal" href="#problem" id="id3">Problem</a></li>
+<li><a class="reference internal" href="#proposed-solution" id="id4">Proposed Solution</a></li>
+<li><a class="reference internal" href="#scope" id="id5">Scope</a></li>
+<li><a class="reference internal" href="#risks" id="id6">Risks</a></li>
+<li><a class="reference internal" href="#transition" id="id7">Transition</a></li>
+<li><a class="reference internal" href="#copyright" id="id8">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id2">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes to strip the <code class="docutils literal notranslate"><span class="pre">xrange()</span></code> object from some rarely
+used behavior like <code class="docutils literal notranslate"><span class="pre">x[i:j]</span></code> and <code class="docutils literal notranslate"><span class="pre">x*n</span></code>.</p>
+</div>
+<div class="section" id="problem">
+<h2><a class="toc-backref" href="#id3">Problem</a><a class="headerlink" href="#problem" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">xrange()</span></code> function has one idiomatic use:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="o">...</span><span class="p">):</span> <span class="o">...</span>
+</pre></div>
+</div>
+<p>However, the <code class="docutils literal notranslate"><span class="pre">xrange()</span></code> object has a bunch of rarely used behaviors
+that attempt to make it more sequence-like.  These are so rarely
+used that historically they have has serious bugs (e.g. off-by-one
+errors) that went undetected for several releases.</p>
+<p>I claim that it’s better to drop these unused features.  This will
+simplify the implementation, testing, and documentation, and
+reduce maintenance and code size.</p>
+</div>
+<div class="section" id="proposed-solution">
+<h2><a class="toc-backref" href="#id4">Proposed Solution</a><a class="headerlink" href="#proposed-solution" title="Permalink to this headline">¶</a></h2>
+<p>I propose to strip the <code class="docutils literal notranslate"><span class="pre">xrange()</span></code> object to the bare minimum.  The
+only retained sequence behaviors are <code class="docutils literal notranslate"><span class="pre">x[i]</span></code>, <code class="docutils literal notranslate"><span class="pre">len(x)</span></code>, and <code class="docutils literal notranslate"><span class="pre">repr(x)</span></code>.
+In particular, these behaviors will be dropped:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">x[i:j]</span></code> (slicing)</li>
+<li><code class="docutils literal notranslate"><span class="pre">x*n</span></code>, <code class="docutils literal notranslate"><span class="pre">n*x</span></code> (sequence-repeat)</li>
+<li><code class="docutils literal notranslate"><span class="pre">cmp(x1,</span> <span class="pre">x2)</span></code> (comparisons)</li>
+<li><code class="docutils literal notranslate"><span class="pre">i</span> <span class="pre">in</span> <span class="pre">x</span></code> (containment test)</li>
+<li><code class="docutils literal notranslate"><span class="pre">x.tolist()</span></code> method</li>
+<li><code class="docutils literal notranslate"><span class="pre">x.start</span></code>, <code class="docutils literal notranslate"><span class="pre">x.stop</span></code>, <code class="docutils literal notranslate"><span class="pre">x.step</span></code> attributes</li>
+</ul>
+<p>I also propose to change the signature of the <code class="docutils literal notranslate"><span class="pre">PyRange_New()</span></code> C API
+to remove the 4th argument (the repetition count).</p>
+<p>By implementing a custom iterator type, we could speed up the
+common use, but this is optional (the default sequence iterator
+does just fine).</p>
+</div>
+<div class="section" id="scope">
+<h2><a class="toc-backref" href="#id5">Scope</a><a class="headerlink" href="#scope" title="Permalink to this headline">¶</a></h2>
+<p>This PEP affects the <code class="docutils literal notranslate"><span class="pre">xrange()</span></code> built-in function and the
+<code class="docutils literal notranslate"><span class="pre">PyRange_New()</span></code> C API.</p>
+</div>
+<div class="section" id="risks">
+<h2><a class="toc-backref" href="#id6">Risks</a><a class="headerlink" href="#risks" title="Permalink to this headline">¶</a></h2>
+<p>Somebody’s code could be relying on the extended code, and this
+code would break.  However, given that historically bugs in the
+extended code have gone undetected for so long, it’s unlikely that
+much code is affected.</p>
+</div>
+<div class="section" id="transition">
+<h2><a class="toc-backref" href="#id7">Transition</a><a class="headerlink" href="#transition" title="Permalink to this headline">¶</a></h2>
+<p>For backwards compatibility, the existing functionality will still
+be present in Python 2.2, but will trigger a warning.  A year
+after Python 2.2 final is released (probably in 2.4) the
+functionality will be ripped out.</p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id8">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0260.txt">https://github.com/python/peps/blob/master/pep-0260.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0260.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0259.html">PEP 0259</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0261.html">PEP 0261</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 260 – Simplify xrange()</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#problem">Problem</a></li>
+<li><a class="reference internal" href="#proposed-solution">Proposed Solution</a></li>
+<li><a class="reference internal" href="#scope">Scope</a></li>
+<li><a class="reference internal" href="#risks">Risks</a></li>
+<li><a class="reference internal" href="#transition">Transition</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

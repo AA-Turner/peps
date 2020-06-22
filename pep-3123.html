@@ -1,0 +1,259 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 3123 – Making PyObject_HEAD conform to standard C &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 3124 – Overloading, Generic Functions, Interfaces, and Adaptation" href="pep-3124.html" />
+    <link rel="prev" title="PEP 3122 – Delineation of the main module" href="pep-3122.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 3123 – Making PyObject_HEAD conform to standard C</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-3123-making-pyobject-head-conform-to-standard-c">
+<h1 class="page-title">PEP 3123 – Making PyObject_HEAD conform to standard C<a class="headerlink" href="#pep-3123-making-pyobject-head-conform-to-standard-c" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">3123</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Making PyObject_HEAD conform to standard C</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Martin von Löwis &lt;martin&#32;&#97;t&#32;v.loewis.de&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">27-Apr-2007</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.0</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id2">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id3">Rationale</a></li>
+<li><a class="reference internal" href="#specification" id="id4">Specification</a></li>
+<li><a class="reference internal" href="#compatibility-with-python-2-6" id="id5">Compatibility with Python 2.6</a></li>
+<li><a class="reference internal" href="#copyright" id="id6">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id2">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Python currently relies on undefined C behavior, with its
+usage of <code class="docutils literal notranslate"><span class="pre">PyObject_HEAD</span></code>. This PEP proposes to change that
+into standard C.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id3">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Standard C defines that an object must be accessed only through a
+pointer of its type, and that all other accesses are undefined
+behavior, with a few exceptions. In particular, the following
+code has undefined behavior:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">struct</span> <span class="n">FooObject</span><span class="p">{</span>
+  <span class="n">PyObject_HEAD</span>
+  <span class="nb">int</span> <span class="n">data</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="n">PyObject</span> <span class="o">*</span><span class="n">foo</span><span class="p">(</span><span class="n">struct</span> <span class="n">FooObject</span><span class="o">*</span><span class="n">f</span><span class="p">){</span>
+ <span class="k">return</span> <span class="p">(</span><span class="n">PyObject</span><span class="o">*</span><span class="p">)</span><span class="n">f</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="nb">int</span> <span class="n">bar</span><span class="p">(){</span>
+ <span class="n">struct</span> <span class="n">FooObject</span> <span class="o">*</span><span class="n">f</span> <span class="o">=</span> <span class="n">malloc</span><span class="p">(</span><span class="n">sizeof</span><span class="p">(</span><span class="n">struct</span> <span class="n">FooObject</span><span class="p">));</span>
+ <span class="n">struct</span> <span class="n">PyObject</span> <span class="o">*</span><span class="n">o</span> <span class="o">=</span> <span class="n">foo</span><span class="p">(</span><span class="n">f</span><span class="p">);</span>
+ <span class="n">f</span><span class="o">-&gt;</span><span class="n">ob_refcnt</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+ <span class="n">o</span><span class="o">-&gt;</span><span class="n">ob_refcnt</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+ <span class="k">return</span> <span class="n">f</span><span class="o">-&gt;</span><span class="n">ob_refcnt</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The problem here is that the storage is both accessed as
+if it where struct <code class="docutils literal notranslate"><span class="pre">PyObject</span></code>, and as struct <code class="docutils literal notranslate"><span class="pre">FooObject</span></code>.</p>
+<p>Historically, compilers did not have any problems with this
+code. However, modern compilers use that clause as an
+optimization opportunity, finding that <code class="docutils literal notranslate"><span class="pre">f-&gt;ob_refcnt</span></code> and
+<code class="docutils literal notranslate"><span class="pre">o-&gt;ob_refcnt</span></code> cannot possibly refer to the same memory, and
+that therefore the function should return 0, without having
+to fetch the value of ob_refcnt at all in the return
+statement. For GCC, Python now uses <code class="docutils literal notranslate"><span class="pre">-fno-strict-aliasing</span></code>
+to work around that problem; with other compilers, it
+may just see undefined behavior. Even with GCC, using
+<code class="docutils literal notranslate"><span class="pre">-fno-strict-aliasing</span></code> may pessimize the generated code
+unnecessarily.</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id4">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>Standard C has one specific exception to its aliasing rules precisely
+designed to support the case of Python: a value of a struct type may
+also be accessed through a pointer to the first field. E.g. if a
+struct starts with an <code class="docutils literal notranslate"><span class="pre">int</span></code>, the <code class="docutils literal notranslate"><span class="pre">struct</span> <span class="pre">*</span></code> may also be cast to
+an <code class="docutils literal notranslate"><span class="pre">int</span> <span class="pre">*</span></code>, allowing to write int values into the first field.</p>
+<p>For Python, <code class="docutils literal notranslate"><span class="pre">PyObject_HEAD</span></code> and <code class="docutils literal notranslate"><span class="pre">PyObject_VAR_HEAD</span></code> will be changed
+to not list all fields anymore, but list a single field of type
+<code class="docutils literal notranslate"><span class="pre">PyObject</span></code>/<code class="docutils literal notranslate"><span class="pre">PyVarObject</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">typedef</span> <span class="n">struct</span> <span class="n">_object</span> <span class="p">{</span>
+  <span class="n">_PyObject_HEAD_EXTRA</span>
+  <span class="n">Py_ssize_t</span> <span class="n">ob_refcnt</span><span class="p">;</span>
+  <span class="n">struct</span> <span class="n">_typeobject</span> <span class="o">*</span><span class="n">ob_type</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">PyObject</span><span class="p">;</span>
+
+<span class="n">typedef</span> <span class="n">struct</span> <span class="p">{</span>
+  <span class="n">PyObject</span> <span class="n">ob_base</span><span class="p">;</span>
+  <span class="n">Py_ssize_t</span> <span class="n">ob_size</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">PyVarObject</span><span class="p">;</span>
+
+<span class="c1">#define PyObject_HEAD        PyObject ob_base;</span>
+<span class="c1">#define PyObject_VAR_HEAD    PyVarObject ob_base;</span>
+</pre></div>
+</div>
+<p>Types defined as fixed-size structure will then include PyObject
+as its first field, PyVarObject for variable-sized objects. E.g.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">typedef</span> <span class="n">struct</span> <span class="p">{</span>
+  <span class="n">PyObject</span> <span class="n">ob_base</span><span class="p">;</span>
+  <span class="n">PyObject</span> <span class="o">*</span><span class="n">start</span><span class="p">,</span> <span class="o">*</span><span class="n">stop</span><span class="p">,</span> <span class="o">*</span><span class="n">step</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">PySliceObject</span><span class="p">;</span>
+
+<span class="n">typedef</span> <span class="n">struct</span> <span class="p">{</span>
+  <span class="n">PyVarObject</span> <span class="n">ob_base</span><span class="p">;</span>
+  <span class="n">PyObject</span> <span class="o">**</span><span class="n">ob_item</span><span class="p">;</span>
+  <span class="n">Py_ssize_t</span> <span class="n">allocated</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">PyListObject</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>The above definitions of <code class="docutils literal notranslate"><span class="pre">PyObject_HEAD</span></code> are normative, so extension
+authors MAY either use the macro, or put the <code class="docutils literal notranslate"><span class="pre">ob_base</span></code> field explicitly
+into their structs.</p>
+<p>As a convention, the base field SHOULD be called ob_base. However, all
+accesses to ob_refcnt and ob_type MUST cast the object pointer to
+PyObject* (unless the pointer is already known to have that type), and
+SHOULD use the respective accessor macros. To simplify access to
+ob_type, ob_refcnt, and ob_size, macros:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#define Py_TYPE(o)    (((PyObject*)(o))-&gt;ob_type)</span>
+<span class="c1">#define Py_REFCNT(o)  (((PyObject*)(o))-&gt;ob_refcnt)</span>
+<span class="c1">#define Py_SIZE(o)    (((PyVarObject*)(o))-&gt;ob_size)</span>
+</pre></div>
+</div>
+<p>are added. E.g. the code blocks</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#define PyList_CheckExact(op) ((op)-&gt;ob_type == &amp;PyList_Type)</span>
+
+<span class="k">return</span> <span class="n">func</span><span class="o">-&gt;</span><span class="n">ob_type</span><span class="o">-&gt;</span><span class="n">tp_name</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>needs to be changed to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#define PyList_CheckExact(op) (Py_TYPE(op) == &amp;PyList_Type)</span>
+
+<span class="k">return</span> <span class="n">Py_TYPE</span><span class="p">(</span><span class="n">func</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">tp_name</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>For initialization of type objects, the current sequence</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyObject_HEAD_INIT</span><span class="p">(</span><span class="n">NULL</span><span class="p">)</span>
+<span class="mi">0</span><span class="p">,</span> <span class="o">/*</span> <span class="n">ob_size</span> <span class="o">*/</span>
+</pre></div>
+</div>
+<p>becomes incorrect, and must be replaced with</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyVarObject_HEAD_INIT</span><span class="p">(</span><span class="n">NULL</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="compatibility-with-python-2-6">
+<h2><a class="toc-backref" href="#id5">Compatibility with Python 2.6</a><a class="headerlink" href="#compatibility-with-python-2-6" title="Permalink to this headline">¶</a></h2>
+<p>To support modules that compile with both Python 2.6 and Python 3.0,
+the <code class="docutils literal notranslate"><span class="pre">Py_*</span></code> macros are added to Python 2.6. The macros <code class="docutils literal notranslate"><span class="pre">Py_INCREF</span></code>
+and <code class="docutils literal notranslate"><span class="pre">Py_DECREF</span></code> will be changed to cast their argument to <code class="docutils literal notranslate"><span class="pre">PyObject</span> <span class="pre">*</span></code>,
+so that module authors can also explicitly declare the <code class="docutils literal notranslate"><span class="pre">ob_base</span></code>
+field in modules designed for Python 2.6.</p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id6">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-3123.txt">https://github.com/python/peps/blob/master/pep-3123.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-3123.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-3122.html">PEP 3122</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-3124.html">PEP 3124</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 3123 – Making PyObject_HEAD conform to standard C</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#compatibility-with-python-2-6">Compatibility with Python 2.6</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

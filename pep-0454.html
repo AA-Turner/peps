@@ -1,0 +1,615 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 454 – Add a new tracemalloc module to trace Python memory allocations &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 455 – Adding a key-transforming dictionary to collections" href="pep-0455.html" />
+    <link rel="prev" title="PEP 453 – Explicit bootstrapping of pip in Python installations" href="pep-0453.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 454 – Add a new tracemalloc module to trace Python memory allocations</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-454-add-a-new-tracemalloc-module-to-trace-python-memory-allocations">
+<h1 class="page-title">PEP 454 – Add a new tracemalloc module to trace Python memory allocations<a class="headerlink" href="#pep-454-add-a-new-tracemalloc-module-to-trace-python-memory-allocations" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">454</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Add a new tracemalloc module to trace Python memory allocations</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Victor Stinner &lt;vstinner&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even">Charles-François Natali &lt;cf.natali&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd">Final</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even">Standards Track</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">3-September-2013</dd>
+<dt class="field-even">Python-Version</dt>
+<dd class="field-even">3.4</dd>
+<dt class="field-odd">Resolution</dt>
+<dd class="field-odd"><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2013-November/130491.html">https://mail.python.org/pipermail/python-dev/2013-November/130491.html</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id2">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id3">Rationale</a></li>
+<li><a class="reference internal" href="#proposal" id="id4">Proposal</a></li>
+<li><a class="reference internal" href="#api" id="id5">API</a><ul>
+<li><a class="reference internal" href="#functions" id="id6">Functions</a></li>
+<li><a class="reference internal" href="#filter" id="id7">Filter</a></li>
+<li><a class="reference internal" href="#frame" id="id8">Frame</a></li>
+<li><a class="reference internal" href="#snapshot" id="id9">Snapshot</a></li>
+<li><a class="reference internal" href="#statistic" id="id10">Statistic</a></li>
+<li><a class="reference internal" href="#statisticdiff" id="id11">StatisticDiff</a></li>
+<li><a class="reference internal" href="#trace" id="id12">Trace</a></li>
+<li><a class="reference internal" href="#traceback" id="id13">Traceback</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rejected-alternatives" id="id14">Rejected Alternatives</a><ul>
+<li><a class="reference internal" href="#log-calls-to-the-memory-allocator" id="id15">Log calls to the memory allocator</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#prior-work" id="id16">Prior Work</a></li>
+<li><a class="reference internal" href="#links" id="id17">Links</a></li>
+<li><a class="reference internal" href="#copyright" id="id18">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id2">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes to add a new <code class="docutils literal notranslate"><span class="pre">tracemalloc</span></code> module to trace memory
+blocks allocated by Python.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id3">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Classic generic tools like Valgrind can get the C traceback where a
+memory block was allocated. Using such tools to analyze Python memory
+allocations does not help because most memory blocks are allocated in
+the same C function, in <code class="docutils literal notranslate"><span class="pre">PyMem_Malloc()</span></code> for example. Moreover, Python
+has an allocator for small objects called “pymalloc” which keeps free
+blocks for efficiency. This is not well handled by these tools.</p>
+<p>There are debug tools dedicated to the Python language like <code class="docutils literal notranslate"><span class="pre">Heapy</span></code>
+<code class="docutils literal notranslate"><span class="pre">Pympler</span></code> and <code class="docutils literal notranslate"><span class="pre">Meliae</span></code> which lists all alive objects using the
+garbage collector module (functions like <code class="docutils literal notranslate"><span class="pre">gc.get_objects()</span></code>,
+<code class="docutils literal notranslate"><span class="pre">gc.get_referrers()</span></code> and <code class="docutils literal notranslate"><span class="pre">gc.get_referents()</span></code>), compute their size
+(ex: using <code class="docutils literal notranslate"><span class="pre">sys.getsizeof()</span></code>) and group objects by type. These tools
+provide a better estimation of the memory usage of an application.  They
+are useful when most memory leaks are instances of the same type and
+this type is only instantiated in a few functions. Problems arise when
+the object type is very common like <code class="docutils literal notranslate"><span class="pre">str</span></code> or <code class="docutils literal notranslate"><span class="pre">tuple</span></code>, and it is hard
+to identify where these objects are instantiated.</p>
+<p>Finding reference cycles is also a difficult problem.  There are
+different tools to draw a diagram of all references.  These tools
+cannot be used on large applications with thousands of objects because
+the diagram is too huge to be analyzed manually.</p>
+</div>
+<div class="section" id="proposal">
+<h2><a class="toc-backref" href="#id4">Proposal</a><a class="headerlink" href="#proposal" title="Permalink to this headline">¶</a></h2>
+<p>Using the customized allocation API from PEP 445, it becomes easy to
+set up a hook on Python memory allocators. A hook can inspect Python
+internals to retrieve Python tracebacks. The idea of getting the current
+traceback comes from the faulthandler module. The faulthandler dumps
+the traceback of all Python threads on a crash, here is the idea is to
+get the traceback of the current Python thread when a memory block is
+allocated by Python.</p>
+<p>This PEP proposes to add a new <code class="docutils literal notranslate"><span class="pre">tracemalloc</span></code> module, a debug tool
+to trace memory blocks allocated by Python. The module provides the
+following information:</p>
+<ul class="simple">
+<li>Traceback where an object was allocated</li>
+<li>Statistics on allocated memory blocks per filename and per line
+number: total size, number and average size of allocated memory blocks</li>
+<li>Computed differences between two snapshots to detect memory leaks</li>
+</ul>
+<p>The API of the tracemalloc module is similar to the API of the faulthandler
+module: <code class="docutils literal notranslate"><span class="pre">enable()</span></code> / <code class="docutils literal notranslate"><span class="pre">start()</span></code>, <code class="docutils literal notranslate"><span class="pre">disable()</span></code> / <code class="docutils literal notranslate"><span class="pre">stop()</span></code> and
+<code class="docutils literal notranslate"><span class="pre">is_enabled()</span></code> / <code class="docutils literal notranslate"><span class="pre">is_tracing()</span></code> functions, an environment variable
+(<code class="docutils literal notranslate"><span class="pre">PYTHONFAULTHANDLER</span></code> and <code class="docutils literal notranslate"><span class="pre">PYTHONTRACEMALLOC</span></code>), and a <code class="docutils literal notranslate"><span class="pre">-X</span></code> command line
+option (<code class="docutils literal notranslate"><span class="pre">-X</span> <span class="pre">faulthandler</span></code> and <code class="docutils literal notranslate"><span class="pre">-X</span> <span class="pre">tracemalloc</span></code>). See the <a class="reference external" href="http://docs.python.org/3/library/faulthandler.html">documentation of
+the faulthandler module</a>.</p>
+<p>The idea of tracing memory allocations is not new. It was first
+implemented in the PySizer project in 2005. PySizer was implemented
+differently: the traceback was stored in frame objects and some Python
+types were linked the trace with the name of object type. PySizer patch
+on CPython adds an overhead on performances and memory footprint, even if
+the PySizer was not used. tracemalloc attachs a traceback to the
+underlying layer, to memory blocks, and has no overhead when the module
+is not tracing memory allocations.</p>
+<p>The tracemalloc module has been written for CPython. Other
+implementations of Python may not be able to provide it.</p>
+</div>
+<div class="section" id="api">
+<h2><a class="toc-backref" href="#id5">API</a><a class="headerlink" href="#api" title="Permalink to this headline">¶</a></h2>
+<p>To trace most memory blocks allocated by Python, the module should be
+started as early as possible by setting the <code class="docutils literal notranslate"><span class="pre">PYTHONTRACEMALLOC</span></code>
+environment variable to <code class="docutils literal notranslate"><span class="pre">1</span></code>, or by using <code class="docutils literal notranslate"><span class="pre">-X</span> <span class="pre">tracemalloc</span></code> command
+line option. The <code class="docutils literal notranslate"><span class="pre">tracemalloc.start()</span></code> function can be called at
+runtime to start tracing Python memory allocations.</p>
+<p>By default, a trace of an allocated memory block only stores the most
+recent frame (1 frame). To store 25 frames at startup: set the
+<code class="docutils literal notranslate"><span class="pre">PYTHONTRACEMALLOC</span></code> environment variable to <code class="docutils literal notranslate"><span class="pre">25</span></code>, or use the <code class="docutils literal notranslate"><span class="pre">-X</span>
+<span class="pre">tracemalloc=25</span></code> command line option. The <code class="docutils literal notranslate"><span class="pre">set_traceback_limit()</span></code>
+function can be used at runtime to set the limit.</p>
+<div class="section" id="functions">
+<h3><a class="toc-backref" href="#id6">Functions</a><a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">clear_traces()</span></code> function:</p>
+<blockquote>
+<div><p>Clear traces of memory blocks allocated by Python.</p>
+<p>See also <code class="docutils literal notranslate"><span class="pre">stop()</span></code>.</p>
+</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">get_object_traceback(obj)</span></code> function:</p>
+<blockquote>
+<div><p>Get the traceback where the Python object <em>obj</em> was allocated.
+Return a <code class="docutils literal notranslate"><span class="pre">Traceback</span></code> instance, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if the <code class="docutils literal notranslate"><span class="pre">tracemalloc</span></code>
+module is not tracing memory allocations or did not trace the
+allocation of the object.</p>
+<p>See also <code class="docutils literal notranslate"><span class="pre">gc.get_referrers()</span></code> and <code class="docutils literal notranslate"><span class="pre">sys.getsizeof()</span></code> functions.</p>
+</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">get_traceback_limit()</span></code> function:</p>
+<blockquote>
+<div><p>Get the maximum number of frames stored in the traceback of a trace.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">tracemalloc</span></code> module must be tracing memory allocations to get
+the limit, otherwise an exception is raised.</p>
+<p>The limit is set by the <code class="docutils literal notranslate"><span class="pre">start()</span></code> function.</p>
+</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">get_traced_memory()</span></code> function:</p>
+<blockquote>
+<div>Get the current size and maximum size of memory blocks traced by the
+<code class="docutils literal notranslate"><span class="pre">tracemalloc</span></code> module as a tuple: <code class="docutils literal notranslate"><span class="pre">(size:</span> <span class="pre">int,</span> <span class="pre">max_size:</span> <span class="pre">int)</span></code>.</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">get_tracemalloc_memory()</span></code> function:</p>
+<blockquote>
+<div>Get the memory usage in bytes of the <code class="docutils literal notranslate"><span class="pre">tracemalloc</span></code> module used to
+store traces of memory blocks. Return an <code class="docutils literal notranslate"><span class="pre">int</span></code>.</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">is_tracing()</span></code> function:</p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">True</span></code> if the <code class="docutils literal notranslate"><span class="pre">tracemalloc</span></code> module is tracing Python memory
+allocations, <code class="docutils literal notranslate"><span class="pre">False</span></code> otherwise.</p>
+<p>See also <code class="docutils literal notranslate"><span class="pre">start()</span></code> and <code class="docutils literal notranslate"><span class="pre">stop()</span></code> functions.</p>
+</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">start(nframe:</span> <span class="pre">int=1)</span></code> function:</p>
+<blockquote>
+<div><p>Start tracing Python memory allocations: install hooks on Python
+memory allocators. Collected tracebacks of traces will be limited to
+<em>nframe</em> frames. By default, a trace of a memory block only stores
+the most recent frame: the limit is <code class="docutils literal notranslate"><span class="pre">1</span></code>. <em>nframe</em> must be greater
+or equal to <code class="docutils literal notranslate"><span class="pre">1</span></code>.</p>
+<p>Storing more than <code class="docutils literal notranslate"><span class="pre">1</span></code> frame is only useful to compute statistics
+grouped by <code class="docutils literal notranslate"><span class="pre">'traceback'</span></code> or to compute cumulative statistics: see
+the <code class="docutils literal notranslate"><span class="pre">Snapshot.compare_to()</span></code> and <code class="docutils literal notranslate"><span class="pre">Snapshot.statistics()</span></code> methods.</p>
+<p>Storing more frames increases the memory and CPU overhead of the
+<code class="docutils literal notranslate"><span class="pre">tracemalloc</span></code> module. Use the <code class="docutils literal notranslate"><span class="pre">get_tracemalloc_memory()</span></code>
+function to measure how much memory is used by the <code class="docutils literal notranslate"><span class="pre">tracemalloc</span></code>
+module.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">PYTHONTRACEMALLOC</span></code> environment variable
+(<code class="docutils literal notranslate"><span class="pre">PYTHONTRACEMALLOC=NFRAME</span></code>) and the <code class="docutils literal notranslate"><span class="pre">-X</span></code> <code class="docutils literal notranslate"><span class="pre">tracemalloc=NFRAME</span></code>
+command line option can be used to start tracing at startup.</p>
+<p>See also <code class="docutils literal notranslate"><span class="pre">stop()</span></code>, <code class="docutils literal notranslate"><span class="pre">is_tracing()</span></code> and <code class="docutils literal notranslate"><span class="pre">get_traceback_limit()</span></code>
+functions.</p>
+</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">stop()</span></code> function:</p>
+<blockquote>
+<div><p>Stop tracing Python memory allocations: uninstall hooks on Python
+memory allocators. Clear also traces of memory blocks allocated by
+Python</p>
+<p>Call <code class="docutils literal notranslate"><span class="pre">take_snapshot()</span></code> function to take a snapshot of traces
+before clearing them.</p>
+<p>See also <code class="docutils literal notranslate"><span class="pre">start()</span></code> and <code class="docutils literal notranslate"><span class="pre">is_tracing()</span></code> functions.</p>
+</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">take_snapshot()</span></code> function:</p>
+<blockquote>
+<div><p>Take a snapshot of traces of memory blocks allocated by Python.
+Return a new <code class="docutils literal notranslate"><span class="pre">Snapshot</span></code> instance.</p>
+<p>The snapshot does not include memory blocks allocated before the
+<code class="docutils literal notranslate"><span class="pre">tracemalloc</span></code> module started to trace memory allocations.</p>
+<p>Tracebacks of traces are limited to <code class="docutils literal notranslate"><span class="pre">get_traceback_limit()</span></code>
+frames. Use the <em>nframe</em> parameter of the <code class="docutils literal notranslate"><span class="pre">start()</span></code> function to
+store more frames.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">tracemalloc</span></code> module must be tracing memory allocations to
+take a snapshot, see the <code class="docutils literal notranslate"><span class="pre">start()</span></code> function.</p>
+<p>See also the <code class="docutils literal notranslate"><span class="pre">get_object_traceback()</span></code> function.</p>
+</div></blockquote>
+</div>
+<div class="section" id="filter">
+<h3><a class="toc-backref" href="#id7">Filter</a><a class="headerlink" href="#filter" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">Filter(inclusive:</span> <span class="pre">bool,</span> <span class="pre">filename_pattern:</span> <span class="pre">str,</span> <span class="pre">lineno:</span> <span class="pre">int=None,</span> <span class="pre">all_frames:</span> <span class="pre">bool=False)</span></code> class:</p>
+<blockquote>
+<div><p>Filter on traces of memory blocks.</p>
+<p>See the <code class="docutils literal notranslate"><span class="pre">fnmatch.fnmatch()</span></code> function for the syntax of
+<em>filename_pattern</em>. The <code class="docutils literal notranslate"><span class="pre">'.pyc'</span></code> and <code class="docutils literal notranslate"><span class="pre">'.pyo'</span></code> file extensions
+are replaced with <code class="docutils literal notranslate"><span class="pre">'.py'</span></code>.</p>
+<p>Examples:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">Filter(True,</span> <span class="pre">subprocess.__file__)</span></code> only includes traces of the
+<code class="docutils literal notranslate"><span class="pre">subprocess</span></code> module</li>
+<li><code class="docutils literal notranslate"><span class="pre">Filter(False,</span> <span class="pre">tracemalloc.__file__)</span></code> excludes traces of the
+<code class="docutils literal notranslate"><span class="pre">tracemalloc</span></code> module</li>
+<li><code class="docutils literal notranslate"><span class="pre">Filter(False,</span> <span class="pre">&quot;&lt;unknown&gt;&quot;)</span></code> excludes empty tracebacks</li>
+</ul>
+</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">inclusive</span></code> attribute:</p>
+<blockquote>
+<div><p>If <em>inclusive</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code> (include), only trace memory blocks
+allocated in a file with a name matching <code class="docutils literal notranslate"><span class="pre">filename_pattern</span></code> at
+line number <code class="docutils literal notranslate"><span class="pre">lineno</span></code>.</p>
+<p>If <em>inclusive</em> is <code class="docutils literal notranslate"><span class="pre">False</span></code> (exclude), ignore memory blocks
+allocated in a file with a name matching <code class="docutils literal notranslate"><span class="pre">filename_pattern</span></code> at
+line number <code class="docutils literal notranslate"><span class="pre">lineno</span></code>.</p>
+</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">lineno</span></code> attribute:</p>
+<blockquote>
+<div>Line number (<code class="docutils literal notranslate"><span class="pre">int</span></code>) of the filter. If <em>lineno</em> is <code class="docutils literal notranslate"><span class="pre">None</span></code>, the
+filter matches any line number.</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">filename_pattern</span></code> attribute:</p>
+<blockquote>
+<div>Filename pattern of the filter (<code class="docutils literal notranslate"><span class="pre">str</span></code>).</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">all_frames</span></code> attribute:</p>
+<blockquote>
+<div><p>If <em>all_frames</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, all frames of the traceback are
+checked. If <em>all_frames</em> is <code class="docutils literal notranslate"><span class="pre">False</span></code>, only the most recent frame is
+checked.</p>
+<p>This attribute is ignored if the traceback limit is less than <code class="docutils literal notranslate"><span class="pre">2</span></code>.
+See the <code class="docutils literal notranslate"><span class="pre">get_traceback_limit()</span></code> function and
+<code class="docutils literal notranslate"><span class="pre">Snapshot.traceback_limit</span></code> attribute.</p>
+</div></blockquote>
+</div>
+<div class="section" id="frame">
+<h3><a class="toc-backref" href="#id8">Frame</a><a class="headerlink" href="#frame" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">Frame</span></code> class:</p>
+<blockquote>
+<div><p>Frame of a traceback.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">Traceback</span></code> class is a sequence of <code class="docutils literal notranslate"><span class="pre">Frame</span></code> instances.</p>
+</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">filename</span></code> attribute:</p>
+<blockquote>
+<div>Filename (<code class="docutils literal notranslate"><span class="pre">str</span></code>).</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">lineno</span></code> attribute:</p>
+<blockquote>
+<div>Line number (<code class="docutils literal notranslate"><span class="pre">int</span></code>).</div></blockquote>
+</div>
+<div class="section" id="snapshot">
+<h3><a class="toc-backref" href="#id9">Snapshot</a><a class="headerlink" href="#snapshot" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">Snapshot</span></code> class:</p>
+<blockquote>
+<div><p>Snapshot of traces of memory blocks allocated by Python.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">take_snapshot()</span></code> function creates a snapshot instance.</p>
+</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">compare_to(old_snapshot:</span> <span class="pre">Snapshot,</span> <span class="pre">group_by:</span> <span class="pre">str,</span> <span class="pre">cumulative:</span> <span class="pre">bool=False)</span></code> method:</p>
+<blockquote>
+<div><p>Compute the differences with an old snapshot. Get statistics as a
+sorted list of <code class="docutils literal notranslate"><span class="pre">StatisticDiff</span></code> instances grouped by <em>group_by</em>.</p>
+<p>See the <code class="docutils literal notranslate"><span class="pre">statistics()</span></code> method for <em>group_by</em> and <em>cumulative</em>
+parameters.</p>
+<p>The result is sorted from the biggest to the smallest by: absolute
+value of <code class="docutils literal notranslate"><span class="pre">StatisticDiff.size_diff</span></code>, <code class="docutils literal notranslate"><span class="pre">StatisticDiff.size</span></code>,
+absolute value of <code class="docutils literal notranslate"><span class="pre">StatisticDiff.count_diff</span></code>, <code class="docutils literal notranslate"><span class="pre">Statistic.count</span></code>
+and then by <code class="docutils literal notranslate"><span class="pre">StatisticDiff.traceback</span></code>.</p>
+</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">dump(filename)</span></code> method:</p>
+<blockquote>
+<div><p>Write the snapshot into a file.</p>
+<p>Use <code class="docutils literal notranslate"><span class="pre">load()</span></code> to reload the snapshot.</p>
+</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">filter_traces(filters)</span></code> method:</p>
+<blockquote>
+<div><p>Create a new <code class="docutils literal notranslate"><span class="pre">Snapshot</span></code> instance with a filtered <code class="docutils literal notranslate"><span class="pre">traces</span></code>
+sequence, <em>filters</em> is a list of <code class="docutils literal notranslate"><span class="pre">Filter</span></code> instances.  If <em>filters</em>
+is an empty list, return a new <code class="docutils literal notranslate"><span class="pre">Snapshot</span></code> instance with a copy of
+the traces.</p>
+<p>All inclusive filters are applied at once, a trace is ignored if no
+inclusive filters match it. A trace is ignored if at least one
+exclusive filter matchs it.</p>
+</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">load(filename)</span></code> classmethod:</p>
+<blockquote>
+<div><p>Load a snapshot from a file.</p>
+<p>See also <code class="docutils literal notranslate"><span class="pre">dump()</span></code>.</p>
+</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">statistics(group_by:</span> <span class="pre">str,</span> <span class="pre">cumulative:</span> <span class="pre">bool=False)</span></code> method:</p>
+<blockquote>
+<div><p>Get statistics as a sorted list of <code class="docutils literal notranslate"><span class="pre">Statistic</span></code> instances grouped
+by <em>group_by</em>:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 47%" />
+<col style="width: 53%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head">group_by</th>
+<th class="head">description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">'filename'</span></code></td>
+<td>filename</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">'lineno'</span></code></td>
+<td>filename and line number</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">'traceback'</span></code></td>
+<td>traceback</td>
+</tr>
+</tbody>
+</table>
+<p>If <em>cumulative</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, cumulate size and count of memory
+blocks of all frames of the traceback of a trace, not only the most
+recent frame. The cumulative mode can only be used with <em>group_by</em>
+equals to <code class="docutils literal notranslate"><span class="pre">'filename'</span></code> and <code class="docutils literal notranslate"><span class="pre">'lineno'</span></code> and <code class="docutils literal notranslate"><span class="pre">traceback_limit</span></code>
+greater than <code class="docutils literal notranslate"><span class="pre">1</span></code>.</p>
+<p>The result is sorted from the biggest to the smallest by:
+<code class="docutils literal notranslate"><span class="pre">Statistic.size</span></code>, <code class="docutils literal notranslate"><span class="pre">Statistic.count</span></code> and then by
+<code class="docutils literal notranslate"><span class="pre">Statistic.traceback</span></code>.</p>
+</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">traceback_limit</span></code> attribute:</p>
+<blockquote>
+<div>Maximum number of frames stored in the traceback of <code class="docutils literal notranslate"><span class="pre">traces</span></code>:
+result of the <code class="docutils literal notranslate"><span class="pre">get_traceback_limit()</span></code> when the snapshot was taken.</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">traces</span></code> attribute:</p>
+<blockquote>
+<div><p>Traces of all memory blocks allocated by Python: sequence of
+<code class="docutils literal notranslate"><span class="pre">Trace</span></code> instances.</p>
+<p>The sequence has an undefined order. Use the
+<code class="docutils literal notranslate"><span class="pre">Snapshot.statistics()</span></code> method to get a sorted list of statistics.</p>
+</div></blockquote>
+</div>
+<div class="section" id="statistic">
+<h3><a class="toc-backref" href="#id10">Statistic</a><a class="headerlink" href="#statistic" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">Statistic</span></code> class:</p>
+<blockquote>
+<div><p>Statistic on memory allocations.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Snapshot.statistics()</span></code> returns a list of <code class="docutils literal notranslate"><span class="pre">Statistic</span></code> instances.</p>
+<p>See also the <code class="docutils literal notranslate"><span class="pre">StatisticDiff</span></code> class.</p>
+</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">count</span></code> attribute:</p>
+<blockquote>
+<div>Number of memory blocks (<code class="docutils literal notranslate"><span class="pre">int</span></code>).</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">size</span></code> attribute:</p>
+<blockquote>
+<div>Total size of memory blocks in bytes (<code class="docutils literal notranslate"><span class="pre">int</span></code>).</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">traceback</span></code> attribute:</p>
+<blockquote>
+<div>Traceback where the memory block was allocated, <code class="docutils literal notranslate"><span class="pre">Traceback</span></code>
+instance.</div></blockquote>
+</div>
+<div class="section" id="statisticdiff">
+<h3><a class="toc-backref" href="#id11">StatisticDiff</a><a class="headerlink" href="#statisticdiff" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">StatisticDiff</span></code> class:</p>
+<blockquote>
+<div><p>Statistic difference on memory allocations between an old and a new
+<code class="docutils literal notranslate"><span class="pre">Snapshot</span></code> instance.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Snapshot.compare_to()</span></code> returns a list of <code class="docutils literal notranslate"><span class="pre">StatisticDiff</span></code>
+instances. See also the <code class="docutils literal notranslate"><span class="pre">Statistic</span></code> class.</p>
+</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">count</span></code> attribute:</p>
+<blockquote>
+<div>Number of memory blocks in the new snapshot (<code class="docutils literal notranslate"><span class="pre">int</span></code>): <code class="docutils literal notranslate"><span class="pre">0</span></code> if the
+memory blocks have been released in the new snapshot.</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">count_diff</span></code> attribute:</p>
+<blockquote>
+<div>Difference of number of memory blocks between the old and the new
+snapshots (<code class="docutils literal notranslate"><span class="pre">int</span></code>): <code class="docutils literal notranslate"><span class="pre">0</span></code> if the memory blocks have been allocated
+in the new snapshot.</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">size</span></code> attribute:</p>
+<blockquote>
+<div>Total size of memory blocks in bytes in the new snapshot (<code class="docutils literal notranslate"><span class="pre">int</span></code>):
+<code class="docutils literal notranslate"><span class="pre">0</span></code> if the memory blocks have been released in the new snapshot.</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">size_diff</span></code> attribute:</p>
+<blockquote>
+<div>Difference of total size of memory blocks in bytes between the old
+and the new snapshots (<code class="docutils literal notranslate"><span class="pre">int</span></code>): <code class="docutils literal notranslate"><span class="pre">0</span></code> if the memory blocks have
+been allocated in the new snapshot.</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">traceback</span></code> attribute:</p>
+<blockquote>
+<div>Traceback where the memory blocks were allocated, <code class="docutils literal notranslate"><span class="pre">Traceback</span></code>
+instance.</div></blockquote>
+</div>
+<div class="section" id="trace">
+<h3><a class="toc-backref" href="#id12">Trace</a><a class="headerlink" href="#trace" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">Trace</span></code> class:</p>
+<blockquote>
+<div><p>Trace of a memory block.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">Snapshot.traces</span></code> attribute is a sequence of <code class="docutils literal notranslate"><span class="pre">Trace</span></code>
+instances.</p>
+</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">size</span></code> attribute:</p>
+<blockquote>
+<div>Size of the memory block in bytes (<code class="docutils literal notranslate"><span class="pre">int</span></code>).</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">traceback</span></code> attribute:</p>
+<blockquote>
+<div>Traceback where the memory block was allocated, <code class="docutils literal notranslate"><span class="pre">Traceback</span></code>
+instance.</div></blockquote>
+</div>
+<div class="section" id="traceback">
+<h3><a class="toc-backref" href="#id13">Traceback</a><a class="headerlink" href="#traceback" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">Traceback</span></code> class:</p>
+<blockquote>
+<div><p>Sequence of <code class="docutils literal notranslate"><span class="pre">Frame</span></code> instances sorted from the most recent frame to
+the oldest frame.</p>
+<p>A traceback contains at least <code class="docutils literal notranslate"><span class="pre">1</span></code> frame. If the <code class="docutils literal notranslate"><span class="pre">tracemalloc</span></code> module
+failed to get a frame, the filename <code class="docutils literal notranslate"><span class="pre">&quot;&lt;unknown&gt;&quot;</span></code> at line number <code class="docutils literal notranslate"><span class="pre">0</span></code> is
+used.</p>
+<p>When a snapshot is taken, tracebacks of traces are limited to
+<code class="docutils literal notranslate"><span class="pre">get_traceback_limit()</span></code> frames. See the <code class="docutils literal notranslate"><span class="pre">take_snapshot()</span></code>
+function.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">Trace.traceback</span></code> attribute is an instance of <code class="docutils literal notranslate"><span class="pre">Traceback</span></code>
+instance.</p>
+</div></blockquote>
+</div>
+</div>
+<div class="section" id="rejected-alternatives">
+<h2><a class="toc-backref" href="#id14">Rejected Alternatives</a><a class="headerlink" href="#rejected-alternatives" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="log-calls-to-the-memory-allocator">
+<h3><a class="toc-backref" href="#id15">Log calls to the memory allocator</a><a class="headerlink" href="#log-calls-to-the-memory-allocator" title="Permalink to this headline">¶</a></h3>
+<p>A different approach is to log calls to <code class="docutils literal notranslate"><span class="pre">malloc()</span></code>, <code class="docutils literal notranslate"><span class="pre">realloc()</span></code> and
+<code class="docutils literal notranslate"><span class="pre">free()</span></code> functions. Calls can be logged into a file or send to another
+computer through the network. Example of a log entry: name of the
+function, size of the memory block, address of the memory block, Python
+traceback where the allocation occurred, timestamp.</p>
+<p>Logs cannot be used directly, getting the current status of the memory
+requires to parse previous logs. For example, it is not possible to get
+directly the traceback of a Python object, like
+<code class="docutils literal notranslate"><span class="pre">get_object_traceback(obj)</span></code> does with traces.</p>
+<p>Python uses objects with a very short lifetime and so makes an extensive
+use of memory allocators. It has an allocator optimized for small
+objects (less than 512 bytes) with a short lifetime.  For example, the
+Python test suites calls <code class="docutils literal notranslate"><span class="pre">malloc()</span></code>, <code class="docutils literal notranslate"><span class="pre">realloc()</span></code> or <code class="docutils literal notranslate"><span class="pre">free()</span></code>
+270,000 times per second in average. If the size of log entry is 32
+bytes, logging produces 8.2 MB per second or 29.0 GB per hour.</p>
+<p>The alternative was rejected because it is less efficient and has less
+features. Parsing logs in a different process or a different computer is
+slower than maintaining traces on allocated memory blocks in the same
+process.</p>
+</div>
+</div>
+<div class="section" id="prior-work">
+<h2><a class="toc-backref" href="#id16">Prior Work</a><a class="headerlink" href="#prior-work" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference external" href="http://www.softwareverify.com/python/memory/index.html">Python Memory Validator</a> (2005-2013):
+commercial Python memory validator developed by Software Verification.
+It uses the Python Reflection API.</li>
+<li><a class="reference external" href="http://pysizer.8325.org/">PySizer</a>: Google Summer of Code 2005 project by
+Nick Smallbone.</li>
+<li><a class="reference external" href="http://guppy-pe.sourceforge.net/">Heapy</a> (2006-2013):
+part of the Guppy-PE project written by Sverker Nilsson.</li>
+<li>Draft PEP: <a class="reference external" href="http://svn.python.org/projects/python/branches/bcannon-sandboxing/PEP.txt">Support Tracking Low-Level Memory Usage in CPython</a>
+(Brett Canon, 2006)</li>
+<li>Muppy: project developed in 2008 by Robert Schuppenies.</li>
+<li><a class="reference external" href="http://code.activestate.com/recipes/546530/">asizeof</a>:
+a pure Python module to estimate the size of objects by Jean
+Brouwers (2008).</li>
+<li><a class="reference external" href="http://www.scons.org/wiki/LudwigHaehne/HeapMonitor">Heapmonitor</a>:
+It provides facilities to size individual objects and can track all objects
+of certain classes. It was developed in 2008 by Ludwig Haehne.</li>
+<li><a class="reference external" href="http://code.google.com/p/pympler/">Pympler</a> (2008-2011):
+project based on asizeof, muppy and HeapMonitor</li>
+<li><a class="reference external" href="http://mg.pov.lt/objgraph/">objgraph</a> (2008-2012)</li>
+<li><a class="reference external" href="https://pypi.python.org/pypi/Dozer">Dozer</a>: WSGI Middleware version
+of the CherryPy memory leak debugger, written by Marius Gedminas (2008-2013)</li>
+<li><a class="reference external" href="https://pypi.python.org/pypi/meliae">Meliae</a>:
+Python Memory Usage Analyzer developed by John A Meinel since 2009</li>
+<li><a class="reference external" href="https://fedorahosted.org/gdb-heap/">gdb-heap</a>: gdb script written in
+Python by Dave Malcom (2010-2011) to analyze the usage of the heap memory</li>
+<li><a class="reference external" href="https://pypi.python.org/pypi/memory_profiler">memory_profiler</a>:
+written by Fabian Pedregosa (2011-2013)</li>
+<li><a class="reference external" href="https://github.com/smartfile/caulk/">caulk</a>: written by Ben Timby in 2012</li>
+</ul>
+<p>See also <a class="reference external" href="http://pythonhosted.org/Pympler/related.html">Pympler Related Work</a>.</p>
+</div>
+<div class="section" id="links">
+<h2><a class="toc-backref" href="#id17">Links</a><a class="headerlink" href="#links" title="Permalink to this headline">¶</a></h2>
+<p>tracemalloc:</p>
+<ul class="simple">
+<li><a class="reference external" href="http://bugs.python.org/issue18874">#18874: Add a new tracemalloc module to trace Python
+memory allocations</a></li>
+<li><a class="reference external" href="https://pypi.python.org/pypi/pytracemalloc">pytracemalloc on PyPI</a></li>
+</ul>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id18">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0454.txt">https://github.com/python/peps/blob/master/pep-0454.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0454.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0453.html">PEP 0453</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0455.html">PEP 0455</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 454 – Add a new tracemalloc module to trace Python memory allocations</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#proposal">Proposal</a></li>
+<li><a class="reference internal" href="#api">API</a><ul>
+<li><a class="reference internal" href="#functions">Functions</a></li>
+<li><a class="reference internal" href="#filter">Filter</a></li>
+<li><a class="reference internal" href="#frame">Frame</a></li>
+<li><a class="reference internal" href="#snapshot">Snapshot</a></li>
+<li><a class="reference internal" href="#statistic">Statistic</a></li>
+<li><a class="reference internal" href="#statisticdiff">StatisticDiff</a></li>
+<li><a class="reference internal" href="#trace">Trace</a></li>
+<li><a class="reference internal" href="#traceback">Traceback</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rejected-alternatives">Rejected Alternatives</a><ul>
+<li><a class="reference internal" href="#log-calls-to-the-memory-allocator">Log calls to the memory allocator</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#prior-work">Prior Work</a></li>
+<li><a class="reference internal" href="#links">Links</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

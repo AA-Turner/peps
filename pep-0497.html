@@ -1,0 +1,397 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 497 – A standard mechanism for backward compatibility &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 498 – Literal String Interpolation" href="pep-0498.html" />
+    <link rel="prev" title="PEP 496 – Environment Markers" href="pep-0496.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 497 – A standard mechanism for backward compatibility</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-497-a-standard-mechanism-for-backward-compatibility">
+<h1 class="page-title">PEP 497 – A standard mechanism for backward compatibility<a class="headerlink" href="#pep-497-a-standard-mechanism-for-backward-compatibility" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">497</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">A standard mechanism for backward compatibility</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Ed Schofield &lt;ed at pythoncharmers.com&gt;</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even">Brett Cannon (on behalf of the steering council)</dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd">Rejected</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even">Process</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">04-Aug-2015</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#rejection-notice" id="id2">Rejection Notice</a></li>
+<li><a class="reference internal" href="#scope" id="id3">Scope</a></li>
+<li><a class="reference internal" href="#context" id="id4">Context</a></li>
+<li><a class="reference internal" href="#the-current-situation" id="id5">The current situation</a></li>
+<li><a class="reference internal" href="#problem" id="id6">Problem</a></li>
+<li><a class="reference internal" href="#backward-compatibility-as-enabler-for-downhill-upgrades" id="id7">Backward compatibility as enabler for “downhill upgrades”</a></li>
+<li><a class="reference internal" href="#proposal-part-1" id="id8">Proposal - part 1</a><ul>
+<li><a class="reference internal" href="#example" id="id9">Example</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#proposal-part-2" id="id10">Proposal - part 2</a><ul>
+<li><a class="reference internal" href="#counter-examples" id="id11">Counter-examples</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#benefits" id="id12">Benefits</a></li>
+<li><a class="reference internal" href="#questions-and-answers" id="id13">Questions and answers</a></li>
+<li><a class="reference internal" href="#copyright" id="id14">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="rejection-notice">
+<h2><a class="toc-backref" href="#id2">Rejection Notice</a><a class="headerlink" href="#rejection-notice" title="Permalink to this headline">¶</a></h2>
+<p>The steering council decided that the <cite>__past__</cite> aspect of this proposal
+was too complicated for the potential benefit. The other aspect of stronger
+requirements for backwards-compatibility should be addressed by PEP 387.</p>
+</div>
+<div class="section" id="scope">
+<h2><a class="toc-backref" href="#id3">Scope</a><a class="headerlink" href="#scope" title="Permalink to this headline">¶</a></h2>
+<p>This PEP is complementary to PEPs 5, 236, and 387, and shares similar
+goals.</p>
+<p>This PEP explains the need for an additional compatibility mechanism
+in support of PEP 5, “Guidelines for Language Evolution”. PEP 236,
+“Back to the __future__”, introduced a mechanism for forward
+compatibility in support of PEP 5 but noted that a new mechanism for
+backward compatibility was outside the scope of that PEP. A related
+PEP (in progress) introduces such a mechanism for backward
+compatibility.</p>
+<p>PEP 5, “Guidelines for Language Evolution”, notes that “This PEP [PEP 5]
+does not replace or preclude other compatibility strategies such as
+dynamic loading of backwards-compatible parsers.”</p>
+</div>
+<div class="section" id="context">
+<h2><a class="toc-backref" href="#id4">Context</a><a class="headerlink" href="#context" title="Permalink to this headline">¶</a></h2>
+<p>From PEP 236: “From time to time, Python makes an incompatible change
+to the advertised semantics of core language constructs, or changes
+their accidental (implementation-dependent) behavior in some way.
+While this is never done capriciously, and is always done with the aim
+of improving the language over the long term, over the short term it’s
+contentious and disrupting. PEP 5, Guidelines for Language Evolution,
+suggests ways to ease the pain, and this PEP [236] introduces some
+machinery in support of that.”</p>
+<p>Also from PEP 236: “The purpose of future_statement is to make life
+easier for people who keep current with the latest release in a timely
+fashion. We don’t hate you if you don’t, but your problems are much
+harder to solve, and somebody with those problems will need to write a
+PEP addressing them. future_statement is aimed at a different
+audience.”</p>
+</div>
+<div class="section" id="the-current-situation">
+<h2><a class="toc-backref" href="#id5">The current situation</a><a class="headerlink" href="#the-current-situation" title="Permalink to this headline">¶</a></h2>
+<p>When an incompatible change to core language syntax or semantics is
+being made, Python currently provides the future_statement mechanism
+for providing forward compatibility until the release that enforces
+the new syntax or semantics, but provides no corresponding standard
+mechanism for providing backward compatibility after this release.</p>
+</div>
+<div class="section" id="problem">
+<h2><a class="toc-backref" href="#id6">Problem</a><a class="headerlink" href="#problem" title="Permalink to this headline">¶</a></h2>
+<p>A consequence of this asymmetry is that, with respect to a breaking
+change, the older (pre-breaking) version of the Python interpreter is
+more capable than the newer (breaking) version; the older interpreter
+can use both code designed prior to the change and newer code, whereas
+the newer interpreter is only capable of using code that has been
+upgraded to support the changed feature.</p>
+<p>As an example, consider the changes to the division operator
+introduced in PEP 238 in 2001, soon after PEP 236 introduced the
+future_statement mechanism. PEP 238 outlines a suite of useful
+forward-compatibility mechanisms for “true division” in the Python 2.x
+series but omits to include any backward-compatibility mechanisms for
+after “true division” was first enforced in Python 3.0. Python versions
+since 3.0 do not provide a backward compatibility mechanism such as
+<code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">__past__</span> <span class="pre">import</span> <span class="pre">division</span></code> for code that expects the old
+“classic division” semantics, whereas Python versions prior to 3.0 do
+support both “classic division” code and also forward compatibility
+with code expecting “true division”. A further consequence of this is
+that the “most compatible” interpreter with respect to the variety of
+division-related Python code in the wild is Python 2.7, the version
+before the breaking change was first enforced.</p>
+</div>
+<div class="section" id="backward-compatibility-as-enabler-for-downhill-upgrades">
+<h2><a class="toc-backref" href="#id7">Backward compatibility as enabler for “downhill upgrades”</a><a class="headerlink" href="#backward-compatibility-as-enabler-for-downhill-upgrades" title="Permalink to this headline">¶</a></h2>
+<p>In contrast to this situation, newer versions of application software
+such as office suites tend to be more capable than earlier versions
+with respect to their support for loading different versions of their
+data file formats. The pattern is usually that the newer application
+versions can transparently load data from either their newer or their
+older data formats, and that the newer version defaults to saving data
+in the newer format. Newer application software versions tend to be
+backward-compatible by default. Forward compatibility is relatively
+rare.</p>
+<p>This policy puts the user of the newer application software at an
+advantage over the user of the older software, which is usually
+incapable of loading data in the newer format. Sometimes it is
+possible for a user of a newer software application version to export
+data in an older version by choosing this option explicitly. In these
+cases, the forward-compatibility this enables may or may not be
+perfect; some features may be missing or the results may be otherwise
+suboptimal. Upgrading is therefore easy, whereas downgrading is
+harder.</p>
+<p>The emergent behaviour over many users from such a policy of new
+attractive features plus backward compatibility features is that a
+natural pressure builds up on each individual user to upgrade his or
+her own application version, and, the more other users an individual
+exchanges data files with, the more acute this pressure becomes.</p>
+</div>
+<div class="section" id="proposal-part-1">
+<h2><a class="toc-backref" href="#id8">Proposal - part 1</a><a class="headerlink" href="#proposal-part-1" title="Permalink to this headline">¶</a></h2>
+<p>This PEP makes two specific, related proposals. The first is that:</p>
+<blockquote>
+<div>PEP 5 be augmented with a 6th step in the section “Steps for
+Introducing Backwards-Incompatible Features” to indicate that, when an
+incompatible change to core language syntax or semantics is being
+made, Python-dev’s policy is to prefer and expect that, wherever
+possible, a mechanism for backward compatibility be considered and
+provided for future Python versions after the breaking change is
+adopted by default, in addition to any mechanisms proposed for forward
+compatibility such as new future_statements. Furthermore, PEP 387,
+“Backwards Compatibility Policy” (if accepted) would be
+augmented with the same 6th step.</div></blockquote>
+<div class="section" id="example">
+<h3><a class="toc-backref" href="#id9">Example</a><a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h3>
+<p>As an example of how this PEP is to be applied, if the latest revision
+of the “true division” PEP (238) were proposed today, it would be
+considered incomplete. PEP 238 notes the “severe backwards
+compatibility issues” raised by the proposal and describes several
+measures for forward compatibility in the Abstract and API Changes
+sections. It also mentions some backward compatibility ideas raised on
+c.l.py, including “Use <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">__past__</span> <span class="pre">import</span> <span class="pre">division</span></code> to use
+classic division semantics in a module”, but it does not put forward
+any backward compatibility plan as part of the proposal.</p>
+<p>If this PEP is accepted, it would be expected that a proposal such as
+PEP 238, because of its large-scale compatibility implications, would
+also be accompanied by a backward compatibility plan that enables
+users of future Python versions after the breaking change has come
+into effect to re-enable the classic division behaviour easily in
+their code.</p>
+</div>
+</div>
+<div class="section" id="proposal-part-2">
+<h2><a class="toc-backref" href="#id10">Proposal - part 2</a><a class="headerlink" href="#proposal-part-2" title="Permalink to this headline">¶</a></h2>
+<p>The second proposal is that:</p>
+<blockquote>
+<div>Python provide a standard backward compatibility mechanism in
+parallel to the <code class="docutils literal notranslate"><span class="pre">__future__</span></code> module mechanism for forward
+compatibility.</div></blockquote>
+<p>For reference, this document will refer to this as a “<code class="docutils literal notranslate"><span class="pre">__past__</span></code>”
+mechanism hereon, although it need not have all the characteristics
+of the <code class="docutils literal notranslate"><span class="pre">__future__</span></code> module and <code class="docutils literal notranslate"><span class="pre">future_statement</span></code> mechanism.</p>
+<p>The specific form and implementation of the <code class="docutils literal notranslate"><span class="pre">__past__</span></code> mechanism is
+the subject of a separate PEP (in progress).  However, this PEP
+recommends that this <code class="docutils literal notranslate"><span class="pre">__past__</span></code> mechanism be designed to meet
+similar criteria to those outlined in PEP 296 for <code class="docutils literal notranslate"><span class="pre">__future__</span></code>.
+Specifically:</p>
+<p>a. It should enable individual modules to specify obsolete behaviours
+to re-enable from older Python versions on a module-by-module basis.</p>
+<p>b. It should be flexible enough for both Python 3.6+ and point
+releases of earlier versions to reintroduce backward compatibility
+with older Python syntax or semantics for user modules that invoke the
+<code class="docutils literal notranslate"><span class="pre">__past__</span></code> mechanism.</p>
+<p>c. It should be possible to run older code augmented to invoke
+<code class="docutils literal notranslate"><span class="pre">__past__</span></code> behaviours on older Python versions such as 2.x that have
+no knowledge of the specific <code class="docutils literal notranslate"><span class="pre">__past__</span></code> features invoked, or even
+that the <code class="docutils literal notranslate"><span class="pre">__past__</span></code> mechanism for backward-compatibility exists.</p>
+<div class="section" id="counter-examples">
+<h3><a class="toc-backref" href="#id11">Counter-examples</a><a class="headerlink" href="#counter-examples" title="Permalink to this headline">¶</a></h3>
+<p>Some implementations of <code class="docutils literal notranslate"><span class="pre">__past__</span></code> mechanisms that would violate
+these criteria are:</p>
+<p>a. Import hooks. These would normally fail to work on a
+module-by-module basis; instead they apply recursively to all new
+modules imported from within a module.</p>
+<p>b. A new piece of syntax or new semantics for Python 3.6 that is
+incompatible with prior versions.</p>
+<p>c. A function added in Python 3.6 to a module in the Python standard
+library that exists under the same name in prior Python versions.</p>
+</div>
+</div>
+<div class="section" id="benefits">
+<h2><a class="toc-backref" href="#id12">Benefits</a><a class="headerlink" href="#benefits" title="Permalink to this headline">¶</a></h2>
+<p>The benefit to Python-dev of adopting this proposal is that future
+backward-incompatible changes can be less disruptive if these changes
+each have a corresponding <code class="docutils literal notranslate"><span class="pre">__past__</span></code> feature that has been
+implemented and can be invoked easily by users of future Python
+versions. This can help the language to evolve more quickly and more
+effectively to correct for design mistakes.</p>
+<p>The benefit to conservative users is obvious: they can add support for
+the latest shiny compatibility-breaking Python version to their code
+merely by adding a <code class="docutils literal notranslate"><span class="pre">__past__</span></code> incantation (perhaps a single line) to
+each module, and that this can be automated. They can then upgrade
+their interpreter to the latest version and gain access to the latest
+shiny Python features.</p>
+<p>The benefit to the community is that, if ten thousand users rely on
+package XYZ, and package XYZ can trivially add support for the latest
+Python version, those ten thousand users can also upgrade to the
+latest Python version quickly, without being held back waiting for
+package XYZ to do this.</p>
+</div>
+<div class="section" id="questions-and-answers">
+<h2><a class="toc-backref" href="#id13">Questions and answers</a><a class="headerlink" href="#questions-and-answers" title="Permalink to this headline">¶</a></h2>
+<p>Q1: Does this PEP require that Python keep two possible sets of semantics
+for each backward-incompatible feature forever?</p>
+<p>A1: Definitely not. Legacy features can still be phased out when
+appropriate – that is, when the majority of the user-base has
+migrated to the newer Python version. This PEP merely proposes to
+shift the emphasis of the development effort directed at compatibility
+from 100% forwards to at least 50% backwards. Backwards compatibility
+is the more powerful of the two concepts for allowing a user-base to
+adopt the latest Python interpreter version.</p>
+<p>Notice that it has been a long time since most users have cared about
+backwards compatibility for non-nested scopes, because most users have
+moved comfortably past Python 2.1.</p>
+<p>Q2: But Python-dev is already overwhelmed and doesn’t have the
+bandwidth to implement / maintain the additional complexity!</p>
+<p>A2: Python-dev can ask the community of developers to step up and
+maintain backward compatibility in Python for legacy language features
+they care about. When the community stops caring about a particular
+obsolete behaviour, Python-dev can stop caring too.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">__past__</span></code> mechanism could possibly be designed to be extensible
+by the community, e.g.  as a standard but “blessed” PyPI package, to
+reduce the load on the core developers.</p>
+<p>Q3: Won’t backward compatibility features lead to lots of cruft and
+bloat and baggage in Python?</p>
+<p>A3: Not necessarily. First, proposals for new compatibility-breaking
+features in Python could be evaluated partly on the simplicity and
+maintainability of the implementation of their associated <code class="docutils literal notranslate"><span class="pre">__past__</span></code>
+feature up-front.</p>
+<p>Second, some old features are simple to provide backward compatibility
+for. Consider the “classic division” behaviour before Python 3.0. The
+<code class="docutils literal notranslate"><span class="pre">python-future</span></code> project contains a compatible implementation of
+classic division in the function <code class="docutils literal notranslate"><span class="pre">future.utils.old_div</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">old_div</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Equivalent to ``a / b`` on Python 2 without ``from __future__ import</span>
+<span class="sd">    division``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">numbers</span><span class="o">.</span><span class="n">Integral</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">numbers</span><span class="o">.</span><span class="n">Integral</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">a</span> <span class="o">//</span> <span class="n">b</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">a</span> <span class="o">/</span> <span class="n">b</span>
+</pre></div>
+</div>
+<p>Bundling such a function with Python 3.x versions, together with
+a simple mechanism to invoke it for every appearance of <code class="docutils literal notranslate"><span class="pre">a</span>
+<span class="pre">/</span> <span class="pre">b</span></code> after an appropriate <code class="docutils literal notranslate"><span class="pre">__past__</span></code> invocation, need not be
+onerous.</p>
+<p>Q4: What about performance? Won’t the performance of newer Python
+versions suffer under the weight of legacy features?</p>
+<p>A4: This can be evaluated on a case-by-case basis. The major potential
+concern is that the performance with the new default behaviour does
+not suffer unduly because of the presence of the legacy option. The
+performance under the influence of the <code class="docutils literal notranslate"><span class="pre">__past__</span></code> invocation is of
+secondary importance.</p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id14">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0497.txt">https://github.com/python/peps/blob/master/pep-0497.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0497.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0496.html">PEP 0496</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0498.html">PEP 0498</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 497 – A standard mechanism for backward compatibility</a><ul>
+<li><a class="reference internal" href="#rejection-notice">Rejection Notice</a></li>
+<li><a class="reference internal" href="#scope">Scope</a></li>
+<li><a class="reference internal" href="#context">Context</a></li>
+<li><a class="reference internal" href="#the-current-situation">The current situation</a></li>
+<li><a class="reference internal" href="#problem">Problem</a></li>
+<li><a class="reference internal" href="#backward-compatibility-as-enabler-for-downhill-upgrades">Backward compatibility as enabler for “downhill upgrades”</a></li>
+<li><a class="reference internal" href="#proposal-part-1">Proposal - part 1</a><ul>
+<li><a class="reference internal" href="#example">Example</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#proposal-part-2">Proposal - part 2</a><ul>
+<li><a class="reference internal" href="#counter-examples">Counter-examples</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#benefits">Benefits</a></li>
+<li><a class="reference internal" href="#questions-and-answers">Questions and answers</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

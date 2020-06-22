@@ -1,0 +1,384 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 352 – Required Superclass for Exceptions &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 353 – Using ssize_t as the index type" href="pep-0353.html" />
+    <link rel="prev" title="PEP 351 – The freeze protocol" href="pep-0351.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 352 – Required Superclass for Exceptions</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-352-required-superclass-for-exceptions">
+<h1 class="page-title">PEP 352 – Required Superclass for Exceptions<a class="headerlink" href="#pep-352-required-superclass-for-exceptions" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">352</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Required Superclass for Exceptions</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Brett Cannon, Guido van Rossum</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">27-Oct-2005</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id5">Abstract</a></li>
+<li><a class="reference internal" href="#requiring-a-common-superclass" id="id6">Requiring a Common Superclass</a></li>
+<li><a class="reference internal" href="#exception-hierarchy-changes" id="id7">Exception Hierarchy Changes</a></li>
+<li><a class="reference internal" href="#transition-plan" id="id8">Transition Plan</a></li>
+<li><a class="reference internal" href="#retracted-ideas" id="id9">Retracted Ideas</a></li>
+<li><a class="reference internal" href="#references" id="id10">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id11">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id5">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>In Python 2.4 and before, any (classic) class can be raised as an
+exception.  The plan for 2.5 was to allow new-style classes, but this
+makes the problem worse – it would mean <em>any</em> class (or
+instance) can be raised! This is a problem as it prevents any
+guarantees from being made about the interface of exceptions.
+This PEP proposes introducing a new superclass that all raised objects
+must inherit from.  Imposing the restriction will allow a standard
+interface for exceptions to exist that can be relied upon.  It also
+leads to a known hierarchy for all exceptions to adhere to.</p>
+<p>One might counter that requiring a specific base class for a
+particular interface is unPythonic.  However, in the specific case of
+exceptions there’s a good reason (which has generally been agreed to
+on python-dev): requiring hierarchy helps code that wants to <em>catch</em>
+exceptions by making it possible to catch <em>all</em> exceptions explicitly
+by writing <code class="docutils literal notranslate"><span class="pre">except</span> <span class="pre">BaseException:</span></code> instead of
+<code class="docutils literal notranslate"><span class="pre">except</span> <span class="pre">*:</span></code>. <a class="footnote-reference brackets" href="#hierarchy-good" id="id1">2</a></p>
+<p>Introducing a new superclass for exceptions also gives us the chance
+to rearrange the exception hierarchy slightly for the better.  As it
+currently stands, all exceptions in the built-in namespace inherit
+from Exception.  This is a problem since this includes two exceptions
+(KeyboardInterrupt and SystemExit) that often need to be excepted from
+the application’s exception handling: the default behavior of shutting
+the interpreter down without a traceback is usually more desirable than
+whatever the application might do (with the possible exception of
+applications that emulate Python’s interactive command loop with
+<code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;</span></code> prompt).  Changing it so that these two exceptions inherit
+from the common superclass instead of Exception will make it easy for
+people to write <code class="docutils literal notranslate"><span class="pre">except</span></code> clauses that are not overreaching and not
+catch exceptions that should propagate up.</p>
+<p>This PEP is based on previous work done for PEP 348 <a class="footnote-reference brackets" href="#pep348" id="id2">1</a>.</p>
+</div>
+<div class="section" id="requiring-a-common-superclass">
+<h2><a class="toc-backref" href="#id6">Requiring a Common Superclass</a><a class="headerlink" href="#requiring-a-common-superclass" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes introducing a new exception named BaseException that
+is a new-style class and has a single attribute, <code class="docutils literal notranslate"><span class="pre">args</span></code>.  Below
+is the code as the exception will work in Python 3.0 (how it will
+work in Python 2.x is covered in the <a class="reference internal" href="#transition-plan">Transition Plan</a> section):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">BaseException</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;Superclass representing the base of the exception hierarchy.</span>
+
+<span class="sd">    Provides an &#39;args&#39; attribute that contains all arguments passed</span>
+<span class="sd">    to the constructor.  Suggested practice, though, is that only a</span>
+<span class="sd">    single string argument be passed to the constructor.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="n">args</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">(*</span><span class="si">%s</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>No restriction is placed upon what may be passed in for <code class="docutils literal notranslate"><span class="pre">args</span></code>
+for backwards-compatibility reasons.  In practice, though, only
+a single string argument should be used.  This keeps the string
+representation of the exception to be a useful message about the
+exception that is human-readable; this is why the <code class="docutils literal notranslate"><span class="pre">__str__</span></code> method
+special-cases on length-1 <code class="docutils literal notranslate"><span class="pre">args</span></code> value.  Including programmatic
+information (e.g., an error code number) should be stored as a
+separate attribute in a subclass.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">raise</span></code> statement will be changed to require that any object
+passed to it must inherit from BaseException.  This will make sure
+that all exceptions fall within a single hierarchy that is anchored at
+BaseException <a class="footnote-reference brackets" href="#hierarchy-good" id="id3">2</a>.  This also guarantees a basic
+interface that is inherited from BaseException.  The change to
+<code class="docutils literal notranslate"><span class="pre">raise</span></code> will be enforced starting in Python 3.0 (see the <a class="reference internal" href="#transition-plan">Transition
+Plan</a> below).</p>
+<p>With BaseException being the root of the exception hierarchy,
+Exception will now inherit from it.</p>
+</div>
+<div class="section" id="exception-hierarchy-changes">
+<h2><a class="toc-backref" href="#id7">Exception Hierarchy Changes</a><a class="headerlink" href="#exception-hierarchy-changes" title="Permalink to this headline">¶</a></h2>
+<p>With the exception hierarchy now even more important since it has a
+basic root, a change to the existing hierarchy is called for.  As it
+stands now, if one wants to catch all exceptions that signal an error
+<em>and</em> do not mean the interpreter should be allowed to exit, you must
+specify all but two exceptions specifically in an <code class="docutils literal notranslate"><span class="pre">except</span></code> clause
+or catch the two exceptions separately and then re-raise them and
+have all other exceptions fall through to a bare <code class="docutils literal notranslate"><span class="pre">except</span></code> clause:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">except</span> <span class="p">(</span><span class="ne">KeyboardInterrupt</span><span class="p">,</span> <span class="ne">SystemExit</span><span class="p">):</span>
+    <span class="k">raise</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p>That is needlessly explicit.  This PEP proposes moving
+KeyboardInterrupt and SystemExit to inherit directly from
+BaseException.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span> <span class="ne">BaseException</span>
+  <span class="o">|-</span> <span class="ne">KeyboardInterrupt</span>
+  <span class="o">|-</span> <span class="ne">SystemExit</span>
+  <span class="o">|-</span> <span class="ne">Exception</span>
+     <span class="o">|-</span> <span class="p">(</span><span class="nb">all</span> <span class="n">other</span> <span class="n">current</span> <span class="n">built</span><span class="o">-</span><span class="ow">in</span> <span class="n">exceptions</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Doing this makes catching Exception more reasonable.  It would catch
+only exceptions that signify errors.  Exceptions that signal that the
+interpreter should exit will not be caught and thus be allowed to
+propagate up and allow the interpreter to terminate.</p>
+<p>KeyboardInterrupt has been moved since users typically expect an
+application to exit when they press the interrupt key (usually Ctrl-C).
+If people have overly broad <code class="docutils literal notranslate"><span class="pre">except</span></code> clauses the expected behaviour
+does not occur.</p>
+<p>SystemExit has been moved for similar reasons.  Since the exception is
+raised when <code class="docutils literal notranslate"><span class="pre">sys.exit()</span></code> is called the interpreter should normally
+be allowed to terminate.  Unfortunately overly broad <code class="docutils literal notranslate"><span class="pre">except</span></code>
+clauses can prevent the explicitly requested exit from occurring.</p>
+<p>To make sure that people catch Exception most of the time, various
+parts of the documentation and tutorials will need to be updated to
+strongly suggest that Exception be what programmers want to use.  Bare
+<code class="docutils literal notranslate"><span class="pre">except</span></code> clauses or catching BaseException directly should be
+discouraged based on the fact that KeyboardInterrupt and SystemExit
+almost always should be allowed to propagate up.</p>
+</div>
+<div class="section" id="transition-plan">
+<h2><a class="toc-backref" href="#id8">Transition Plan</a><a class="headerlink" href="#transition-plan" title="Permalink to this headline">¶</a></h2>
+<p>Since semantic changes to Python are being proposed, a transition plan
+is needed.  The goal is to end up with the new semantics being used in
+Python 3.0 while providing a smooth transition for 2.x code.  All
+deprecations mentioned in the plan will lead to the removal of the
+semantics starting in the version following the initial deprecation.</p>
+<p>Here is BaseException as implemented in the 2.x series:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">BaseException</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;Superclass representing the base of the exception hierarchy.</span>
+
+<span class="sd">    The __getitem__ method is provided for backwards-compatibility</span>
+<span class="sd">    and will be deprecated at some point.  The &#39;message&#39; attribute</span>
+<span class="sd">    is also deprecated.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="n">args</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                   <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span>
+                   <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">func_args</span> <span class="o">=</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="k">else</span> <span class="s2">&quot;()&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="n">func_args</span>
+
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Index into arguments passed in during instantiation.</span>
+
+<span class="sd">        Provided for backwards-compatibility and will be</span>
+<span class="sd">        deprecated.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_get_message</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Method for &#39;message&#39; property.&quot;&quot;&quot;</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;the &#39;message&#39; attribute has been deprecated &quot;</span>
+                        <span class="s2">&quot;since Python 2.6&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span>
+
+    <span class="n">message</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">_get_message</span><span class="p">,</span>
+                        <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;access the &#39;message&#39; attribute; &quot;</span>
+                            <span class="s2">&quot;deprecated and provided only for &quot;</span>
+                            <span class="s2">&quot;backwards-compatibility&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Deprecation of features in Python 2.9 is optional.  This is because it
+is not known at this time if Python 2.9 (which is slated to be the
+last version in the 2.x series) will actively deprecate features that
+will not be in 3.0.  It is conceivable that no deprecation warnings
+will be used in 2.9 since there could be such a difference between 2.9
+and 3.0 that it would make 2.9 too “noisy” in terms of warnings.  Thus
+the proposed deprecation warnings for Python 2.9 will be revisited
+when development of that version begins, to determine if they are still
+desired.</p>
+<ul class="simple">
+<li>Python 2.5 [done]<ul>
+<li>all standard exceptions become new-style classes [done]</li>
+<li>introduce BaseException [done]</li>
+<li>Exception, KeyboardInterrupt, and SystemExit inherit from
+BaseException [done]</li>
+<li>deprecate raising string exceptions [done]</li>
+</ul>
+</li>
+<li>Python 2.6 [done]<ul>
+<li>deprecate catching string exceptions [done]</li>
+<li>deprecate <code class="docutils literal notranslate"><span class="pre">message</span></code> attribute (see <a class="reference internal" href="#retracted-ideas">Retracted Ideas</a>) [done]</li>
+</ul>
+</li>
+<li>Python 2.7 [done]<ul>
+<li>deprecate raising exceptions that do not inherit from BaseException</li>
+</ul>
+</li>
+<li>Python 3.0 [done]<ul>
+<li>drop everything that was deprecated above:<ul>
+<li>string exceptions (both raising and catching) [done]</li>
+<li>all exceptions must inherit from BaseException [done]</li>
+<li>drop <code class="docutils literal notranslate"><span class="pre">__getitem__</span></code>, <code class="docutils literal notranslate"><span class="pre">message</span></code> [done]</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="retracted-ideas">
+<h2><a class="toc-backref" href="#id9">Retracted Ideas</a><a class="headerlink" href="#retracted-ideas" title="Permalink to this headline">¶</a></h2>
+<p>A previous version of this PEP that was implemented in Python 2.5
+included a ‘message’ attribute on BaseException.  Its purpose was to
+begin a transition to BaseException accepting only a single argument.
+This was to tighten the interface and to force people to use
+attributes in subclasses to carry arbitrary information with an
+exception instead of cramming it all into <code class="docutils literal notranslate"><span class="pre">args</span></code>.</p>
+<p>Unfortunately, while implementing the removal of the <code class="docutils literal notranslate"><span class="pre">args</span></code>
+attribute in Python 3.0 at the PyCon 2007 sprint
+<a class="footnote-reference brackets" href="#pycon2007-sprint-email" id="id4">4</a>, it was discovered that the transition was
+very painful, especially for C extension modules.  It was decided that
+it would be better to deprecate the <code class="docutils literal notranslate"><span class="pre">message</span></code> attribute in
+Python 2.6 (and remove it in Python 2.7 and Python 3.0) and consider a
+more long-term transition strategy in Python 3.0 to remove
+multiple-argument support in BaseException in preference of accepting
+only a single argument.  Thus the introduction of <code class="docutils literal notranslate"><span class="pre">message</span></code> and the
+original deprecation of <code class="docutils literal notranslate"><span class="pre">args</span></code> has been retracted.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id10">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="pep348"><span class="brackets"><a class="fn-backref" href="#id2">1</a></span></dt>
+<dd>PEP 348 (Exception Reorganization for Python 3.0)
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0348/">http://www.python.org/dev/peps/pep-0348/</a></dd>
+<dt class="label" id="hierarchy-good"><span class="brackets">2</span><span class='fn-backref'><em> (<a href="#id1">1</a>, <a href="#id3">2</a>) </em></span></dt>
+<dd>python-dev Summary for 2004-08-01 through 2004-08-15
+<a class="reference external" href="http://www.python.org/dev/summary/2004-08-01_2004-08-15.html#an-exception-is-an-exception-unless-it-doesn-t-inherit-from-exception">http://www.python.org/dev/summary/2004-08-01_2004-08-15.html#an-exception-is-an-exception-unless-it-doesn-t-inherit-from-exception</a></dd>
+<dt class="label" id="sf-1104669"><span class="brackets">3</span></dt>
+<dd>SF patch #1104669 (new-style exceptions)
+<a class="reference external" href="https://bugs.python.org/issue1104669">https://bugs.python.org/issue1104669</a></dd>
+<dt class="label" id="pycon2007-sprint-email"><span class="brackets"><a class="fn-backref" href="#id4">4</a></span></dt>
+<dd>python-3000 email (“How far to go with cleaning up exceptions”)
+<a class="reference external" href="https://mail.python.org/pipermail/python-3000/2007-March/005911.html">https://mail.python.org/pipermail/python-3000/2007-March/005911.html</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id11">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0352.txt">https://github.com/python/peps/blob/master/pep-0352.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0352.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0351.html">PEP 0351</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0353.html">PEP 0353</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 352 – Required Superclass for Exceptions</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#requiring-a-common-superclass">Requiring a Common Superclass</a></li>
+<li><a class="reference internal" href="#exception-hierarchy-changes">Exception Hierarchy Changes</a></li>
+<li><a class="reference internal" href="#transition-plan">Transition Plan</a></li>
+<li><a class="reference internal" href="#retracted-ideas">Retracted Ideas</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

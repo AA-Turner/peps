@@ -1,0 +1,339 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 448 – Additional Unpacking Generalizations &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 449 – Removal of the PyPI Mirror Auto Discovery and Naming Scheme" href="pep-0449.html" />
+    <link rel="prev" title="PEP 447 – Add __getdescriptor__ method to metaclass" href="pep-0447.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 448 – Additional Unpacking Generalizations</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-448-additional-unpacking-generalizations">
+<h1 class="page-title">PEP 448 – Additional Unpacking Generalizations<a class="headerlink" href="#pep-448-additional-unpacking-generalizations" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">448</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Additional Unpacking Generalizations</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Joshua Landau &lt;joshua&#32;&#97;t&#32;landau.ws&gt;</dd>
+<dt class="field-even">Discussions-To</dt>
+<dd class="field-even"><a class="reference external" href="mailto:python-ideas&#37;&#52;&#48;python&#46;org?subject=PEP%20448">python-ideas&#32;&#97;t&#32;python.org</a></dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd">Final</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even">Standards Track</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">29-Jun-2013</dd>
+<dt class="field-even">Python-Version</dt>
+<dd class="field-even">3.5</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id6">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id7">Rationale</a></li>
+<li><a class="reference internal" href="#specification" id="id8">Specification</a></li>
+<li><a class="reference internal" href="#disadvantages" id="id9">Disadvantages</a></li>
+<li><a class="reference internal" href="#variations" id="id10">Variations</a></li>
+<li><a class="reference internal" href="#approval" id="id11">Approval</a></li>
+<li><a class="reference internal" href="#implementation" id="id12">Implementation</a></li>
+<li><a class="reference internal" href="#references" id="id13">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id14">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id6">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes extended usages of the <code class="docutils literal notranslate"><span class="pre">*</span></code> iterable unpacking
+operator and <code class="docutils literal notranslate"><span class="pre">**</span></code> dictionary unpacking operators
+to allow unpacking in more positions, an arbitrary number of
+times, and in additional circumstances.  Specifically,
+in function calls, in comprehensions and generator expressions, and
+in displays.</p>
+<p>Function calls are proposed to support an arbitrary number of
+unpackings rather than just one:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="o">*</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="mi">3</span><span class="p">)</span>
+<span class="go">1 2 3</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">dict</span><span class="p">(</span><span class="o">**</span><span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span> <span class="n">y</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">})</span>
+<span class="go">{&#39;x&#39;: 1, &#39;y&#39;: 2, &#39;z&#39;: 3}</span>
+</pre></div>
+</div>
+<p>Unpacking is proposed to be allowed inside tuple, list, set,
+and dictionary displays:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="o">*</span><span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span> <span class="mi">4</span>
+<span class="go">(0, 1, 2, 3, 4)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="o">*</span><span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span> <span class="mi">4</span><span class="p">]</span>
+<span class="go">[0, 1, 2, 3, 4]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">{</span><span class="o">*</span><span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span> <span class="mi">4</span><span class="p">}</span>
+<span class="go">{0, 1, 2, 3, 4}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}}</span>
+<span class="go">{&#39;x&#39;: 1, &#39;y&#39;: 2}</span>
+</pre></div>
+</div>
+<p>In dictionaries, later values will always override earlier ones:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}}</span>
+<span class="go">{&#39;x&#39;: 2}</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="p">{</span><span class="o">**</span><span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">},</span> <span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
+<span class="go">{&#39;x&#39;: 1}</span>
+</pre></div>
+</div>
+<p>This PEP does not include unpacking operators inside list, set and
+dictionary comprehensions although this has not been ruled out for
+future proposals.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id7">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Current usage of the <code class="docutils literal notranslate"><span class="pre">*</span></code> iterable unpacking operator features
+unnecessary restrictions that can harm readability.</p>
+<p>Unpacking multiple times has an obvious rationale.  When you want to
+unpack several iterables into a function definition or follow an unpack
+with more positional arguments, the most natural way would be to write:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">function</span><span class="p">(</span><span class="o">**</span><span class="n">kw_arguments</span><span class="p">,</span> <span class="o">**</span><span class="n">more_arguments</span><span class="p">)</span>
+
+<span class="n">function</span><span class="p">(</span><span class="o">*</span><span class="n">arguments</span><span class="p">,</span> <span class="n">argument</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Simple examples where this is useful are <code class="docutils literal notranslate"><span class="pre">print</span></code> and <code class="docutils literal notranslate"><span class="pre">str.format</span></code>.
+Instead, you could be forced to write:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">kw_arguments</span><span class="p">)</span>
+<span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">more_arguments</span><span class="p">)</span>
+<span class="n">function</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<span class="n">args</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">arguments</span><span class="p">)</span>
+<span class="n">args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+<span class="n">function</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>or, if you know to do so:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">ChainMap</span>
+<span class="n">function</span><span class="p">(</span><span class="o">**</span><span class="n">ChainMap</span><span class="p">(</span><span class="n">more_arguments</span><span class="p">,</span> <span class="n">arguments</span><span class="p">))</span>
+
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">chain</span>
+<span class="n">function</span><span class="p">(</span><span class="o">*</span><span class="n">chain</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="p">[</span><span class="n">arg</span><span class="p">]))</span>
+</pre></div>
+</div>
+<p>which add unnecessary line-noise and, with the first methods, causes
+duplication of work.</p>
+<p>There are two primary rationales for unpacking inside of containers.
+Firstly there is a symmetry of assignment, where <code class="docutils literal notranslate"><span class="pre">fst,</span> <span class="pre">*other,</span> <span class="pre">lst</span> <span class="pre">=</span>
+<span class="pre">elems</span></code> and <code class="docutils literal notranslate"><span class="pre">elems</span> <span class="pre">=</span> <span class="pre">fst,</span> <span class="pre">*other,</span> <span class="pre">lst</span></code> are approximate inverses,
+ignoring the specifics of types.  This, in effect, simplifies the
+language by removing special cases.</p>
+<p>Secondly, it vastly simplifies types of “addition” such as combining
+dictionaries, and does so in an unambiguous and well-defined way:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">combination</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">first_dictionary</span><span class="p">,</span> <span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>instead of:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">combination</span> <span class="o">=</span> <span class="n">first_dictionary</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">combination</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">})</span>
+</pre></div>
+</div>
+<p>which is especially important in contexts where expressions are
+preferred.  This is also useful as a more readable way of summing
+iterables into a list, such as <code class="docutils literal notranslate"><span class="pre">my_list</span> <span class="pre">+</span> <span class="pre">list(my_tuple)</span> <span class="pre">+</span>
+<span class="pre">list(my_range)</span></code> which is now equivalent to just <code class="docutils literal notranslate"><span class="pre">[*my_list,</span>
+<span class="pre">*my_tuple,</span> <span class="pre">*my_range]</span></code>.</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id8">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>Function calls may accept an unbounded number of <code class="docutils literal notranslate"><span class="pre">*</span></code> and <code class="docutils literal notranslate"><span class="pre">**</span></code>
+unpackings.  There will be no restriction of the order of positional
+arguments with relation to <code class="docutils literal notranslate"><span class="pre">*</span></code> unpackings nor any restriction of the
+order of keyword arguments with relation to <code class="docutils literal notranslate"><span class="pre">**</span></code> unpackings.</p>
+<p>Function calls continue to have the restriction that keyword arguments
+must follow positional arguments and <code class="docutils literal notranslate"><span class="pre">**</span></code> unpackings must additionally
+follow <code class="docutils literal notranslate"><span class="pre">*</span></code> unpackings.</p>
+<p>Currently, if an argument is given multiple times — such as a
+positional argument given both positionally and by keyword — a
+<code class="docutils literal notranslate"><span class="pre">TypeError</span></code> is raised.  This remains true for duplicate arguments
+provided through multiple <code class="docutils literal notranslate"><span class="pre">**</span></code> unpackings,
+e.g. <code class="docutils literal notranslate"><span class="pre">f(**{'x':</span> <span class="pre">2},</span> <span class="pre">**{'x':</span> <span class="pre">3})</span></code>, except that the error will be
+detected at runtime.</p>
+<p>A function looks like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">function</span><span class="p">(</span>
+    <span class="n">argument</span> <span class="ow">or</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">argument</span> <span class="ow">or</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>
+    <span class="n">kwargument</span> <span class="ow">or</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">kwargument</span> <span class="ow">or</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>
+    <span class="n">kwargument</span> <span class="ow">or</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">kwargument</span> <span class="ow">or</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span> <span class="o">...</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Tuples, lists, sets and dictionaries will allow unpacking.  This will
+act as if the elements from unpacked items were inserted in order at
+the site of unpacking, much as happens in unpacking in a function-call.
+Dictionaries require <code class="docutils literal notranslate"><span class="pre">**</span></code> unpacking; all the others require <code class="docutils literal notranslate"><span class="pre">*</span></code> unpacking.</p>
+<p>The keys in a dictionary remain in a right-to-left priority order, so
+<code class="docutils literal notranslate"><span class="pre">{**{'a':</span> <span class="pre">1},</span> <span class="pre">'a':</span> <span class="pre">2,</span> <span class="pre">**{'a':</span> <span class="pre">3}}</span></code> evaluates to <code class="docutils literal notranslate"><span class="pre">{'a':</span> <span class="pre">3}</span></code>.  There
+is no restriction on the number or position of unpackings.</p>
+</div>
+<div class="section" id="disadvantages">
+<h2><a class="toc-backref" href="#id9">Disadvantages</a><a class="headerlink" href="#disadvantages" title="Permalink to this headline">¶</a></h2>
+<p>The allowable orders for arguments in a function call are more
+complicated than before.  The simplest explanation for the rules
+may be “positional arguments precede keyword arguments and <code class="docutils literal notranslate"><span class="pre">**</span></code>
+unpacking; <code class="docutils literal notranslate"><span class="pre">*</span></code> unpacking precedes <code class="docutils literal notranslate"><span class="pre">**</span></code> unpacking”.</p>
+<p>Whilst <code class="docutils literal notranslate"><span class="pre">*elements,</span> <span class="pre">=</span> <span class="pre">iterable</span></code> causes <code class="docutils literal notranslate"><span class="pre">elements</span></code> to be a list,
+<code class="docutils literal notranslate"><span class="pre">elements</span> <span class="pre">=</span> <span class="pre">*iterable,</span></code> causes <code class="docutils literal notranslate"><span class="pre">elements</span></code> to be a tuple.  The
+reason for this may confuse people unfamiliar with the construct.</p>
+<p>Concerns have been raised about the unexpected difference between
+duplicate keys in dictionaries being allowed but duplicate keys
+in function call syntax raising an error.  Although this is already
+the case with current syntax, this proposal might exacerbate the
+issue.  It remains to be seen how much of an issue this is in practice.</p>
+</div>
+<div class="section" id="variations">
+<h2><a class="toc-backref" href="#id10">Variations</a><a class="headerlink" href="#variations" title="Permalink to this headline">¶</a></h2>
+<p>The PEP originally considered whether the ordering of argument types
+in a function call (positional, keyword, <code class="docutils literal notranslate"><span class="pre">*</span></code> or <code class="docutils literal notranslate"><span class="pre">**</span></code>) could become
+less strict. This met little support so the idea was shelved.</p>
+<p>Earlier iterations of this PEP allowed unpacking operators inside
+list, set, and dictionary comprehensions as a flattening operator
+over iterables of containers:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">ranges</span> <span class="o">=</span> <span class="p">[</span><span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">)]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="o">*</span><span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">ranges</span><span class="p">]</span>
+<span class="go">[0, 0, 1, 0, 1, 2, 0, 1, 2, 3]</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="p">{</span><span class="o">*</span><span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">ranges</span><span class="p">}</span>
+<span class="go">{0, 1, 2, 3}</span>
+</pre></div>
+</div>
+<p>This was met with a mix of strong concerns about readability and mild
+support. In order not to disadvantage the less controversial aspects
+of the PEP, this was not accepted with the rest of the proposal.</p>
+<p>Unbracketed comprehensions in function calls, such as <code class="docutils literal notranslate"><span class="pre">f(x</span> <span class="pre">for</span> <span class="pre">x</span> <span class="pre">in</span> <span class="pre">it)</span></code>,
+are already valid.  These could be extended to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">it</span><span class="p">)</span> <span class="o">==</span> <span class="n">f</span><span class="p">((</span><span class="o">*</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">it</span><span class="p">))</span>
+<span class="n">f</span><span class="p">(</span><span class="o">**</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">it</span><span class="p">)</span> <span class="o">==</span> <span class="n">f</span><span class="p">({</span><span class="o">**</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">it</span><span class="p">})</span>
+</pre></div>
+</div>
+<p>However, it wasn’t clear if this was the best behaviour or if it should
+unpack into the arguments of the call to <cite>f</cite>. Since this is likely to be
+confusing and is of only very marginal utility, it is not included in this
+PEP.  Instead, these will throw a <code class="docutils literal notranslate"><span class="pre">SyntaxError</span></code> and comprehensions with
+explicit brackets should be used instead.</p>
+</div>
+<div class="section" id="approval">
+<h2><a class="toc-backref" href="#id11">Approval</a><a class="headerlink" href="#approval" title="Permalink to this headline">¶</a></h2>
+<p>This PEP was accepted by Guido on February 25, 2015 <a class="footnote-reference brackets" href="#id3" id="id1">1</a>.</p>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id12">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>An implementation for Python 3.5 is found at Issue 2292 on bug tracker <a class="footnote-reference brackets" href="#id4" id="id2">2</a>.
+This currently includes support for unpacking inside comprehensions, which
+should be removed.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id13">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id3"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>PEP accepted, “PEP 448 review”, Guido van Rossum
+(<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2015-February/138564.html">https://mail.python.org/pipermail/python-dev/2015-February/138564.html</a>)</dd>
+<dt class="label" id="id4"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>Issue 2292, “Missing <cite>*</cite>-unpacking generalizations”, Thomas Wouters
+(<a class="reference external" href="http://bugs.python.org/issue2292">http://bugs.python.org/issue2292</a>)</dd>
+<dt class="label" id="id5"><span class="brackets">3</span></dt>
+<dd>Discussion on Python-ideas list,
+“list / array comprehensions extension”, Alexander Heger
+(<a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2011-December/013097.html">https://mail.python.org/pipermail/python-ideas/2011-December/013097.html</a>)</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id14">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0448.txt">https://github.com/python/peps/blob/master/pep-0448.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0448.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0447.html">PEP 0447</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0449.html">PEP 0449</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 448 – Additional Unpacking Generalizations</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#disadvantages">Disadvantages</a></li>
+<li><a class="reference internal" href="#variations">Variations</a></li>
+<li><a class="reference internal" href="#approval">Approval</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

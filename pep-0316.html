@@ -1,0 +1,517 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 316 – Programming by Contract for Python &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 317 – Eliminate Implicit Exception Instantiation" href="pep-0317.html" />
+    <link rel="prev" title="PEP 315 – Enhanced While Loop" href="pep-0315.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 316 – Programming by Contract for Python</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-316-programming-by-contract-for-python">
+<h1 class="page-title">PEP 316 – Programming by Contract for Python<a class="headerlink" href="#pep-316-programming-by-contract-for-python" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">316</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Programming by Contract for Python</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Terence Way &lt;terry&#32;&#97;t&#32;wayforward.net&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Deferred</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">02-May-2003</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd"><p></p></dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id10">Abstract</a></li>
+<li><a class="reference internal" href="#motivation" id="id11">Motivation</a></li>
+<li><a class="reference internal" href="#specification" id="id12">Specification</a><ul>
+<li><a class="reference internal" href="#exceptions" id="id13">Exceptions</a></li>
+<li><a class="reference internal" href="#inheritance" id="id14">Inheritance</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rationale" id="id15">Rationale</a></li>
+<li><a class="reference internal" href="#reference-implementation" id="id16">Reference Implementation</a></li>
+<li><a class="reference internal" href="#references" id="id17">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id18">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id10">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This submission describes programming by contract for Python.
+Eiffel’s Design By Contract(tm) is perhaps the most popular use of
+programming contracts <a class="footnote-reference brackets" href="#dbc" id="id1">2</a>.</p>
+<p>Programming contracts extends the language to include invariant
+expressions for classes and modules, and pre- and post-condition
+expressions for functions and methods.</p>
+<p>These expressions (contracts) are similar to assertions: they must be
+true or the program is stopped, and run-time checking of the contracts
+is typically only enabled while debugging.  Contracts are higher-level
+than straight assertions and are typically included in documentation.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id11">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>Python already has assertions, why add extra stuff to the language to
+support something like contracts?  The two best reasons are 1) better,
+more accurate documentation, and 2) easier testing.</p>
+<p>Complex modules and classes never seem to be documented quite right.
+The documentation provided may be enough to convince a programmer to
+use a particular module or class over another, but the programmer
+almost always has to read the source code when the real debugging
+starts.</p>
+<p>Contracts extend the excellent example provided by the <code class="docutils literal notranslate"><span class="pre">doctest</span></code>
+module <a class="footnote-reference brackets" href="#doctest" id="id2">4</a>.  Documentation is readable by programmers, yet has
+executable tests embedded in it.</p>
+<p>Testing code with contracts is easier too.  Comprehensive contracts
+are equivalent to unit tests <a class="footnote-reference brackets" href="#xp" id="id3">8</a>.  Tests exercise the full range of
+pre-conditions, and fail if the post-conditions are triggered.
+Theoretically, a correctly specified function can be tested completely
+randomly.</p>
+<p>So why add this to the language?  Why not have several different
+implementations, or let programmers implement their own assertions?
+The answer is the behavior of contracts under inheritance.</p>
+<p>Suppose Alice and Bob use different assertions packages.  If Alice
+produces a class library protected by assertions, Bob cannot derive
+classes from Alice’s library and expect proper checking of
+post-conditions and invariants.  If they both use the same assertions
+package, then Bob can override Alice’s methods yet still test against
+Alice’s contract assertions.  The natural place to find this
+assertions system is in the language’s run-time library.</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id12">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>The docstring of any module or class can include invariant contracts
+marked off with a line that starts with the keyword <code class="docutils literal notranslate"><span class="pre">inv</span></code> followed
+by a colon (:).  Whitespace at the start of the line and around the
+colon is ignored.  The colon is either immediately followed by a
+single expression on the same line, or by a series of expressions on
+following lines indented past the <code class="docutils literal notranslate"><span class="pre">inv</span></code> keyword.  The normal Python
+rules about implicit and explicit line continuations are followed
+here.  Any number of invariant contracts can be in a docstring.</p>
+<p>Some examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># state enumeration</span>
+<span class="n">START</span><span class="p">,</span> <span class="n">CONNECTING</span><span class="p">,</span> <span class="n">CONNECTED</span><span class="p">,</span> <span class="n">CLOSING</span><span class="p">,</span> <span class="n">CLOSED</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">conn</span><span class="p">:</span>
+
+    <span class="sd">&quot;&quot;&quot;A network connection</span>
+
+<span class="sd">    inv: self.state in [START, CLOSED,       # closed states</span>
+<span class="sd">                        CONNECTING, CLOSING, # transition states</span>
+<span class="sd">                        CONNECTED]</span>
+
+<span class="sd">    inv: 0 &lt;= self.seqno &lt; 256</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<span class="k">class</span> <span class="nc">circbuf</span><span class="p">:</span>
+
+    <span class="sd">&quot;&quot;&quot;A circular buffer.</span>
+
+<span class="sd">    inv:</span>
+<span class="sd">        # there can be from 0 to max items on the buffer</span>
+<span class="sd">        0 &lt;= self.len &lt;= len(self.buf)</span>
+
+<span class="sd">        # g is a valid index into buf</span>
+<span class="sd">        0 &lt;= self.g &lt; len(self.buf)</span>
+
+<span class="sd">        # p is also a valid index into buf</span>
+<span class="sd">        0 &lt;= self.p &lt; len(self.buf)</span>
+
+<span class="sd">        # there are len items between get and put</span>
+<span class="sd">        (self.p - self.g) % len(self.buf) == \</span>
+<span class="sd">              self.len % len(self.buf)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</pre></div>
+</div>
+<p>Module invariants must be true after the module is loaded, and at the
+entry and exit of every public function within the module.</p>
+<p>Class invariants must be true after the <code class="docutils literal notranslate"><span class="pre">__init__</span></code> function returns,
+at the entry of the <code class="docutils literal notranslate"><span class="pre">__del__</span></code> function, and at the entry and exit of
+every other public method of the class.  Class invariants must use the
+self variable to access instance variables.</p>
+<p>A method or function is public if its name doesn’t start with an
+underscore (_), unless it starts and ends with ‘__’ (two underscores).</p>
+<p>The docstring of any function or method can have pre-conditions
+documented with the keyword <code class="docutils literal notranslate"><span class="pre">pre</span></code> following the same rules above.
+Post-conditions are documented with the keyword <code class="docutils literal notranslate"><span class="pre">post</span></code> optionally
+followed by a list of variables.  The variables are in the same scope
+as the body of the function or method.  This list declares the
+variables that the function/method is allowed to modify.</p>
+<p>An example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">circbuf</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">leng</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Construct an empty circular buffer.</span>
+
+<span class="sd">        pre: leng &gt; 0</span>
+<span class="sd">        post[self]:</span>
+<span class="sd">            self.is_empty()</span>
+<span class="sd">            len(self.buf) == leng</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+</pre></div>
+</div>
+<p>A double-colon (::) can be used instead of a single colon (:) to
+support docstrings written using reStructuredText <a class="footnote-reference brackets" href="#rst" id="id4">7</a>.  For
+example, the following two docstrings describe the same contract:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;pre: leng &gt; 0&quot;&quot;&quot;</span>
+<span class="sd">&quot;&quot;&quot;pre:: leng &gt; 0&quot;&quot;&quot;</span>
+</pre></div>
+</div>
+<p>Expressions in pre- and post-conditions are defined in the module
+namespace – they have access to nearly all the variables that the
+function can access, except closure variables.</p>
+<p>The contract expressions in post-conditions have access to two
+additional variables: <code class="docutils literal notranslate"><span class="pre">__old__</span></code> which is filled with shallow copies
+of values declared in the variable list immediately following the post
+keyword, and <code class="docutils literal notranslate"><span class="pre">__return__</span></code> which is bound to the return value of the
+function or method.</p>
+<p>An example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">circbuf</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pull an entry from a non-empty circular buffer.</span>
+
+<span class="sd">        pre: not self.is_empty()</span>
+<span class="sd">        post[self.g, self.len]:</span>
+<span class="sd">            __return__ == self.buf[__old__.self.g]</span>
+<span class="sd">            self.len == __old__.self.len - 1</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+</pre></div>
+</div>
+<p>All contract expressions have access to some additional convenience
+functions.  To make evaluating the truth of sequences easier, two
+functions <code class="docutils literal notranslate"><span class="pre">forall</span></code> and <code class="docutils literal notranslate"><span class="pre">exists</span></code> are defined as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">forall</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">fn</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return True only if all elements in a are true.</span>
+
+<span class="sd">    &gt;&gt;&gt; forall([])</span>
+<span class="sd">    1</span>
+<span class="sd">    &gt;&gt;&gt; even = lambda x: x % 2 == 0</span>
+<span class="sd">    &gt;&gt;&gt; forall([2, 4, 6, 8], even)</span>
+<span class="sd">    1</span>
+<span class="sd">    &gt;&gt;&gt; forall(&#39;this is a test&#39;.split(), lambda x: len(x) == 4)</span>
+<span class="sd">    0</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">fn</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns True if there is at least one true value in a.</span>
+
+<span class="sd">    &gt;&gt;&gt; exists([])</span>
+<span class="sd">    0</span>
+<span class="sd">    &gt;&gt;&gt; exists(&#39;this is a test&#39;.split(), lambda x: len(x) == 4)</span>
+<span class="sd">    1</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</pre></div>
+</div>
+<p>An example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">sort</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Sort a list.</span>
+
+<span class="sd">    pre: isinstance(a, type(list))</span>
+<span class="sd">    post[a]:</span>
+<span class="sd">        # array size is unchanged</span>
+<span class="sd">        len(a) == len(__old__.a)</span>
+
+<span class="sd">        # array is ordered</span>
+<span class="sd">        forall([a[i] &gt;= a[i-1] for i in range(1, len(a))])</span>
+
+<span class="sd">        # all the old elements are still in the array</span>
+<span class="sd">        forall(__old__.a, lambda e: __old__.a.count(e) == a.count(e))</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</pre></div>
+</div>
+<p>To make evaluating conditions easier, the function <code class="docutils literal notranslate"><span class="pre">implies</span></code> is
+defined.  With two arguments, this is similar to the logical implies
+(=&gt;) operator.  With three arguments, this is similar to C’s
+conditional expression (x?a:b).  This is defined as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">implies</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="kc">True</span>
+<span class="n">implies</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">a</span>
+<span class="n">implies</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">b</span>
+<span class="n">implies</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">a</span>
+</pre></div>
+</div>
+<p>On entry to a function, the function’s pre-conditions are checked.  An
+assertion error is raised if any pre-condition is false.  If the
+function is public, then the class or module’s invariants are also
+checked.  Copies of variables declared in the post are saved, the
+function is called, and if the function exits without raising an
+exception, the post-conditions are checked.</p>
+<div class="section" id="exceptions">
+<h3><a class="toc-backref" href="#id13">Exceptions</a><a class="headerlink" href="#exceptions" title="Permalink to this headline">¶</a></h3>
+<p>Class/module invariants are checked even if a function or method exits
+by signalling an exception (post-conditions are not).</p>
+<p>All failed contracts raise exceptions which are subclasses of the
+<code class="docutils literal notranslate"><span class="pre">ContractViolationError</span></code> exception, which is in turn a subclass of the
+<code class="docutils literal notranslate"><span class="pre">AssertionError</span></code> exception.  Failed pre-conditions raise a
+<code class="docutils literal notranslate"><span class="pre">PreconditionViolationError</span></code> exception.  Failed post-conditions raise
+a <code class="docutils literal notranslate"><span class="pre">PostconditionViolationError</span></code> exception, and failed invariants raise
+a <code class="docutils literal notranslate"><span class="pre">InvariantViolationError</span></code> exception.</p>
+<p>The class hierarchy:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ne">AssertionError</span>
+    <span class="n">ContractViolationError</span>
+        <span class="n">PreconditionViolationError</span>
+        <span class="n">PostconditionViolationError</span>
+        <span class="n">InvariantViolationError</span>
+        <span class="n">InvalidPreconditionError</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">InvalidPreconditionError</span></code> is raised when pre-conditions are
+illegally strengthened, see the next section on Inheritance.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="n">some_func</span><span class="p">()</span>
+<span class="k">except</span> <span class="n">contract</span><span class="o">.</span><span class="n">PreconditionViolationError</span><span class="p">:</span>
+    <span class="c1"># failed pre-condition, ok</span>
+    <span class="k">pass</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="inheritance">
+<h3><a class="toc-backref" href="#id14">Inheritance</a><a class="headerlink" href="#inheritance" title="Permalink to this headline">¶</a></h3>
+<p>A class’s invariants include all the invariants for all super-classes
+(class invariants are ANDed with super-class invariants).  These
+invariants are checked in method-resolution order.</p>
+<p>A method’s post-conditions also include all overridden post-conditions
+(method post-conditions are ANDed with all overridden method
+post-conditions).</p>
+<p>An overridden method’s pre-conditions can be ignored if the overriding
+method’s pre-conditions are met.  However, if the overriding method’s
+pre-conditions fail, <em>all</em> of the overridden method’s pre-conditions
+must also fail.  If not, a separate exception is raised, the
+InvalidPreconditionError.  This supports weakening pre-conditions.</p>
+<p>A somewhat contrived example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">SimpleMailClient</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="nf">send</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">dest</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Sends a message to a destination:</span>
+
+<span class="sd">        pre: self.is_open() # we must have an open connection</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">recv</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Gets the next unread mail message.</span>
+
+<span class="sd">        Returns None if no message is available.</span>
+
+<span class="sd">        pre: self.is_open() # we must have an open connection</span>
+<span class="sd">        post: __return__ == None or isinstance(__return__, Message)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+ <span class="k">class</span> <span class="nc">ComplexMailClient</span><span class="p">(</span><span class="n">SimpleMailClient</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">send</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">dest</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Sends a message to a destination.</span>
+
+<span class="sd">        The message is sent immediately if currently connected.</span>
+<span class="sd">        Otherwise, the message is queued locally until a</span>
+<span class="sd">        connection is made.</span>
+
+<span class="sd">        pre: True # weakens the pre-condition from SimpleMailClient</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">recv</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Gets the next unread mail message.</span>
+
+<span class="sd">        Waits until a message is available.</span>
+
+<span class="sd">        pre: True # can always be called</span>
+<span class="sd">        post: isinstance(__return__, Message)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+</pre></div>
+</div>
+<p>Because pre-conditions can only be weakened, a <code class="docutils literal notranslate"><span class="pre">ComplexMailClient</span></code> can
+replace a <code class="docutils literal notranslate"><span class="pre">SimpleMailClient</span></code> with no fear of breaking existing code.</p>
+</div>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id15">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Except for the following differences, programming-by-contract for
+Python mirrors the Eiffel DBC specification <a class="footnote-reference brackets" href="#oosc" id="id5">3</a>.</p>
+<p>Embedding contracts in docstrings is patterned after the doctest
+module.  It removes the need for extra syntax, ensures that programs
+with contracts are backwards-compatible, and no further work is
+necessary to have the contracts included in the docs.</p>
+<p>The keywords <code class="docutils literal notranslate"><span class="pre">pre</span></code>, <code class="docutils literal notranslate"><span class="pre">post</span></code>, and <code class="docutils literal notranslate"><span class="pre">inv</span></code> were chosen instead of the
+Eiffel-style <code class="docutils literal notranslate"><span class="pre">REQUIRE</span></code>, <code class="docutils literal notranslate"><span class="pre">ENSURE</span></code>, and <code class="docutils literal notranslate"><span class="pre">INVARIANT</span></code> because
+they’re shorter, more in line with mathematical notation, and for a
+more subtle reason: the word ‘require’ implies caller
+responsibilities, while ‘ensure’ implies provider guarantees.  Yet
+pre-conditions can fail through no fault of the caller when using
+multiple inheritance, and post-conditions can fail through no fault of
+the function when using multiple threads.</p>
+<p>Loop invariants as used in Eiffel are unsupported.  They’re a pain to
+implement, and not part of the documentation anyway.</p>
+<p>The variable names <code class="docutils literal notranslate"><span class="pre">__old__</span></code> and <code class="docutils literal notranslate"><span class="pre">__return__</span></code> were picked to avoid
+conflicts with the <code class="docutils literal notranslate"><span class="pre">return</span></code> keyword and to stay consistent with
+Python naming conventions: they’re public and provided by the Python
+implementation.</p>
+<p>Having variable declarations after a post keyword describes exactly
+what the function or method is allowed to modify.  This removes the
+need for the <code class="docutils literal notranslate"><span class="pre">NoChange</span></code> syntax in Eiffel, and makes the
+implementation of <code class="docutils literal notranslate"><span class="pre">__old__</span></code> much easier.  It also is more in line
+with Z schemas <a class="footnote-reference brackets" href="#z" id="id6">9</a>, which are divided into two parts: declaring what
+changes followed by limiting the changes.</p>
+<p>Shallow copies of variables for the <code class="docutils literal notranslate"><span class="pre">__old__</span></code> value prevent an
+implementation of contract programming from slowing down a system too
+much.  If a function changes values that wouldn’t be caught by a
+shallow copy, it can declare the changes like so:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">post</span><span class="p">[</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">p</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">forall</span></code>, <code class="docutils literal notranslate"><span class="pre">exists</span></code>, and <code class="docutils literal notranslate"><span class="pre">implies</span></code> functions were added after
+spending some time documenting existing functions with contracts.
+These capture a majority of common specification idioms.  It might
+seem that defining <code class="docutils literal notranslate"><span class="pre">implies</span></code> as a function might not work (the
+arguments are evaluated whether needed or not, in contrast with other
+boolean operators), but it works for contracts since there should be
+no side-effects for any expression in a contract.</p>
+</div>
+<div class="section" id="reference-implementation">
+<h2><a class="toc-backref" href="#id16">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>A reference implementation is available <a class="footnote-reference brackets" href="#imp" id="id7">1</a>.  It replaces existing
+functions with new functions that do contract checking, by directly
+changing the class’ or module’s namespace.</p>
+<p>Other implementations exist that either hack <code class="docutils literal notranslate"><span class="pre">__getattr__</span></code> <a class="footnote-reference brackets" href="#dbc4p" id="id8">5</a>
+or use <code class="docutils literal notranslate"><span class="pre">__metaclass__</span></code> <a class="footnote-reference brackets" href="#pydbc" id="id9">6</a>.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id17">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="imp"><span class="brackets"><a class="fn-backref" href="#id7">1</a></span></dt>
+<dd>Implementation described in this document.
+(<a class="reference external" href="http://www.wayforward.net/pycontract/">http://www.wayforward.net/pycontract/</a>)</dd>
+<dt class="label" id="dbc"><span class="brackets"><a class="fn-backref" href="#id1">2</a></span></dt>
+<dd>Design By Contract is a registered trademark of Eiffel
+Software Inc.
+(<a class="reference external" href="http://archive.eiffel.com/doc/manuals/technology/contract/">http://archive.eiffel.com/doc/manuals/technology/contract/</a>)</dd>
+<dt class="label" id="oosc"><span class="brackets"><a class="fn-backref" href="#id5">3</a></span></dt>
+<dd>Object-oriented Software Construction,  Bertrand Meyer,
+ISBN 0-13-629031-0</dd>
+<dt class="label" id="doctest"><span class="brackets"><a class="fn-backref" href="#id2">4</a></span></dt>
+<dd><a class="reference external" href="http://docs.python.org/library/doctest.html">http://docs.python.org/library/doctest.html</a>
+doctest – Test docstrings represent reality</dd>
+<dt class="label" id="dbc4p"><span class="brackets"><a class="fn-backref" href="#id8">5</a></span></dt>
+<dd>Design by Contract for Python, R. Plosch
+<em>IEEE Proceedings of the Joint Asia Pacific Software Engineering
+Conference (APSEC97/ICSC97), Hong Kong, December 2-5, 1997</em>
+(<a class="reference external" href="http://www.swe.uni-linz.ac.at/publications/abstract/TR-SE-97.24.html">http://www.swe.uni-linz.ac.at/publications/abstract/TR-SE-97.24.html</a>)</dd>
+<dt class="label" id="pydbc"><span class="brackets"><a class="fn-backref" href="#id9">6</a></span></dt>
+<dd>PyDBC – Design by Contract for Python 2.2+,
+Daniel Arbuckle
+(<a class="reference external" href="http://www.nongnu.org/pydbc/">http://www.nongnu.org/pydbc/</a>)</dd>
+<dt class="label" id="rst"><span class="brackets"><a class="fn-backref" href="#id4">7</a></span></dt>
+<dd>ReStructuredText (<a class="reference external" href="http://docutils.sourceforge.net/rst.html">http://docutils.sourceforge.net/rst.html</a>)</dd>
+<dt class="label" id="xp"><span class="brackets"><a class="fn-backref" href="#id3">8</a></span></dt>
+<dd>Extreme Programming Explained, Kent Beck,
+ISBN 0-201-61641-6</dd>
+<dt class="label" id="z"><span class="brackets"><a class="fn-backref" href="#id6">9</a></span></dt>
+<dd>The Z Notation, Second Edition, J.M. Spivey
+ISBN 0-13-978529-9</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id18">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0316.txt">https://github.com/python/peps/blob/master/pep-0316.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0316.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0315.html">PEP 0315</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0317.html">PEP 0317</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 316 – Programming by Contract for Python</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#exceptions">Exceptions</a></li>
+<li><a class="reference internal" href="#inheritance">Inheritance</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

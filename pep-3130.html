@@ -1,0 +1,325 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 3130 – Access to Current Module/Class/Function &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 3131 – Supporting Non-ASCII Identifiers" href="pep-3131.html" />
+    <link rel="prev" title="PEP 3129 – Class Decorators" href="pep-3129.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 3130 – Access to Current Module/Class/Function</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-3130-access-to-current-module-class-function">
+<h1 class="page-title">PEP 3130 – Access to Current Module/Class/Function<a class="headerlink" href="#pep-3130-access-to-current-module-class-function" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">3130</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Access to Current Module/Class/Function</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Jim J. Jewett &lt;jimjjewett&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Rejected</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">22-Apr-2007</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.0</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">22-Apr-2007</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#rejection-notice" id="id5">Rejection Notice</a></li>
+<li><a class="reference internal" href="#abstract" id="id6">Abstract</a></li>
+<li><a class="reference internal" href="#rationale-for-module" id="id7">Rationale for <code class="docutils literal notranslate"><span class="pre">__module__</span></code></a></li>
+<li><a class="reference internal" href="#rationale-for-class" id="id8">Rationale for <code class="docutils literal notranslate"><span class="pre">__class__</span></code></a></li>
+<li><a class="reference internal" href="#rationale-for-function" id="id9">Rationale for <code class="docutils literal notranslate"><span class="pre">__function__</span></code></a></li>
+<li><a class="reference internal" href="#backwards-compatibility" id="id10">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#implementation" id="id11">Implementation</a></li>
+<li><a class="reference internal" href="#open-issues" id="id12">Open Issues</a></li>
+<li><a class="reference internal" href="#references" id="id13">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id14">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="rejection-notice">
+<h2><a class="toc-backref" href="#id5">Rejection Notice</a><a class="headerlink" href="#rejection-notice" title="Permalink to this headline">¶</a></h2>
+<p>This PEP is rejected.  It is not clear how it should be
+implemented or what the precise semantics should be in edge cases,
+and there aren’t enough important use cases given.  response has
+been lukewarm at best.</p>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id6">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>It is common to need a reference to the current module, class,
+or function, but there is currently no entirely correct way to
+do this.  This PEP proposes adding the keywords <code class="docutils literal notranslate"><span class="pre">__module__</span></code>,
+<code class="docutils literal notranslate"><span class="pre">__class__</span></code>, and <code class="docutils literal notranslate"><span class="pre">__function__</span></code>.</p>
+</div>
+<div class="section" id="rationale-for-module">
+<h2><a class="toc-backref" href="#id7">Rationale for <code class="docutils literal notranslate"><span class="pre">__module__</span></code></a><a class="headerlink" href="#rationale-for-module" title="Permalink to this headline">¶</a></h2>
+<p>Many modules export various functions, classes, and other objects,
+but will perform additional activities (such as running unit
+tests) when run as a script.  The current idiom is to test whether
+the module’s name has been set to magic value.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span> <span class="o">...</span>
+</pre></div>
+</div>
+<p>More complicated introspection requires a module to (attempt to)
+import itself.  If importing the expected name actually produces
+a different module, there is no good workaround.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># __import__ lets you use a variable, but... it gets more</span>
+<span class="c1"># complicated if the module is in a package.</span>
+<span class="nb">__import__</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="c1"># So just go to sys modules... and hope that the module wasn&#39;t</span>
+<span class="c1"># hidden/removed (perhaps for security), that __name__ wasn&#39;t</span>
+<span class="c1"># changed, and definitely hope that no other module with the</span>
+<span class="c1"># same name is now available.</span>
+<span class="k">class</span> <span class="nc">X</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="n">mod</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="vm">__name__</span><span class="p">]</span>
+<span class="n">mod</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="n">X</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__module__</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Proposal:  Add a <code class="docutils literal notranslate"><span class="pre">__module__</span></code> keyword which refers to the module
+currently being defined (executed).  (But see open issues.)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># XXX sys.main is still changing as draft progresses.  May</span>
+<span class="c1"># really need sys.modules[sys.main]</span>
+<span class="k">if</span> <span class="vm">__module__</span> <span class="ow">is</span> <span class="n">sys</span><span class="o">.</span><span class="n">main</span><span class="p">:</span>    <span class="c1"># assumes PEP (3122), Cannon</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="rationale-for-class">
+<h2><a class="toc-backref" href="#id8">Rationale for <code class="docutils literal notranslate"><span class="pre">__class__</span></code></a><a class="headerlink" href="#rationale-for-class" title="Permalink to this headline">¶</a></h2>
+<p>Class methods are passed the current instance; from this they can
+determine <code class="docutils literal notranslate"><span class="pre">self.__class__</span></code> (or cls, for class methods).
+Unfortunately, this reference is to the object’s actual class,
+which may be a subclass of the defining class.  The current
+workaround is to repeat the name of the class, and assume that the
+name will not be rebound.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">C</span><span class="p">(</span><span class="n">B</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">meth</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">meth</span><span class="p">()</span> <span class="c1"># Hope C is never rebound.</span>
+
+<span class="k">class</span> <span class="nc">D</span><span class="p">(</span><span class="n">C</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">meth</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># ?!? issubclass(D,C), so it &quot;works&quot;:</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">meth</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Proposal: Add a <code class="docutils literal notranslate"><span class="pre">__class__</span></code> keyword which refers to the class
+currently being defined (executed).  (But see open issues.)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">C</span><span class="p">(</span><span class="n">B</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">meth</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="vm">__class__</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">meth</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Note that super calls may be further simplified by the “New Super”
+PEP (Spealman).  The <code class="docutils literal notranslate"><span class="pre">__class__</span></code> (or <code class="docutils literal notranslate"><span class="pre">__this_class__</span></code>) attribute came
+up in attempts to simplify the explanation and/or implementation
+of that PEP, but was separated out as an independent decision.</p>
+<p>Note that <code class="docutils literal notranslate"><span class="pre">__class__</span></code> (or <code class="docutils literal notranslate"><span class="pre">__this_class__</span></code>) is not quite the same as
+the <code class="docutils literal notranslate"><span class="pre">__thisclass__</span></code> property on bound super objects.  The existing
+<code class="docutils literal notranslate"><span class="pre">super.__thisclass__</span></code> property refers to the class from which the
+Method Resolution Order search begins.  In the above class D, it
+would refer to (the current reference of name) C.</p>
+</div>
+<div class="section" id="rationale-for-function">
+<h2><a class="toc-backref" href="#id9">Rationale for <code class="docutils literal notranslate"><span class="pre">__function__</span></code></a><a class="headerlink" href="#rationale-for-function" title="Permalink to this headline">¶</a></h2>
+<p>Functions (including methods) often want access to themselves,
+usually for a private storage location or true recursion.  While
+there are several workarounds, all have their drawbacks.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">counter</span><span class="p">(</span><span class="n">_total</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+    <span class="c1"># _total shouldn&#39;t really appear in the</span>
+    <span class="c1"># signature at all; the list wrapping and</span>
+    <span class="c1"># [0] unwrapping obscure the code</span>
+    <span class="n">_total</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">_total</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="nd">@annotate</span><span class="p">(</span><span class="n">total</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">counter</span><span class="p">():</span>
+    <span class="c1"># Assume name counter is never rebound:</span>
+    <span class="n">counter</span><span class="o">.</span><span class="n">total</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">counter</span><span class="o">.</span><span class="n">total</span>
+
+<span class="c1"># class exists only to provide storage:</span>
+<span class="k">class</span> <span class="nc">_wrap</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="n">__total</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__total</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__total</span>
+
+<span class="c1"># set module attribute to a bound method:</span>
+<span class="n">accum</span> <span class="o">=</span> <span class="n">_wrap</span><span class="p">()</span><span class="o">.</span><span class="n">f</span>
+
+<span class="c1"># This function calls &quot;factorial&quot;, which should be itself --</span>
+<span class="c1"># but the same programming styles that use heavy recursion</span>
+<span class="c1"># often have a greater willingness to rebind function names.</span>
+<span class="k">def</span> <span class="nf">factorial</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">n</span> <span class="o">*</span> <span class="n">factorial</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">n</span> <span class="k">else</span> <span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Proposal: Add a <code class="docutils literal notranslate"><span class="pre">__function__</span></code> keyword which refers to the function
+(or method) currently being defined (executed).  (But see open
+issues.)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@annotate</span><span class="p">(</span><span class="n">total</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">counter</span><span class="p">():</span>
+    <span class="c1"># Always refers to this function obj:</span>
+    <span class="n">__function__</span><span class="o">.</span><span class="n">total</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">__function__</span><span class="o">.</span><span class="n">total</span>
+
+<span class="k">def</span> <span class="nf">factorial</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">n</span> <span class="o">*</span> <span class="n">__function__</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">n</span> <span class="k">else</span> <span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="backwards-compatibility">
+<h2><a class="toc-backref" href="#id10">Backwards Compatibility</a><a class="headerlink" href="#backwards-compatibility" title="Permalink to this headline">¶</a></h2>
+<p>While a user could be using these names already, double-underscore
+names ( <code class="docutils literal notranslate"><span class="pre">__anything__</span></code> ) are explicitly reserved to the interpreter.
+It is therefore acceptable to introduce special meaning to these
+names within a single feature release.</p>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id11">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>Ideally, these names would be keywords treated specially by the
+bytecode compiler.</p>
+<p>Guido has suggested <a class="footnote-reference brackets" href="#id3" id="id1">1</a> using a cell variable filled in by the
+metaclass.</p>
+<p>Michele Simionato has provided a prototype using bytecode hacks <a class="footnote-reference brackets" href="#id4" id="id2">2</a>.
+This does not require any new bytecode operators; it just
+modifies the which specific sequence of existing operators gets
+run.</p>
+</div>
+<div class="section" id="open-issues">
+<h2><a class="toc-backref" href="#id12">Open Issues</a><a class="headerlink" href="#open-issues" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Are <code class="docutils literal notranslate"><span class="pre">__module__</span></code>, <code class="docutils literal notranslate"><span class="pre">__class__</span></code>, and <code class="docutils literal notranslate"><span class="pre">__function__</span></code> the right names?  In
+particular, should the names include the word “this”, either as
+<code class="docutils literal notranslate"><span class="pre">__this_module__</span></code>, <code class="docutils literal notranslate"><span class="pre">__this_class__</span></code>, and <code class="docutils literal notranslate"><span class="pre">__this_function__</span></code>, (format
+discussed on the python-3000 and python-ideas lists) or as
+<code class="docutils literal notranslate"><span class="pre">__thismodule__</span></code>, <code class="docutils literal notranslate"><span class="pre">__thisclass__</span></code>, and <code class="docutils literal notranslate"><span class="pre">__thisfunction__</span></code> (inspired
+by, but conflicting with, current usage of super.``__thisclass__``).</li>
+<li>Are all three keywords needed, or should this enhancement be
+limited to a subset of the objects?  Should methods be treated
+separately from other functions?</li>
+</ul>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id13">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id3"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>Fixing super anyone?  Guido van Rossum
+<a class="reference external" href="https://mail.python.org/pipermail/python-3000/2007-April/006671.html">https://mail.python.org/pipermail/python-3000/2007-April/006671.html</a></dd>
+<dt class="label" id="id4"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>Descriptor/Decorator challenge,  Michele Simionato
+<a class="reference external" href="http://groups.google.com/group/comp.lang.python/browse_frm/thread/a6010c7494871bb1/62a2da68961caeb6?lnk=gst&amp;q=simionato+challenge&amp;rnum=1&amp;hl=en#62a2da68961caeb6">http://groups.google.com/group/comp.lang.python/browse_frm/thread/a6010c7494871bb1/62a2da68961caeb6?lnk=gst&amp;q=simionato+challenge&amp;rnum=1&amp;hl=en#62a2da68961caeb6</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id14">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-3130.txt">https://github.com/python/peps/blob/master/pep-3130.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-3130.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-3129.html">PEP 3129</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-3131.html">PEP 3131</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 3130 – Access to Current Module/Class/Function</a><ul>
+<li><a class="reference internal" href="#rejection-notice">Rejection Notice</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale-for-module">Rationale for <code class="docutils literal notranslate"><span class="pre">__module__</span></code></a></li>
+<li><a class="reference internal" href="#rationale-for-class">Rationale for <code class="docutils literal notranslate"><span class="pre">__class__</span></code></a></li>
+<li><a class="reference internal" href="#rationale-for-function">Rationale for <code class="docutils literal notranslate"><span class="pre">__function__</span></code></a></li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#open-issues">Open Issues</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

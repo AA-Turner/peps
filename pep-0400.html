@@ -1,0 +1,458 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 400 – Deprecate codecs.StreamReader and codecs.StreamWriter &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 401 – BDFL Retirement" href="pep-0401.html" />
+    <link rel="prev" title="PEP 399 – Pure Python/C Accelerator Module Compatibility Requirements" href="pep-0399.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 400 – Deprecate codecs.StreamReader and codecs.StreamWriter</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-400-deprecate-codecs-streamreader-and-codecs-streamwriter">
+<h1 class="page-title">PEP 400 – Deprecate codecs.StreamReader and codecs.StreamWriter<a class="headerlink" href="#pep-400-deprecate-codecs-streamreader-and-codecs-streamwriter" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">400</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Deprecate codecs.StreamReader and codecs.StreamWriter</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Victor Stinner &lt;vstinner&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Deferred</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">28-May-2011</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.3</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id5">Abstract</a></li>
+<li><a class="reference internal" href="#pep-deferral" id="id6">PEP Deferral</a></li>
+<li><a class="reference internal" href="#motivation" id="id7">Motivation</a></li>
+<li><a class="reference internal" href="#rationale" id="id8">Rationale</a><ul>
+<li><a class="reference internal" href="#streamreader-and-streamwriter-issues" id="id9">StreamReader and StreamWriter issues</a></li>
+<li><a class="reference internal" href="#textiowrapper-features" id="id10">TextIOWrapper features</a></li>
+<li><a class="reference internal" href="#textiowrapper-issues" id="id11">TextIOWrapper issues</a></li>
+<li><a class="reference internal" href="#possible-improvements-of-streamreader-and-streamwriter" id="id12">Possible improvements of StreamReader and StreamWriter</a></li>
+<li><a class="reference internal" href="#usage-of-streamreader-and-streamwriter" id="id13">Usage of StreamReader and StreamWriter</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#backwards-compatibility" id="id14">Backwards Compatibility</a><ul>
+<li><a class="reference internal" href="#keep-the-public-api-codecs-open" id="id15">Keep the public API, codecs.open</a></li>
+<li><a class="reference internal" href="#deprecate-streamreader-and-streamwriter" id="id16">Deprecate StreamReader and StreamWriter</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#alternative-approach" id="id17">Alternative Approach</a></li>
+<li><a class="reference internal" href="#appendix-a-issues-with-stateful-codecs" id="id18">Appendix A: Issues with stateful codecs</a><ul>
+<li><a class="reference internal" href="#stateful-codecs" id="id19">Stateful codecs</a></li>
+<li><a class="reference internal" href="#read-and-seek-0" id="id20">Read and seek(0)</a></li>
+<li><a class="reference internal" href="#seek-n" id="id21">seek(n)</a></li>
+<li><a class="reference internal" href="#append-mode" id="id22">Append mode</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#links" id="id23">Links</a></li>
+<li><a class="reference internal" href="#copyright" id="id24">Copyright</a></li>
+<li><a class="reference internal" href="#footnotes" id="id25">Footnotes</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id5">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>io.TextIOWrapper and codecs.StreamReaderWriter offer the same API
+<a class="footnote-reference brackets" href="#f1" id="id1">1</a>. TextIOWrapper has more features and is faster than
+StreamReaderWriter. Duplicate code means that bugs should be fixed
+twice and that we may have subtle differences between the two
+implementations.</p>
+<p>The codecs module was introduced in Python 2.0 (see the <a class="reference external" href="http://www.python.org/dev/peps/pep-0100/">PEP 100</a>). The io module was
+introduced in Python 2.6 and 3.0 (see the <a class="reference external" href="http://www.python.org/dev/peps/pep-3116/">PEP 3116</a>), and reimplemented in C in
+Python 2.7 and 3.1.</p>
+</div>
+<div class="section" id="pep-deferral">
+<h2><a class="toc-backref" href="#id6">PEP Deferral</a><a class="headerlink" href="#pep-deferral" title="Permalink to this headline">¶</a></h2>
+<p>Further exploration of the concepts covered in this PEP has been deferred
+for lack of a current champion interested in promoting the goals of the PEP
+and collecting and incorporating feedback, and with sufficient available
+time to do so effectively.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id7">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>When the Python I/O model was updated for 3.0, the concept of a
+“stream-with-known-encoding” was introduced in the form of
+io.TextIOWrapper. As this class is critical to the performance of
+text-based I/O in Python 3, this module has an optimised C version
+which is used by CPython by default. Many corner cases in handling
+buffering, stateful codecs and universal newlines have been dealt with
+since the release of Python 3.0.</p>
+<p>This new interface overlaps heavily with the legacy
+codecs.StreamReader, codecs.StreamWriter and codecs.StreamReaderWriter
+interfaces that were part of the original codec interface design in
+PEP 100. These interfaces are organised around the principle of an
+encoding with an associated stream (i.e. the reverse of arrangement in
+the io module), so the original PEP 100 design required that codec
+writers provide appropriate StreamReader and StreamWriter
+implementations in addition to the core codec encode() and decode()
+methods. This places a heavy burden on codec authors providing these
+specialised implementations to correctly handle many of the corner
+cases (see <a class="reference internal" href="#appendix-a">Appendix A</a>) that have now been dealt with by io.TextIOWrapper. While deeper
+integration between the codec and the stream allows for additional
+optimisations in theory, these optimisations have in practice either
+not been carried out and else the associated code duplication means
+that the corner cases that have been fixed in io.TextIOWrapper are
+still not handled correctly in the various StreamReader and
+StreamWriter implementations.</p>
+<p>Accordingly, this PEP proposes that:</p>
+<ul class="simple">
+<li>codecs.open() be updated to delegate to the builtin open() in Python
+3.3;</li>
+<li>the legacy codecs.Stream* interfaces, including the streamreader and
+streamwriter attributes of codecs.CodecInfo be deprecated in Python
+3.3.</li>
+</ul>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id8">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="streamreader-and-streamwriter-issues">
+<h3><a class="toc-backref" href="#id9">StreamReader and StreamWriter issues</a><a class="headerlink" href="#streamreader-and-streamwriter-issues" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>StreamReader is unable to translate newlines.</li>
+<li>StreamWriter doesn’t support “line buffering” (flush if the input
+text contains a newline).</li>
+<li>StreamReader classes of the CJK encodings (e.g. GB18030) only
+supports UNIX newlines (‘\n’).</li>
+<li>StreamReader and StreamWriter are stateful codecs but don’t expose
+functions to control their state (getstate() or setstate()). Each
+codec has to handle corner cases, see <a class="reference internal" href="#appendix-a">Appendix A</a>.</li>
+<li>StreamReader and StreamWriter are very similar to IncrementalReader
+and IncrementalEncoder, some code is duplicated for stateful codecs
+(e.g. UTF-16).</li>
+<li>Each codec has to reimplement its own StreamReader and StreamWriter
+class, even if it’s trivial (just call the encoder/decoder).</li>
+<li>codecs.open(filename, “r”) creates an io.TextIOWrapper object.</li>
+<li>No codec implements an optimized method in StreamReader or
+StreamWriter based on the specificities of the codec.</li>
+</ul>
+<p>Issues in the bug tracker:</p>
+<ul class="simple">
+<li><a class="reference external" href="http://bugs.python.org/issue5445">Issue #5445</a> (2009-03-08):
+codecs.StreamWriter.writelines problem when passed generator</li>
+<li><a class="reference external" href="http://bugs.python.org/issue7262">Issue #7262:</a> (2009-11-04):
+codecs.open() + eol (windows)</li>
+<li><a class="reference external" href="http://bugs.python.org/issue8260">Issue #8260</a> (2010-03-29):
+When I use codecs.open(…) and f.readline() follow up by f.read()
+return bad result</li>
+<li><a class="reference external" href="http://bugs.python.org/issue8630">Issue #8630</a> (2010-05-05):
+Keepends param in codec readline(s)</li>
+<li><a class="reference external" href="http://bugs.python.org/issue10344">Issue #10344</a> (2010-11-06):
+codecs.readline doesn’t care buffering</li>
+<li><a class="reference external" href="http://bugs.python.org/issue11461">Issue #11461</a> (2011-03-10):
+Reading UTF-16 with codecs.readline() breaks on surrogate pairs</li>
+<li><a class="reference external" href="http://bugs.python.org/issue12446">Issue #12446</a> (2011-06-30):
+StreamReader Readlines behavior odd</li>
+<li><a class="reference external" href="http://bugs.python.org/issue12508">Issue #12508</a> (2011-07-06):
+Codecs Anomaly</li>
+<li><a class="reference external" href="http://bugs.python.org/issue12512">Issue #12512</a> (2011-07-07):
+codecs: StreamWriter issues with stateful codecs after a seek or
+with append mode</li>
+<li><a class="reference external" href="http://bugs.python.org/issue12513">Issue #12513</a> (2011-07-07):
+codec.StreamReaderWriter: issues with interlaced read-write</li>
+</ul>
+</div>
+<div class="section" id="textiowrapper-features">
+<h3><a class="toc-backref" href="#id10">TextIOWrapper features</a><a class="headerlink" href="#textiowrapper-features" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>TextIOWrapper supports any kind of newline, including translating
+newlines (to UNIX newlines), to read and write.</li>
+<li>TextIOWrapper reuses codecs incremental encoders and decoders (no
+duplication of code).</li>
+<li>The io module (TextIOWrapper) is faster than the codecs module
+(StreamReader). It is implemented in C, whereas codecs is
+implemented in Python.</li>
+<li>TextIOWrapper has a readahead algorithm which speeds up small
+reads: read character by character or line by line (io is 10x
+through 25x faster than codecs on these operations).</li>
+<li>TextIOWrapper has a write buffer.</li>
+<li>TextIOWrapper.tell() is optimized.</li>
+<li>TextIOWrapper supports random access (read+write) using a single
+class which permit to optimize interlaced read-write (but no such
+optimization is implemented).</li>
+</ul>
+</div>
+<div class="section" id="textiowrapper-issues">
+<h3><a class="toc-backref" href="#id11">TextIOWrapper issues</a><a class="headerlink" href="#textiowrapper-issues" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><a class="reference external" href="http://bugs.python.org/issue12215">Issue #12215</a> (2011-05-30):
+TextIOWrapper: issues with interlaced read-write</li>
+</ul>
+</div>
+<div class="section" id="possible-improvements-of-streamreader-and-streamwriter">
+<h3><a class="toc-backref" href="#id12">Possible improvements of StreamReader and StreamWriter</a><a class="headerlink" href="#possible-improvements-of-streamreader-and-streamwriter" title="Permalink to this headline">¶</a></h3>
+<p>By adding codec state read/write functions to the StreamReader and
+StreamWriter classes, it will become possible to fix issues with
+stateful codecs in a base class instead of in each stateful
+StreamReader and StreamWriter classes.</p>
+<p>It would be possible to change StreamReader and StreamWriter to make
+them use IncrementalDecoder and IncrementalEncoder.</p>
+<p>A codec can implement variants which are optimized for the specific
+encoding or intercept certain stream methods to add functionality or
+improve the encoding/decoding performance. TextIOWrapper cannot
+implement such optimization, but TextIOWrapper uses incremental
+encoders and decoders and uses read and write buffers, so the overhead
+of incomplete inputs is low or nul.</p>
+<p>A lot more could be done for other variable length encoding codecs,
+e.g. UTF-8, since these often have problems near the end of a read due
+to missing bytes. The UTF-32-BE/LE codecs could simply multiply the
+character position by 4 to get the byte position.</p>
+</div>
+<div class="section" id="usage-of-streamreader-and-streamwriter">
+<h3><a class="toc-backref" href="#id13">Usage of StreamReader and StreamWriter</a><a class="headerlink" href="#usage-of-streamreader-and-streamwriter" title="Permalink to this headline">¶</a></h3>
+<p>These classes are rarely used directly, but indirectly using
+codecs.open(). They are not used in Python 3 standard library (except
+in the codecs module).</p>
+<p>Some projects implement their own codec with StreamReader and
+StreamWriter, but don’t use these classes.</p>
+</div>
+</div>
+<div class="section" id="backwards-compatibility">
+<h2><a class="toc-backref" href="#id14">Backwards Compatibility</a><a class="headerlink" href="#backwards-compatibility" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="keep-the-public-api-codecs-open">
+<h3><a class="toc-backref" href="#id15">Keep the public API, codecs.open</a><a class="headerlink" href="#keep-the-public-api-codecs-open" title="Permalink to this headline">¶</a></h3>
+<p>codecs.open() can be replaced by the builtin open() function. open()
+has a similar API but has also more options. Both functions return
+file-like objects (same API).</p>
+<p>codecs.open() was the only way to open a text file in Unicode mode
+until Python 2.6. Many Python 2 programs uses this function. Removing
+codecs.open() implies more work to port programs from Python 2 to
+Python 3, especially projets using the same code base for the two
+Python versions (without using 2to3 program).</p>
+<p>codecs.open() is kept for backward compatibility with Python 2.</p>
+</div>
+<div class="section" id="deprecate-streamreader-and-streamwriter">
+<h3><a class="toc-backref" href="#id16">Deprecate StreamReader and StreamWriter</a><a class="headerlink" href="#deprecate-streamreader-and-streamwriter" title="Permalink to this headline">¶</a></h3>
+<p>Instanciating StreamReader or StreamWriter must emit a DeprecationWarning in
+Python 3.3. Defining a subclass doesn’t emit a DeprecationWarning.</p>
+<p>codecs.open() will be changed to reuse the builtin open() function
+(TextIOWrapper) to read-write text files.</p>
+</div>
+</div>
+<div class="section" id="alternative-approach">
+<span id="appendix-a"></span><h2><a class="toc-backref" href="#id17">Alternative Approach</a><a class="headerlink" href="#alternative-approach" title="Permalink to this headline">¶</a></h2>
+<p>An alternative to the deprecation of the codecs.Stream* classes is to rename
+codecs.open() to codecs.open_stream(), and to create a new codecs.open()
+function reusing open() and so io.TextIOWrapper.</p>
+</div>
+<div class="section" id="appendix-a-issues-with-stateful-codecs">
+<h2><a class="toc-backref" href="#id18">Appendix A: Issues with stateful codecs</a><a class="headerlink" href="#appendix-a-issues-with-stateful-codecs" title="Permalink to this headline">¶</a></h2>
+<p>It is difficult to use correctly a stateful codec with a stream. Some
+cases are supported by the codecs module, while io has no more known
+bug related to stateful codecs. The main difference between the codecs
+and the io module is that bugs have to be fixed in StreamReader and/or
+StreamWriter classes of each codec for the codecs module, whereas bugs
+can be fixed only once in io.TextIOWrapper. Here are some examples of
+issues with stateful codecs.</p>
+<div class="section" id="stateful-codecs">
+<h3><a class="toc-backref" href="#id19">Stateful codecs</a><a class="headerlink" href="#stateful-codecs" title="Permalink to this headline">¶</a></h3>
+<p>Python supports the following stateful codecs:</p>
+<ul class="simple">
+<li>cp932</li>
+<li>cp949</li>
+<li>cp950</li>
+<li>euc_jis_2004</li>
+<li>euc_jisx2003</li>
+<li>euc_jp</li>
+<li>euc_kr</li>
+<li>gb18030</li>
+<li>gbk</li>
+<li>hz</li>
+<li>iso2022_jp</li>
+<li>iso2022_jp_1</li>
+<li>iso2022_jp_2</li>
+<li>iso2022_jp_2004</li>
+<li>iso2022_jp_3</li>
+<li>iso2022_jp_ext</li>
+<li>iso2022_kr</li>
+<li>shift_jis</li>
+<li>shift_jis_2004</li>
+<li>shift_jisx0213</li>
+<li>utf_8_sig</li>
+<li>utf_16</li>
+<li>utf_32</li>
+</ul>
+</div>
+<div class="section" id="read-and-seek-0">
+<h3><a class="toc-backref" href="#id20">Read and seek(0)</a><a class="headerlink" href="#read-and-seek-0" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-16&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;abc&#39;</span><span class="p">)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;def&#39;</span><span class="p">)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;abcdef&#39;</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;abcdef&#39;</span>
+</pre></div>
+</div>
+<p>The io and codecs modules support this usecase correctly.</p>
+</div>
+<div class="section" id="seek-n">
+<h3><a class="toc-backref" href="#id21">seek(n)</a><a class="headerlink" href="#seek-n" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-16&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;abc&#39;</span><span class="p">)</span>
+    <span class="n">pos</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-16&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">pos</span><span class="p">)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;def&#39;</span><span class="p">)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;###&#39;</span><span class="p">)</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-16&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="k">assert</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;###def&#39;</span>
+</pre></div>
+</div>
+<p>The io module supports this usecase, whereas codecs fails because it
+writes a new BOM on the second write (<a class="reference external" href="http://bugs.python.org/issue12512">issue #12512</a>).</p>
+</div>
+<div class="section" id="append-mode">
+<h3><a class="toc-backref" href="#id22">Append mode</a><a class="headerlink" href="#append-mode" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-16&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;abc&#39;</span><span class="p">)</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-16&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;def&#39;</span><span class="p">)</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-16&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="k">assert</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;abcdef&#39;</span>
+</pre></div>
+</div>
+<p>The io module supports this usecase, whereas codecs fails because it
+writes a new BOM on the second write (<a class="reference external" href="http://bugs.python.org/issue12512">issue #12512</a>).</p>
+</div>
+</div>
+<div class="section" id="links">
+<h2><a class="toc-backref" href="#id23">Links</a><a class="headerlink" href="#links" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference external" href="http://www.python.org/dev/peps/pep-0100/">PEP 100: Python Unicode Integration</a></li>
+<li><a class="reference external" href="http://www.python.org/dev/peps/pep-3116/">PEP 3116: New I/O</a></li>
+<li><a class="reference external" href="http://bugs.python.org/issue8796">Issue #8796: Deprecate codecs.open()</a></li>
+<li><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2011-May/111591.html">[python-dev] Deprecate codecs.open() and StreamWriter/StreamReader</a></li>
+</ul>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id24">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+<div class="section" id="footnotes">
+<h2><a class="toc-backref" href="#id25">Footnotes</a><a class="headerlink" href="#footnotes" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="f1"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>StreamReaderWriter has two more attributes than
+TextIOWrapper, reader and writer.</dd>
+</dl>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0400.txt">https://github.com/python/peps/blob/master/pep-0400.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0400.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0399.html">PEP 0399</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0401.html">PEP 0401</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 400 – Deprecate codecs.StreamReader and codecs.StreamWriter</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#pep-deferral">PEP Deferral</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a><ul>
+<li><a class="reference internal" href="#streamreader-and-streamwriter-issues">StreamReader and StreamWriter issues</a></li>
+<li><a class="reference internal" href="#textiowrapper-features">TextIOWrapper features</a></li>
+<li><a class="reference internal" href="#textiowrapper-issues">TextIOWrapper issues</a></li>
+<li><a class="reference internal" href="#possible-improvements-of-streamreader-and-streamwriter">Possible improvements of StreamReader and StreamWriter</a></li>
+<li><a class="reference internal" href="#usage-of-streamreader-and-streamwriter">Usage of StreamReader and StreamWriter</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a><ul>
+<li><a class="reference internal" href="#keep-the-public-api-codecs-open">Keep the public API, codecs.open</a></li>
+<li><a class="reference internal" href="#deprecate-streamreader-and-streamwriter">Deprecate StreamReader and StreamWriter</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#alternative-approach">Alternative Approach</a></li>
+<li><a class="reference internal" href="#appendix-a-issues-with-stateful-codecs">Appendix A: Issues with stateful codecs</a><ul>
+<li><a class="reference internal" href="#stateful-codecs">Stateful codecs</a></li>
+<li><a class="reference internal" href="#read-and-seek-0">Read and seek(0)</a></li>
+<li><a class="reference internal" href="#seek-n">seek(n)</a></li>
+<li><a class="reference internal" href="#append-mode">Append mode</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#links">Links</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+<li><a class="reference internal" href="#footnotes">Footnotes</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

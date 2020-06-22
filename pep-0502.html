@@ -1,0 +1,863 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 502 – String Interpolation - Extended Discussion &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 503 – Simple Repository API" href="pep-0503.html" />
+    <link rel="prev" title="PEP 501 – General purpose string interpolation" href="pep-0501.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 502 – String Interpolation - Extended Discussion</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-502-string-interpolation-extended-discussion">
+<h1 class="page-title">PEP 502 – String Interpolation - Extended Discussion<a class="headerlink" href="#pep-502-string-interpolation-extended-discussion" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">502</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">String Interpolation - Extended Discussion</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Mike G. Miller</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Rejected</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Informational</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">10-Aug-2015</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.6</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id67">Abstract</a></li>
+<li><a class="reference internal" href="#pep-status" id="id68">PEP Status</a></li>
+<li><a class="reference internal" href="#motivation" id="id69">Motivation</a></li>
+<li><a class="reference internal" href="#rationale" id="id70">Rationale</a><ul>
+<li><a class="reference internal" href="#goals" id="id71">Goals</a></li>
+<li><a class="reference internal" href="#limitations" id="id72">Limitations</a></li>
+<li><a class="reference internal" href="#background" id="id73">Background</a><ul>
+<li><a class="reference internal" href="#printf-style-formatting-via-operator" id="id74">Printf-style formatting, via operator</a></li>
+<li><a class="reference internal" href="#string-template-class" id="id75">string.Template Class</a></li>
+<li><a class="reference internal" href="#pep-215-string-interpolation" id="id76">PEP 215 - String Interpolation</a></li>
+<li><a class="reference internal" href="#str-format-method" id="id77">str.format() Method</a></li>
+<li><a class="reference internal" href="#pep-498-literal-string-formatting" id="id78">PEP 498 – Literal String Formatting</a></li>
+<li><a class="reference internal" href="#pep-501-translation-ready-string-interpolation" id="id79">PEP 501 – Translation ready string interpolation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementations-in-other-languages" id="id80">Implementations in Other Languages</a><ul>
+<li><a class="reference internal" href="#bash" id="id81">Bash</a></li>
+<li><a class="reference internal" href="#perl" id="id82">Perl</a></li>
+<li><a class="reference internal" href="#ruby" id="id83">Ruby</a></li>
+<li><a class="reference internal" href="#others" id="id84">Others</a></li>
+<li><a class="reference internal" href="#scala" id="id85">Scala</a></li>
+<li><a class="reference internal" href="#es6-javascript" id="id86">ES6 (Javascript)</a></li>
+<li><a class="reference internal" href="#c-version-6" id="id87">C#, Version 6</a></li>
+<li><a class="reference internal" href="#apple-s-swift" id="id88">Apple’s Swift</a></li>
+<li><a class="reference internal" href="#additional-examples" id="id89">Additional examples</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#new-syntax" id="id90">New Syntax</a></li>
+<li><a class="reference internal" href="#new-string-prefix" id="id91">New String Prefix</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#additional-topics" id="id92">Additional Topics</a><ul>
+<li><a class="reference internal" href="#safety" id="id93">Safety</a><ul>
+<li><a class="reference internal" href="#mitigation-via-tools" id="id94">Mitigation via Tools</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#style-guide-precautions" id="id95">Style Guide/Precautions</a></li>
+<li><a class="reference internal" href="#reference-implementation-s" id="id96">Reference Implementation(s)</a></li>
+<li><a class="reference internal" href="#backwards-compatibility" id="id97">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#postponed-ideas" id="id98">Postponed Ideas</a><ul>
+<li><a class="reference internal" href="#internationalization" id="id99">Internationalization</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rejected-ideas" id="id100">Rejected Ideas</a><ul>
+<li><a class="reference internal" href="#restricting-syntax-to-str-format-only" id="id101">Restricting Syntax to <code class="docutils literal notranslate"><span class="pre">str.format()</span></code> Only</a></li>
+<li><a class="reference internal" href="#additional-custom-string-prefixes" id="id102">Additional/Custom String-Prefixes</a></li>
+<li><a class="reference internal" href="#automated-escaping-of-input-variables" id="id103">Automated Escaping of Input Variables</a></li>
+<li><a class="reference internal" href="#environment-access-and-command-substitution" id="id104">Environment Access and Command Substitution</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#acknowledgements" id="id105">Acknowledgements</a></li>
+<li><a class="reference internal" href="#references" id="id106">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id107">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id67">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>PEP 498: <em>Literal String Interpolation</em>, which proposed “formatted strings” was
+accepted September 9th, 2015.
+Additional background and rationale given during its design phase is detailed
+below.</p>
+<p>To recap that PEP,
+a string prefix was introduced that marks the string as a template to be
+rendered.
+These formatted strings may contain one or more expressions
+built on <a class="reference external" href="https://docs.python.org/3/library/string.html#format-string-syntax">the existing syntax</a> <a class="footnote-reference brackets" href="#id29" id="id30">16</a> of <code class="docutils literal notranslate"><span class="pre">str.format()</span></code>.
+The formatted string expands at compile-time into a conventional string format
+operation,
+with the given expressions from its text extracted and passed instead as
+positional arguments.</p>
+<p>At runtime,
+the resulting expressions are evaluated to render a string to given
+specifications:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">location</span> <span class="o">=</span> <span class="s1">&#39;World&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="sa">f</span><span class="s1">&#39;Hello, </span><span class="si">{</span><span class="n">location</span><span class="si">}</span><span class="s1"> !&#39;</span>      <span class="c1"># new prefix: f&#39;&#39;</span>
+<span class="go">&#39;Hello, World !&#39;                # interpolated result</span>
+</pre></div>
+</div>
+<p>Format-strings may be thought of as merely syntactic sugar to simplify traditional
+calls to <code class="docutils literal notranslate"><span class="pre">str.format()</span></code>.</p>
+</div>
+<div class="section" id="pep-status">
+<h2><a class="toc-backref" href="#id68">PEP Status</a><a class="headerlink" href="#pep-status" title="Permalink to this headline">¶</a></h2>
+<p>This PEP was rejected based on its using an opinion-based tone rather than a factual one.
+This PEP was also deemed not critical as PEP 498 was already written and should be the place
+to house design decision details.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id69">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>Though string formatting and manipulation features are plentiful in Python,
+one area where it falls short
+is the lack of a convenient string interpolation syntax.
+In comparison to other dynamic scripting languages
+with similar use cases,
+the amount of code necessary to build similar strings is substantially higher,
+while at times offering lower readability due to verbosity, dense syntax,
+or identifier duplication.</p>
+<p>These difficulties are described at moderate length in the original
+<a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2015-July/034659.html">post to python-ideas</a> <a class="footnote-reference brackets" href="#id31" id="id32">17</a>
+that started the snowball (that became PEP 498) rolling. <a class="footnote-reference brackets" href="#id14" id="id1">1</a></p>
+<p>Furthermore, replacement of the print statement with the more consistent print
+function of Python 3 (PEP 3105) has added one additional minor burden,
+an additional set of parentheses to type and read.
+Combined with the verbosity of current string formatting solutions,
+this puts an otherwise simple language at an unfortunate disadvantage to its
+peers:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">echo</span> <span class="s2">&quot;Hello, user: $user, id: $id, on host: $hostname&quot;</span>              <span class="c1"># bash</span>
+<span class="n">say</span>  <span class="s2">&quot;Hello, user: $user, id: $id, on host: $hostname&quot;</span><span class="p">;</span>             <span class="c1"># perl</span>
+<span class="n">puts</span> <span class="s2">&quot;Hello, user: #</span><span class="si">{user}</span><span class="s2">, id: #</span><span class="si">{id}</span><span class="s2">, on host: #</span><span class="si">{hostname}</span><span class="se">\n</span><span class="s2">&quot;</span>      <span class="c1"># ruby</span>
+                                                                    <span class="c1"># 80 ch --&gt;|</span>
+<span class="c1"># Python 3, str.format with named parameters</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Hello, user: </span><span class="si">{user}</span><span class="s1">, id: </span><span class="si">{id}</span><span class="s1">, on host: </span><span class="si">{hostname}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">**</span><span class="nb">locals</span><span class="p">()))</span>
+
+<span class="c1"># Python 3, worst case</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Hello, user: </span><span class="si">{user}</span><span class="s1">, id: </span><span class="si">{id}</span><span class="s1">, on host: </span><span class="si">{hostname}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">,</span>
+                                                                  <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">,</span>
+                                                                  <span class="n">hostname</span><span class="o">=</span>
+                                                                    <span class="n">hostname</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>In Python, the formatting and printing of a string with multiple variables in a
+single line of code of standard width is noticeably harder and more verbose,
+with indentation exacerbating the issue.</p>
+<p>For use cases such as smaller projects, systems programming,
+shell script replacements, and even one-liners,
+where message formatting complexity has yet to be encapsulated,
+this verbosity has likely lead a significant number of developers and
+administrators to choose other languages over the years.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id70">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="goals">
+<h3><a class="toc-backref" href="#id71">Goals</a><a class="headerlink" href="#goals" title="Permalink to this headline">¶</a></h3>
+<p>The design goals of format strings are as follows:</p>
+<ol class="arabic simple">
+<li>Eliminate need to pass variables manually.</li>
+<li>Eliminate repetition of identifiers and redundant parentheses.</li>
+<li>Reduce awkward syntax, punctuation characters, and visual noise.</li>
+<li>Improve readability and eliminate mismatch errors,
+by preferring named parameters to positional arguments.</li>
+<li>Avoid need for <code class="docutils literal notranslate"><span class="pre">locals()</span></code> and <code class="docutils literal notranslate"><span class="pre">globals()</span></code> usage,
+instead parsing the given string for named parameters,
+then passing them automatically. <a class="footnote-reference brackets" href="#id15" id="id2">2</a> <a class="footnote-reference brackets" href="#id16" id="id3">3</a></li>
+</ol>
+</div>
+<div class="section" id="limitations">
+<h3><a class="toc-backref" href="#id72">Limitations</a><a class="headerlink" href="#limitations" title="Permalink to this headline">¶</a></h3>
+<p>In contrast to other languages that take design cues from Unix and its
+shells,
+and in common with Javascript,
+Python specified both single (<code class="docutils literal notranslate"><span class="pre">'</span></code>) and double (<code class="docutils literal notranslate"><span class="pre">&quot;</span></code>) ASCII quote
+characters to enclose strings.
+It is not reasonable to choose one of them now to enable interpolation,
+while leaving the other for uninterpolated strings.
+Other characters,
+such as the “Backtick” (or grave accent <code class="docutils literal notranslate"><span class="pre">`</span></code>) are also
+<a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2007-January/000054.html">constrained by history</a> <a class="footnote-reference brackets" href="#id33" id="id34">18</a>
+as a shortcut for <code class="docutils literal notranslate"><span class="pre">repr()</span></code>.</p>
+<p>This leaves a few remaining options for the design of such a feature:</p>
+<ul class="simple">
+<li>An operator, as in printf-style string formatting via <code class="docutils literal notranslate"><span class="pre">%</span></code>.</li>
+<li>A class, such as <code class="docutils literal notranslate"><span class="pre">string.Template()</span></code>.</li>
+<li>A method or function, such as <code class="docutils literal notranslate"><span class="pre">str.format()</span></code>.</li>
+<li>New syntax, or</li>
+<li>A new string prefix marker, such as the well-known <code class="docutils literal notranslate"><span class="pre">r''</span></code> or <code class="docutils literal notranslate"><span class="pre">u''</span></code>.</li>
+</ul>
+<p>The first three options above are mature.
+Each has specific use cases and drawbacks,
+yet also suffer from the verbosity and visual noise mentioned previously.
+All options are discussed in the next sections.</p>
+</div>
+<div class="section" id="background">
+<h3><a class="toc-backref" href="#id73">Background</a><a class="headerlink" href="#background" title="Permalink to this headline">¶</a></h3>
+<p>Formatted strings build on several existing techniques and proposals and what
+we’ve collectively learned from them.
+In keeping with the design goals of readability and error-prevention,
+the following examples therefore use named,
+not positional arguments.</p>
+<p>Let’s assume we have the following dictionary,
+and would like to print out its items as an informative string for end users:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;user&#39;</span><span class="p">:</span> <span class="s1">&#39;nobody&#39;</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">9</span><span class="p">,</span> <span class="s1">&#39;hostname&#39;</span><span class="p">:</span> <span class="s1">&#39;darkstar&#39;</span><span class="p">}</span>
+</pre></div>
+</div>
+<div class="section" id="printf-style-formatting-via-operator">
+<h4><a class="toc-backref" href="#id74">Printf-style formatting, via operator</a><a class="headerlink" href="#printf-style-formatting-via-operator" title="Permalink to this headline">¶</a></h4>
+<p>This <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#printf-style-string-formatting">venerable technique</a> <a class="footnote-reference brackets" href="#id35" id="id36">19</a> continues to have its uses,
+such as with byte-based protocols,
+simplicity in simple cases,
+and familiarity to many programmers:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="s1">&#39;Hello, user: </span><span class="si">%(user)s</span><span class="s1">, id: </span><span class="si">%(id)s</span><span class="s1">, on host: </span><span class="si">%(hostname)s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">params</span>
+<span class="go">&#39;Hello, user: nobody, id: 9, on host: darkstar&#39;</span>
+</pre></div>
+</div>
+<p>In this form, considering the prerequisite dictionary creation,
+the technique is verbose, a tad noisy,
+yet relatively readable.
+Additional issues are that an operator can only take one argument besides the
+original string,
+meaning multiple parameters must be passed in a tuple or dictionary.
+Also, it is relatively easy to make an error in the number of arguments passed,
+the expected type,
+have a missing key,
+or forget the trailing type, e.g. (<code class="docutils literal notranslate"><span class="pre">s</span></code> or <code class="docutils literal notranslate"><span class="pre">d</span></code>).</p>
+</div>
+<div class="section" id="string-template-class">
+<h4><a class="toc-backref" href="#id75">string.Template Class</a><a class="headerlink" href="#string-template-class" title="Permalink to this headline">¶</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">string.Template</span></code> <a class="reference external" href="https://docs.python.org/3/library/string.html#template-strings">class from</a> <a class="footnote-reference brackets" href="#id37" id="id38">20</a> PEP 292
+(Simpler String Substitutions)
+is a purposely simplified design,
+using familiar shell interpolation syntax,
+with <a class="reference external" href="https://docs.python.org/3/library/string.html#string.Template.safe_substitute">safe-substitution feature</a> <a class="footnote-reference brackets" href="#id39" id="id40">21</a>,
+that finds its main use cases in shell and internationalization tools:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Template</span><span class="p">(</span><span class="s1">&#39;Hello, user: $user, id: $</span><span class="si">{id}</span><span class="s1">, on host: $hostname&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>While also verbose, the string itself is readable.
+Though functionality is limited,
+it meets its requirements well.
+It isn’t powerful enough for many cases,
+and that helps keep inexperienced users out of trouble,
+as well as avoiding issues with moderately-trusted input (i18n) from
+third-parties.
+It unfortunately takes enough code to discourage its use for ad-hoc string
+interpolation,
+unless encapsulated in a <a class="reference external" href="http://pythonhosted.org/flufl.i18n/">convenience library</a> <a class="footnote-reference brackets" href="#id41" id="id42">22</a> such as <code class="docutils literal notranslate"><span class="pre">flufl.i18n</span></code>.</p>
+</div>
+<div class="section" id="pep-215-string-interpolation">
+<h4><a class="toc-backref" href="#id76">PEP 215 - String Interpolation</a><a class="headerlink" href="#pep-215-string-interpolation" title="Permalink to this headline">¶</a></h4>
+<p>PEP 215 was a former proposal of which this one shares a lot in common.
+Apparently, the world was not ready for it at the time,
+but considering recent support in a number of other languages,
+its day may have come.</p>
+<p>The large number of dollar sign (<code class="docutils literal notranslate"><span class="pre">$</span></code>) characters it included may have
+led it to resemble Python’s arch-nemesis Perl,
+and likely contributed to the PEP’s lack of acceptance.
+It was superseded by the following proposal.</p>
+</div>
+<div class="section" id="str-format-method">
+<h4><a class="toc-backref" href="#id77">str.format() Method</a><a class="headerlink" href="#str-format-method" title="Permalink to this headline">¶</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">str.format()</span></code> <a class="reference external" href="https://docs.python.org/3/library/string.html#format-string-syntax">syntax of</a> <a class="footnote-reference brackets" href="#id29" id="id43">16</a> PEP 3101 is the most recent and modern of the
+existing options.
+It is also more powerful and usually easier to read than the others.
+It avoids many of the drawbacks and limits of the previous techniques.</p>
+<p>However, due to its necessary function call and parameter passing,
+it runs from verbose to very verbose in various situations with
+string literals:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="s1">&#39;Hello, user: </span><span class="si">{user}</span><span class="s1">, id: </span><span class="si">{id}</span><span class="s1">, on host: </span><span class="si">{hostname}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">**</span><span class="n">params</span><span class="p">)</span>
+<span class="go">&#39;Hello, user: nobody, id: 9, on host: darkstar&#39;</span>
+
+<span class="go"># when using keyword args, var name shortening sometimes needed to fit :/</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="s1">&#39;Hello, user: </span><span class="si">{user}</span><span class="s1">, id: </span><span class="si">{id}</span><span class="s1">, on host: </span><span class="si">{host}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">,</span>
+<span class="go">                                                            id=id,</span>
+<span class="go">                                                            host=hostname)</span>
+<span class="go">&#39;Hello, user: nobody, id: 9, on host: darkstar&#39;</span>
+</pre></div>
+</div>
+<p>The verbosity of the method-based approach is illustrated here.</p>
+</div>
+<div class="section" id="pep-498-literal-string-formatting">
+<h4><a class="toc-backref" href="#id78">PEP 498 – Literal String Formatting</a><a class="headerlink" href="#pep-498-literal-string-formatting" title="Permalink to this headline">¶</a></h4>
+<p>PEP 498 defines and discusses format strings,
+as also described in the <a class="reference internal" href="#abstract">Abstract</a> above.</p>
+<p>It also, somewhat controversially to those first exposed,
+introduces the idea that format-strings shall be augmented with support for
+arbitrary expressions.
+This is discussed further in the
+Restricting Syntax section under
+<a class="reference internal" href="#rejected-ideas">Rejected Ideas</a>.</p>
+</div>
+<div class="section" id="pep-501-translation-ready-string-interpolation">
+<h4><a class="toc-backref" href="#id79">PEP 501 – Translation ready string interpolation</a><a class="headerlink" href="#pep-501-translation-ready-string-interpolation" title="Permalink to this headline">¶</a></h4>
+<p>The complimentary PEP 501 brings internationalization into the discussion as a
+first-class concern, with its proposal of the i-prefix,
+<code class="docutils literal notranslate"><span class="pre">string.Template</span></code> syntax integration compatible with ES6 (Javascript),
+deferred rendering,
+and an object return value.</p>
+</div>
+</div>
+<div class="section" id="implementations-in-other-languages">
+<h3><a class="toc-backref" href="#id80">Implementations in Other Languages</a><a class="headerlink" href="#implementations-in-other-languages" title="Permalink to this headline">¶</a></h3>
+<p>String interpolation is now well supported by various programming languages
+used in multiple industries,
+and is converging into a standard of sorts.
+It is centered around <code class="docutils literal notranslate"><span class="pre">str.format()</span></code> style syntax in minor variations,
+with the addition of arbitrary expressions to expand utility.</p>
+<p>In the <a class="reference internal" href="#motivation">Motivation</a> section it was shown how convenient interpolation syntax
+existed in Bash, Perl, and Ruby.
+Let’s take a look at their expression support.</p>
+<div class="section" id="bash">
+<h4><a class="toc-backref" href="#id81">Bash</a><a class="headerlink" href="#bash" title="Permalink to this headline">¶</a></h4>
+<p>Bash supports a number of arbitrary, even recursive constructs inside strings:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="n">echo</span> <span class="s2">&quot;user: $USER, id: $((id + 6)) on host: $(echo is $(hostname))&quot;</span>
+<span class="n">user</span><span class="p">:</span> <span class="n">nobody</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="mi">15</span> <span class="n">on</span> <span class="n">host</span><span class="p">:</span> <span class="ow">is</span> <span class="n">darkstar</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li>Explicit interpolation within double quotes.</li>
+<li>Direct environment variable access supported.</li>
+<li>Arbitrary expressions are supported. <a class="footnote-reference brackets" href="#id17" id="id4">4</a></li>
+<li>External process execution and output capture supported. <a class="footnote-reference brackets" href="#id18" id="id5">5</a></li>
+<li>Recursive expressions are supported.</li>
+</ul>
+</div>
+<div class="section" id="perl">
+<h4><a class="toc-backref" href="#id82">Perl</a><a class="headerlink" href="#perl" title="Permalink to this headline">¶</a></h4>
+<p>Perl also has arbitrary expression constructs, perhaps not as well known:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">say</span> <span class="s2">&quot;I have @{[$id + 6]} guanacos.&quot;</span><span class="p">;</span>                <span class="c1"># lists</span>
+<span class="n">say</span> <span class="s2">&quot;I have ${\($id + 6)} guanacos.&quot;</span><span class="p">;</span>               <span class="c1"># scalars</span>
+<span class="n">say</span> <span class="s2">&quot;Hello { @names.join(&#39;, &#39;) } how are you?&quot;</span><span class="p">;</span>     <span class="c1"># Perl 6 version</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li>Explicit interpolation within double quotes.</li>
+<li>Arbitrary expressions are supported. <a class="footnote-reference brackets" href="#id19" id="id6">6</a> <a class="footnote-reference brackets" href="#id20" id="id7">7</a></li>
+</ul>
+</div>
+<div class="section" id="ruby">
+<h4><a class="toc-backref" href="#id83">Ruby</a><a class="headerlink" href="#ruby" title="Permalink to this headline">¶</a></h4>
+<p>Ruby allows arbitrary expressions in its interpolated strings:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">puts</span> <span class="s2">&quot;One plus one is two: #{1 + 1}</span><span class="se">\n</span><span class="s2">&quot;</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li>Explicit interpolation within double quotes.</li>
+<li>Arbitrary expressions are supported. <a class="footnote-reference brackets" href="#id21" id="id8">8</a> <a class="footnote-reference brackets" href="#id22" id="id9">9</a></li>
+<li>Possible to change delimiter chars with <code class="docutils literal notranslate"><span class="pre">%</span></code>.</li>
+<li>See the Reference Implementation(s) section for an implementation in Python.</li>
+</ul>
+</div>
+<div class="section" id="others">
+<h4><a class="toc-backref" href="#id84">Others</a><a class="headerlink" href="#others" title="Permalink to this headline">¶</a></h4>
+<p>Let’s look at some less-similar modern languages recently implementing string
+interpolation.</p>
+</div>
+<div class="section" id="scala">
+<h4><a class="toc-backref" href="#id85">Scala</a><a class="headerlink" href="#scala" title="Permalink to this headline">¶</a></h4>
+<p><a class="reference external" href="http://docs.scala-lang.org/overviews/core/string-interpolation.html">Scala interpolation</a> <a class="footnote-reference brackets" href="#id44" id="id45">23</a> is directed through string prefixes.
+Each prefix has a different result:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">s</span><span class="s2">&quot;Hello, $name ${1 + 1}&quot;</span>                    <span class="c1"># arbitrary</span>
+<span class="sa">f</span><span class="s2">&quot;$name%s is $height%2.2f meters tall&quot;</span>      <span class="c1"># printf-style</span>
+<span class="n">raw</span><span class="s2">&quot;a</span><span class="se">\n</span><span class="s2">b&quot;</span>                                   <span class="c1"># raw, like r&#39;&#39;</span>
+</pre></div>
+</div>
+<p>These prefixes may also be implemented by the user,
+by extending Scala’s <code class="docutils literal notranslate"><span class="pre">StringContext</span></code> class.</p>
+<ul class="simple">
+<li>Explicit interpolation within double quotes with literal prefix.</li>
+<li>User implemented prefixes supported.</li>
+<li>Arbitrary expressions are supported.</li>
+</ul>
+</div>
+<div class="section" id="es6-javascript">
+<h4><a class="toc-backref" href="#id86">ES6 (Javascript)</a><a class="headerlink" href="#es6-javascript" title="Permalink to this headline">¶</a></h4>
+<p>Designers of <a class="reference external" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/template_strings">Template strings</a> <a class="footnote-reference brackets" href="#id47" id="id48">24</a> faced the same issue as Python where single
+and double quotes were taken.
+Unlike Python however, “backticks” were not.
+Despite <a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2007-January/000054.html">their issues</a> <a class="footnote-reference brackets" href="#id33" id="id46">18</a>,
+they were chosen as part of the ECMAScript 2015 (ES6) standard:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>console.log(`Fifteen is ${a + b} and\nnot ${2 * a + b}.`);
+</pre></div>
+</div>
+<p>Custom prefixes are also supported by implementing a function the same name
+as the tag:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>function tag(strings, ...values) {
+    console.log(strings.raw[0]);    // raw string is also available
+    return &quot;Bazinga!&quot;;
+}
+tag`Hello ${ a + b } world ${ a * b}`;
+</pre></div>
+</div>
+<ul class="simple">
+<li>Explicit interpolation within backticks.</li>
+<li>User implemented prefixes supported.</li>
+<li>Arbitrary expressions are supported.</li>
+</ul>
+</div>
+<div class="section" id="c-version-6">
+<h4><a class="toc-backref" href="#id87">C#, Version 6</a><a class="headerlink" href="#c-version-6" title="Permalink to this headline">¶</a></h4>
+<p>C# has a useful new <a class="reference external" href="https://msdn.microsoft.com/en-us/library/Dn961160.aspx">interpolation feature</a> <a class="footnote-reference brackets" href="#id49" id="id50">25</a> as well,
+with some ability to <a class="reference external" href="http://www.thomaslevesque.com/2015/02/24/customizing-string-interpolation-in-c-6/">customize interpolation</a> <a class="footnote-reference brackets" href="#id51" id="id52">26</a> via the <code class="docutils literal notranslate"><span class="pre">IFormattable</span></code>
+interface:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$&quot;{person.Name, 20} is {person.Age:D3} year{(p.Age == 1 ? &quot;&quot; : &quot;s&quot;)} old.&quot;;
+</pre></div>
+</div>
+<ul class="simple">
+<li>Explicit interpolation with double quotes and <code class="docutils literal notranslate"><span class="pre">$</span></code> prefix.</li>
+<li>Custom interpolations are available.</li>
+<li>Arbitrary expressions are supported.</li>
+</ul>
+</div>
+<div class="section" id="apple-s-swift">
+<h4><a class="toc-backref" href="#id88">Apple’s Swift</a><a class="headerlink" href="#apple-s-swift" title="Permalink to this headline">¶</a></h4>
+<p>Arbitrary <a class="reference external" href="https://developer.apple.com/library/ios/documentation/Swift/Conceptual/Swift_Programming_Language/StringsAndCharacters.html#//apple_ref/doc/uid/TP40014097-CH7-ID292">interpolation under Swift</a> <a class="footnote-reference brackets" href="#id53" id="id54">27</a> is available on all strings:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">let</span> <span class="n">multiplier</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">let</span> <span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;\(multiplier) times 2.5 is \(Double(multiplier) * 2.5)&quot;</span>
+<span class="o">//</span> <span class="n">message</span> <span class="ow">is</span> <span class="s2">&quot;3 times 2.5 is 7.5&quot;</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li>Implicit interpolation with double quotes.</li>
+<li>Arbitrary expressions are supported.</li>
+<li>Cannot contain CR/LF.</li>
+</ul>
+</div>
+<div class="section" id="additional-examples">
+<h4><a class="toc-backref" href="#id89">Additional examples</a><a class="headerlink" href="#additional-examples" title="Permalink to this headline">¶</a></h4>
+<p>A number of additional examples of string interpolation may be
+<a class="reference external" href="https://en.wikipedia.org/wiki/String_interpolation#Examples">found at Wikipedia</a> <a class="footnote-reference brackets" href="#id55" id="id56">28</a>.</p>
+<p>Now that background and history have been covered,
+let’s continue on for a solution.</p>
+</div>
+</div>
+<div class="section" id="new-syntax">
+<h3><a class="toc-backref" href="#id90">New Syntax</a><a class="headerlink" href="#new-syntax" title="Permalink to this headline">¶</a></h3>
+<p>This should be an option of last resort,
+as every new syntax feature has a cost in terms of real-estate in a brain it
+inhabits.
+There is however one alternative left on our list of possibilities,
+which follows.</p>
+</div>
+<div class="section" id="new-string-prefix">
+<h3><a class="toc-backref" href="#id91">New String Prefix</a><a class="headerlink" href="#new-string-prefix" title="Permalink to this headline">¶</a></h3>
+<p>Given the history of string formatting in Python and backwards-compatibility,
+implementations in other languages,
+avoidance of new syntax unless necessary,
+an acceptable design is reached through elimination
+rather than unique insight.
+Therefore, marking interpolated string literals with a string prefix is chosen.</p>
+<p>We also choose an expression syntax that reuses and builds on the strongest of
+the existing choices,
+<code class="docutils literal notranslate"><span class="pre">str.format()</span></code> to avoid further duplication of functionality:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">location</span> <span class="o">=</span> <span class="s1">&#39;World&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="sa">f</span><span class="s1">&#39;Hello, </span><span class="si">{</span><span class="n">location</span><span class="si">}</span><span class="s1"> !&#39;</span>      <span class="c1"># new prefix: f&#39;&#39;</span>
+<span class="go">&#39;Hello, World !&#39;                # interpolated result</span>
+</pre></div>
+</div>
+<p>PEP 498 – Literal String Formatting, delves into the mechanics and
+implementation of this design.</p>
+</div>
+</div>
+<div class="section" id="additional-topics">
+<h2><a class="toc-backref" href="#id92">Additional Topics</a><a class="headerlink" href="#additional-topics" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="safety">
+<h3><a class="toc-backref" href="#id93">Safety</a><a class="headerlink" href="#safety" title="Permalink to this headline">¶</a></h3>
+<p>In this section we will describe the safety situation and precautions taken
+in support of format-strings.</p>
+<ol class="arabic">
+<li><p>Only string literals have been considered for format-strings,
+not variables to be taken as input or passed around,
+making external attacks difficult to accomplish.</p>
+<p><code class="docutils literal notranslate"><span class="pre">str.format()</span></code> and alternatives <a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2015-July/034729.html">already handle</a> <a class="footnote-reference brackets" href="#id57" id="id58">29</a> this use-case.</p>
+</li>
+<li>Neither <code class="docutils literal notranslate"><span class="pre">locals()</span></code> nor <code class="docutils literal notranslate"><span class="pre">globals()</span></code> are necessary nor used during the
+transformation,
+avoiding leakage of information.</li>
+<li>To eliminate complexity as well as <code class="docutils literal notranslate"><span class="pre">RuntimeError</span></code> (s) due to recursion
+depth, recursive interpolation is not supported.</li>
+</ol>
+<p>However,
+mistakes or malicious code could be missed inside string literals.
+Though that can be said of code in general,
+that these expressions are inside strings means they are a bit more likely
+to be obscured.</p>
+<div class="section" id="mitigation-via-tools">
+<h4><a class="toc-backref" href="#id94">Mitigation via Tools</a><a class="headerlink" href="#mitigation-via-tools" title="Permalink to this headline">¶</a></h4>
+<p>The idea is that tools or linters such as pyflakes, pylint, or Pycharm,
+may check inside strings with expressions and mark them up appropriately.
+As this is a common task with programming languages today,
+multi-language tools won’t have to implement this feature solely for Python,
+significantly shortening time to implementation.</p>
+<p>Farther in the future,
+strings might also be checked for constructs that exceed the safety policy of
+a project.</p>
+</div>
+</div>
+<div class="section" id="style-guide-precautions">
+<h3><a class="toc-backref" href="#id95">Style Guide/Precautions</a><a class="headerlink" href="#style-guide-precautions" title="Permalink to this headline">¶</a></h3>
+<p>As arbitrary expressions may accomplish anything a Python expression is
+able to,
+it is highly recommended to avoid constructs inside format-strings that could
+cause side effects.</p>
+<p>Further guidelines may be written once usage patterns and true problems are
+known.</p>
+</div>
+<div class="section" id="reference-implementation-s">
+<h3><a class="toc-backref" href="#id96">Reference Implementation(s)</a><a class="headerlink" href="#reference-implementation-s" title="Permalink to this headline">¶</a></h3>
+<p>The <a class="reference external" href="https://pypi.python.org/pypi/say/">say module on PyPI</a> <a class="footnote-reference brackets" href="#id59" id="id60">30</a> implements string interpolation as described here
+with the small burden of a callable interface:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>＞ pip install say
+
+from say import say
+nums = list(range(4))
+say(&quot;Nums has {len(nums)} items: {nums}&quot;)
+</pre></div>
+</div>
+<p>A Python implementation of Ruby interpolation <a class="reference external" href="https://github.com/syrusakbary/interpy">is also available</a> <a class="footnote-reference brackets" href="#id61" id="id62">31</a>.
+It uses the codecs module to do its work:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>＞ pip install interpy
+
+# coding: interpy
+location = &#39;World&#39;
+print(&quot;Hello #{location}.&quot;)
+</pre></div>
+</div>
+</div>
+<div class="section" id="backwards-compatibility">
+<h3><a class="toc-backref" href="#id97">Backwards Compatibility</a><a class="headerlink" href="#backwards-compatibility" title="Permalink to this headline">¶</a></h3>
+<p>By using existing syntax and avoiding current or historical features,
+format strings were designed so as to not interfere with existing code and are
+not expected to cause any issues.</p>
+</div>
+<div class="section" id="postponed-ideas">
+<h3><a class="toc-backref" href="#id98">Postponed Ideas</a><a class="headerlink" href="#postponed-ideas" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="internationalization">
+<h4><a class="toc-backref" href="#id99">Internationalization</a><a class="headerlink" href="#internationalization" title="Permalink to this headline">¶</a></h4>
+<p>Though it was highly desired to integrate internationalization support,
+(see PEP 501),
+the finer details diverge at almost every point,
+making a common solution unlikely: <a class="footnote-reference brackets" href="#id28" id="id10">15</a></p>
+<ul class="simple">
+<li>Use-cases differ</li>
+<li>Compile vs. run-time tasks</li>
+<li>Interpolation syntax needs</li>
+<li>Intended audience</li>
+<li>Security policy</li>
+</ul>
+</div>
+</div>
+<div class="section" id="rejected-ideas">
+<h3><a class="toc-backref" href="#id100">Rejected Ideas</a><a class="headerlink" href="#rejected-ideas" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="restricting-syntax-to-str-format-only">
+<h4><a class="toc-backref" href="#id101">Restricting Syntax to <code class="docutils literal notranslate"><span class="pre">str.format()</span></code> Only</a><a class="headerlink" href="#restricting-syntax-to-str-format-only" title="Permalink to this headline">¶</a></h4>
+<p>The common <a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2015-August/034913.html">arguments against</a> <a class="footnote-reference brackets" href="#id65" id="id66">33</a> support of arbitrary expressions were:</p>
+<ol class="arabic simple">
+<li><a class="reference external" href="https://en.wikipedia.org/wiki/You_aren't_gonna_need_it">YAGNI</a> <a class="footnote-reference brackets" href="#id63" id="id64">32</a>, “You aren’t gonna need it.”</li>
+<li>The feature is not congruent with historical Python conservatism.</li>
+<li>Postpone - can implement in a future version if need is demonstrated.</li>
+</ol>
+<p>Support of only <code class="docutils literal notranslate"><span class="pre">str.format()</span></code> syntax however,
+was deemed not enough of a solution to the problem.
+Often a simple length or increment of  an object, for example,
+is desired before printing.</p>
+<p>It can be seen in the <a class="reference internal" href="#implementations-in-other-languages">Implementations in Other Languages</a> section that the
+developer community at large tends to agree.
+String interpolation with arbitrary expressions is becoming an industry
+standard in modern languages due to its utility.</p>
+</div>
+<div class="section" id="additional-custom-string-prefixes">
+<h4><a class="toc-backref" href="#id102">Additional/Custom String-Prefixes</a><a class="headerlink" href="#additional-custom-string-prefixes" title="Permalink to this headline">¶</a></h4>
+<p>As seen in the <a class="reference internal" href="#implementations-in-other-languages">Implementations in Other Languages</a> section,
+many modern languages have extensible string prefixes with a common interface.
+This could be a way to generalize and reduce lines of code in common
+situations.
+Examples are found in ES6 (Javascript), Scala, Nim, and C#
+(to a lesser extent).
+This was rejected by the BDFL. <a class="footnote-reference brackets" href="#id27" id="id11">14</a></p>
+</div>
+<div class="section" id="automated-escaping-of-input-variables">
+<h4><a class="toc-backref" href="#id103">Automated Escaping of Input Variables</a><a class="headerlink" href="#automated-escaping-of-input-variables" title="Permalink to this headline">¶</a></h4>
+<p>While helpful in some cases,
+this was thought to create too much uncertainty of when and where string
+expressions could be used safely or not.
+The concept was also difficult to describe to others. <a class="footnote-reference brackets" href="#id25" id="id12">12</a></p>
+<p>Always consider format string variables to be unescaped,
+unless the developer has explicitly escaped them.</p>
+</div>
+<div class="section" id="environment-access-and-command-substitution">
+<h4><a class="toc-backref" href="#id104">Environment Access and Command Substitution</a><a class="headerlink" href="#environment-access-and-command-substitution" title="Permalink to this headline">¶</a></h4>
+<p>For systems programming and shell-script replacements,
+it would be useful to handle environment variables and capture output of
+commands directly in an expression string.
+This was rejected as not important enough,
+and looking too much like bash/perl,
+which could encourage bad habits. <a class="footnote-reference brackets" href="#id26" id="id13">13</a></p>
+</div>
+</div>
+</div>
+<div class="section" id="acknowledgements">
+<h2><a class="toc-backref" href="#id105">Acknowledgements</a><a class="headerlink" href="#acknowledgements" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Eric V. Smith for the authoring and implementation of PEP 498.</li>
+<li>Everyone on the python-ideas mailing list for rejecting the various crazy
+ideas that came up,
+helping to keep the final design in focus.</li>
+</ul>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id106">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id14"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p>Briefer String Format</p>
+<p>(<a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2015-July/034659.html">https://mail.python.org/pipermail/python-ideas/2015-July/034659.html</a>)</p>
+</dd>
+<dt class="label" id="id15"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd><p>Briefer String Format</p>
+<p>(<a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2015-July/034669.html">https://mail.python.org/pipermail/python-ideas/2015-July/034669.html</a>)</p>
+</dd>
+<dt class="label" id="id16"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd><p>Briefer String Format</p>
+<p>(<a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2015-July/034701.html">https://mail.python.org/pipermail/python-ideas/2015-July/034701.html</a>)</p>
+</dd>
+<dt class="label" id="id17"><span class="brackets"><a class="fn-backref" href="#id4">4</a></span></dt>
+<dd><p>Bash Docs</p>
+<p>(<a class="reference external" href="http://www.tldp.org/LDP/abs/html/arithexp.html">http://www.tldp.org/LDP/abs/html/arithexp.html</a>)</p>
+</dd>
+<dt class="label" id="id18"><span class="brackets"><a class="fn-backref" href="#id5">5</a></span></dt>
+<dd><p>Bash Docs</p>
+<p>(<a class="reference external" href="http://www.tldp.org/LDP/abs/html/commandsub.html">http://www.tldp.org/LDP/abs/html/commandsub.html</a>)</p>
+</dd>
+<dt class="label" id="id19"><span class="brackets"><a class="fn-backref" href="#id6">6</a></span></dt>
+<dd><p>Perl Cookbook</p>
+<p>(<a class="reference external" href="http://docstore.mik.ua/orelly/perl/cookbook/ch01_11.htm">http://docstore.mik.ua/orelly/perl/cookbook/ch01_11.htm</a>)</p>
+</dd>
+<dt class="label" id="id20"><span class="brackets"><a class="fn-backref" href="#id7">7</a></span></dt>
+<dd><p>Perl Docs</p>
+<p>(<a class="reference external" href="http://perl6maven.com/perl6-scalar-array-and-hash-interpolation">http://perl6maven.com/perl6-scalar-array-and-hash-interpolation</a>)</p>
+</dd>
+<dt class="label" id="id21"><span class="brackets"><a class="fn-backref" href="#id8">8</a></span></dt>
+<dd><p>Ruby Docs</p>
+<p>(<a class="reference external" href="http://ruby-doc.org/core-2.1.1/doc/syntax/literals_rdoc.html#label-Strings">http://ruby-doc.org/core-2.1.1/doc/syntax/literals_rdoc.html#label-Strings</a>)</p>
+</dd>
+<dt class="label" id="id22"><span class="brackets"><a class="fn-backref" href="#id9">9</a></span></dt>
+<dd><p>Ruby Docs</p>
+<p>(<a class="reference external" href="https://en.wikibooks.org/wiki/Ruby_Programming/Syntax/Literals#Interpolation">https://en.wikibooks.org/wiki/Ruby_Programming/Syntax/Literals#Interpolation</a>)</p>
+</dd>
+<dt class="label" id="id23"><span class="brackets">10</span></dt>
+<dd><p>Python Str.Format Syntax</p>
+<p>(<a class="reference external" href="https://docs.python.org/3/library/string.html#format-string-syntax">https://docs.python.org/3/library/string.html#format-string-syntax</a>)</p>
+</dd>
+<dt class="label" id="id24"><span class="brackets">11</span></dt>
+<dd><p>Python Format-Spec Mini Language</p>
+<p>(<a class="reference external" href="https://docs.python.org/3/library/string.html#format-specification-mini-language">https://docs.python.org/3/library/string.html#format-specification-mini-language</a>)</p>
+</dd>
+<dt class="label" id="id25"><span class="brackets"><a class="fn-backref" href="#id12">12</a></span></dt>
+<dd><p>Escaping of Input Variables</p>
+<p>(<a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2015-August/035532.html">https://mail.python.org/pipermail/python-ideas/2015-August/035532.html</a>)</p>
+</dd>
+<dt class="label" id="id26"><span class="brackets"><a class="fn-backref" href="#id13">13</a></span></dt>
+<dd><p>Environment Access and Command Substitution</p>
+<p>(<a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2015-August/035554.html">https://mail.python.org/pipermail/python-ideas/2015-August/035554.html</a>)</p>
+</dd>
+<dt class="label" id="id27"><span class="brackets"><a class="fn-backref" href="#id11">14</a></span></dt>
+<dd><p>Extensible String Prefixes</p>
+<p>(<a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2015-August/035336.html">https://mail.python.org/pipermail/python-ideas/2015-August/035336.html</a>)</p>
+</dd>
+<dt class="label" id="id28"><span class="brackets"><a class="fn-backref" href="#id10">15</a></span></dt>
+<dd><p>Literal String Formatting</p>
+<p>(<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2015-August/141289.html">https://mail.python.org/pipermail/python-dev/2015-August/141289.html</a>)</p>
+</dd>
+<dt class="label" id="id29"><span class="brackets">16</span><span class='fn-backref'><em> (<a href="#id30">1</a>, <a href="#id43">2</a>) </em></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/library/string.html#format-string-syntax">https://docs.python.org/3/library/string.html#format-string-syntax</a></dd>
+<dt class="label" id="id31"><span class="brackets"><a class="fn-backref" href="#id32">17</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2015-July/034659.html">https://mail.python.org/pipermail/python-ideas/2015-July/034659.html</a></dd>
+<dt class="label" id="id33"><span class="brackets">18</span><span class='fn-backref'><em> (<a href="#id34">1</a>, <a href="#id46">2</a>) </em></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2007-January/000054.html">https://mail.python.org/pipermail/python-ideas/2007-January/000054.html</a></dd>
+<dt class="label" id="id35"><span class="brackets"><a class="fn-backref" href="#id36">19</a></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#printf-style-string-formatting">https://docs.python.org/3/library/stdtypes.html#printf-style-string-formatting</a></dd>
+<dt class="label" id="id37"><span class="brackets"><a class="fn-backref" href="#id38">20</a></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/library/string.html#template-strings">https://docs.python.org/3/library/string.html#template-strings</a></dd>
+<dt class="label" id="id39"><span class="brackets"><a class="fn-backref" href="#id40">21</a></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/library/string.html#string.Template.safe_substitute">https://docs.python.org/3/library/string.html#string.Template.safe_substitute</a></dd>
+<dt class="label" id="id41"><span class="brackets"><a class="fn-backref" href="#id42">22</a></span></dt>
+<dd><a class="reference external" href="http://pythonhosted.org/flufl.i18n/">http://pythonhosted.org/flufl.i18n/</a></dd>
+<dt class="label" id="id44"><span class="brackets"><a class="fn-backref" href="#id45">23</a></span></dt>
+<dd><a class="reference external" href="http://docs.scala-lang.org/overviews/core/string-interpolation.html">http://docs.scala-lang.org/overviews/core/string-interpolation.html</a></dd>
+<dt class="label" id="id47"><span class="brackets"><a class="fn-backref" href="#id48">24</a></span></dt>
+<dd><a class="reference external" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/template_strings">https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/template_strings</a></dd>
+<dt class="label" id="id49"><span class="brackets"><a class="fn-backref" href="#id50">25</a></span></dt>
+<dd><a class="reference external" href="https://msdn.microsoft.com/en-us/library/Dn961160.aspx">https://msdn.microsoft.com/en-us/library/Dn961160.aspx</a></dd>
+<dt class="label" id="id51"><span class="brackets"><a class="fn-backref" href="#id52">26</a></span></dt>
+<dd><a class="reference external" href="http://www.thomaslevesque.com/2015/02/24/customizing-string-interpolation-in-c-6/">http://www.thomaslevesque.com/2015/02/24/customizing-string-interpolation-in-c-6/</a></dd>
+<dt class="label" id="id53"><span class="brackets"><a class="fn-backref" href="#id54">27</a></span></dt>
+<dd><a class="reference external" href="https://developer.apple.com/library/ios/documentation/Swift/Conceptual/Swift_Programming_Language/StringsAndCharacters.html#//apple_ref/doc/uid/TP40014097-CH7-ID292">https://developer.apple.com/library/ios/documentation/Swift/Conceptual/Swift_Programming_Language/StringsAndCharacters.html#//apple_ref/doc/uid/TP40014097-CH7-ID292</a></dd>
+<dt class="label" id="id55"><span class="brackets"><a class="fn-backref" href="#id56">28</a></span></dt>
+<dd><a class="reference external" href="https://en.wikipedia.org/wiki/String_interpolation#Examples">https://en.wikipedia.org/wiki/String_interpolation#Examples</a></dd>
+<dt class="label" id="id57"><span class="brackets"><a class="fn-backref" href="#id58">29</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2015-July/034729.html">https://mail.python.org/pipermail/python-ideas/2015-July/034729.html</a></dd>
+<dt class="label" id="id59"><span class="brackets"><a class="fn-backref" href="#id60">30</a></span></dt>
+<dd><a class="reference external" href="https://pypi.python.org/pypi/say/">https://pypi.python.org/pypi/say/</a></dd>
+<dt class="label" id="id61"><span class="brackets"><a class="fn-backref" href="#id62">31</a></span></dt>
+<dd><a class="reference external" href="https://github.com/syrusakbary/interpy">https://github.com/syrusakbary/interpy</a></dd>
+<dt class="label" id="id63"><span class="brackets"><a class="fn-backref" href="#id64">32</a></span></dt>
+<dd><a class="reference external" href="https://en.wikipedia.org/wiki/You_aren't_gonna_need_it">https://en.wikipedia.org/wiki/You_aren’t_gonna_need_it</a></dd>
+<dt class="label" id="id65"><span class="brackets"><a class="fn-backref" href="#id66">33</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2015-August/034913.html">https://mail.python.org/pipermail/python-ideas/2015-August/034913.html</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id107">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0502.txt">https://github.com/python/peps/blob/master/pep-0502.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0502.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0501.html">PEP 0501</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0503.html">PEP 0503</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 502 – String Interpolation - Extended Discussion</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#pep-status">PEP Status</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a><ul>
+<li><a class="reference internal" href="#goals">Goals</a></li>
+<li><a class="reference internal" href="#limitations">Limitations</a></li>
+<li><a class="reference internal" href="#background">Background</a><ul>
+<li><a class="reference internal" href="#printf-style-formatting-via-operator">Printf-style formatting, via operator</a></li>
+<li><a class="reference internal" href="#string-template-class">string.Template Class</a></li>
+<li><a class="reference internal" href="#pep-215-string-interpolation">PEP 215 - String Interpolation</a></li>
+<li><a class="reference internal" href="#str-format-method">str.format() Method</a></li>
+<li><a class="reference internal" href="#pep-498-literal-string-formatting">PEP 498 – Literal String Formatting</a></li>
+<li><a class="reference internal" href="#pep-501-translation-ready-string-interpolation">PEP 501 – Translation ready string interpolation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementations-in-other-languages">Implementations in Other Languages</a><ul>
+<li><a class="reference internal" href="#bash">Bash</a></li>
+<li><a class="reference internal" href="#perl">Perl</a></li>
+<li><a class="reference internal" href="#ruby">Ruby</a></li>
+<li><a class="reference internal" href="#others">Others</a></li>
+<li><a class="reference internal" href="#scala">Scala</a></li>
+<li><a class="reference internal" href="#es6-javascript">ES6 (Javascript)</a></li>
+<li><a class="reference internal" href="#c-version-6">C#, Version 6</a></li>
+<li><a class="reference internal" href="#apple-s-swift">Apple’s Swift</a></li>
+<li><a class="reference internal" href="#additional-examples">Additional examples</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#new-syntax">New Syntax</a></li>
+<li><a class="reference internal" href="#new-string-prefix">New String Prefix</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#additional-topics">Additional Topics</a><ul>
+<li><a class="reference internal" href="#safety">Safety</a><ul>
+<li><a class="reference internal" href="#mitigation-via-tools">Mitigation via Tools</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#style-guide-precautions">Style Guide/Precautions</a></li>
+<li><a class="reference internal" href="#reference-implementation-s">Reference Implementation(s)</a></li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#postponed-ideas">Postponed Ideas</a><ul>
+<li><a class="reference internal" href="#internationalization">Internationalization</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rejected-ideas">Rejected Ideas</a><ul>
+<li><a class="reference internal" href="#restricting-syntax-to-str-format-only">Restricting Syntax to <code class="docutils literal notranslate"><span class="pre">str.format()</span></code> Only</a></li>
+<li><a class="reference internal" href="#additional-custom-string-prefixes">Additional/Custom String-Prefixes</a></li>
+<li><a class="reference internal" href="#automated-escaping-of-input-variables">Automated Escaping of Input Variables</a></li>
+<li><a class="reference internal" href="#environment-access-and-command-substitution">Environment Access and Command Substitution</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#acknowledgements">Acknowledgements</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

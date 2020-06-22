@@ -1,0 +1,213 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 206 – Python Advanced Library &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 207 – Rich Comparisons" href="pep-0207.html" />
+    <link rel="prev" title="PEP 205 – Weak References" href="pep-0205.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 206 – Python Advanced Library</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-206-python-advanced-library">
+<h1 class="page-title">PEP 206 – Python Advanced Library<a class="headerlink" href="#pep-206-python-advanced-library" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">206</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Python Advanced Library</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">A.M. Kuchling &lt;amk&#32;&#97;t&#32;amk.ca&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Withdrawn</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Informational</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even"><p></p></dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#introduction" id="id2">Introduction</a></li>
+<li><a class="reference internal" href="#batteries-included-philosophy" id="id3">Batteries Included Philosophy</a></li>
+<li><a class="reference internal" href="#domain-web-tasks" id="id4">Domain: Web tasks</a></li>
+<li><a class="reference internal" href="#domain-scientific-programming" id="id5">Domain: Scientific Programming</a></li>
+<li><a class="reference internal" href="#domain-application-development" id="id6">Domain: Application Development</a></li>
+<li><a class="reference internal" href="#domain-education" id="id7">Domain: Education</a></li>
+<li><a class="reference internal" href="#software-covered-by-the-gnu-general-public-license" id="id8">Software covered by the GNU General Public License</a></li>
+<li><a class="reference internal" href="#open-issues" id="id9">Open Issues</a></li>
+<li><a class="reference internal" href="#acknowledgements" id="id10">Acknowledgements</a></li>
+</ul>
+</div>
+<div class="section" id="introduction">
+<h2><a class="toc-backref" href="#id2">Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>This PEP describes the Python Advanced Library, a collection of
+high-quality and frequently-used third party extension modules.</p>
+</div>
+<div class="section" id="batteries-included-philosophy">
+<h2><a class="toc-backref" href="#id3">Batteries Included Philosophy</a><a class="headerlink" href="#batteries-included-philosophy" title="Permalink to this headline">¶</a></h2>
+<p>The Python source distribution has long maintained the philosophy
+of “batteries included” – having a rich and versatile standard
+library which is immediately available, without making the user
+download separate packages.  This gives the Python language a head
+start in many projects.</p>
+<p>However, the standard library modules aren’t always the best
+choices for a job.  Some library modules were quick hacks
+(e.g. <code class="docutils literal notranslate"><span class="pre">calendar</span></code>, <code class="docutils literal notranslate"><span class="pre">commands</span></code>), some were designed poorly and are now
+near-impossible to fix (<code class="docutils literal notranslate"><span class="pre">cgi</span></code>), and some have been rendered obsolete
+by other, more complete modules (<code class="docutils literal notranslate"><span class="pre">binascii</span></code> offers the same features
+as the <code class="docutils literal notranslate"><span class="pre">binhex</span></code>, <code class="docutils literal notranslate"><span class="pre">uu</span></code>, <code class="docutils literal notranslate"><span class="pre">base64</span></code> modules).  This PEP describes a list of
+third-party modules that make Python more competitive for various
+application domains, forming the Python Advanced Library.</p>
+<p>The deliverable is a set of scripts that will retrieve, build, and
+install the packages for a particular application domain.  The
+Python Package Index now contains enough information to let
+software automatically find packages and download them, so the
+time is ripe to implement this.</p>
+<p>Currently this document doesn’t suggest <em>removing</em> modules from
+the standard library that are superseded by a third-party module.
+That’s difficult to do because it entails many backward-compatibility
+problems, so it’s not worth bothering with now.</p>
+<p>Please suggest additional domains of interest.</p>
+</div>
+<div class="section" id="domain-web-tasks">
+<h2><a class="toc-backref" href="#id4">Domain: Web tasks</a><a class="headerlink" href="#domain-web-tasks" title="Permalink to this headline">¶</a></h2>
+<p>XML parsing: ElementTree + SAX.</p>
+<p>URL retrieval: libcurl? other possibilities?</p>
+<p>HTML parsing: mxTidy? HTMLParser?</p>
+<p>Async network I/O: Twisted</p>
+<p>RDF parser: ???</p>
+<p>HTTP serving: ???</p>
+<p>HTTP cookie processing: ???</p>
+<p>Web framework: A WSGI gateway, perhaps?  Paste?</p>
+<p>Graphics: PIL, Chaco.</p>
+</div>
+<div class="section" id="domain-scientific-programming">
+<h2><a class="toc-backref" href="#id5">Domain: Scientific Programming</a><a class="headerlink" href="#domain-scientific-programming" title="Permalink to this headline">¶</a></h2>
+<p>Numeric: Numeric, SciPy</p>
+<p>Graphics: PIL, Chaco.</p>
+</div>
+<div class="section" id="domain-application-development">
+<h2><a class="toc-backref" href="#id6">Domain: Application Development</a><a class="headerlink" href="#domain-application-development" title="Permalink to this headline">¶</a></h2>
+<p>GUI toolkit: ???</p>
+<p>Graphics: Reportlab for PDF generation.</p>
+</div>
+<div class="section" id="domain-education">
+<h2><a class="toc-backref" href="#id7">Domain: Education</a><a class="headerlink" href="#domain-education" title="Permalink to this headline">¶</a></h2>
+<p>Graphics: PyGame</p>
+</div>
+<div class="section" id="software-covered-by-the-gnu-general-public-license">
+<h2><a class="toc-backref" href="#id8">Software covered by the GNU General Public License</a><a class="headerlink" href="#software-covered-by-the-gnu-general-public-license" title="Permalink to this headline">¶</a></h2>
+<p>Some of these third-party modules are covered by the GNU General
+Public License and the GNU Lesser General Public License.
+Providing a script to download and install such packages, or even
+assembling all these packages into a single tarball or CD-ROM,
+shouldn’t cause any difficulties with the GPL, under the “mere
+aggregation” clause of the license.</p>
+</div>
+<div class="section" id="open-issues">
+<h2><a class="toc-backref" href="#id9">Open Issues</a><a class="headerlink" href="#open-issues" title="Permalink to this headline">¶</a></h2>
+<p>What other application domains are important?</p>
+<p>Should this just be a set of Ubuntu or Debian packages?  Compiling
+things such as PyGame can be very complicated and may be too
+difficult to automate.</p>
+</div>
+<div class="section" id="acknowledgements">
+<h2><a class="toc-backref" href="#id10">Acknowledgements</a><a class="headerlink" href="#acknowledgements" title="Permalink to this headline">¶</a></h2>
+<p>The PEP is based on an earlier draft PEP by Moshe Zadka, titled
+“2.0 Batteries Included.”</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0206.txt">https://github.com/python/peps/blob/master/pep-0206.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0206.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0205.html">PEP 0205</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0207.html">PEP 0207</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 206 – Python Advanced Library</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#batteries-included-philosophy">Batteries Included Philosophy</a></li>
+<li><a class="reference internal" href="#domain-web-tasks">Domain: Web tasks</a></li>
+<li><a class="reference internal" href="#domain-scientific-programming">Domain: Scientific Programming</a></li>
+<li><a class="reference internal" href="#domain-application-development">Domain: Application Development</a></li>
+<li><a class="reference internal" href="#domain-education">Domain: Education</a></li>
+<li><a class="reference internal" href="#software-covered-by-the-gnu-general-public-license">Software covered by the GNU General Public License</a></li>
+<li><a class="reference internal" href="#open-issues">Open Issues</a></li>
+<li><a class="reference internal" href="#acknowledgements">Acknowledgements</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

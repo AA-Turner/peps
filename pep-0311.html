@@ -1,0 +1,340 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 311 – Simplified Global Interpreter Lock Acquisition for Extensions &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 312 – Simple Implicit Lambda" href="pep-0312.html" />
+    <link rel="prev" title="PEP 310 – Reliable Acquisition/Release Pairs" href="pep-0310.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 311 – Simplified Global Interpreter Lock Acquisition for Extensions</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-311-simplified-global-interpreter-lock-acquisition-for-extensions">
+<h1 class="page-title">PEP 311 – Simplified Global Interpreter Lock Acquisition for Extensions<a class="headerlink" href="#pep-311-simplified-global-interpreter-lock-acquisition-for-extensions" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">311</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Simplified Global Interpreter Lock Acquisition for Extensions</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Mark Hammond &lt;mhammond&#32;&#97;t&#32;skippinet.com.au&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">05-Feb-2003</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd">05-Feb-2003 14-Feb-2003 19-Apr-2003</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id3">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id4">Rationale</a></li>
+<li><a class="reference internal" href="#limitations-and-exclusions" id="id5">Limitations and Exclusions</a></li>
+<li><a class="reference internal" href="#proposal" id="id6">Proposal</a></li>
+<li><a class="reference internal" href="#design-and-implementation" id="id7">Design and Implementation</a></li>
+<li><a class="reference internal" href="#implementation" id="id8">Implementation</a></li>
+<li><a class="reference internal" href="#references" id="id9">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id10">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id3">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes a simplified API for access to the Global
+Interpreter Lock (GIL) for Python extension modules.
+Specifically, it provides a solution for authors of complex
+multi-threaded extensions, where the current state of Python
+(i.e., the state of the GIL is unknown.</p>
+<p>This PEP proposes a new API, for platforms built with threading
+support, to manage the Python thread state.  An implementation
+strategy is proposed, along with an initial, platform independent
+implementation.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id4">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>The current Python interpreter state API is suitable for simple,
+single-threaded extensions, but quickly becomes incredibly complex
+for non-trivial, multi-threaded extensions.</p>
+<p>Currently Python provides two mechanisms for dealing with the GIL:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">Py_BEGIN_ALLOW_THREADS</span></code> and <code class="docutils literal notranslate"><span class="pre">Py_END_ALLOW_THREADS</span></code> macros.
+These macros are provided primarily to allow a simple Python
+extension that already owns the GIL to temporarily release it
+while making an “external” (ie, non-Python), generally
+expensive, call.  Any existing Python threads that are blocked
+waiting for the GIL are then free to run.  While this is fine
+for extensions making calls from Python into the outside world,
+it is no help for extensions that need to make calls into Python
+when the thread state is unknown.</li>
+<li><code class="docutils literal notranslate"><span class="pre">PyThreadState</span></code> and <code class="docutils literal notranslate"><span class="pre">PyInterpreterState</span></code> APIs.
+These API functions allow an extension/embedded application to
+acquire the GIL, but suffer from a serious boot-strapping
+problem - they require you to know the state of the Python
+interpreter and of the GIL before they can be used.  One
+particular problem is for extension authors that need to deal
+with threads never before seen by Python, but need to call
+Python from this thread.  It is very difficult, delicate and
+error prone to author an extension where these “new” threads
+always know the exact state of the GIL, and therefore can
+reliably interact with this API.</li>
+</ul>
+<p>For these reasons, the question of how such extensions should
+interact with Python is quickly becoming a FAQ.  The main impetus
+for this PEP, a thread on python-dev <a class="footnote-reference brackets" href="#id2" id="id1">1</a>, immediately identified
+the following projects with this exact issue:</p>
+<ul class="simple">
+<li>The win32all extensions</li>
+<li>Boost</li>
+<li>ctypes</li>
+<li>Python-GTK bindings</li>
+<li>Uno</li>
+<li>PyObjC</li>
+<li>Mac toolbox</li>
+<li>PyXPCOM</li>
+</ul>
+<p>Currently, there is no reasonable, portable solution to this
+problem, forcing each extension author to implement their own
+hand-rolled version.  Further, the problem is complex, meaning
+many implementations are likely to be incorrect, leading to a
+variety of problems that will often manifest simply as “Python has
+hung”.</p>
+<p>While the biggest problem in the existing thread-state API is the
+lack of the ability to query the current state of the lock, it is
+felt that a more complete, simplified solution should be offered
+to extension authors.  Such a solution should encourage authors to
+provide error-free, complex extension modules that take full
+advantage of Python’s threading mechanisms.</p>
+</div>
+<div class="section" id="limitations-and-exclusions">
+<h2><a class="toc-backref" href="#id5">Limitations and Exclusions</a><a class="headerlink" href="#limitations-and-exclusions" title="Permalink to this headline">¶</a></h2>
+<p>This proposal identifies a solution for extension authors with
+complex multi-threaded requirements, but that only require a
+single “PyInterpreterState”.  There is no attempt to cater for
+extensions that require multiple interpreter states.  At the time
+of writing, no extension has been identified that requires
+multiple PyInterpreterStates, and indeed it is not clear if that
+facility works correctly in Python itself.</p>
+<p>This API will not perform automatic initialization of Python, or
+initialize Python for multi-threaded operation.  Extension authors
+must continue to call <code class="docutils literal notranslate"><span class="pre">Py_Initialize()</span></code>, and for multi-threaded
+applications, <code class="docutils literal notranslate"><span class="pre">PyEval_InitThreads()</span></code>.  The reason for this is that
+the first thread to call <code class="docutils literal notranslate"><span class="pre">PyEval_InitThreads()</span></code> is nominated as the
+“main thread” by Python, and so forcing the extension author to
+specify the main thread (by forcing her to make this first call)
+removes ambiguity.  As <code class="docutils literal notranslate"><span class="pre">Py_Initialize()</span></code> must be called before
+<code class="docutils literal notranslate"><span class="pre">PyEval_InitThreads()</span></code>, and as both of these functions currently
+support being called multiple times, the burden this places on
+extension authors is considered reasonable.</p>
+<p>It is intended that this API be all that is necessary to acquire
+the Python GIL.  Apart from the existing, standard
+<code class="docutils literal notranslate"><span class="pre">Py_BEGIN_ALLOW_THREADS</span></code> and <code class="docutils literal notranslate"><span class="pre">Py_END_ALLOW_THREADS</span></code> macros, it is
+assumed that no additional thread state API functions will be used
+by the extension.  Extensions with such complicated requirements
+are free to continue to use the existing thread state API.</p>
+</div>
+<div class="section" id="proposal">
+<h2><a class="toc-backref" href="#id6">Proposal</a><a class="headerlink" href="#proposal" title="Permalink to this headline">¶</a></h2>
+<p>This proposal recommends a new API be added to Python to simplify
+the management of the GIL.  This API will be available on all
+platforms built with <code class="docutils literal notranslate"><span class="pre">WITH_THREAD</span></code> defined.</p>
+<p>The intent is that assuming Python has correctly been initialized,
+an extension author be able to use a small, well-defined “prologue
+dance”, at any time and on any thread, which will ensure Python
+is ready to be used on that thread.  After the extension has
+finished with Python, it must also perform an “epilogue dance” to
+release any resources previously acquired.  Ideally, these dances
+can be expressed in a single line.</p>
+<p>Specifically, the following new APIs are proposed:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">/*</span> <span class="n">Ensure</span> <span class="n">that</span> <span class="n">the</span> <span class="n">current</span> <span class="n">thread</span> <span class="ow">is</span> <span class="n">ready</span> <span class="n">to</span> <span class="n">call</span> <span class="n">the</span> <span class="n">Python</span>
+   <span class="n">C</span> <span class="n">API</span><span class="p">,</span> <span class="n">regardless</span> <span class="n">of</span> <span class="n">the</span> <span class="n">current</span> <span class="n">state</span> <span class="n">of</span> <span class="n">Python</span><span class="p">,</span> <span class="ow">or</span> <span class="n">of</span> <span class="n">its</span>
+   <span class="n">thread</span> <span class="n">lock</span><span class="o">.</span>  <span class="n">This</span> <span class="n">may</span> <span class="n">be</span> <span class="n">called</span> <span class="k">as</span> <span class="n">many</span> <span class="n">times</span> <span class="k">as</span> <span class="n">desired</span>
+   <span class="n">by</span> <span class="n">a</span> <span class="n">thread</span> <span class="n">so</span> <span class="n">long</span> <span class="k">as</span> <span class="n">each</span> <span class="n">call</span> <span class="ow">is</span> <span class="n">matched</span> <span class="k">with</span> <span class="n">a</span> <span class="n">call</span> <span class="n">to</span>
+   <span class="n">PyGILState_Release</span><span class="p">()</span><span class="o">.</span>  <span class="n">In</span> <span class="n">general</span><span class="p">,</span> <span class="n">other</span> <span class="n">thread</span><span class="o">-</span><span class="n">state</span> <span class="n">APIs</span> <span class="n">may</span>
+   <span class="n">be</span> <span class="n">used</span> <span class="n">between</span> <span class="n">_Ensure</span><span class="p">()</span> <span class="ow">and</span> <span class="n">_Release</span><span class="p">()</span> <span class="n">calls</span><span class="p">,</span> <span class="n">so</span> <span class="n">long</span> <span class="k">as</span> <span class="n">the</span>
+   <span class="n">thread</span><span class="o">-</span><span class="n">state</span> <span class="ow">is</span> <span class="n">restored</span> <span class="n">to</span> <span class="n">its</span> <span class="n">previous</span> <span class="n">state</span> <span class="n">before</span> <span class="n">the</span> <span class="n">Release</span><span class="p">()</span><span class="o">.</span>
+   <span class="n">For</span> <span class="n">example</span><span class="p">,</span> <span class="n">normal</span> <span class="n">use</span> <span class="n">of</span> <span class="n">the</span> <span class="n">Py_BEGIN_ALLOW_THREADS</span><span class="o">/</span>
+   <span class="n">Py_END_ALLOW_THREADS</span> <span class="n">macros</span> <span class="n">are</span> <span class="n">acceptable</span><span class="o">.</span>
+
+   <span class="n">The</span> <span class="k">return</span> <span class="n">value</span> <span class="ow">is</span> <span class="n">an</span> <span class="n">opaque</span> <span class="s2">&quot;handle&quot;</span> <span class="n">to</span> <span class="n">the</span> <span class="n">thread</span> <span class="n">state</span> <span class="n">when</span>
+   <span class="n">PyGILState_Acquire</span><span class="p">()</span> <span class="n">was</span> <span class="n">called</span><span class="p">,</span> <span class="ow">and</span> <span class="n">must</span> <span class="n">be</span> <span class="n">passed</span> <span class="n">to</span>
+   <span class="n">PyGILState_Release</span><span class="p">()</span> <span class="n">to</span> <span class="n">ensure</span> <span class="n">Python</span> <span class="ow">is</span> <span class="n">left</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">same</span> <span class="n">state</span><span class="o">.</span> <span class="n">Even</span>
+   <span class="n">though</span> <span class="n">recursive</span> <span class="n">calls</span> <span class="n">are</span> <span class="n">allowed</span><span class="p">,</span> <span class="n">these</span> <span class="n">handles</span> <span class="n">can</span> <span class="o">*</span><span class="ow">not</span><span class="o">*</span> <span class="n">be</span>
+   <span class="n">shared</span> <span class="o">-</span> <span class="n">each</span> <span class="n">unique</span> <span class="n">call</span> <span class="n">to</span> <span class="n">PyGILState_Ensure</span> <span class="n">must</span> <span class="n">save</span> <span class="n">the</span> <span class="n">handle</span>
+   <span class="k">for</span> <span class="n">its</span> <span class="n">call</span> <span class="n">to</span> <span class="n">PyGILState_Release</span><span class="o">.</span>
+
+   <span class="n">When</span> <span class="n">the</span> <span class="n">function</span> <span class="n">returns</span><span class="p">,</span> <span class="n">the</span> <span class="n">current</span> <span class="n">thread</span> <span class="n">will</span> <span class="n">hold</span> <span class="n">the</span> <span class="n">GIL</span><span class="o">.</span>
+
+   <span class="n">Failure</span> <span class="ow">is</span> <span class="n">a</span> <span class="n">fatal</span> <span class="n">error</span><span class="o">.</span>
+<span class="o">*/</span>
+<span class="n">PyAPI_FUNC</span><span class="p">(</span><span class="n">PyGILState_STATE</span><span class="p">)</span> <span class="n">PyGILState_Ensure</span><span class="p">(</span><span class="n">void</span><span class="p">);</span>
+
+<span class="o">/*</span> <span class="n">Release</span> <span class="nb">any</span> <span class="n">resources</span> <span class="n">previously</span> <span class="n">acquired</span><span class="o">.</span>  <span class="n">After</span> <span class="n">this</span> <span class="n">call</span><span class="p">,</span> <span class="n">Python</span><span class="s1">&#39;s</span>
+   <span class="n">state</span> <span class="n">will</span> <span class="n">be</span> <span class="n">the</span> <span class="n">same</span> <span class="k">as</span> <span class="n">it</span> <span class="n">was</span> <span class="n">prior</span> <span class="n">to</span> <span class="n">the</span> <span class="n">corresponding</span>
+   <span class="n">PyGILState_Acquire</span> <span class="n">call</span> <span class="p">(</span><span class="n">but</span> <span class="n">generally</span> <span class="n">this</span> <span class="n">state</span> <span class="n">will</span> <span class="n">be</span> <span class="n">unknown</span> <span class="n">to</span>
+   <span class="n">the</span> <span class="n">caller</span><span class="p">,</span> <span class="n">hence</span> <span class="n">the</span> <span class="n">use</span> <span class="n">of</span> <span class="n">the</span> <span class="n">GILState</span> <span class="n">API</span><span class="o">.</span><span class="p">)</span>
+
+   <span class="n">Every</span> <span class="n">call</span> <span class="n">to</span> <span class="n">PyGILState_Ensure</span> <span class="n">must</span> <span class="n">be</span> <span class="n">matched</span> <span class="n">by</span> <span class="n">a</span> <span class="n">call</span> <span class="n">to</span>
+   <span class="n">PyGILState_Release</span> <span class="n">on</span> <span class="n">the</span> <span class="n">same</span> <span class="n">thread</span><span class="o">.</span>
+<span class="o">*/</span>
+<span class="n">PyAPI_FUNC</span><span class="p">(</span><span class="n">void</span><span class="p">)</span> <span class="n">PyGILState_Release</span><span class="p">(</span><span class="n">PyGILState_STATE</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Common usage will be:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">void</span> <span class="n">SomeCFunction</span><span class="p">(</span><span class="n">void</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="o">/*</span> <span class="n">ensure</span> <span class="n">we</span> <span class="n">hold</span> <span class="n">the</span> <span class="n">lock</span> <span class="o">*/</span>
+    <span class="n">PyGILState_STATE</span> <span class="n">state</span> <span class="o">=</span> <span class="n">PyGILState_Ensure</span><span class="p">();</span>
+    <span class="o">/*</span> <span class="n">Use</span> <span class="n">the</span> <span class="n">Python</span> <span class="n">API</span> <span class="o">*/</span>
+    <span class="o">...</span>
+    <span class="o">/*</span> <span class="n">Restore</span> <span class="n">the</span> <span class="n">state</span> <span class="n">of</span> <span class="n">Python</span> <span class="o">*/</span>
+    <span class="n">PyGILState_Release</span><span class="p">(</span><span class="n">state</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="design-and-implementation">
+<h2><a class="toc-backref" href="#id7">Design and Implementation</a><a class="headerlink" href="#design-and-implementation" title="Permalink to this headline">¶</a></h2>
+<p>The general operation of <code class="docutils literal notranslate"><span class="pre">PyGILState_Ensure()</span></code> will be:</p>
+<ul class="simple">
+<li>assert Python is initialized.</li>
+<li>Get a <code class="docutils literal notranslate"><span class="pre">PyThreadState</span></code> for the current thread, creating and saving
+if necessary.</li>
+<li>remember the current state of the lock (owned/not owned)</li>
+<li>If the current state does not own the GIL, acquire it.</li>
+<li>Increment a counter for how many calls to <code class="docutils literal notranslate"><span class="pre">PyGILState_Ensure</span></code> have been
+made on the current thread.</li>
+<li>return</li>
+</ul>
+<p>The general operation of <code class="docutils literal notranslate"><span class="pre">PyGILState_Release()</span></code> will be:</p>
+<ul class="simple">
+<li>assert our thread currently holds the lock.</li>
+<li>If old state indicates lock was previously unlocked, release GIL.</li>
+<li>Decrement the <code class="docutils literal notranslate"><span class="pre">PyGILState_Ensure</span></code> counter for the thread.</li>
+<li>If counter == 0:<ul>
+<li>release and delete the <code class="docutils literal notranslate"><span class="pre">PyThreadState</span></code>.</li>
+<li>forget the <code class="docutils literal notranslate"><span class="pre">ThreadState</span></code> as being owned by the thread.</li>
+</ul>
+</li>
+<li>return</li>
+</ul>
+<p>It is assumed that it is an error if two discrete <code class="docutils literal notranslate"><span class="pre">PyThreadStates</span></code>
+are used for a single thread.  Comments in <code class="docutils literal notranslate"><span class="pre">pystate.h</span></code> (“State
+unique per thread”) support this view, although it is never
+directly stated.  Thus, this will require some implementation of
+Thread Local Storage.  Fortunately, a platform independent
+implementation of Thread Local Storage already exists in the
+Python source tree, in the SGI threading port.  This code will be
+integrated into the platform independent Python core, but in such
+a way that platforms can provide a more optimal implementation if
+desired.</p>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id8">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>An implementation of this proposal can be found at
+<a class="reference external" href="https://bugs.python.org/issue684256">https://bugs.python.org/issue684256</a></p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id9">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>David Abrahams, Extension modules, Threading, and the GIL
+<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2002-December/031424.html">https://mail.python.org/pipermail/python-dev/2002-December/031424.html</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id10">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0311.txt">https://github.com/python/peps/blob/master/pep-0311.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0311.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0310.html">PEP 0310</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0312.html">PEP 0312</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 311 – Simplified Global Interpreter Lock Acquisition for Extensions</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#limitations-and-exclusions">Limitations and Exclusions</a></li>
+<li><a class="reference internal" href="#proposal">Proposal</a></li>
+<li><a class="reference internal" href="#design-and-implementation">Design and Implementation</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

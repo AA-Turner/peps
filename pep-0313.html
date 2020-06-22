@@ -1,0 +1,233 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 313 – Adding Roman Numeral Literals to Python &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 314 – Metadata for Python Software Packages v1.1" href="pep-0314.html" />
+    <link rel="prev" title="PEP 312 – Simple Implicit Lambda" href="pep-0312.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 313 – Adding Roman Numeral Literals to Python</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-313-adding-roman-numeral-literals-to-python">
+<h1 class="page-title">PEP 313 – Adding Roman Numeral Literals to Python<a class="headerlink" href="#pep-313-adding-roman-numeral-literals-to-python" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">313</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Adding Roman Numeral Literals to Python</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Mike Meyer &lt;mwm&#32;&#97;t&#32;mired.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Rejected</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">01-Apr-2003</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.4</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id7">Abstract</a></li>
+<li><a class="reference internal" href="#bdfl-pronouncement" id="id8">BDFL Pronouncement</a></li>
+<li><a class="reference internal" href="#rationale" id="id9">Rationale</a></li>
+<li><a class="reference internal" href="#syntax-for-roman-literals" id="id10">Syntax for Roman literals</a></li>
+<li><a class="reference internal" href="#built-in-roman-function" id="id11">Built-In “roman” Function</a></li>
+<li><a class="reference internal" href="#compatibility-issues" id="id12">Compatibility Issues</a></li>
+<li><a class="reference internal" href="#references" id="id13">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id14">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id7">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP (also known as PEP CCCXIII) proposes adding Roman
+numerals as a literal type.  It also proposes the new built-in
+function “roman”, which converts an object to an integer, then
+converts the integer to a string that is the Roman numeral literal
+equivalent to the integer.</p>
+</div>
+<div class="section" id="bdfl-pronouncement">
+<h2><a class="toc-backref" href="#id8">BDFL Pronouncement</a><a class="headerlink" href="#bdfl-pronouncement" title="Permalink to this headline">¶</a></h2>
+<p>This PEP is rejected.  While the majority of Python users deemed this
+to be a nice-to-have feature, the community was unable to reach a
+consensus on whether nine should be represented as IX, the modern
+form, or VIIII, the classic form.  Likewise, no agreement was
+reached on whether MXM or MCMXC would be considered a well-formed
+representation of 1990.  A vocal minority of users has also requested
+support for lower-cased numerals for use in (i) powerpoint slides,
+(ii) academic work, and (iii) Perl documentation.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id9">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Roman numerals are used in a number of areas, and adding them to
+Python as literals would make computations in those areas easier.
+For instance, Super Bowls are counted with Roman numerals, and many
+older movies have copyright dates in Roman numerals.  Further,
+LISP provides a Roman numerals literal package, so adding Roman
+numerals to Python will help ease the LISP-envy sometimes seen in
+comp.lang.python.  Besides, the author thinks this is the easiest
+way to get his name on a PEP.</p>
+</div>
+<div class="section" id="syntax-for-roman-literals">
+<h2><a class="toc-backref" href="#id10">Syntax for Roman literals</a><a class="headerlink" href="#syntax-for-roman-literals" title="Permalink to this headline">¶</a></h2>
+<p>Roman numeral literals will consist of the characters M, D, C, L,
+X, V and I, and only those characters.  They must be in upper
+case, and represent an integer with the following rules:</p>
+<ol class="arabic simple">
+<li>Except as noted below, they must appear in the order M, D, C,
+L, X, V then I.  Each occurrence of each character adds 1000, 500,
+100, 50, 10, 5 and 1 to the value of the literal, respectively.</li>
+<li>Only one D, V or L may appear in any given literal.</li>
+<li>At most three each of Is, Xs and Cs may appear consecutively
+in any given literal.</li>
+<li>A single I may appear immediately to the left of the single V,
+followed by no Is, and adds 4 to the value of the literal.</li>
+<li>A single I may likewise appear before the last X, followed by
+no Is or Vs, and adds 9 to the value.</li>
+<li>X is to L and C as I is to V and X, except the values are 40
+and 90, respectively.</li>
+<li>C is to D and M as I is to V and X, except the values are 400
+and 900, respectively.</li>
+</ol>
+<p>Any literal composed entirely of M, D, C, L, X, V and I characters
+that does not follow this format will raise a syntax error,
+because explicit is better than implicit.</p>
+</div>
+<div class="section" id="built-in-roman-function">
+<h2><a class="toc-backref" href="#id11">Built-In “roman” Function</a><a class="headerlink" href="#built-in-roman-function" title="Permalink to this headline">¶</a></h2>
+<p>The new built-in function “roman” will aide the translation from
+integers to Roman numeral literals.  It will accept a single
+object as an argument, and return a string containing the literal
+of the same value.  If the argument is not an integer or a
+rational (see PEP 239 <a class="footnote-reference brackets" href="#id4" id="id1">1</a>) it will passed through the existing
+built-in “int” to obtain the value.  This may cause a loss of
+information if the object was a float.  If the object is a
+rational, then the result will be formatted as a rational literal
+(see PEP 240 <a class="footnote-reference brackets" href="#id5" id="id2">2</a>) with the integers in the string being Roman
+numeral literals.</p>
+</div>
+<div class="section" id="compatibility-issues">
+<h2><a class="toc-backref" href="#id12">Compatibility Issues</a><a class="headerlink" href="#compatibility-issues" title="Permalink to this headline">¶</a></h2>
+<p>No new keywords are introduced by this proposal.  Programs that
+use variable names that are all upper case and contain only the
+characters M, D, C, L, X, V and I will be affected by the new
+literals.  These programs will now have syntax errors when those
+variables are assigned, and either syntax errors or subtle bugs
+when those variables are referenced in expressions.  Since such
+variable names violate PEP 8 <a class="footnote-reference brackets" href="#id6" id="id3">3</a>, the code is already broken, it
+just wasn’t generating exceptions. This proposal corrects that
+oversight in the language.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id13">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id4"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>PEP 239, Adding a Rational Type to Python
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0239/">http://www.python.org/dev/peps/pep-0239/</a></dd>
+<dt class="label" id="id5"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>PEP 240, Adding a Rational Literal to Python
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0240/">http://www.python.org/dev/peps/pep-0240/</a></dd>
+<dt class="label" id="id6"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd>PEP 8, Style Guide for Python Code
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0008/">http://www.python.org/dev/peps/pep-0008/</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id14">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0313.txt">https://github.com/python/peps/blob/master/pep-0313.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0313.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0312.html">PEP 0312</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0314.html">PEP 0314</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 313 – Adding Roman Numeral Literals to Python</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#bdfl-pronouncement">BDFL Pronouncement</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#syntax-for-roman-literals">Syntax for Roman literals</a></li>
+<li><a class="reference internal" href="#built-in-roman-function">Built-In “roman” Function</a></li>
+<li><a class="reference internal" href="#compatibility-issues">Compatibility Issues</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

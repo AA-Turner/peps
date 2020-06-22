@@ -1,0 +1,264 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 552 – Deterministic pycs &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 553 – Built-in breakpoint()" href="pep-0553.html" />
+    <link rel="prev" title="PEP 551 – Security transparency in the Python runtime" href="pep-0551.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 552 – Deterministic pycs</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-552-deterministic-pycs">
+<h1 class="page-title">PEP 552 – Deterministic pycs<a class="headerlink" href="#pep-552-deterministic-pycs" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">552</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Deterministic pycs</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Benjamin Peterson &lt;benjamin&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">2017-09-04</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.7</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">2017-09-07</dd>
+<dt class="field-odd">Resolution</dt>
+<dd class="field-odd"><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2017-September/149649.html">https://mail.python.org/pipermail/python-dev/2017-September/149649.html</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id13">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id14">Rationale</a></li>
+<li><a class="reference internal" href="#specification" id="id15">Specification</a></li>
+<li><a class="reference internal" href="#references" id="id16">References</a></li>
+<li><a class="reference internal" href="#credits" id="id17">Credits</a></li>
+<li><a class="reference internal" href="#copyright" id="id18">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id13">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes an extension to the pyc format to make it more deterministic.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id14">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>A <a class="reference external" href="https://reproducible-builds.org/">reproducible build</a> <a class="footnote-reference brackets" href="#id3" id="id4">3</a> is one where the same byte-for-byte output is generated
+every time the same sources are built—even across different machines (naturally
+subject to the requirement that they have rather similar environments
+set up). Reproducibility is important for security. It is also a key concept in
+content-based build systems such as <a class="reference external" href="https://bazel.build/">Bazel</a> <a class="footnote-reference brackets" href="#id5" id="id6">4</a>, which are most effective when the
+output files’ contents are a deterministic function of the input files’
+contents.</p>
+<p>The current Python pyc format is the marshaled code object of the module
+prefixed by a <a class="reference external" href="https://docs.python.org/3/library/importlib.html#importlib.util.MAGIC_NUMBER">magic number</a> <a class="footnote-reference brackets" href="#id11" id="id12">7</a>, the source timestamp, and the source file
+size. The presence of a source timestamp means that a pyc is not a deterministic
+function of the input file’s contents—it also depends on volatile metadata, the
+mtime of the source. Thus, pycs are a barrier to proper reproducibility.</p>
+<p>Distributors of Python code are currently stuck with the options of</p>
+<ol class="arabic simple">
+<li>not distributing pycs and losing the caching advantages</li>
+<li>distributing pycs and losing reproducibility</li>
+<li>carefully giving all Python source files a deterministic timestamp
+(see, for example, <a class="reference external" href="https://github.com/python/cpython/pull/296">https://github.com/python/cpython/pull/296</a>)</li>
+<li>doing a complicated mixture of 1. and 2. like generating pycs at installation
+time</li>
+</ol>
+<p>None of these options are very attractive. This PEP proposes allowing the
+timestamp to be replaced with a deterministic hash. The current timestamp
+invalidation method will remain the default, though. Despite its nondeterminism,
+timestamp invalidation works well for many workflows and usecases. The
+hash-based pyc format can impose the cost of reading and hashing every source
+file, which is more expensive than simply checking timestamps. Thus, for now, we
+expect it to be used mainly by distributors and power use cases.</p>
+<p>(Note there are other problems <a class="footnote-reference brackets" href="#frozensets" id="id1">1</a> <a class="footnote-reference brackets" href="#interning" id="id2">2</a> we do not
+address here that can make pycs non-deterministic.)</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id15">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>The pyc header currently consists of 3 32-bit words. We will expand it to 4. The
+first word will continue to be the magic number, versioning the bytecode and pyc
+format. The second word, conceptually the new word, will be a bit field. The
+interpretation of the rest of the header and invalidation behavior of the pyc
+depends on the contents of the bit field.</p>
+<p>If the bit field is 0, the pyc is a traditional timestamp-based pyc. I.e., the
+third and forth words will be the timestamp and file size respectively, and
+invalidation will be done by comparing the metadata of the source file with that
+in the header.</p>
+<p>If the lowest bit of the bit field is set, the pyc is a hash-based pyc. We call
+the second lowest bit the <code class="docutils literal notranslate"><span class="pre">check_source</span></code> flag. Following the bit field is a
+64-bit hash of the source file. We will use a <a class="reference external" href="https://131002.net/siphash/">SipHash</a> <a class="footnote-reference brackets" href="#id9" id="id10">6</a> with a hardcoded key of
+the contents of the source file. Another fast hash like MD5 or <a class="reference external" href="https://blake2.net/">BLAKE2</a> <a class="footnote-reference brackets" href="#id7" id="id8">5</a> would
+also work. We choose SipHash because Python already has a builtin implementation
+of it from <span class="target" id="index-0"></span><a class="pep reference external" href="./pep-0456.html"><strong>PEP 456</strong></a>, although an interface that allows picking the SipHash key
+must be exposed to Python. Security of the hash is not a concern, though we pass
+over completely-broken hashes like MD5 to ease auditing of Python in controlled
+environments.</p>
+<p>When Python encounters a hash-based pyc, its behavior depends on the setting of
+the <code class="docutils literal notranslate"><span class="pre">check_source</span></code> flag. If the <code class="docutils literal notranslate"><span class="pre">check_source</span></code> flag is set, Python will
+determine the validity of the pyc by hashing the source file and comparing the
+hash with the expected hash in the pyc. If the pyc needs to be regenerated, it
+will be regenerated as a hash-based pyc again with the <code class="docutils literal notranslate"><span class="pre">check_source</span></code> flag
+set.</p>
+<p>For hash-based pycs with the <code class="docutils literal notranslate"><span class="pre">check_source</span></code> unset, Python will simply load the
+pyc without checking the hash of the source file. The expectation in this case
+is that some external system (e.g., the local Linux distribution’s package
+manager) is responsible for keeping pycs up to date, so Python itself doesn’t
+have to check. Even when validation is disabled, the hash field should be set
+correctly, so out-of-band consistency checkers can verify the up-to-dateness of
+the pyc. Note also that the <span class="target" id="index-1"></span><a class="pep reference external" href="./pep-3147.html"><strong>PEP 3147</strong></a> edict that pycs without corresponding
+source files not be loaded will still be enforced for hash-based pycs.</p>
+<p>The programmatic APIs of <code class="docutils literal notranslate"><span class="pre">py_compile</span></code> and <code class="docutils literal notranslate"><span class="pre">compileall</span></code> will support
+generation of hash-based pycs. Principally, <code class="docutils literal notranslate"><span class="pre">py_compile</span></code> will define a new
+enumeration corresponding to all the available pyc invalidation modules:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">PycInvalidationMode</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">TIMESTAMP</span>
+    <span class="n">CHECKED_HASH</span>
+    <span class="n">UNCHECKED_HASH</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">py_compile.compile</span></code>, <code class="docutils literal notranslate"><span class="pre">compileall.compile_dir</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">compileall.compile_file</span></code> will all gain an <code class="docutils literal notranslate"><span class="pre">invalidation_mode</span></code> parameter,
+which accepts a value of the <code class="docutils literal notranslate"><span class="pre">PycInvalidationMode</span></code> enumeration.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">compileall</span></code> tool will be extended with a command new option,
+<code class="docutils literal notranslate"><span class="pre">--invalidation-mode</span></code> to generate hash-based pycs with and without the
+<code class="docutils literal notranslate"><span class="pre">check_source</span></code> bit set. <code class="docutils literal notranslate"><span class="pre">--invalidation-mode</span></code> will be a tristate option
+taking values <code class="docutils literal notranslate"><span class="pre">timestamp</span></code> (the default), <code class="docutils literal notranslate"><span class="pre">checked-hash</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">unchecked-hash</span></code> corresponding to the values of <code class="docutils literal notranslate"><span class="pre">PycInvalidationMode</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">importlib.util</span></code> will be extended with a <code class="docutils literal notranslate"><span class="pre">source_hash(source)</span></code> function that
+computes the hash used by the pyc writing code for a bytestring <strong>source</strong>.</p>
+<p>Runtime configuration of hash-based pyc invalidation will be facilitated by a
+new <code class="docutils literal notranslate"><span class="pre">--check-hash-based-pycs</span></code> interpreter option. This is a tristate option,
+which may take 3 values: <code class="docutils literal notranslate"><span class="pre">default</span></code>, <code class="docutils literal notranslate"><span class="pre">always</span></code>, and <code class="docutils literal notranslate"><span class="pre">never</span></code>. The default
+value, <code class="docutils literal notranslate"><span class="pre">default</span></code>, means the <code class="docutils literal notranslate"><span class="pre">check_source</span></code> flag in hash-based pycs
+determines invalidation as described above. <code class="docutils literal notranslate"><span class="pre">always</span></code> causes the interpreter to
+hash the source file for invalidation regardless of value of <code class="docutils literal notranslate"><span class="pre">check_source</span></code>
+bit. <code class="docutils literal notranslate"><span class="pre">never</span></code> causes the interpreter to always assume hash-based pycs are
+valid. When <code class="docutils literal notranslate"><span class="pre">--check-hash-based-pycs=never</span></code> is in effect, unchecked hash-based
+pycs will be regenerated as unchecked hash-based pycs. Timestamp-based pycs are
+unaffected by <code class="docutils literal notranslate"><span class="pre">--check-hash-based-pycs</span></code>.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id16">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="frozensets"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><a class="reference external" href="http://benno.id.au/blog/2013/01/15/python-determinism">http://benno.id.au/blog/2013/01/15/python-determinism</a></dd>
+<dt class="label" id="interning"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd><a class="reference external" href="http://bugzilla.opensuse.org/show_bug.cgi?id=1049186">http://bugzilla.opensuse.org/show_bug.cgi?id=1049186</a></dd>
+</dl>
+<dl class="footnote brackets">
+<dt class="label" id="id3"><span class="brackets"><a class="fn-backref" href="#id4">3</a></span></dt>
+<dd><a class="reference external" href="https://reproducible-builds.org/">https://reproducible-builds.org/</a></dd>
+<dt class="label" id="id5"><span class="brackets"><a class="fn-backref" href="#id6">4</a></span></dt>
+<dd><a class="reference external" href="https://bazel.build/">https://bazel.build/</a></dd>
+<dt class="label" id="id7"><span class="brackets"><a class="fn-backref" href="#id8">5</a></span></dt>
+<dd><a class="reference external" href="https://blake2.net/">https://blake2.net/</a></dd>
+<dt class="label" id="id9"><span class="brackets"><a class="fn-backref" href="#id10">6</a></span></dt>
+<dd><a class="reference external" href="https://131002.net/siphash/">https://131002.net/siphash/</a></dd>
+<dt class="label" id="id11"><span class="brackets"><a class="fn-backref" href="#id12">7</a></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/library/importlib.html#importlib.util.MAGIC_NUMBER">https://docs.python.org/3/library/importlib.html#importlib.util.MAGIC_NUMBER</a></dd>
+</dl>
+</div>
+<div class="section" id="credits">
+<h2><a class="toc-backref" href="#id17">Credits</a><a class="headerlink" href="#credits" title="Permalink to this headline">¶</a></h2>
+<p>The author would like to thank Gregory P. Smith, Christian Heimes, and Steve
+Dower for useful conversations on the topic of this PEP.</p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id18">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0552.rst">https://github.com/python/peps/blob/master/pep-0552.rst</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0552.rst.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0551.html">PEP 0551</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0553.html">PEP 0553</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 552 – Deterministic pycs</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#credits">Credits</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

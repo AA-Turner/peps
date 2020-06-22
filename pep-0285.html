@@ -1,0 +1,518 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 285 – Adding a bool type &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 286 – Enhanced Argument Tuples" href="pep-0286.html" />
+    <link rel="prev" title="PEP 284 – Integer for-loops" href="pep-0284.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 285 – Adding a bool type</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-285-adding-a-bool-type">
+<h1 class="page-title">PEP 285 – Adding a bool type<a class="headerlink" href="#pep-285-adding-a-bool-type" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">285</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Adding a bool type</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">guido&#32;&#97;t&#32;python.org (Guido van Rossum)</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">8-Mar-2002</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.3</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">8-Mar-2002, 30-Mar-2002, 3-Apr-2002</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id2">Abstract</a></li>
+<li><a class="reference internal" href="#review" id="id3">Review</a></li>
+<li><a class="reference internal" href="#rationale" id="id4">Rationale</a></li>
+<li><a class="reference internal" href="#specification" id="id5">Specification</a></li>
+<li><a class="reference internal" href="#c-api" id="id6">C API</a></li>
+<li><a class="reference internal" href="#clarification" id="id7">Clarification</a></li>
+<li><a class="reference internal" href="#compatibility" id="id8">Compatibility</a></li>
+<li><a class="reference internal" href="#resolved-issues" id="id9">Resolved Issues</a></li>
+<li><a class="reference internal" href="#implementation" id="id10">Implementation</a></li>
+<li><a class="reference internal" href="#copyright" id="id11">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id2">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes the introduction of a new built-in type, bool,
+with two constants, <code class="docutils literal notranslate"><span class="pre">False</span></code> and <code class="docutils literal notranslate"><span class="pre">True</span></code>.  The bool type would be a
+straightforward subtype (in C) of the int type, and the values
+<code class="docutils literal notranslate"><span class="pre">False</span></code> and <code class="docutils literal notranslate"><span class="pre">True</span></code> would behave like 0 and 1 in most respects (for
+example, <code class="docutils literal notranslate"><span class="pre">False==0</span></code> and <code class="docutils literal notranslate"><span class="pre">True==1</span></code> would be true) except <code class="docutils literal notranslate"><span class="pre">repr()</span></code> and
+<code class="docutils literal notranslate"><span class="pre">str()</span></code>.  All built-in operations that conceptually return a Boolean
+result will be changed to return <code class="docutils literal notranslate"><span class="pre">False</span></code> or <code class="docutils literal notranslate"><span class="pre">True</span></code> instead of 0 or 1;
+for example, comparisons, the “not” operator, and predicates like
+<code class="docutils literal notranslate"><span class="pre">isinstance()</span></code>.</p>
+</div>
+<div class="section" id="review">
+<h2><a class="toc-backref" href="#id3">Review</a><a class="headerlink" href="#review" title="Permalink to this headline">¶</a></h2>
+<p>I’ve collected enough feedback to last me a lifetime, so I declare
+the review period officially OVER.  I had Chinese food today; my
+fortune cookie said “Strong and bitter words indicate a weak
+cause.”  It reminded me of some of the posts against this
+PEP… :-)</p>
+<p>Anyway, here are my BDFL pronouncements.  (Executive summary: I’m
+not changing a thing; all variants are rejected.)</p>
+<ol class="arabic">
+<li><p>Should this PEP be accepted?</p>
+<p>=&gt; Yes.</p>
+<p>There have been many arguments against the PEP.  Many of them
+were based on misunderstandings.  I’ve tried to clarify some of
+the most common misunderstandings below in the main text of the
+PEP.  The only issue that weighs at all for me is the tendency
+of newbies to write “if x == True” where “if x” would suffice.
+More about that below too.  I think this is not a sufficient
+reason to reject the PEP.</p>
+</li>
+<li><p>Should <code class="docutils literal notranslate"><span class="pre">str(True)</span></code> return “True” or “1”?  “1” might reduce
+backwards compatibility problems, but looks strange.
+(<code class="docutils literal notranslate"><span class="pre">repr(True)</span></code> would always return “True”.)</p>
+<p>=&gt; “True”.</p>
+<p>Almost all reviewers agree with this.</p>
+</li>
+<li><p>Should the constants be called ‘True’ and ‘False’ (similar to
+None) or ‘true’ and ‘false’ (as in C++, Java and C99)?</p>
+<p>=&gt; True and False.</p>
+<p>Most reviewers agree that consistency within Python is more
+important than consistency with other languages.</p>
+</li>
+<li><p>Should we strive to eliminate non-Boolean operations on bools
+in the future, through suitable warnings, so that for example
+True+1 would eventually (in Python 3000) be illegal?</p>
+<p>=&gt; No.</p>
+<p>There’s a small but vocal minority that would prefer to see
+“textbook” bools that don’t support arithmetic operations at
+all, but most reviewers agree with me that bools should always
+allow arithmetic operations.</p>
+</li>
+<li><p>Should <code class="docutils literal notranslate"><span class="pre">operator.truth(x)</span></code> return an int or a bool?</p>
+<p>=&gt; bool.</p>
+<p>Tim Peters believes it should return an int, but almost all
+other reviewers agree that it should return a bool.  My
+rationale: <code class="docutils literal notranslate"><span class="pre">operator.truth()</span></code> exists to force a Boolean context
+on its argument (it calls the C API <code class="docutils literal notranslate"><span class="pre">PyObject_IsTrue())</span></code>.
+Whether the outcome is reported as int or bool is secondary; if
+bool exists there’s no reason not to use it.  (Under the PEP,
+<code class="docutils literal notranslate"><span class="pre">operator.truth()</span></code> now becomes an alias for <code class="docutils literal notranslate"><span class="pre">bool()</span></code>; that’s fine.)</p>
+</li>
+<li><p>Should bool inherit from int?</p>
+<p>=&gt; Yes.</p>
+<p>In an ideal world, bool might be better implemented as a
+separate integer type that knows how to perform mixed-mode
+arithmetic.  However, inheriting bool from int eases the
+implementation enormously (in part since all C code that calls
+<code class="docutils literal notranslate"><span class="pre">PyInt_Check()</span></code> will continue to work – this returns true for
+subclasses of int).  Also, I believe this is right in terms of
+substitutability: code that requires an int can be fed a bool
+and it will behave the same as 0 or 1.  Code that requires a
+bool may not work when it is given an int; for example, 3 &amp; 4
+is 0, but both 3 and 4 are true when considered as truth
+values.</p>
+</li>
+<li><p>Should the name ‘bool’ be changed?</p>
+<p>=&gt; No.</p>
+<p>Some reviewers have argued for boolean instead of bool, because
+this would be easier to understand (novices may have heard of
+Boolean algebra but may not make the connection with bool) or
+because they hate abbreviations.  My take: Python uses
+abbreviations judiciously (like ‘def’, ‘int’, ‘dict’) and I
+don’t think these are a burden to understanding.  To a newbie,
+it doesn’t matter whether it’s called a waffle or a bool; it’s
+a new word, and they learn quickly what it means.</p>
+<p>One reviewer has argued to make the name ‘truth’.  I find this
+an unattractive name, and would actually prefer to reserve this
+term (in documentation) for the more abstract concept of truth
+values that already exists in Python.  For example: “when a
+container is interpreted as a truth value, an empty container
+is considered false and a non-empty one is considered true.”</p>
+</li>
+<li><p>Should we strive to require that Boolean operations (like “if”,
+“and”, “not”) have a bool as an argument in the future, so that
+for example “if []:” would become illegal and would have to be
+written as “if bool([]):” ???</p>
+<p>=&gt; No!!!</p>
+<p>Some people believe that this is how a language with a textbook
+Boolean type should behave.  Because it was brought up, others
+have worried that I might agree with this position.  Let me
+make my position on this quite clear.  This is not part of the
+PEP’s motivation and I don’t intend to make this change.  (See
+also the section “Clarification” below.)</p>
+</li>
+</ol>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id4">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Most languages eventually grow a Boolean type; even C99 (the new
+and improved C standard, not yet widely adopted) has one.</p>
+<p>Many programmers apparently feel the need for a Boolean type; most
+Python documentation contains a bit of an apology for the absence
+of a Boolean type.  I’ve seen lots of modules that defined
+constants “False=0” and “True=1” (or similar) at the top and used
+those.  The problem with this is that everybody does it
+differently.  For example, should you use “FALSE”, “false”,
+“False”, “F” or even “f”?  And should false be the value zero or
+None, or perhaps a truth value of a different type that will print
+as “true” or “false”?  Adding a standard bool type to the language
+resolves those issues.</p>
+<p>Some external libraries (like databases and RPC packages) need to
+be able to distinguish between Boolean and integral values, and
+while it’s usually possible to craft a solution, it would be
+easier if the language offered a standard Boolean type.  This also
+applies to Jython: some Java classes have separately overloaded
+methods or constructors for int and boolean arguments.  The bool
+type can be used to select the boolean variant.  (The same is
+apparently the case for some COM interfaces.)</p>
+<p>The standard bool type can also serve as a way to force a value to
+be interpreted as a Boolean, which can be used to normalize
+Boolean values.  When a Boolean value needs to be normalized to
+one of two values, <code class="docutils literal notranslate"><span class="pre">bool(x)</span></code> is much clearer than “not not x” and
+much more concise than</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">x</span><span class="p">:</span>
+    <span class="k">return</span> <span class="mi">1</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="k">return</span> <span class="mi">0</span>
+</pre></div>
+</div>
+<p>Here are some arguments derived from teaching Python.  When
+showing people comparison operators etc. in the interactive shell,
+I think this is a bit ugly:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="mi">13</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="mi">12</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">&gt;</span> <span class="n">b</span>
+<span class="go">1</span>
+<span class="go">&gt;&gt;&gt;</span>
+</pre></div>
+</div>
+<p>If this was:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">&gt;</span> <span class="n">b</span>
+<span class="go">True</span>
+<span class="go">&gt;&gt;&gt;</span>
+</pre></div>
+</div>
+<p>it would require a millisecond less thinking each time a 0 or 1
+was printed.</p>
+<p>There’s also the issue (which I’ve seen baffling even experienced
+Pythonistas who had been away from the language for a while) that
+if you see:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">cmp</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+<span class="go">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">cmp</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>
+<span class="go">0</span>
+<span class="go">&gt;&gt;&gt;</span>
+</pre></div>
+</div>
+<p>you might be tempted to believe that <code class="docutils literal notranslate"><span class="pre">cmp()</span></code> also returned a truth
+value, whereas in reality it can return three different values
+<code class="docutils literal notranslate"><span class="pre">(-1,</span> <span class="pre">0,</span> <span class="pre">1)</span></code>.  If ints were not (normally) used to represent
+Booleans results, this would stand out much more clearly as
+something completely different.</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id5">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>The following Python code specifies most of the properties of the
+new type:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">bool</span><span class="p">(</span><span class="nb">int</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">val</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="c1"># This constructor always returns an existing instance</span>
+        <span class="k">if</span> <span class="n">val</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;True&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;False&quot;</span>
+
+    <span class="fm">__str__</span> <span class="o">=</span> <span class="fm">__repr__</span>
+
+    <span class="k">def</span> <span class="fm">__and__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">&amp;</span> <span class="nb">int</span><span class="p">(</span><span class="n">other</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">int</span><span class="o">.</span><span class="fm">__and__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">)</span>
+
+    <span class="fm">__rand__</span> <span class="o">=</span> <span class="fm">__and__</span>
+
+    <span class="k">def</span> <span class="fm">__or__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">|</span> <span class="nb">int</span><span class="p">(</span><span class="n">other</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">int</span><span class="o">.</span><span class="fm">__or__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">)</span>
+
+    <span class="fm">__ror__</span> <span class="o">=</span> <span class="fm">__or__</span>
+
+    <span class="k">def</span> <span class="fm">__xor__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">^</span> <span class="nb">int</span><span class="p">(</span><span class="n">other</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">int</span><span class="o">.</span><span class="fm">__xor__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">)</span>
+
+    <span class="fm">__rxor__</span> <span class="o">=</span> <span class="fm">__xor__</span>
+
+<span class="c1"># Bootstrap truth values through sheer willpower</span>
+<span class="kc">False</span> <span class="o">=</span> <span class="nb">int</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="nb">bool</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="kc">True</span> <span class="o">=</span> <span class="nb">int</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="nb">bool</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The values <code class="docutils literal notranslate"><span class="pre">False</span></code> and <code class="docutils literal notranslate"><span class="pre">True</span></code> will be singletons, like None.  Because
+the type has two values, perhaps these should be called
+“doubletons”?  The real implementation will not allow other
+instances of bool to be created.</p>
+<p><code class="docutils literal notranslate"><span class="pre">True</span></code> and <code class="docutils literal notranslate"><span class="pre">False</span></code> will properly round-trip through pickling and
+marshalling; for example <code class="docutils literal notranslate"><span class="pre">pickle.loads(pickle.dumps(True))</span></code> will
+return <code class="docutils literal notranslate"><span class="pre">True</span></code>, and so will <code class="docutils literal notranslate"><span class="pre">marshal.loads(marshal.dumps(True))</span></code>.</p>
+<p>All built-in operations that are defined to return a Boolean
+result will be changed to return <code class="docutils literal notranslate"><span class="pre">False</span></code> or <code class="docutils literal notranslate"><span class="pre">True</span></code> instead of 0 or 1.
+In particular, this affects comparisons (<code class="docutils literal notranslate"><span class="pre">&lt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;=</span></code>, <code class="docutils literal notranslate"><span class="pre">==</span></code>, <code class="docutils literal notranslate"><span class="pre">!=</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&gt;=</span></code>, is, is not, in, not in), the unary operator ‘not’, the built-in
+functions <code class="docutils literal notranslate"><span class="pre">callable()</span></code>, <code class="docutils literal notranslate"><span class="pre">hasattr()</span></code>, <code class="docutils literal notranslate"><span class="pre">isinstance()</span></code> and <code class="docutils literal notranslate"><span class="pre">issubclass()</span></code>,
+the dict method <code class="docutils literal notranslate"><span class="pre">has_key()</span></code>, the string and unicode methods
+<code class="docutils literal notranslate"><span class="pre">endswith()</span></code>, <code class="docutils literal notranslate"><span class="pre">isalnum()</span></code>, <code class="docutils literal notranslate"><span class="pre">isalpha()</span></code>, <code class="docutils literal notranslate"><span class="pre">isdigit()</span></code>, <code class="docutils literal notranslate"><span class="pre">islower()</span></code>, <code class="docutils literal notranslate"><span class="pre">isspace()</span></code>,
+<code class="docutils literal notranslate"><span class="pre">istitle()</span></code>, <code class="docutils literal notranslate"><span class="pre">isupper()</span></code>, and <code class="docutils literal notranslate"><span class="pre">startswith()</span></code>, the unicode methods
+<code class="docutils literal notranslate"><span class="pre">isdecimal()</span></code> and <code class="docutils literal notranslate"><span class="pre">isnumeric()</span></code>, and the ‘closed’ attribute of file
+objects.  The predicates in the operator module are also changed
+to return a bool, including <code class="docutils literal notranslate"><span class="pre">operator.truth()</span></code>.</p>
+<p>Because bool inherits from int, True+1 is valid and equals 2, and
+so on.  This is important for backwards compatibility: because
+comparisons and so on currently return integer values, there’s no
+way of telling what uses existing applications make of these
+values.</p>
+<p>It is expected that over time, the standard library will be
+updated to use <code class="docutils literal notranslate"><span class="pre">False</span></code> and <code class="docutils literal notranslate"><span class="pre">True</span></code> when appropriate (but not to require
+a bool argument type where previous an int was allowed).  This
+change should not pose additional problems and is not specified in
+detail by this PEP.</p>
+</div>
+<div class="section" id="c-api">
+<h2><a class="toc-backref" href="#id6">C API</a><a class="headerlink" href="#c-api" title="Permalink to this headline">¶</a></h2>
+<p>The header file “boolobject.h” defines the C API for the bool
+type.  It is included by “Python.h” so there is no need to include
+it directly.</p>
+<p>The existing names <code class="docutils literal notranslate"><span class="pre">Py_False</span></code> and <code class="docutils literal notranslate"><span class="pre">Py_True</span></code> reference the unique bool
+objects <code class="docutils literal notranslate"><span class="pre">False</span></code> and <code class="docutils literal notranslate"><span class="pre">True</span></code> (previously these referenced static int
+objects with values 0 and 1, which were not unique amongst int
+values).</p>
+<p>A new API, <code class="docutils literal notranslate"><span class="pre">PyObject</span> <span class="pre">*PyBool_FromLong(long)</span></code>, takes a C long int
+argument and returns a new reference to either <code class="docutils literal notranslate"><span class="pre">Py_False</span></code> (when the
+argument is zero) or <code class="docutils literal notranslate"><span class="pre">Py_True</span></code> (when it is nonzero).</p>
+<p>To check whether an object is a bool, the macro <code class="docutils literal notranslate"><span class="pre">PyBool_Check()</span></code> can
+be used.</p>
+<p>The type of bool instances is <code class="docutils literal notranslate"><span class="pre">PyBoolObject</span> <span class="pre">*</span></code>.</p>
+<p>The bool type object is available as PyBool_Type.</p>
+</div>
+<div class="section" id="clarification">
+<h2><a class="toc-backref" href="#id7">Clarification</a><a class="headerlink" href="#clarification" title="Permalink to this headline">¶</a></h2>
+<p>This PEP does <strong>not</strong> change the fact that almost all object types
+can be used as truth values.  For example, when used in an if
+statement, an empty list is false and a non-empty one is true;
+this does not change and there is no plan to ever change this.</p>
+<p>The only thing that changes is the preferred values to represent
+truth values when returned or assigned explicitly.  Previously,
+these preferred truth values were 0 and 1; the PEP changes the
+preferred values to <code class="docutils literal notranslate"><span class="pre">False</span></code> and <code class="docutils literal notranslate"><span class="pre">True</span></code>, and changes built-in
+operations to return these preferred values.</p>
+</div>
+<div class="section" id="compatibility">
+<h2><a class="toc-backref" href="#id8">Compatibility</a><a class="headerlink" href="#compatibility" title="Permalink to this headline">¶</a></h2>
+<p>Because of backwards compatibility, the bool type lacks many
+properties that some would like to see.  For example, arithmetic
+operations with one or two bool arguments is allowed, treating
+<code class="docutils literal notranslate"><span class="pre">False</span></code> as 0 and <code class="docutils literal notranslate"><span class="pre">True</span></code> as 1.  Also, a bool may be used as a sequence
+index.</p>
+<p>I don’t see this as a problem, and I don’t want evolve the
+language in this direction either.  I don’t believe that a
+stricter interpretation of “Booleanness” makes the language any
+clearer.</p>
+<p>Another consequence of the compatibility requirement is that the
+expression “True and 6” has the value 6, and similarly the
+expression “False or None” has the value None.  The “and” and “or”
+operators are usefully defined to return the first argument that
+determines the outcome, and this won’t change; in particular, they
+don’t force the outcome to be a bool.  Of course, if both
+arguments are bools, the outcome is always a bool.  It can also
+easily be coerced into being a bool by writing for example “bool(x
+and y)”.</p>
+</div>
+<div class="section" id="resolved-issues">
+<h2><a class="toc-backref" href="#id9">Resolved Issues</a><a class="headerlink" href="#resolved-issues" title="Permalink to this headline">¶</a></h2>
+<p>(See also the Review section above.)</p>
+<ul>
+<li><p>Because the <code class="docutils literal notranslate"><span class="pre">repr()</span></code> or <code class="docutils literal notranslate"><span class="pre">str()</span></code> of a bool value is different from an
+int value, some code (for example doctest-based unit tests, and
+possibly database code that relies on things like “%s” % truth)
+may fail.  It is easy to work around this (without explicitly
+referencing the bool type), and it is expected that this only
+affects a very small amount of code that can easily be fixed.</p>
+</li>
+<li><p>Other languages (C99, C++, Java) name the constants “false” and
+“true”, in all lowercase.  For Python, I prefer to stick with
+the example set by the existing built-in constants, which all
+use CapitalizedWords: <code class="docutils literal notranslate"><span class="pre">None</span></code>, <code class="docutils literal notranslate"><span class="pre">Ellipsis</span></code>, <code class="docutils literal notranslate"><span class="pre">NotImplemented</span></code> (as well as
+all built-in exceptions).  Python’s built-in namespace uses all
+lowercase for functions and types only.</p>
+</li>
+<li><p>It has been suggested that, in order to satisfy user
+expectations, for every x that is considered true in a Boolean
+context, the expression <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">==</span> <span class="pre">True</span></code> should be true, and likewise
+if x is considered false, <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">==</span> <span class="pre">False</span></code> should be true.  In
+particular newbies who have only just learned about Boolean
+variables are likely to write</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span> <span class="o">...</span>
+</pre></div>
+</div>
+<p>instead of the correct form,</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">x</span><span class="p">:</span> <span class="o">...</span>
+</pre></div>
+</div>
+<p>There seem to be strong psychological and linguistic reasons why
+many people are at first uncomfortable with the latter form, but
+I believe that the solution should be in education rather than
+in crippling the language.  After all, == is general seen as a
+transitive operator, meaning that from <code class="docutils literal notranslate"><span class="pre">a==b</span></code> and <code class="docutils literal notranslate"><span class="pre">b==c</span></code> we can
+deduce <code class="docutils literal notranslate"><span class="pre">a==c</span></code>.  But if any comparison to <code class="docutils literal notranslate"><span class="pre">True</span></code> were to report
+equality when the other operand was a true value of any type,
+atrocities like <code class="docutils literal notranslate"><span class="pre">6==True==7</span></code> would hold true, from which one could
+infer the falsehood <code class="docutils literal notranslate"><span class="pre">6==7</span></code>.  That’s unacceptable.  (In addition,
+it would break backwards compatibility.  But even if it didn’t,
+I’d still be against this, for the stated reasons.)</p>
+<p>Newbies should also be reminded that there’s never a reason to
+write</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="nb">bool</span><span class="p">(</span><span class="n">x</span><span class="p">):</span> <span class="o">...</span>
+</pre></div>
+</div>
+<p>since the bool is implicit in the “if”.  Explicit is <strong>not</strong>
+better than implicit here, since the added verbiage impairs
+redability and there’s no other interpretation possible.  There
+is, however, sometimes a reason to write</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">b</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This is useful when it is unattractive to keep a reference to an
+arbitrary object x, or when normalization is required for some
+other reason.  It is also sometimes appropriate to write</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">i</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">bool</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>which converts the bool to an int with the value 0 or 1.  This
+conveys the intention to henceforth use the value as an int.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id10">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>A complete implementation in C has been uploaded to the
+SourceForge patch manager: <a class="reference external" href="https://bugs.python.org/issue528022">https://bugs.python.org/issue528022</a></p>
+<p>This will soon be checked into CVS for python 2.3a0.</p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id11">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0285.txt">https://github.com/python/peps/blob/master/pep-0285.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0285.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0284.html">PEP 0284</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0286.html">PEP 0286</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 285 – Adding a bool type</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#review">Review</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#c-api">C API</a></li>
+<li><a class="reference internal" href="#clarification">Clarification</a></li>
+<li><a class="reference internal" href="#compatibility">Compatibility</a></li>
+<li><a class="reference internal" href="#resolved-issues">Resolved Issues</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

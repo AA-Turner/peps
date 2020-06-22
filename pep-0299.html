@@ -1,0 +1,229 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 299 – Special __main__() function in modules &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 301 – Package Index and Metadata for Distutils" href="pep-0301.html" />
+    <link rel="prev" title="PEP 298 – The Locked Buffer Interface" href="pep-0298.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 299 – Special __main__() function in modules</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-299-special-main-function-in-modules">
+<h1 class="page-title">PEP 299 – Special __main__() function in modules<a class="headerlink" href="#pep-299-special-main-function-in-modules" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">299</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Special __main__() function in modules</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Jeff Epler &lt;jepler&#32;&#97;t&#32;unpythonic.net&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Rejected</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">12-Aug-2002</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.3</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">29-Mar-2006</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id2">Abstract</a></li>
+<li><a class="reference internal" href="#motivation" id="id3">Motivation</a></li>
+<li><a class="reference internal" href="#proposal" id="id4">Proposal</a></li>
+<li><a class="reference internal" href="#implementation" id="id5">Implementation</a></li>
+<li><a class="reference internal" href="#open-issues" id="id6">Open Issues</a></li>
+<li><a class="reference internal" href="#rejection" id="id7">Rejection</a></li>
+<li><a class="reference internal" href="#references" id="id8">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id9">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id2">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Many Python modules are also intended to be callable as standalone
+scripts.  This PEP proposes that a special function called <code class="docutils literal notranslate"><span class="pre">__main__()</span></code>
+should serve this purpose.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id3">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>There should be one simple and universal idiom for invoking a module
+as a standalone script.</p>
+<p>The semi-standard idiom:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">perform</span> <span class="s2">&quot;standalone&quot;</span> <span class="n">functionality</span>
+</pre></div>
+</div>
+<p>is unclear to programmers of languages like C and C++.  It also does
+not permit invocation of the standalone function when the module is
+imported.  The variant:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">main_function</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>is sometimes seen, but there exists no standard name for the function,
+and because arguments are taken from sys.argv it is not possible to
+pass specific arguments without changing the argument list seen by all
+other modules.  (Imagine a threaded Python program, with two threads
+wishing to invoke the standalone functionality of different modules
+with different argument lists)</p>
+</div>
+<div class="section" id="proposal">
+<h2><a class="toc-backref" href="#id4">Proposal</a><a class="headerlink" href="#proposal" title="Permalink to this headline">¶</a></h2>
+<p>The standard name of the ‘main function’ should be <code class="docutils literal notranslate"><span class="pre">__main__</span></code>. When a
+module is invoked on the command line, such as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">mymodule</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+<p>then the module behaves as though the following lines existed at the
+end of the module (except that the attribute __sys may not be used or
+assumed to exist elsewhere in the script):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="nb">globals</span><span class="p">()</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s2">&quot;__main__&quot;</span><span class="p">):</span>
+    <span class="kn">import</span> <span class="nn">sys</span> <span class="k">as</span> <span class="nn">__sys</span>
+    <span class="n">__sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="n">__main__</span><span class="p">(</span><span class="n">__sys</span><span class="o">.</span><span class="n">argv</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Other modules may execute:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">mymodule</span> <span class="n">mymodule</span><span class="o">.</span><span class="n">__main__</span><span class="p">([</span><span class="s1">&#39;mymodule&#39;</span><span class="p">,</span> <span class="o">...</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>It is up to <code class="docutils literal notranslate"><span class="pre">mymodule</span></code> to document thread-safety issues or other
+issues which might restrict use of <code class="docutils literal notranslate"><span class="pre">__main__</span></code>.  (Other issues might
+include use of mutually exclusive GUI modules, non-sharable resources
+like hardware devices, reassignment of <code class="docutils literal notranslate"><span class="pre">sys.stdin</span></code>/<code class="docutils literal notranslate"><span class="pre">stdout</span></code>, etc)</p>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id5">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>In <code class="docutils literal notranslate"><span class="pre">modules/main.c</span></code>, the block near line 385 (after the
+<code class="docutils literal notranslate"><span class="pre">PyRun_AnyFileExFlags</span></code> call) will be changed so that the above code
+(or its C equivalent) is executed.</p>
+</div>
+<div class="section" id="open-issues">
+<h2><a class="toc-backref" href="#id6">Open Issues</a><a class="headerlink" href="#open-issues" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p>Should the return value from <code class="docutils literal notranslate"><span class="pre">__main__</span></code> be treated as the exit value?</p>
+<p>Yes.  Many <code class="docutils literal notranslate"><span class="pre">__main__</span></code> will naturally return <code class="docutils literal notranslate"><span class="pre">None</span></code>, which
+<code class="docutils literal notranslate"><span class="pre">sys.exit</span></code> translates into a “success” return code.  In those that
+return a numeric result, it behaves just like the argument to
+<code class="docutils literal notranslate"><span class="pre">sys.exit()</span></code> or the return value from C’s main().</p>
+</li>
+<li><p>Should the argument list to <code class="docutils literal notranslate"><span class="pre">__main__</span></code> include <code class="docutils literal notranslate"><span class="pre">argv[0]</span></code>, or just the
+“real” arguments <code class="docutils literal notranslate"><span class="pre">argv[1:]</span></code>?</p>
+<p><code class="docutils literal notranslate"><span class="pre">argv[0]</span></code> is included for symmetry with <code class="docutils literal notranslate"><span class="pre">sys.argv</span></code> and easy
+transition to the new standard idiom.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="rejection">
+<h2><a class="toc-backref" href="#id7">Rejection</a><a class="headerlink" href="#rejection" title="Permalink to this headline">¶</a></h2>
+<p>In a short discussion on python-dev [1], two major backwards
+compatibility problems were brought up and Guido pronounced that he
+doesn’t like the idea anyway as it’s “not worth the change (in docs,
+user habits, etc.) and there’s nothing particularly broken.”</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id8">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id1"><span class="brackets">1</span></dt>
+<dd>Georg Brandl, “What about PEP 299”,
+<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2006-March/062951.html">https://mail.python.org/pipermail/python-dev/2006-March/062951.html</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id9">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0299.txt">https://github.com/python/peps/blob/master/pep-0299.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0299.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0298.html">PEP 0298</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0301.html">PEP 0301</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 299 – Special __main__() function in modules</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#proposal">Proposal</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#open-issues">Open Issues</a></li>
+<li><a class="reference internal" href="#rejection">Rejection</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

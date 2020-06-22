@@ -1,0 +1,317 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 3140 – str(container) should call str(item), not repr(item) &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 3141 – A Type Hierarchy for Numbers" href="pep-3141.html" />
+    <link rel="prev" title="PEP 3139 – Cleaning out sys and the “interpreter” module" href="pep-3139.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 3140 – str(container) should call str(item), not repr(item)</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-3140-str-container-should-call-str-item-not-repr-item">
+<h1 class="page-title">PEP 3140 – str(container) should call str(item), not repr(item)<a class="headerlink" href="#pep-3140-str-container-should-call-str-item-not-repr-item" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">3140</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">str(container) should call str(item), not repr(item)</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Oleg Broytman &lt;phd&#32;&#97;t&#32;phdru.name&gt;,
+Jim J. Jewett &lt;jimjjewett&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">Discussions-To</dt>
+<dd class="field-even"><a class="reference external" href="mailto:python-3000&#37;&#52;&#48;python&#46;org?subject=PEP%203140">python-3000&#32;&#97;t&#32;python.org</a></dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd">Rejected</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even">Standards Track</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">27-May-2008</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">28-May-2008</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#rejection" id="id3">Rejection</a></li>
+<li><a class="reference internal" href="#abstract" id="id4">Abstract</a></li>
+<li><a class="reference internal" href="#motivation" id="id5">Motivation</a></li>
+<li><a class="reference internal" href="#current-situation" id="id6">Current situation</a></li>
+<li><a class="reference internal" href="#a-different-approach-call-str-item" id="id7">A different approach - call <code class="docutils literal notranslate"><span class="pre">str(item)</span></code></a></li>
+<li><a class="reference internal" href="#backward-compatibility" id="id8">Backward compatibility</a></li>
+<li><a class="reference internal" href="#references" id="id9">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id10">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="rejection">
+<h2><a class="toc-backref" href="#id3">Rejection</a><a class="headerlink" href="#rejection" title="Permalink to this headline">¶</a></h2>
+<p>Guido said this would cause too much disturbance too close to beta. See <a class="footnote-reference brackets" href="#id2" id="id1">1</a>.</p>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id4">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This document discusses the advantages and disadvantages of the
+current implementation of <code class="docutils literal notranslate"><span class="pre">str(container)</span></code>.  It also discusses the
+pros and cons of a different approach - to call <code class="docutils literal notranslate"><span class="pre">str(item)</span></code> instead
+of <code class="docutils literal notranslate"><span class="pre">repr(item)</span></code>.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id5">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>Currently <code class="docutils literal notranslate"><span class="pre">str(container)</span></code> calls <code class="docutils literal notranslate"><span class="pre">repr</span></code> on items.  Arguments for it:</p>
+<ul class="simple">
+<li>containers refuse to guess what the user wants to see on
+<code class="docutils literal notranslate"><span class="pre">str(container)</span></code> - surroundings, delimiters, and so on;</li>
+<li><code class="docutils literal notranslate"><span class="pre">repr(item)</span></code> usually displays type information - apostrophes
+around strings, class names, etc.</li>
+</ul>
+<p>Arguments against:</p>
+<ul class="simple">
+<li>it’s illogical; <code class="docutils literal notranslate"><span class="pre">str()</span></code> is expected to call <code class="docutils literal notranslate"><span class="pre">__str__</span></code> if it exists,
+not <code class="docutils literal notranslate"><span class="pre">__repr__</span></code>;</li>
+<li>there is no standard way to print a container’s content calling
+items’ <code class="docutils literal notranslate"><span class="pre">__str__</span></code>, that’s inconvenient in cases where <code class="docutils literal notranslate"><span class="pre">__str__</span></code> and
+<code class="docutils literal notranslate"><span class="pre">__repr__</span></code> return different results;</li>
+<li><code class="docutils literal notranslate"><span class="pre">repr(item)</span></code> sometimes do wrong things (hex-escapes non-ASCII strings,
+e.g.)</li>
+</ul>
+<p>This PEP proposes to change how <code class="docutils literal notranslate"><span class="pre">str(container)</span></code> works.  It is
+proposed to mimic how <code class="docutils literal notranslate"><span class="pre">repr(container)</span></code> works except one detail - call
+<code class="docutils literal notranslate"><span class="pre">str</span></code> on items instead of <code class="docutils literal notranslate"><span class="pre">repr</span></code>.  This allows a user to choose
+what results she want to get - from <code class="docutils literal notranslate"><span class="pre">item.__repr__</span></code> or <code class="docutils literal notranslate"><span class="pre">item.__str__</span></code>.</p>
+</div>
+<div class="section" id="current-situation">
+<h2><a class="toc-backref" href="#id6">Current situation</a><a class="headerlink" href="#current-situation" title="Permalink to this headline">¶</a></h2>
+<p>Most container types (tuples, lists, dicts, sets, etc.) do not
+implement <code class="docutils literal notranslate"><span class="pre">__str__</span></code> method, so <code class="docutils literal notranslate"><span class="pre">str(container)</span></code> calls
+<code class="docutils literal notranslate"><span class="pre">container.__repr__</span></code>, and <code class="docutils literal notranslate"><span class="pre">container.__repr__</span></code>, once called, forgets
+it is called from <code class="docutils literal notranslate"><span class="pre">str</span></code> and always calls <code class="docutils literal notranslate"><span class="pre">repr</span></code> on the container’s
+items.</p>
+<p>This behaviour has advantages and disadvantages.  One advantage is
+that most items are represented with type information - strings
+are surrounded by apostrophes, instances may have both class name
+and instance data:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">([</span><span class="mi">42</span><span class="p">,</span> <span class="s1">&#39;42&#39;</span><span class="p">])</span>
+<span class="go">[42, &#39;42&#39;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">([</span><span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;42&#39;</span><span class="p">),</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()])</span>
+<span class="go">[Decimal(&quot;42&quot;), datetime.datetime(2008, 5, 27, 19, 57, 43, 485028)]</span>
+</pre></div>
+</div>
+<p>The disadvantage is that <code class="docutils literal notranslate"><span class="pre">__repr__</span></code> often returns technical data
+(like ‘<code class="docutils literal notranslate"><span class="pre">&lt;object</span> <span class="pre">at</span> <span class="pre">address&gt;</span></code>’) or unreadable string (hex-encoded
+string if the input is non-ASCII string):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">([</span><span class="s1">&#39;тест&#39;</span><span class="p">])</span>
+<span class="go">[&#39;\xd4\xc5\xd3\xd4&#39;]</span>
+</pre></div>
+</div>
+<p>One of the motivations for PEP 3138 is that neither <code class="docutils literal notranslate"><span class="pre">repr</span></code> nor <code class="docutils literal notranslate"><span class="pre">str</span></code>
+will allow the sensible printing of dicts whose keys are non-ASCII
+text strings.  Now that Unicode identifiers are allowed, it
+includes Python’s own attribute dicts.  This also includes JSON
+serialization (and caused some hoops for the json lib).</p>
+<p>PEP 3138 proposes to fix this by breaking the “repr is safe ASCII”
+invariant, and changing the way <code class="docutils literal notranslate"><span class="pre">repr</span></code> (which is used for
+persistence) outputs some objects, with system-dependent failures.</p>
+<p>Changing how <code class="docutils literal notranslate"><span class="pre">str(container)</span></code> works would allow easy debugging in
+the normal case, and retain the safety of ASCII-only for the
+machine-readable  case.  The only downside is that <code class="docutils literal notranslate"><span class="pre">str(x)</span></code> and
+<code class="docutils literal notranslate"><span class="pre">repr(x)</span></code> would more often be different – but only in those cases
+where the current almost-the-same version is insufficient.</p>
+<p>It also seems illogical that <code class="docutils literal notranslate"><span class="pre">str(container)</span></code> calls <code class="docutils literal notranslate"><span class="pre">repr</span></code> on items
+instead of <code class="docutils literal notranslate"><span class="pre">str</span></code>.  It’s only logical to expect following code:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Test</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;STR&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;REPR&quot;</span>
+
+
+<span class="n">test</span> <span class="o">=</span> <span class="n">Test</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">test</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">test</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">([</span><span class="n">test</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">([</span><span class="n">test</span><span class="p">]))</span>
+</pre></div>
+</div>
+<p>to print:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">STR</span>
+<span class="n">REPR</span>
+<span class="p">[</span><span class="n">STR</span><span class="p">]</span>
+<span class="p">[</span><span class="n">STR</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>where it actually prints:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">STR</span>
+<span class="n">REPR</span>
+<span class="p">[</span><span class="n">REPR</span><span class="p">]</span>
+<span class="p">[</span><span class="n">REPR</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Especially it is illogical to see that print in Python 2 uses <code class="docutils literal notranslate"><span class="pre">str</span></code>
+if it is called on what seems to be a tuple:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span> <span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;42&#39;</span><span class="p">),</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+<span class="go">42 2008-05-27 20:16:22.534285</span>
+</pre></div>
+</div>
+<p>where on an actual tuple it prints:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">((</span><span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;42&#39;</span><span class="p">),</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()))</span>
+<span class="go">(Decimal(&quot;42&quot;), datetime.datetime(2008, 5, 27, 20, 16, 27, 937911))</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="a-different-approach-call-str-item">
+<h2><a class="toc-backref" href="#id7">A different approach - call <code class="docutils literal notranslate"><span class="pre">str(item)</span></code></a><a class="headerlink" href="#a-different-approach-call-str-item" title="Permalink to this headline">¶</a></h2>
+<p>For example, with numbers it is often only the value that people
+care about.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span> <span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;3&#39;</span><span class="p">)</span>
+<span class="go">3</span>
+</pre></div>
+</div>
+<p>But putting the value in a list forces users to read the type
+information, exactly as if <code class="docutils literal notranslate"><span class="pre">repr</span></code> had been called for the benefit of
+a machine:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span> <span class="p">[</span><span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;3&#39;</span><span class="p">)]</span>
+<span class="go">[Decimal(&quot;3&quot;)]</span>
+</pre></div>
+</div>
+<p>After this change, the type information would not clutter the <code class="docutils literal notranslate"><span class="pre">str</span></code>
+output:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">([</span><span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;3&#39;</span><span class="p">)])</span>
+<span class="go">[3]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">str</span><span class="p">([</span><span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;3&#39;</span><span class="p">)])</span>  <span class="c1"># ==</span>
+<span class="go">[3]</span>
+</pre></div>
+</div>
+<p>But it would still be available if desired:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span> <span class="s2">&quot;</span><span class="si">%r</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">([</span><span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;3&#39;</span><span class="p">)])</span>
+<span class="go">[Decimal(&#39;3&#39;)]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">repr</span><span class="p">([</span><span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;3&#39;</span><span class="p">)])</span>  <span class="c1"># ==</span>
+<span class="go">[Decimal(&#39;3&#39;)]</span>
+</pre></div>
+</div>
+<p>There is a number of strategies to fix the problem.  The most
+radical is to change <code class="docutils literal notranslate"><span class="pre">__repr__</span></code> so it accepts a new parameter (flag)
+“called from <code class="docutils literal notranslate"><span class="pre">str</span></code>, so call <code class="docutils literal notranslate"><span class="pre">str</span></code> on items, not <code class="docutils literal notranslate"><span class="pre">repr</span></code>”.  The
+drawback of the proposal is that every <code class="docutils literal notranslate"><span class="pre">__repr__</span></code> implementation
+must be changed.  Introspection could help a bit (inspect <code class="docutils literal notranslate"><span class="pre">__repr__</span></code>
+before calling if it accepts 2 or 3 parameters), but introspection
+doesn’t work on classes written in C, like all built-in containers.</p>
+<p>Less radical proposal is to implement <code class="docutils literal notranslate"><span class="pre">__str__</span></code> methods for built-in
+container types.  The obvious drawback is a duplication of effort - all
+those <code class="docutils literal notranslate"><span class="pre">__str__</span></code> and <code class="docutils literal notranslate"><span class="pre">__repr__</span></code> implementations are only differ
+in one small detail - if they call <code class="docutils literal notranslate"><span class="pre">str</span></code> or <code class="docutils literal notranslate"><span class="pre">repr</span></code> on items.</p>
+<p>The most conservative proposal is not to change str at all but
+to allow developers to implement their own application- or
+library-specific pretty-printers.  The drawback is again
+a multiplication of effort and proliferation of many small
+specific container-traversal algorithms.</p>
+</div>
+<div class="section" id="backward-compatibility">
+<h2><a class="toc-backref" href="#id8">Backward compatibility</a><a class="headerlink" href="#backward-compatibility" title="Permalink to this headline">¶</a></h2>
+<p>In those cases where type information is more important than
+usual, it will still be possible to get the current results by
+calling <code class="docutils literal notranslate"><span class="pre">repr</span></code> explicitly.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id9">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>Guido van Rossum, PEP: str(container) should call str(item), not
+repr(item)
+<a class="reference external" href="https://mail.python.org/pipermail/python-3000/2008-May/013876.html">https://mail.python.org/pipermail/python-3000/2008-May/013876.html</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id10">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-3140.txt">https://github.com/python/peps/blob/master/pep-3140.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-3140.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-3139.html">PEP 3139</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-3141.html">PEP 3141</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 3140 – str(container) should call str(item), not repr(item)</a><ul>
+<li><a class="reference internal" href="#rejection">Rejection</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#current-situation">Current situation</a></li>
+<li><a class="reference internal" href="#a-different-approach-call-str-item">A different approach - call <code class="docutils literal notranslate"><span class="pre">str(item)</span></code></a></li>
+<li><a class="reference internal" href="#backward-compatibility">Backward compatibility</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

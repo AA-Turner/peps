@@ -1,0 +1,490 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 534 – Improved Errors for Missing Standard Library Modules &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 535 – Rich comparison chaining" href="pep-0535.html" />
+    <link rel="prev" title="PEP 533 – Deterministic cleanup for iterators" href="pep-0533.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 534 – Improved Errors for Missing Standard Library Modules</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-534-improved-errors-for-missing-standard-library-modules">
+<h1 class="page-title">PEP 534 – Improved Errors for Missing Standard Library Modules<a class="headerlink" href="#pep-534-improved-errors-for-missing-standard-library-modules" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">534</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Improved Errors for Missing Standard Library Modules</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Tomáš Orsava &lt;tomas.n&#32;&#97;t&#32;orsava.cz&gt;,
+Petr Viktorin &lt;encukou&#32;&#97;t&#32;gmail.com&gt;,
+Nick Coghlan &lt;ncoghlan&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Deferred</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">5-Sep-2016</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id25">Abstract</a></li>
+<li><a class="reference internal" href="#pep-deferral" id="id26">PEP Deferral</a></li>
+<li><a class="reference internal" href="#motivation" id="id27">Motivation</a><ul>
+<li><a class="reference internal" href="#cpython" id="id28">CPython</a></li>
+<li><a class="reference internal" href="#linux-and-other-distributions" id="id29">Linux and other distributions</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#specification" id="id30">Specification</a><ul>
+<li><a class="reference internal" href="#apis-to-list-expected-standard-library-modules" id="id31">APIs to list expected standard library modules</a></li>
+<li><a class="reference internal" href="#changes-to-the-default-sys-excepthook-implementation" id="id32">Changes to the default <code class="docutils literal notranslate"><span class="pre">sys.excepthook</span></code> implementation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#design-discussion" id="id33">Design Discussion</a><ul>
+<li><a class="reference internal" href="#modifying-sys-excepthook" id="id34">Modifying <code class="docutils literal notranslate"><span class="pre">sys.excepthook</span></code></a></li>
+<li><a class="reference internal" href="#public-api-to-query-expected-standard-library-module-names" id="id35">Public API to query expected standard library module names</a></li>
+<li><a class="reference internal" href="#only-including-top-level-module-names" id="id36">Only including top level module names</a></li>
+<li><a class="reference internal" href="#listing-private-top-level-module-names-as-optional-standard-library-modules" id="id37">Listing private top level module names as optional standard library modules</a></li>
+<li><a class="reference internal" href="#deeming-packaging-related-modules-to-be-mandatory" id="id38">Deeming packaging related modules to be mandatory</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#deferred-ideas" id="id39">Deferred Ideas</a><ul>
+<li><a class="reference internal" href="#platform-dependent-modules" id="id40">Platform dependent modules</a></li>
+<li><a class="reference internal" href="#emitting-a-warning-when-main-shadows-a-standard-library-module" id="id41">Emitting a warning when <code class="docutils literal notranslate"><span class="pre">__main__</span></code> shadows a standard library module</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#recommendation-for-downstream-distributors" id="id42">Recommendation for Downstream Distributors</a></li>
+<li><a class="reference internal" href="#backwards-compatibility" id="id43">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#reference-and-example-implementation" id="id44">Reference and Example Implementation</a></li>
+<li><a class="reference internal" href="#notes-and-references" id="id45">Notes and References</a></li>
+<li><a class="reference internal" href="#copyright" id="id46">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id25">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Python is often being built or distributed without its full standard library.
+However, there is as of yet no standard, user friendly way of properly
+informing the user about the failure to import such missing standard library
+modules.</p>
+<p>This PEP proposes a mechanism for identifying expected standard library modules
+and providing more informative error messages to users when attempts to import
+standard library modules fail.</p>
+</div>
+<div class="section" id="pep-deferral">
+<h2><a class="toc-backref" href="#id26">PEP Deferral</a><a class="headerlink" href="#pep-deferral" title="Permalink to this headline">¶</a></h2>
+<p>The PEP authors aren’t actively working on this PEP, so if improving these
+error messages is an idea that you’re interested in pursuing, please get in
+touch! (e.g. by posting to the python-dev mailing list).</p>
+<p>The key piece of open work is determining how to get the autoconf and Visual
+Studio build processes to populate the sysconfig metadata file with the lists
+of expected and optional standard library modules.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id27">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>There are several use cases for including only a subset of Python’s standard
+library.  However, there is so far no user-friendly mechanism for informing
+the user <em>why</em> a stdlib module is missing and how to remedy the situation
+appropriately.</p>
+<div class="section" id="cpython">
+<h3><a class="toc-backref" href="#id28">CPython</a><a class="headerlink" href="#cpython" title="Permalink to this headline">¶</a></h3>
+<p>When one of Python’s standard library modules (such as <code class="docutils literal notranslate"><span class="pre">_sqlite3</span></code>) cannot be
+compiled during a CPython build because of missing dependencies (e.g. SQLite
+header files), the module is simply skipped.  If you then install this compiled
+Python and use it to try to import one of the missing modules, Python will fail
+with a <a class="reference external" href="https://docs.python.org/3.7/library/exceptions.html#ModuleNotFoundError">ModuleNotFoundError</a> <a class="footnote-reference brackets" href="#id5" id="id6">3</a>.</p>
+<p>For example, after deliberately removing <code class="docutils literal notranslate"><span class="pre">sqlite-devel</span></code> from the local
+system:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./python -c &quot;import sqlite3&quot;
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 1, in &lt;module&gt;
+  File &quot;/home/ncoghlan/devel/cpython/Lib/sqlite3/__init__.py&quot;, line 23, in &lt;module&gt;
+    from sqlite3.dbapi2 import *
+  File &quot;/home/ncoghlan/devel/cpython/Lib/sqlite3/dbapi2.py&quot;, line 27, in &lt;module&gt;
+    from _sqlite3 import *
+ModuleNotFoundError: No module named &#39;_sqlite3&#39;
+</pre></div>
+</div>
+<p>This can confuse users who may not understand why a cleanly built Python is
+missing standard library modules.</p>
+</div>
+<div class="section" id="linux-and-other-distributions">
+<h3><a class="toc-backref" href="#id29">Linux and other distributions</a><a class="headerlink" href="#linux-and-other-distributions" title="Permalink to this headline">¶</a></h3>
+<p>Many Linux and other distributions are already separating out parts of the
+standard library to standalone packages.  Among the most commonly excluded
+modules are the <code class="docutils literal notranslate"><span class="pre">tkinter</span></code> module, since it draws in a dependency on the
+graphical environment, <code class="docutils literal notranslate"><span class="pre">idlelib</span></code>, since it depends on <code class="docutils literal notranslate"><span class="pre">tkinter</span></code> (and most
+Linux desktop environments provide their own default code editor), and the
+<code class="docutils literal notranslate"><span class="pre">test</span></code> package, as it only serves to test Python internally and is about as
+big as the rest of the standard library put together.</p>
+<p>The methods of omission of these modules differ.  For example, Debian patches
+the file <code class="docutils literal notranslate"><span class="pre">Lib/tkinter/__init__.py</span></code> to envelop the line <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">_tkinter</span></code> in
+a <em>try-except</em> block and upon encountering an <code class="docutils literal notranslate"><span class="pre">ImportError</span></code> it simply adds
+the following to the error message: <code class="docutils literal notranslate"><span class="pre">please</span> <span class="pre">install</span> <span class="pre">the</span> <span class="pre">python3-tk</span> <span class="pre">package</span></code>
+<a class="footnote-reference brackets" href="#debian-patch" id="id1">1</a>.  Fedora and other distributions simply don’t include the
+omitted modules, potentially leaving users baffled as to where to find them.</p>
+<p>An example from Fedora 29:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python3 -c &quot;import tkinter&quot;
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 1, in &lt;module&gt;
+ModuleNotFoundError: No module named &#39;tkinter&#39;
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id30">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="apis-to-list-expected-standard-library-modules">
+<h3><a class="toc-backref" href="#id31">APIs to list expected standard library modules</a><a class="headerlink" href="#apis-to-list-expected-standard-library-modules" title="Permalink to this headline">¶</a></h3>
+<p>To allow for easier identification of which module names are <em>expected</em> to be
+resolved in the standard library, the <a class="reference external" href="https://docs.python.org/3/library/sysconfig.html">sysconfig</a> <a class="footnote-reference brackets" href="#id8" id="id9">4</a> module will be extended
+with two additional functions:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">sysconfig.get_stdlib_modules()</span></code>, which will provide a list of the names of
+all top level Python standard library modules (including private modules)</li>
+<li><code class="docutils literal notranslate"><span class="pre">sysconfig.get_optional_modules()</span></code>, which will list optional public top level
+standard library module names</li>
+</ul>
+<p>The results of <code class="docutils literal notranslate"><span class="pre">sysconfig.get_optional_modules()``and</span> <span class="pre">the</span> <span class="pre">existing</span>
+<span class="pre">``sys.builtin_module_names</span></code> will both be subsets of the full list provided by
+the new <code class="docutils literal notranslate"><span class="pre">sysconfig.get_stdlib_modules()</span></code> function.</p>
+<p>These added lists will be generated during the Python build process and saved in
+the <code class="docutils literal notranslate"><span class="pre">_sysconfigdata-*.py</span></code> file along with other <a class="reference external" href="https://docs.python.org/3/library/sysconfig.html">sysconfig</a> <a class="footnote-reference brackets" href="#id8" id="id10">4</a> values.</p>
+<p>Possible reasons for modules being in the “optional” list will be:</p>
+<ul class="simple">
+<li>the module relies on an optional build dependency (e.g. <code class="docutils literal notranslate"><span class="pre">_sqlite3</span></code>,
+<code class="docutils literal notranslate"><span class="pre">tkinter</span></code>, <code class="docutils literal notranslate"><span class="pre">idlelib</span></code>)</li>
+<li>the module is private for other reasons and hence may not be present on all
+implementations (e.g. <code class="docutils literal notranslate"><span class="pre">_freeze_importlib</span></code>, <code class="docutils literal notranslate"><span class="pre">_collections_abc</span></code>)</li>
+<li>the module is platform specific and hence may not be present in all
+installations (e.g. <code class="docutils literal notranslate"><span class="pre">winreg</span></code>)</li>
+<li>the <code class="docutils literal notranslate"><span class="pre">test</span></code> package may also be freely omitted from Python runtime
+installations, as it is intended for use in testing Python implementations,
+not as a runtime library for Python projects to use (the public API offering
+testing utilities is <code class="docutils literal notranslate"><span class="pre">unittest</span></code>)</li>
+</ul>
+<p>(Note: the <code class="docutils literal notranslate"><span class="pre">ensurepip</span></code>, <code class="docutils literal notranslate"><span class="pre">venv</span></code>, and <code class="docutils literal notranslate"><span class="pre">distutils</span></code> modules are all considered
+mandatory modules in this PEP, even though not all redistributors currently
+adhere to that practice)</p>
+</div>
+<div class="section" id="changes-to-the-default-sys-excepthook-implementation">
+<h3><a class="toc-backref" href="#id32">Changes to the default <code class="docutils literal notranslate"><span class="pre">sys.excepthook</span></code> implementation</a><a class="headerlink" href="#changes-to-the-default-sys-excepthook-implementation" title="Permalink to this headline">¶</a></h3>
+<p>The default implementation of the <a class="reference external" href="https://docs.python.org/3/library/sys.html#sys.excepthook">sys.excepthook</a> <a class="footnote-reference brackets" href="#id12" id="id13">5</a> function will then be
+modified to dispense an appropriate message when it detects a failure to
+import a module identified by one of the two new <a class="reference external" href="https://docs.python.org/3/library/sysconfig.html">sysconfig</a> <a class="footnote-reference brackets" href="#id8" id="id11">4</a> functions as
+belonging to the Python standard library.</p>
+<p>Revised error message for a module that relies on an optional build dependency
+or is otherwise considered optional when Python is installed:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./python -c &quot;import sqlite3&quot;
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 1, in &lt;module&gt;
+  File &quot;/home/ncoghlan/devel/cpython/Lib/sqlite3/__init__.py&quot;, line 23, in &lt;module&gt;
+    from sqlite3.dbapi2 import *
+  File &quot;/home/ncoghlan/devel/cpython/Lib/sqlite3/dbapi2.py&quot;, line 27, in &lt;module&gt;
+    from _sqlite3 import *
+ModuleNotFoundError: Optional standard library module &#39;_sqlite3&#39; was not found
+</pre></div>
+</div>
+<p>Revised error message for a submodule of an optional top level package when the
+entire top level package is missing:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./python -c &quot;import test.regrtest&quot;
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 1, in &lt;module&gt;
+ModuleNotFoundError: Optional standard library module &#39;test&#39; was not found
+</pre></div>
+</div>
+<p>Revised error message for a submodule of an optional top level package when the
+top level package is present:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./python -c &quot;import test.regrtest&quot;
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 1, in &lt;module&gt;
+ModuleNotFoundError: No submodule named &#39;test.regrtest&#39; in optional standard library module &#39;test&#39;
+</pre></div>
+</div>
+<p>Revised error message for a module that is always expected to be available:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./python -c &quot;import ensurepip&quot;
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 1, in &lt;module&gt;
+ModuleNotFoundError: Standard library module &#39;ensurepip&#39; was not found
+</pre></div>
+</div>
+<p>Revised error message for a missing submodule of a standard library package when
+the top level package is present:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./python -c &quot;import encodings.mbcs&quot;
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 1, in &lt;module&gt;
+ModuleNotFoundError: No submodule named &#39;encodings.mbcs&#39; in standard library module &#39;encodings&#39;
+</pre></div>
+</div>
+<p>These revised error messages make it clear that the missing modules are expected
+to be available from the standard library, but are not available for some reason,
+rather than being an indicator of a missing third party dependency in the current
+environment.</p>
+</div>
+</div>
+<div class="section" id="design-discussion">
+<h2><a class="toc-backref" href="#id33">Design Discussion</a><a class="headerlink" href="#design-discussion" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="modifying-sys-excepthook">
+<h3><a class="toc-backref" href="#id34">Modifying <code class="docutils literal notranslate"><span class="pre">sys.excepthook</span></code></a><a class="headerlink" href="#modifying-sys-excepthook" title="Permalink to this headline">¶</a></h3>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/sys.html#sys.excepthook">sys.excepthook</a> <a class="footnote-reference brackets" href="#id12" id="id14">5</a> function gets called when a raised exception is uncaught
+and the program is about to exit or (in an interactive session) the control is
+being returned to the prompt.  This makes it a perfect place for customized
+error messages, as it will not influence caught errors and thus not slow down
+normal execution of Python scripts.</p>
+</div>
+<div class="section" id="public-api-to-query-expected-standard-library-module-names">
+<h3><a class="toc-backref" href="#id35">Public API to query expected standard library module names</a><a class="headerlink" href="#public-api-to-query-expected-standard-library-module-names" title="Permalink to this headline">¶</a></h3>
+<p>The inclusion of the functions <code class="docutils literal notranslate"><span class="pre">sysconfig.get_stdlib_modules()</span></code> and
+<code class="docutils literal notranslate"><span class="pre">sysconfig.get_optional_modules()</span></code> will provide a long sought-after
+way of easily listing the names of Python standard library modules
+<a class="footnote-reference brackets" href="#stackoverflow-stdlib" id="id2">2</a>, which will (among other benefits) make it easier for
+code analysis, profiling, and error reporting tools to offer runtime
+<code class="docutils literal notranslate"><span class="pre">--ignore-stdlib</span></code> flags.</p>
+</div>
+<div class="section" id="only-including-top-level-module-names">
+<h3><a class="toc-backref" href="#id36">Only including top level module names</a><a class="headerlink" href="#only-including-top-level-module-names" title="Permalink to this headline">¶</a></h3>
+<p>This PEP proposes that only top level module and package names be reported by
+the new query APIs. This is sufficient information to generate the proposed
+error messages, reduces the number of required entries by an order of magnitude,
+and simplifies the process of generating the related metadata during the build
+process.</p>
+<p>If this is eventually found to be overly limiting, a new <code class="docutils literal notranslate"><span class="pre">include_submodules</span></code>
+flag could be added to the query APIs. However, this is <em>not</em> part of the initial
+proposal, as the benefits of doing so aren’t currently seen as justifying the
+extra complexity.</p>
+<p>There is one known consequence of this restriction, which is that the new
+default <code class="docutils literal notranslate"><span class="pre">excepthook</span></code> implementation will report incorrect submodules names the
+same way that it reports genuinely missing standard library submodules:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./python -c &quot;import unittest.muck&quot;
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 1, in &lt;module&gt;
+ModuleNotFoundError: No submodule named &#39;unittest.muck&#39; in standard library module &#39;unittest&#39;
+</pre></div>
+</div>
+</div>
+<div class="section" id="listing-private-top-level-module-names-as-optional-standard-library-modules">
+<h3><a class="toc-backref" href="#id37">Listing private top level module names as optional standard library modules</a><a class="headerlink" href="#listing-private-top-level-module-names-as-optional-standard-library-modules" title="Permalink to this headline">¶</a></h3>
+<p>Many of the modules that have an optional external build dependency are written
+as hybrid modules, where there is a shared Python wrapper around an
+implementation dependent interface to the underlying external library. In other
+cases, a private top level module may simply be a CPython implementation detail,
+and other implementations may not provide that module at all.</p>
+<p>To report import errors involving these modules appropriately, the new default
+<code class="docutils literal notranslate"><span class="pre">excepthook</span></code> implementation needs them to be reported by the new query APIs.</p>
+</div>
+<div class="section" id="deeming-packaging-related-modules-to-be-mandatory">
+<h3><a class="toc-backref" href="#id38">Deeming packaging related modules to be mandatory</a><a class="headerlink" href="#deeming-packaging-related-modules-to-be-mandatory" title="Permalink to this headline">¶</a></h3>
+<p>Some redistributors aren’t entirely keen on installing the Python specific
+packaging related modules (<code class="docutils literal notranslate"><span class="pre">distutils</span></code>, <code class="docutils literal notranslate"><span class="pre">ensurepip</span></code>, <code class="docutils literal notranslate"><span class="pre">venv</span></code>) by default,
+preferring that developers use their platform specific tooling instead.</p>
+<p>This approach causes interoperability problems for developers working on
+cross-platform projects and educators attempting to write platform independent
+setup instructions, so this PEP takes the view that these modules should be
+considered mandatory, and left out of the list of optional modules.</p>
+</div>
+</div>
+<div class="section" id="deferred-ideas">
+<h2><a class="toc-backref" href="#id39">Deferred Ideas</a><a class="headerlink" href="#deferred-ideas" title="Permalink to this headline">¶</a></h2>
+<p>The ideas in this section are concepts that this PEP would potentially help
+enable, but they’re considered out of scope for the initial proposal.</p>
+<div class="section" id="platform-dependent-modules">
+<h3><a class="toc-backref" href="#id40">Platform dependent modules</a><a class="headerlink" href="#platform-dependent-modules" title="Permalink to this headline">¶</a></h3>
+<p>Some standard library modules may be missing because they’re only provided on
+particular platforms. For example, the <code class="docutils literal notranslate"><span class="pre">winreg</span></code> module is only available on
+Windows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python3 -c &quot;import winreg&quot;
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 1, in &lt;module&gt;
+ModuleNotFoundError: No module named &#39;winreg&#39;
+</pre></div>
+</div>
+<p>In the current proposal, these platform dependent modules will simply be
+included with all the other optional modules rather than attempting to expose
+the platform dependency information in a more structured way.</p>
+<p>However, the platform dependence is at least tracked at the level of “Windows”,
+“Unix”, “Linux”, and “FreeBSD” for the benefit of <a class="reference external" href="https://docs.python.org/3/py-modindex.html">the documentation</a> <a class="footnote-reference brackets" href="#id16" id="id17">6</a>, so it
+seems plausible that it could potentially be exposed programmatically as well.</p>
+</div>
+<div class="section" id="emitting-a-warning-when-main-shadows-a-standard-library-module">
+<h3><a class="toc-backref" href="#id41">Emitting a warning when <code class="docutils literal notranslate"><span class="pre">__main__</span></code> shadows a standard library module</a><a class="headerlink" href="#emitting-a-warning-when-main-shadows-a-standard-library-module" title="Permalink to this headline">¶</a></h3>
+<p>Given the new query APIs, the new default <code class="docutils literal notranslate"><span class="pre">excepthook</span></code> implementation could
+potentially detect when <code class="docutils literal notranslate"><span class="pre">__main__.__file__</span></code> or <code class="docutils literal notranslate"><span class="pre">__main__.__spec__.name</span></code>
+match a standard library module, and emit a suitable warning.</p>
+<p>However, actually doing anything along this lines should review more cases where
+uses actually encounter this problem, and the various options for potentially
+offering more information to assist in debugging the situation, rather than
+needing to be incorporated right now.</p>
+</div>
+</div>
+<div class="section" id="recommendation-for-downstream-distributors">
+<h2><a class="toc-backref" href="#id42">Recommendation for Downstream Distributors</a><a class="headerlink" href="#recommendation-for-downstream-distributors" title="Permalink to this headline">¶</a></h2>
+<p>By patching <a class="reference external" href="https://docs.python.org/3.7/library/site.html">site.py</a> <a class="footnote-reference brackets" href="#id18" id="id19">7</a> <a class="footnote-reference brackets" href="#id4" id="id3">*</a> to provide their own implementation of the
+<a class="reference external" href="https://docs.python.org/3/library/sys.html#sys.excepthook">sys.excepthook</a> <a class="footnote-reference brackets" href="#id12" id="id15">5</a> function, Python distributors can display tailor-made
+error messages for any uncaught exceptions, including informing the user of
+a proper, distro-specific way to install missing standard library modules upon
+encountering a <a class="reference external" href="https://docs.python.org/3.7/library/exceptions.html#ModuleNotFoundError">ModuleNotFoundError</a> <a class="footnote-reference brackets" href="#id5" id="id7">3</a>.</p>
+<p>Some downstream distributors are already using this method of patching
+<cite>sys.excepthook</cite> to integrate with platform crash reporting mechanisms.</p>
+</div>
+<div class="section" id="backwards-compatibility">
+<h2><a class="toc-backref" href="#id43">Backwards Compatibility</a><a class="headerlink" href="#backwards-compatibility" title="Permalink to this headline">¶</a></h2>
+<p>No problems with backwards compatibility are expected.  Distributions that are
+already patching Python modules to provide custom handling of missing
+dependencies can continue to do so unhindered.</p>
+</div>
+<div class="section" id="reference-and-example-implementation">
+<h2><a class="toc-backref" href="#id44">Reference and Example Implementation</a><a class="headerlink" href="#reference-and-example-implementation" title="Permalink to this headline">¶</a></h2>
+<p>TBD.  The finer details will depend on what’s practical given the capabilities
+of the CPython build system (other implementations should then be able to use
+the generated CPython data, rather than having to regenerate it themselves).</p>
+</div>
+<div class="section" id="notes-and-references">
+<h2><a class="toc-backref" href="#id45">Notes and References</a><a class="headerlink" href="#notes-and-references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id4"><span class="brackets"><a class="fn-backref" href="#id3">*</a></span></dt>
+<dd>Or <a class="reference external" href="https://docs.python.org/3.7/library/site.html">sitecustomize.py</a> <a class="footnote-reference brackets" href="#id18" id="id20">7</a> for organizations with their own custom
+Python variant.</dd>
+<dt class="label" id="debian-patch"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><a class="reference external" href="http://bazaar.launchpad.net/~doko/python/pkg3.5-debian/view/head:/patches/tkinter-import.diff">http://bazaar.launchpad.net/~doko/python/pkg3.5-debian/view/head:/patches/tkinter-import.diff</a></dd>
+<dt class="label" id="stackoverflow-stdlib"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd><a class="reference external" href="http://stackoverflow.com/questions/6463918/how-can-i-get-a-list-of-all-the-python-standard-library-modules">http://stackoverflow.com/questions/6463918/how-can-i-get-a-list-of-all-the-python-standard-library-modules</a></dd>
+</dl>
+<p>Ideas leading up to this PEP were discussed on the <a class="reference external" href="https://mail.python.org/pipermail/python-dev/2016-July/145534.html">python-dev mailing list</a> <a class="footnote-reference brackets" href="#id21" id="id22">8</a>
+and subsequently on <a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2016-December/043907.html">python-ideas</a> <a class="footnote-reference brackets" href="#id23" id="id24">9</a>.</p>
+<dl class="footnote brackets">
+<dt class="label" id="id5"><span class="brackets">3</span><span class='fn-backref'><em> (<a href="#id6">1</a>, <a href="#id7">2</a>) </em></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3.7/library/exceptions.html#ModuleNotFoundError">https://docs.python.org/3.7/library/exceptions.html#ModuleNotFoundError</a></dd>
+<dt class="label" id="id8"><span class="brackets">4</span><span class='fn-backref'><em> (<a href="#id9">1</a>, <a href="#id10">2</a>, <a href="#id11">3</a>) </em></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/library/sysconfig.html">https://docs.python.org/3/library/sysconfig.html</a></dd>
+<dt class="label" id="id12"><span class="brackets">5</span><span class='fn-backref'><em> (<a href="#id13">1</a>, <a href="#id14">2</a>, <a href="#id15">3</a>) </em></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/library/sys.html#sys.excepthook">https://docs.python.org/3/library/sys.html#sys.excepthook</a></dd>
+<dt class="label" id="id16"><span class="brackets"><a class="fn-backref" href="#id17">6</a></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/py-modindex.html">https://docs.python.org/3/py-modindex.html</a></dd>
+<dt class="label" id="id18"><span class="brackets">7</span><span class='fn-backref'><em> (<a href="#id19">1</a>, <a href="#id20">2</a>) </em></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3.7/library/site.html">https://docs.python.org/3.7/library/site.html</a></dd>
+<dt class="label" id="id21"><span class="brackets"><a class="fn-backref" href="#id22">8</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2016-July/145534.html">https://mail.python.org/pipermail/python-dev/2016-July/145534.html</a></dd>
+<dt class="label" id="id23"><span class="brackets"><a class="fn-backref" href="#id24">9</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2016-December/043907.html">https://mail.python.org/pipermail/python-ideas/2016-December/043907.html</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id46">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0534.txt">https://github.com/python/peps/blob/master/pep-0534.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0534.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0533.html">PEP 0533</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0535.html">PEP 0535</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 534 – Improved Errors for Missing Standard Library Modules</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#pep-deferral">PEP Deferral</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a><ul>
+<li><a class="reference internal" href="#cpython">CPython</a></li>
+<li><a class="reference internal" href="#linux-and-other-distributions">Linux and other distributions</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#apis-to-list-expected-standard-library-modules">APIs to list expected standard library modules</a></li>
+<li><a class="reference internal" href="#changes-to-the-default-sys-excepthook-implementation">Changes to the default <code class="docutils literal notranslate"><span class="pre">sys.excepthook</span></code> implementation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#design-discussion">Design Discussion</a><ul>
+<li><a class="reference internal" href="#modifying-sys-excepthook">Modifying <code class="docutils literal notranslate"><span class="pre">sys.excepthook</span></code></a></li>
+<li><a class="reference internal" href="#public-api-to-query-expected-standard-library-module-names">Public API to query expected standard library module names</a></li>
+<li><a class="reference internal" href="#only-including-top-level-module-names">Only including top level module names</a></li>
+<li><a class="reference internal" href="#listing-private-top-level-module-names-as-optional-standard-library-modules">Listing private top level module names as optional standard library modules</a></li>
+<li><a class="reference internal" href="#deeming-packaging-related-modules-to-be-mandatory">Deeming packaging related modules to be mandatory</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#deferred-ideas">Deferred Ideas</a><ul>
+<li><a class="reference internal" href="#platform-dependent-modules">Platform dependent modules</a></li>
+<li><a class="reference internal" href="#emitting-a-warning-when-main-shadows-a-standard-library-module">Emitting a warning when <code class="docutils literal notranslate"><span class="pre">__main__</span></code> shadows a standard library module</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#recommendation-for-downstream-distributors">Recommendation for Downstream Distributors</a></li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#reference-and-example-implementation">Reference and Example Implementation</a></li>
+<li><a class="reference internal" href="#notes-and-references">Notes and References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

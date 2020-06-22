@@ -1,0 +1,349 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 213 – Attribute Access Handlers &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 214 – Extended Print Statement" href="pep-0214.html" />
+    <link rel="prev" title="PEP 212 – Loop Counter Iteration" href="pep-0212.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 213 – Attribute Access Handlers</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-213-attribute-access-handlers">
+<h1 class="page-title">PEP 213 – Attribute Access Handlers<a class="headerlink" href="#pep-213-attribute-access-handlers" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">213</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Attribute Access Handlers</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">paul&#32;&#97;t&#32;prescod.net (Paul Prescod)</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Deferred</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">21-Jul-2000</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.1</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#introduction" id="id2">Introduction</a></li>
+<li><a class="reference internal" href="#justification" id="id3">Justification</a><ul>
+<li><a class="reference internal" href="#scenario-1" id="id4">Scenario 1</a></li>
+<li><a class="reference internal" href="#scenario-2" id="id5">Scenario 2</a></li>
+<li><a class="reference internal" href="#scenario-3" id="id6">Scenario 3</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#current-solution" id="id7">Current Solution</a></li>
+<li><a class="reference internal" href="#proposed-syntax" id="id8">Proposed Syntax</a></li>
+<li><a class="reference internal" href="#semantics" id="id9">Semantics</a></li>
+<li><a class="reference internal" href="#proposed-implementation" id="id10">Proposed Implementation</a></li>
+<li><a class="reference internal" href="#caveats" id="id11">Caveats</a></li>
+<li><a class="reference internal" href="#note" id="id12">Note</a></li>
+</ul>
+</div>
+<div class="section" id="introduction">
+<h2><a class="toc-backref" href="#id2">Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>It is possible (and even relatively common) in Python code and
+in extension modules to “trap” when an instance’s client code
+attempts to set an attribute and execute code instead. In other
+words, it is possible to allow users to use attribute assignment/
+retrieval/deletion syntax even though the underlying implementation
+is doing some computation rather than directly modifying a
+binding.</p>
+<p>This PEP describes a feature that makes it easier, more efficient
+and safer to implement these handlers for Python instances.</p>
+</div>
+<div class="section" id="justification">
+<h2><a class="toc-backref" href="#id3">Justification</a><a class="headerlink" href="#justification" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="scenario-1">
+<h3><a class="toc-backref" href="#id4">Scenario 1</a><a class="headerlink" href="#scenario-1" title="Permalink to this headline">¶</a></h3>
+<p>You have a deployed class that works on an attribute named
+“stdout”. After a while, you think it would be better to
+check that stdout is really an object with a “write” method
+at the moment of assignment. Rather than change to a
+setstdout method (which would be incompatible with deployed
+code) you would rather trap the assignment and check the
+object’s type.</p>
+</div>
+<div class="section" id="scenario-2">
+<h3><a class="toc-backref" href="#id5">Scenario 2</a><a class="headerlink" href="#scenario-2" title="Permalink to this headline">¶</a></h3>
+<p>You want to be as compatible as possible with an object
+model that has a concept of attribute assignment. It could
+be the W3C Document Object Model or a particular COM
+interface (e.g. the PowerPoint interface). In that case
+you may well want attributes in the model to show up as
+attributes in the Python interface, even though the
+underlying implementation may not use attributes at all.</p>
+</div>
+<div class="section" id="scenario-3">
+<h3><a class="toc-backref" href="#id6">Scenario 3</a><a class="headerlink" href="#scenario-3" title="Permalink to this headline">¶</a></h3>
+<p>A user wants to make an attribute read-only.</p>
+<p>In short, this feature allows programmers to separate the
+interface of their module from the underlying implementation
+for whatever purpose. Again, this is not a new feature but
+merely a new syntax for an existing convention.</p>
+</div>
+</div>
+<div class="section" id="current-solution">
+<h2><a class="toc-backref" href="#id7">Current Solution</a><a class="headerlink" href="#current-solution" title="Permalink to this headline">¶</a></h2>
+<p>To make some attributes read-only:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">foo</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__setattr__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">val</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="n">name</span><span class="o">==</span><span class="s2">&quot;readonlyattr&quot;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span>
+        <span class="k">elif</span> <span class="n">name</span><span class="o">==</span><span class="s2">&quot;readonlyattr2&quot;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span>
+    <span class="o">...</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span><span class="o">=</span><span class="n">val</span>
+</pre></div>
+</div>
+<p>This has the following problems:</p>
+<ol class="arabic simple">
+<li>The creator of the method must be intimately aware of whether
+somewhere else in the class hierarchy <code class="docutils literal notranslate"><span class="pre">__setattr__</span></code> has also been
+trapped for any particular purpose. If so, she must specifically
+call that method rather than assigning to the dictionary. There
+are many different reasons to overload <code class="docutils literal notranslate"><span class="pre">__setattr__</span></code> so there is a
+decent potential for clashes. For instance object database
+implementations often overload setattr for an entirely unrelated
+purpose.</li>
+<li>The string-based switch statement forces all attribute handlers
+to be specified in one place in the code. They may then dispatch
+to task-specific methods (for modularity) but this could cause
+performance problems.</li>
+<li>Logic for the setting, getting and deleting must live in
+<code class="docutils literal notranslate"><span class="pre">__getattr__</span></code>, <code class="docutils literal notranslate"><span class="pre">__setattr__</span></code> and <code class="docutils literal notranslate"><span class="pre">__delattr__</span></code>. Once again, this can
+be mitigated through an extra level of method call but this is
+inefficient.</li>
+</ol>
+</div>
+<div class="section" id="proposed-syntax">
+<h2><a class="toc-backref" href="#id8">Proposed Syntax</a><a class="headerlink" href="#proposed-syntax" title="Permalink to this headline">¶</a></h2>
+<p>Special methods should declare themselves with declarations of the
+following form:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">x</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__attr_XXX__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">op</span><span class="p">,</span> <span class="n">val</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="n">op</span><span class="o">==</span><span class="s2">&quot;get&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">someComputedValue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">internal</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">op</span><span class="o">==</span><span class="s2">&quot;set&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">internal</span><span class="o">=</span><span class="n">someComputedValue</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">op</span><span class="o">==</span><span class="s2">&quot;del&quot;</span><span class="p">:</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">internal</span>
+</pre></div>
+</div>
+<p>Client code looks like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fooval</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">foo</span>
+<span class="n">x</span><span class="o">.</span><span class="n">foo</span><span class="o">=</span><span class="n">fooval</span><span class="o">+</span><span class="mi">5</span>
+<span class="k">del</span> <span class="n">x</span><span class="o">.</span><span class="n">foo</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="semantics">
+<h2><a class="toc-backref" href="#id9">Semantics</a><a class="headerlink" href="#semantics" title="Permalink to this headline">¶</a></h2>
+<p>Attribute references of all three kinds should call the method.
+The op parameter can be “get”/”set”/”del”. Of course this string
+will be interned so the actual checks for the string will be
+very fast.</p>
+<p>It is disallowed to actually have an attribute named XXX in the
+same instance as a method named __attr_XXX__.</p>
+<p>An implementation of __attr_XXX__ takes precedence over an
+implementation of <code class="docutils literal notranslate"><span class="pre">__getattr__</span></code> based on the principle that
+<code class="docutils literal notranslate"><span class="pre">__getattr__</span></code> is supposed to be invoked only after finding an
+appropriate attribute has failed.</p>
+<p>An implementation of __attr_XXX__ takes precedence over an
+implementation of <code class="docutils literal notranslate"><span class="pre">__setattr__</span></code> in order to be consistent. The
+opposite choice seems fairly feasible also, however. The same
+goes for __del_y__.</p>
+</div>
+<div class="section" id="proposed-implementation">
+<h2><a class="toc-backref" href="#id10">Proposed Implementation</a><a class="headerlink" href="#proposed-implementation" title="Permalink to this headline">¶</a></h2>
+<p>There is a new object type called an attribute access handler.
+Objects of this type have the following attributes:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">name</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">g</span><span class="o">.</span> <span class="n">XXX</span><span class="p">,</span> <span class="ow">not</span> <span class="n">__attr__XXX__</span><span class="p">)</span>
+<span class="n">method</span> <span class="p">(</span><span class="n">pointer</span> <span class="n">to</span> <span class="n">a</span> <span class="n">method</span> <span class="nb">object</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In PyClass_New, methods of the appropriate form will be detected and
+converted into objects (just like unbound method objects). These are
+stored in the class <code class="docutils literal notranslate"><span class="pre">__dict__</span></code> under the name XXX. The original method
+is stored as an unbound method under its original name.</p>
+<p>If there are any attribute access handlers in an instance at all,
+a flag is set. Let’s call it “I_have_computed_attributes” for
+now. Derived classes inherit the flag from base classes. Instances
+inherit the flag from classes.</p>
+<p>A get proceeds as usual until just before the object is returned.
+In addition to the current check whether the returned object is a
+method it would also check whether a returned object is an access
+handler. If so, it would invoke the getter method and return
+the value. To remove an attribute access handler you could directly
+fiddle with the dictionary.</p>
+<p>A set proceeds by checking the “I_have_computed_attributes” flag. If
+it is not set, everything proceeds as it does today. If it is set
+then we must do a dictionary get on the requested object name. If it
+returns an attribute access handler then we call the setter function
+with the value. If it returns any other object then we discard the
+result and continue as we do today. Note that having an attribute
+access handler will mildly affect attribute “setting” performance for
+all sets on a particular instance, but no more so than today, using
+<code class="docutils literal notranslate"><span class="pre">__setattr__</span></code>. Gets are more efficient than they are today with
+<code class="docutils literal notranslate"><span class="pre">__getattr__</span></code>.</p>
+<p>The I_have_computed_attributes flag is intended to eliminate the
+performance degradation of an extra “get” per “set” for objects not
+using this feature. Checking this flag should have minuscule
+performance implications for all objects.</p>
+<p>The implementation of delete is analogous to the implementation
+of set.</p>
+</div>
+<div class="section" id="caveats">
+<h2><a class="toc-backref" href="#id11">Caveats</a><a class="headerlink" href="#caveats" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic">
+<li><p>You might note that I have not proposed any logic to keep
+the I_have_computed_attributes flag up to date as attributes
+are added and removed from the instance’s dictionary. This is
+consistent with current Python. If you add a <code class="docutils literal notranslate"><span class="pre">__setattr__</span></code> method
+to an object after it is in use, that method will not behave as
+it would if it were available at “compile” time. The dynamism is
+arguably not worth the extra implementation effort. This snippet
+demonstrates the current behavior:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">prn</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span><span class="nb">print</span> <span class="n">args</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">a</span><span class="p">:</span>
+
+<span class="gp">... </span>   <span class="fm">__setattr__</span><span class="o">=</span><span class="n">prn</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="p">()</span><span class="o">.</span><span class="n">foo</span><span class="o">=</span><span class="mi">5</span>
+<span class="go">(&lt;__main__.a instance at 882890&gt;, &#39;foo&#39;, 5)</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">b</span><span class="p">:</span> <span class="k">pass</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bi</span><span class="o">=</span><span class="n">b</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bi</span><span class="o">.</span><span class="fm">__setattr__</span><span class="o">=</span><span class="n">prn</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span><span class="o">.</span><span class="n">foo</span><span class="o">=</span><span class="mi">5</span>
+</pre></div>
+</div>
+</li>
+<li>Assignment to __dict__[“XXX”] can overwrite the attribute
+access handler for __attr_XXX__. Typically the access handlers will
+store information away in private __XXX variables</li>
+<li>An attribute access handler that attempts to call setattr or getattr
+on the object itself can cause an infinite loop (as with <code class="docutils literal notranslate"><span class="pre">__getattr__</span></code>)
+Once again, the solution is to use a special (typically private)
+variable such as __XXX.</li>
+</ol>
+</div>
+<div class="section" id="note">
+<h2><a class="toc-backref" href="#id12">Note</a><a class="headerlink" href="#note" title="Permalink to this headline">¶</a></h2>
+<p>The descriptor mechanism described in PEP 252 is powerful enough
+to support this more directly.  A ‘getset’ constructor may be
+added to the language making this possible:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">C</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">get_x</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__x</span>
+    <span class="k">def</span> <span class="nf">set_x</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__x</span> <span class="o">=</span> <span class="n">v</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">getset</span><span class="p">(</span><span class="n">get_x</span><span class="p">,</span> <span class="n">set_x</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Additional syntactic sugar might be added, or a naming convention
+could be recognized.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0213.txt">https://github.com/python/peps/blob/master/pep-0213.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0213.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0212.html">PEP 0212</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0214.html">PEP 0214</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 213 – Attribute Access Handlers</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#justification">Justification</a><ul>
+<li><a class="reference internal" href="#scenario-1">Scenario 1</a></li>
+<li><a class="reference internal" href="#scenario-2">Scenario 2</a></li>
+<li><a class="reference internal" href="#scenario-3">Scenario 3</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#current-solution">Current Solution</a></li>
+<li><a class="reference internal" href="#proposed-syntax">Proposed Syntax</a></li>
+<li><a class="reference internal" href="#semantics">Semantics</a></li>
+<li><a class="reference internal" href="#proposed-implementation">Proposed Implementation</a></li>
+<li><a class="reference internal" href="#caveats">Caveats</a></li>
+<li><a class="reference internal" href="#note">Note</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

@@ -1,0 +1,309 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 268 – Extended HTTP functionality and WebDAV &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 269 – Pgen Module for Python" href="pep-0269.html" />
+    <link rel="prev" title="PEP 267 – Optimized Access to Module Namespaces" href="pep-0267.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 268 – Extended HTTP functionality and WebDAV</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-268-extended-http-functionality-and-webdav">
+<h1 class="page-title">PEP 268 – Extended HTTP functionality and WebDAV<a class="headerlink" href="#pep-268-extended-http-functionality-and-webdav" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">268</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Extended HTTP functionality and WebDAV</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">gstein&#32;&#97;t&#32;lyra.org (Greg Stein)</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Rejected</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">20-Aug-2001</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.x</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">21-Aug-2001</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#rejection-notice" id="id3">Rejection Notice</a></li>
+<li><a class="reference internal" href="#abstract" id="id4">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id5">Rationale</a></li>
+<li><a class="reference internal" href="#specification" id="id6">Specification</a><ul>
+<li><a class="reference internal" href="#http-authentication" id="id7">HTTP Authentication</a></li>
+<li><a class="reference internal" href="#proxy-handling" id="id8">Proxy Handling</a></li>
+<li><a class="reference internal" href="#webdav-features" id="id9">WebDAV Features</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#reference-implementation" id="id10">Reference Implementation</a></li>
+<li><a class="reference internal" href="#references" id="id11">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id12">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="rejection-notice">
+<h2><a class="toc-backref" href="#id3">Rejection Notice</a><a class="headerlink" href="#rejection-notice" title="Permalink to this headline">¶</a></h2>
+<p>This PEP has been rejected. It has failed to generate sufficient
+community support in the six years since its proposal.</p>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id4">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP discusses new modules and extended functionality for Python’s
+HTTP support. Notably, the addition of authenticated requests, proxy
+support, authenticated proxy usage, and <a class="reference external" href="http://www.webdav.org/">WebDAV</a> <a class="footnote-reference brackets" href="#id1" id="id2">1</a> capabilities.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id5">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Python has been quite popular as a result of its “batteries included”
+positioning. One of the most heavily used protocols, HTTP (see RFC
+2616), has been included with Python for years (<code class="docutils literal notranslate"><span class="pre">httplib</span></code>). However,
+this support has not kept up with the full needs and requirements of
+many HTTP-based applications and systems. In addition, new protocols
+based on HTTP, such as WebDAV and XML-RPC, are becoming useful and are
+seeing increasing usage. Supplying this functionality meets Python’s
+“batteries included” role and also keeps Python at the leading edge of
+new technologies.</p>
+<p>While authentication and proxy support are two very notable features
+missing from Python’s core HTTP processing, they are minimally handled
+as part of Python’s URL handling (<code class="docutils literal notranslate"><span class="pre">urllib</span></code> and
+<code class="docutils literal notranslate"><span class="pre">urllib2</span></code>). However, applications that need fine-grained or
+sophisticated HTTP handling cannot make use of the features while they
+reside in urllib. Refactoring these features into a location where
+they can be directly associated with an HTTP connection will improve
+their utility for both urllib and for sophisticated applications.</p>
+<p>The motivation for this PEP was from several people requesting these
+features directly, and from a number of feature requests on
+SourceForge. Since the exact form of the modules to be provided and
+the classes/architecture used could be subject to debate, this PEP was
+created to provide a focal point for those discussions.</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id6">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>Two modules will be added to the standard library: <code class="docutils literal notranslate"><span class="pre">httpx</span></code> (HTTP
+extended functionality), and <code class="docutils literal notranslate"><span class="pre">davlib</span></code> (WebDAV library).</p>
+<p>[ suggestions for module names are welcome; <code class="docutils literal notranslate"><span class="pre">davlib</span></code> has some
+precedence, but something like <code class="docutils literal notranslate"><span class="pre">webdav</span></code> might be desirable ]</p>
+<div class="section" id="http-authentication">
+<h3><a class="toc-backref" href="#id7">HTTP Authentication</a><a class="headerlink" href="#http-authentication" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">httpx</span></code> module will provide a mixin for performing HTTP
+authentication (for both proxy and origin server authentication). This
+mixin (<code class="docutils literal notranslate"><span class="pre">httpx.HandleAuthentication</span></code>) can be combined with the
+<code class="docutils literal notranslate"><span class="pre">HTTPConnection</span></code> and the <code class="docutils literal notranslate"><span class="pre">HTTPSConnection</span></code> classes (the mixin may
+possibly work with the HTTP and HTTPS compatibility classes, but that
+is not a requirement).</p>
+<p>The mixin will delegate the authentication process to one or more
+“authenticator” objects, allowing multiple connections to share
+authenticators. The use of a separate object allows for a long term
+connection to an authentication system (e.g. LDAP). An authenticator
+for the Basic and Digest mechanisms (see RFC 2617) will be
+provided. User-supplied authenticator subclasses can be registered and
+used by the connections.</p>
+<p>A “credentials” object (<code class="docutils literal notranslate"><span class="pre">httpx.Credentials</span></code>) is also associated with
+the mixin, and stores the credentials (e.g. username and password)
+needed by the authenticators. Subclasses of Credentials can be created
+to hold additional information (e.g. NT domain).</p>
+<p>The mixin overrides the <code class="docutils literal notranslate"><span class="pre">getresponse()</span></code> method to detect <code class="docutils literal notranslate"><span class="pre">401</span>
+<span class="pre">(Unauthorized)</span></code> and <code class="docutils literal notranslate"><span class="pre">407</span> <span class="pre">(Proxy</span> <span class="pre">Authentication</span> <span class="pre">Required)</span></code>
+responses. When this is found, the response object, the connection,
+and the credentials are passed to the authenticator corresponding with
+the authentication scheme specified in the response (multiple
+authenticators are tried in decreasing order of security if multiple
+schemes are in the response). Each authenticator can examine the
+response headers and decide whether and how to resend the request with
+the correct authentication headers. If no authenticator can
+successfully handle the authentication, then an exception is raised.</p>
+<p>Resending a request, with the appropriate credentials, is one of the
+more difficult portions of the authentication system. The difficulty
+arises in recording what was sent originally: the request line, the
+headers, and the body. By overriding putrequest, putheader, and
+endheaders, we can capture all but the body. Once the endheaders
+method is called, then we capture all calls to send() (until the next
+putrequest method call) to hold the body content. The mixin will have
+a configurable limit for the amount of data to hold in this fashion
+(e.g. only hold up to 100k of body content). Assuming that the entire
+body has been stored, then we can resend the request with the
+appropriate authentication information.</p>
+<p>If the body is too large to be stored, then the <code class="docutils literal notranslate"><span class="pre">getresponse()</span></code>
+simply returns the response object, indicating the 401 or 407
+error. Since the authentication information has been computed and
+cached (into the Credentials object; see below), the caller can simply
+regenerate the request. The mixin will attach the appropriate
+credentials.</p>
+<p>A “protection space” (see RFC 2617, section 1.2) is defined as a tuple
+of the host, port, and authentication realm. When a request is
+initially sent to an HTTP server, we do not know the authentication
+realm (the realm is only returned when authentication fails). However,
+we do have the path from the URL, and that can be useful in
+determining the credentials to send to the server.  The Basic
+authentication scheme is typically set up hierarchically: the
+credentials for <code class="docutils literal notranslate"><span class="pre">/path</span></code> can be tried for <code class="docutils literal notranslate"><span class="pre">/path/subpath</span></code>. The
+Digest authentication scheme has explicit support for the hierarchical
+setup. The <code class="docutils literal notranslate"><span class="pre">httpx.Credentials</span></code> object will store credentials for
+multiple protection spaces, and can be looked up in two different
+ways:</p>
+<ol class="arabic simple">
+<li>looked up using <code class="docutils literal notranslate"><span class="pre">(host,</span> <span class="pre">port,</span> <span class="pre">path)</span></code> – this lookup scheme is
+used when generating a request for a path where we don’t know the
+authentication realm.</li>
+<li>looked up using <code class="docutils literal notranslate"><span class="pre">(host,</span> <span class="pre">port,</span> <span class="pre">realm)</span></code> – this mechanism is used
+during the authentication process when the server has specified that
+the Request-URI resides within a specific realm.</li>
+</ol>
+<p>The <code class="docutils literal notranslate"><span class="pre">HandleAuthentication</span></code> mixin will override <code class="docutils literal notranslate"><span class="pre">putrequest()</span></code> to
+automatically insert credentials, if available. The URL from the
+putrequest is used to determine the appropriate authentication
+information to use.</p>
+<p>It is also important to note that two sets of credentials are used,
+and stored by the mixin. One set for any proxy that may be used, and
+one used for the target origin server. Since proxies do not have
+paths, the protection spaces in the proxy credentials will always use
+“/” for storing and looking up via a path.</p>
+</div>
+<div class="section" id="proxy-handling">
+<h3><a class="toc-backref" href="#id8">Proxy Handling</a><a class="headerlink" href="#proxy-handling" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">httpx</span></code> module will provide a mixin for using a proxy to perform
+HTTP(S) operations. This mixin (<code class="docutils literal notranslate"><span class="pre">httpx.UseProxy</span></code>) can be combined
+with the <code class="docutils literal notranslate"><span class="pre">HTTPConnection</span></code> and the <code class="docutils literal notranslate"><span class="pre">HTTPSConnection</span></code> classes (the
+mixin may possibly work with the HTTP and HTTPS compatibility classes,
+but that is not a requirement).</p>
+<p>The mixin will record the <code class="docutils literal notranslate"><span class="pre">(host,</span> <span class="pre">port)</span></code> of the proxy to use. XXX
+will be overridden to use this host/port combination for connections
+and to rewrite request URLs into the absoluteURIs referring to the
+origin server (these URIs are passed to the proxy server).</p>
+<p>Proxy authentication is handled by the <code class="docutils literal notranslate"><span class="pre">httpx.HandleAuthentication</span></code>
+class since a user may directly use <code class="docutils literal notranslate"><span class="pre">HTTP(S)Connection</span></code> to speak
+with proxies.</p>
+</div>
+<div class="section" id="webdav-features">
+<h3><a class="toc-backref" href="#id9">WebDAV Features</a><a class="headerlink" href="#webdav-features" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">davlib</span></code> module will provide a mixin for sending WebDAV requests
+to a WebDAV-enabled server. This mixin (<code class="docutils literal notranslate"><span class="pre">davlib.DAVClient</span></code>) can be
+combined with the <code class="docutils literal notranslate"><span class="pre">HTTPConnection</span></code> and the <code class="docutils literal notranslate"><span class="pre">HTTPSConnection</span></code>
+classes (the mixin may possibly work with the HTTP and HTTPS
+compatibility classes, but that is not a requirement).</p>
+<p>The mixin provides methods to perform the various HTTP methods defined
+by HTTP in RFC 2616, and by WebDAV in RFC 2518.</p>
+<p>A custom response object is used to decode <code class="docutils literal notranslate"><span class="pre">207</span> <span class="pre">(Multi-Status)</span></code>
+responses. The response object will use the standard library’s xml
+package to parse the multistatus XML information, producing a simple
+structure of objects to hold the multistatus data. Multiple parsing
+schemes will be tried/used, in order of decreasing speed.</p>
+</div>
+</div>
+<div class="section" id="reference-implementation">
+<h2><a class="toc-backref" href="#id10">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>The actual (future/final) implementation is being developed in the
+<code class="docutils literal notranslate"><span class="pre">/nondist/sandbox/Lib</span></code> directory, until it is accepted and moved
+into the main Lib directory.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id11">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id1"><span class="brackets"><a class="fn-backref" href="#id2">1</a></span></dt>
+<dd><a class="reference external" href="http://www.webdav.org/">http://www.webdav.org/</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id12">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0268.txt">https://github.com/python/peps/blob/master/pep-0268.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0268.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0267.html">PEP 0267</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0269.html">PEP 0269</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 268 – Extended HTTP functionality and WebDAV</a><ul>
+<li><a class="reference internal" href="#rejection-notice">Rejection Notice</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#http-authentication">HTTP Authentication</a></li>
+<li><a class="reference internal" href="#proxy-handling">Proxy Handling</a></li>
+<li><a class="reference internal" href="#webdav-features">WebDAV Features</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

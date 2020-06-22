@@ -1,0 +1,326 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 382 – Namespace Packages &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 383 – Non-decodable Bytes in System Character Interfaces" href="pep-0383.html" />
+    <link rel="prev" title="PEP 381 – Mirroring infrastructure for PyPI" href="pep-0381.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 382 – Namespace Packages</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-382-namespace-packages">
+<h1 class="page-title">PEP 382 – Namespace Packages<a class="headerlink" href="#pep-382-namespace-packages" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">382</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Namespace Packages</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Martin v. Löwis &lt;martin&#32;&#97;t&#32;v.loewis.de&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Rejected</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">02-Apr-2009</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.2</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#rejection-notice" id="id5">Rejection Notice</a></li>
+<li><a class="reference internal" href="#abstract" id="id6">Abstract</a></li>
+<li><a class="reference internal" href="#terminology" id="id7">Terminology</a></li>
+<li><a class="reference internal" href="#namespace-packages-today" id="id8">Namespace packages today</a></li>
+<li><a class="reference internal" href="#rationale" id="id9">Rationale</a></li>
+<li><a class="reference internal" href="#specification" id="id10">Specification</a><ul>
+<li><a class="reference internal" href="#impact-on-import-hooks" id="id11">Impact on Import Hooks</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#discussion" id="id12">Discussion</a></li>
+<li><a class="reference internal" href="#references" id="id13">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id14">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="rejection-notice">
+<h2><a class="toc-backref" href="#id5">Rejection Notice</a><a class="headerlink" href="#rejection-notice" title="Permalink to this headline">¶</a></h2>
+<p>On the first day of sprints at US PyCon 2012 we had a long and
+fruitful discussion about PEP 382 and PEP 402.  We ended up rejecting
+both but a new PEP will be written to carry on in the spirit of PEP
+402.  Martin von Löwis wrote up a summary: <a class="footnote-reference brackets" href="#id4" id="id1">2</a>.</p>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id6">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Namespace packages are a mechanism for splitting a single Python
+package across multiple directories on disk. In current Python
+versions, an algorithm to compute the packages __path__ must be
+formulated. With the enhancement proposed here, the import machinery
+itself will construct the list of directories that make up the
+package.   An implementation of this PEP is available at <a class="footnote-reference brackets" href="#id3" id="id2">1</a>.</p>
+</div>
+<div class="section" id="terminology">
+<h2><a class="toc-backref" href="#id7">Terminology</a><a class="headerlink" href="#terminology" title="Permalink to this headline">¶</a></h2>
+<p>Within this PEP, the term package refers to Python packages as defined
+by Python’s import statement. The term distribution refers to
+separately installable sets of Python modules as stored in the Python
+package index, and installed by distutils or setuptools. The term
+vendor package refers to groups of files installed by an operating
+system’s packaging mechanism (e.g. Debian or Redhat packages install
+on Linux systems).</p>
+<p>The term portion refers to a set of files in a single directory (possibly
+stored in a zip file) that contribute to a namespace package.</p>
+</div>
+<div class="section" id="namespace-packages-today">
+<h2><a class="toc-backref" href="#id8">Namespace packages today</a><a class="headerlink" href="#namespace-packages-today" title="Permalink to this headline">¶</a></h2>
+<p>Python currently provides the pkgutil.extend_path to denote a package as
+a namespace package. The recommended way of using it is to put:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pkgutil</span> <span class="kn">import</span> <span class="n">extend_path</span>
+<span class="n">__path__</span> <span class="o">=</span> <span class="n">extend_path</span><span class="p">(</span><span class="n">__path__</span><span class="p">,</span> <span class="vm">__name__</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>in the package’s <code class="docutils literal notranslate"><span class="pre">__init__.py</span></code>. Every distribution needs to provide
+the same contents in its <code class="docutils literal notranslate"><span class="pre">__init__.py</span></code>, so that extend_path is
+invoked independent of which portion of the package gets imported
+first. As a consequence, the package’s <code class="docutils literal notranslate"><span class="pre">__init__.py</span></code> cannot
+practically define any names as it depends on the order of the package
+fragments on sys.path which portion is imported first. As a special
+feature, extend_path reads files named <code class="docutils literal notranslate"><span class="pre">&lt;packagename&gt;.pkg</span></code> which
+allow to declare additional portions.</p>
+<p>setuptools provides a similar function pkg_resources.declare_namespace
+that is used in the form:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pkg_resources</span>
+<span class="n">pkg_resources</span><span class="o">.</span><span class="n">declare_namespace</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In the portion’s __init__.py, no assignment to __path__ is necessary,
+as declare_namespace modifies the package __path__ through sys.modules.
+As a special feature, declare_namespace also supports zip files, and
+registers the package name internally so that future additions to sys.path
+by setuptools can properly add additional portions to each package.</p>
+<p>setuptools allows declaring namespace packages in a distribution’s
+setup.py, so that distribution developers don’t need to put the
+magic __path__ modification into __init__.py themselves.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id9">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>The current imperative approach to namespace packages has lead to
+multiple slightly-incompatible mechanisms for providing namespace
+packages. For example, pkgutil supports <code class="docutils literal notranslate"><span class="pre">*.pkg</span></code> files; setuptools
+doesn’t. Likewise, setuptools supports inspecting zip files, and
+supports adding portions to its _namespace_packages variable, whereas
+pkgutil doesn’t.</p>
+<p>In addition, the current approach causes problems for system vendors.
+Vendor packages typically must not provide overlapping files, and an
+attempt to install a vendor package that has a file already on disk
+will fail or cause unpredictable behavior. As vendors might chose to
+package distributions such that they will end up all in a single
+directory for the namespace package, all portions would contribute
+conflicting __init__.py files.</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id10">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>Rather than using an imperative mechanism for importing packages, a
+declarative approach is proposed here: A directory whose name ends
+with <code class="docutils literal notranslate"><span class="pre">.pyp</span></code> (for Python package) contains a portion of a package.</p>
+<p>The import statement is extended so that computes the package’s
+<code class="docutils literal notranslate"><span class="pre">__path__</span></code> attribute for a package named <code class="docutils literal notranslate"><span class="pre">P</span></code> as consisting of
+optionally a single directory name <code class="docutils literal notranslate"><span class="pre">P</span></code> containing a file
+<code class="docutils literal notranslate"><span class="pre">__init__.py</span></code>, plus all directories named <code class="docutils literal notranslate"><span class="pre">P.pyp</span></code>, in the order in
+which they are found in the parent’s package <code class="docutils literal notranslate"><span class="pre">__path__</span></code> (or
+<code class="docutils literal notranslate"><span class="pre">sys.path</span></code>). If either of these are found, search for additional
+portions of the package continues.</p>
+<p>A directory may contain both a package in the <code class="docutils literal notranslate"><span class="pre">P/__init__.py</span></code> and
+the <code class="docutils literal notranslate"><span class="pre">P.pyp</span></code> form.</p>
+<p>No other change to the importing mechanism is made; searching modules
+(including __init__.py) will continue to stop at the first module
+encountered. In summary, the process import a package foo works like
+this:</p>
+<ol class="arabic simple">
+<li>sys.path is searched for directories foo or foo.pyp, or a file foo.&lt;ext&gt;.
+If a file is found and no directory, it is treated as a module, and imported.</li>
+<li>If a directory foo is found, a check is made whether it contains __init__.py.
+If so, the location of the __init__.py is remembered. Otherwise, the directory
+is skipped. Once an __init__.py is found, further directories called foo are
+skipped.</li>
+<li>For both directories foo and foo.pyp, the directories are added to the package’s
+__path__.</li>
+<li>If an __init__ module was found, it is imported, with __path__
+being initialized to the path computed all <code class="docutils literal notranslate"><span class="pre">.pyp</span></code> directories.</li>
+</ol>
+<div class="section" id="impact-on-import-hooks">
+<h3><a class="toc-backref" href="#id11">Impact on Import Hooks</a><a class="headerlink" href="#impact-on-import-hooks" title="Permalink to this headline">¶</a></h3>
+<p>Both loaders and finders as defined in PEP 302 will need to be changed
+to support namespace packages. Failure to conform to the protocol
+below might cause a package not being recognized as a namespace
+package; loaders and finders not supporting this protocol must raise
+AttributeError when the functions below get accessed.</p>
+<p>Finders need to support looking for *.pth files in step 1 of above
+algorithm. To do so, a finder used as a path hook must support a
+method:</p>
+<blockquote>
+<div>finder.find_package_portion(fullname)</div></blockquote>
+<p>This method will be called in the same manner as find_module, and it
+must return a string to be added to the package’s <code class="docutils literal notranslate"><span class="pre">__path__</span></code>.
+If the finder doesn’t find a portion of the package, it shall return
+<code class="docutils literal notranslate"><span class="pre">None</span></code>. Raising <code class="docutils literal notranslate"><span class="pre">AttributeError</span></code> from above call will be treated
+as non-conformance with this PEP, and the exception will be ignored.
+All other exceptions are reported.</p>
+<p>A finder may report both success from <code class="docutils literal notranslate"><span class="pre">find_module</span></code> and from
+<code class="docutils literal notranslate"><span class="pre">find_package_portion</span></code>, allowing for both a package containing
+an <code class="docutils literal notranslate"><span class="pre">__init__.py</span></code> and a portion of the same package.</p>
+<p>All strings returned from <code class="docutils literal notranslate"><span class="pre">find_package_portion</span></code>, along with all
+path names of <code class="docutils literal notranslate"><span class="pre">.pyp</span></code> directories are added to the new package’s
+<code class="docutils literal notranslate"><span class="pre">__path__</span></code>.</p>
+</div>
+</div>
+<div class="section" id="discussion">
+<h2><a class="toc-backref" href="#id12">Discussion</a><a class="headerlink" href="#discussion" title="Permalink to this headline">¶</a></h2>
+<p>Original versions of this specification proposed the addition of
+<code class="docutils literal notranslate"><span class="pre">*.pth</span></code> files, similar to the way those files are used on sys.path.
+With a wildcard marker (<code class="docutils literal notranslate"><span class="pre">*</span></code>), a package could indicate that the
+entire path is derived by looking at the parent path, searching for
+properly-named subdirectories.</p>
+<p>People then observed that the support for the full .pth syntax is
+inappropriate, and the .pth files were changed to be mere marker
+files, indicating that a directories is a package. Peter Tröger
+suggested that .pth is an unsuitable file extension, as all file
+extensions related to Python should start with <code class="docutils literal notranslate"><span class="pre">.py</span></code>. Therefore, the
+marker file was renamed to be <code class="docutils literal notranslate"><span class="pre">.pyp</span></code>.</p>
+<p>Dinu Gherman then observed that using a marker file is not necessary,
+and that a directory extension could well serve as a such as a
+marker. This is what this PEP currently proposes.</p>
+<p>Phillip Eby designed PEP 402 as an alternative approach to this PEP,
+after comparing Python’s package syntax with that found in other
+languages. PEP 402 proposes not to use a marker file at all. At the
+discussion at PyCon DE 2011, people remarked that having an explicit
+declaration of a directory as contributing to a package is a desirable
+property, rather than an obstacle. In particular, Jython developers
+noticed that Jython could easily mistake a directory that is a Java
+package as being a Python package, if there is no need to declare
+Python packages.</p>
+<p>Packages can stop filling out the namespace package’s __init__.py.  As
+a consequence, extend_path and declare_namespace become obsolete.</p>
+<p>Namespace packages can start providing non-trivial __init__.py
+implementations; to do so, it is recommended that a single distribution
+provides a portion with just the namespace package’s __init__.py
+(and potentially other modules that belong to the namespace package
+proper).</p>
+<p>The mechanism is mostly compatible with the existing namespace
+mechanisms. extend_path will be adjusted to this specification;
+any other mechanism might cause portions to get added twice to
+__path__.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id13">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id3"><span class="brackets"><a class="fn-backref" href="#id2">1</a></span></dt>
+<dd>PEP 382 branch
+(<a class="reference external" href="http://hg.python.org/features/pep-382-2#pep-382">http://hg.python.org/features/pep-382-2#pep-382</a>)</dd>
+<dt class="label" id="id4"><span class="brackets"><a class="fn-backref" href="#id1">2</a></span></dt>
+<dd>Namespace Packages resolution
+(<a class="reference external" href="https://mail.python.org/pipermail/import-sig/2012-March/000421.html">https://mail.python.org/pipermail/import-sig/2012-March/000421.html</a>)</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id14">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0382.txt">https://github.com/python/peps/blob/master/pep-0382.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0382.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0381.html">PEP 0381</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0383.html">PEP 0383</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 382 – Namespace Packages</a><ul>
+<li><a class="reference internal" href="#rejection-notice">Rejection Notice</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#terminology">Terminology</a></li>
+<li><a class="reference internal" href="#namespace-packages-today">Namespace packages today</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#impact-on-import-hooks">Impact on Import Hooks</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#discussion">Discussion</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

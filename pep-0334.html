@@ -1,0 +1,516 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 334 – Simple Coroutines via SuspendIteration &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 335 – Overloadable Boolean Operators" href="pep-0335.html" />
+    <link rel="prev" title="PEP 333 – Python Web Server Gateway Interface v1.0" href="pep-0333.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 334 – Simple Coroutines via SuspendIteration</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-334-simple-coroutines-via-suspenditeration">
+<h1 class="page-title">PEP 334 – Simple Coroutines via SuspendIteration<a class="headerlink" href="#pep-334-simple-coroutines-via-suspenditeration" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">334</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Simple Coroutines via SuspendIteration</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Clark C. Evans &lt;cce&#32;&#97;t&#32;clarkevans.com&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Withdrawn</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">26-Aug-2004</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.0</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id21">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id22">Rationale</a></li>
+<li><a class="reference internal" href="#semantics" id="id23">Semantics</a><ul>
+<li><a class="reference internal" href="#simple-iterators" id="id24">Simple Iterators</a></li>
+<li><a class="reference internal" href="#introducing-suspenditeration" id="id25">Introducing SuspendIteration</a></li>
+<li><a class="reference internal" href="#application-iterators" id="id26">Application Iterators</a></li>
+<li><a class="reference internal" href="#complicating-factors" id="id27">Complicating Factors</a></li>
+<li><a class="reference internal" href="#resource-cleanup" id="id28">Resource Cleanup</a></li>
+<li><a class="reference internal" href="#api-and-limitations" id="id29">API and Limitations</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#low-level-implementation" id="id30">Low-Level Implementation</a></li>
+<li><a class="reference internal" href="#references" id="id31">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id32">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id21">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Asynchronous application frameworks such as Twisted <a class="footnote-reference brackets" href="#id11" id="id1">1</a> and Peak
+<a class="footnote-reference brackets" href="#id12" id="id2">2</a>, are based on a cooperative multitasking via event queues or
+deferred execution.  While this approach to application development
+does not involve threads and thus avoids a whole class of problems
+<a class="footnote-reference brackets" href="#id13" id="id3">3</a>, it creates a different sort of programming challenge.  When an
+I/O operation would block, a user request must suspend so that other
+requests can proceed.  The concept of a coroutine <a class="footnote-reference brackets" href="#id14" id="id4">4</a> promises to
+help the application developer grapple with this state management
+difficulty.</p>
+<p>This PEP proposes a limited approach to coroutines based on an
+extension to the iterator protocol <a class="footnote-reference brackets" href="#id15" id="id5">5</a>.  Currently, an iterator may
+raise a StopIteration exception to indicate that it is done producing
+values.  This proposal adds another exception to this protocol,
+SuspendIteration, which indicates that the given iterator may have
+more values to produce, but is unable to do so at this time.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id22">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>There are two current approaches to bringing co-routines to Python.
+Christian Tismer’s Stackless <a class="footnote-reference brackets" href="#id16" id="id6">6</a> involves a ground-up restructuring
+of Python’s execution model by hacking the ‘C’ stack.  While this
+approach works, its operation is hard to describe and keep portable. A
+related approach is to compile Python code to Parrot <a class="footnote-reference brackets" href="#id17" id="id7">7</a>, a
+register-based virtual machine, which has coroutines.  Unfortunately,
+neither of these solutions is portable with IronPython (CLR) or Jython
+(JavaVM).</p>
+<p>It is thought that a more limited approach, based on iterators, could
+provide a coroutine facility to application programmers and still be
+portable across runtimes.</p>
+<ul class="simple">
+<li>Iterators keep their state in local variables that are not on the
+“C” stack.  Iterators can be viewed as classes, with state stored in
+member variables that are persistent across calls to its next()
+method.</li>
+<li>While an uncaught exception may terminate a function’s execution, an
+uncaught exception need not invalidate an iterator.  The proposed
+exception, SuspendIteration, uses this feature.  In other words,
+just because one call to next() results in an exception does not
+necessarily need to imply that the iterator itself is no longer
+capable of producing values.</li>
+</ul>
+<p>There are four places where this new exception impacts:</p>
+<ul class="simple">
+<li>The simple generator <a class="footnote-reference brackets" href="#id18" id="id8">8</a> mechanism could be extended to safely
+‘catch’ this SuspendIteration exception, stuff away its current
+state, and pass the exception on to the caller.</li>
+<li>Various iterator filters <a class="footnote-reference brackets" href="#id19" id="id9">9</a> in the standard library, such as
+itertools.izip should be made aware of this exception so that it can
+transparently propagate SuspendIteration.</li>
+<li>Iterators generated from I/O operations, such as a file or socket
+reader, could be modified to have a non-blocking variety.  This
+option would raise a subclass of SuspendIteration if the requested
+operation would block.</li>
+<li>The asyncore library could be updated to provide a basic ‘runner’
+that pulls from an iterator; if the SuspendIteration exception is
+caught, then it moves on to the next iterator in its runlist <a class="footnote-reference brackets" href="#id20" id="id10">10</a>.
+External frameworks like Twisted would provide alternative
+implementations, perhaps based on FreeBSD’s kqueue or Linux’s epoll.</li>
+</ul>
+<p>While these may seem dramatic changes, it is a very small amount of
+work compared with the utility provided by continuations.</p>
+</div>
+<div class="section" id="semantics">
+<h2><a class="toc-backref" href="#id23">Semantics</a><a class="headerlink" href="#semantics" title="Permalink to this headline">¶</a></h2>
+<p>This section will explain, at a high level, how the introduction of
+this new SuspendIteration exception would behave.</p>
+<div class="section" id="simple-iterators">
+<h3><a class="toc-backref" href="#id24">Simple Iterators</a><a class="headerlink" href="#simple-iterators" title="Permalink to this headline">¶</a></h3>
+<p>The current functionality of iterators is best seen with a simple
+example which produces two values ‘one’ and ‘two’.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">States</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_next</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_one</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="nf">next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_next</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">state_one</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_next</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_two</span>
+        <span class="k">return</span> <span class="s2">&quot;one&quot;</span>
+
+    <span class="k">def</span> <span class="nf">state_two</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_next</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_stop</span>
+        <span class="k">return</span> <span class="s2">&quot;two&quot;</span>
+
+    <span class="k">def</span> <span class="nf">state_stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">StopIteration</span>
+
+<span class="nb">print</span> <span class="nb">list</span><span class="p">(</span><span class="n">States</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>An equivalent iteration could, of course, be created by the
+following generator:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">States</span><span class="p">():</span>
+    <span class="k">yield</span> <span class="s1">&#39;one&#39;</span>
+    <span class="k">yield</span> <span class="s1">&#39;two&#39;</span>
+
+<span class="nb">print</span> <span class="nb">list</span><span class="p">(</span><span class="n">States</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="introducing-suspenditeration">
+<h3><a class="toc-backref" href="#id25">Introducing SuspendIteration</a><a class="headerlink" href="#introducing-suspenditeration" title="Permalink to this headline">¶</a></h3>
+<p>Suppose that between producing ‘one’ and ‘two’, the generator above
+could block on a socket read.  In this case, we would want to raise
+SuspendIteration to signal that the iterator is not done producing,
+but is unable to provide a value at the current moment.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">random</span> <span class="kn">import</span> <span class="n">randint</span>
+<span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">sleep</span>
+
+<span class="k">class</span> <span class="nc">SuspendIteration</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+      <span class="k">pass</span>
+
+<span class="k">class</span> <span class="nc">NonBlockingResource</span><span class="p">:</span>
+
+    <span class="sd">&quot;&quot;&quot;Randomly unable to produce the second value&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_next</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_one</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="nf">next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_next</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">state_one</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_next</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_suspend</span>
+        <span class="k">return</span> <span class="s2">&quot;one&quot;</span>
+
+    <span class="k">def</span> <span class="nf">state_suspend</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">rand</span> <span class="o">=</span> <span class="n">randint</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">10</span><span class="p">)</span>
+        <span class="k">if</span> <span class="mi">2</span> <span class="o">==</span> <span class="n">rand</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_next</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_two</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_two</span><span class="p">()</span>
+        <span class="k">raise</span> <span class="n">SuspendIteration</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">state_two</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_next</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_stop</span>
+        <span class="k">return</span> <span class="s2">&quot;two&quot;</span>
+
+    <span class="k">def</span> <span class="nf">state_stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">StopIteration</span>
+
+<span class="k">def</span> <span class="nf">sleeplist</span><span class="p">(</span><span class="n">iterator</span><span class="p">,</span> <span class="n">timeout</span> <span class="o">=</span> <span class="o">.</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Do other things (e.g. sleep) while resource is</span>
+<span class="sd">    unable to provide the next value</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">it</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">iterator</span><span class="p">)</span>
+    <span class="n">retval</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">retval</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">it</span><span class="o">.</span><span class="n">next</span><span class="p">())</span>
+        <span class="k">except</span> <span class="n">SuspendIteration</span><span class="p">:</span>
+            <span class="n">sleep</span><span class="p">(</span><span class="n">timeout</span><span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+            <span class="k">break</span>
+    <span class="k">return</span> <span class="n">retval</span>
+
+<span class="nb">print</span> <span class="n">sleeplist</span><span class="p">(</span><span class="n">NonBlockingResource</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>In a real-world situation, the NonBlockingResource would be a file
+iterator, socket handle, or other I/O based producer.  The sleeplist
+would instead be an async reactor, such as those found in asyncore or
+Twisted.  The non-blocking resource could, of course, be written as a
+generator:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">NonBlockingResource</span><span class="p">():</span>
+    <span class="k">yield</span> <span class="s2">&quot;one&quot;</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">rand</span> <span class="o">=</span> <span class="n">randint</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">10</span><span class="p">)</span>
+        <span class="k">if</span> <span class="mi">2</span> <span class="o">==</span> <span class="n">rand</span><span class="p">:</span>
+            <span class="k">break</span>
+        <span class="k">raise</span> <span class="n">SuspendIteration</span><span class="p">()</span>
+    <span class="k">yield</span> <span class="s2">&quot;two&quot;</span>
+</pre></div>
+</div>
+<p>It is not necessary to add a keyword, ‘suspend’, since most real
+content generators will not be in application code, they will be in
+low-level I/O based operations.  Since most programmers need not be
+exposed to the SuspendIteration() mechanism, a keyword is not needed.</p>
+</div>
+<div class="section" id="application-iterators">
+<h3><a class="toc-backref" href="#id26">Application Iterators</a><a class="headerlink" href="#application-iterators" title="Permalink to this headline">¶</a></h3>
+<p>The previous example is rather contrived, a more ‘real-world’ example
+would be a web page generator which yields HTML content, and pulls
+from a database.  Note that this is an example of neither the
+‘producer’ nor the ‘consumer’, but rather of a filter.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">ListAlbums</span><span class="p">(</span><span class="n">cursor</span><span class="p">):</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;SELECT title, artist FROM album&quot;</span><span class="p">)</span>
+    <span class="k">yield</span> <span class="s1">&#39;&lt;html&gt;&lt;body&gt;&lt;table&gt;&lt;tr&gt;&lt;td&gt;Title&lt;/td&gt;&lt;td&gt;Artist&lt;/td&gt;&lt;/tr&gt;&#39;</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="n">artist</span><span class="p">)</span> <span class="ow">in</span> <span class="n">cursor</span><span class="p">:</span>
+        <span class="k">yield</span> <span class="s1">&#39;&lt;tr&gt;&lt;td&gt;</span><span class="si">%s</span><span class="s1">&lt;/td&gt;&lt;td&gt;</span><span class="si">%s</span><span class="s1">&lt;/td&gt;&lt;/tr&gt;&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="n">artist</span><span class="p">)</span>
+    <span class="k">yield</span> <span class="s1">&#39;&lt;/table&gt;&lt;/body&gt;&lt;/html&gt;&#39;</span>
+</pre></div>
+</div>
+<p>The problem, of course, is that the database may block for some time
+before any rows are returned, and that during execution, rows may be
+returned in blocks of 10 or 100 at a time. Ideally, if the database
+blocks for the next set of rows, another user connection could be
+serviced.  Note the complete absence of SuspendIterator in the above
+code.  If done correctly, application developers would be able to
+focus on functionality rather than concurrency issues.</p>
+<p>The iterator created by the above generator should do the magic
+necessary to maintain state, yet pass the exception through to a
+lower-level async framework.  Here is an example of what the
+corresponding iterator would look like if coded up as a class:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">ListAlbums</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cursor</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cursor</span> <span class="o">=</span> <span class="n">cursor</span>
+
+    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;SELECT title, artist FROM album&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_iter</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cursor</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_next</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_head</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="nf">next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_next</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">state_head</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_next</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_cursor</span>
+        <span class="k">return</span> <span class="s2">&quot;&lt;html&gt;&lt;body&gt;&lt;table&gt;&lt;tr&gt;&lt;td&gt;</span><span class="se">\</span>
+<span class="s2">                Title&lt;/td&gt;&lt;td&gt;Artist&lt;/td&gt;&lt;/tr&gt;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">state_tail</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_next</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_stop</span>
+        <span class="k">return</span> <span class="s2">&quot;&lt;/table&gt;&lt;/body&gt;&lt;/html&gt;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">state_cursor</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="p">(</span><span class="n">title</span><span class="p">,</span><span class="n">artist</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_iter</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+            <span class="k">return</span> <span class="s1">&#39;&lt;tr&gt;&lt;td&gt;</span><span class="si">%s</span><span class="s1">&lt;/td&gt;&lt;td&gt;</span><span class="si">%s</span><span class="s1">&lt;/td&gt;&lt;/tr&gt;&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="n">artist</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_next</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_tail</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+        <span class="k">except</span> <span class="n">SuspendIteration</span><span class="p">:</span>
+            <span class="c1"># just pass-through</span>
+            <span class="k">raise</span>
+
+    <span class="k">def</span> <span class="nf">state_stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">StopIteration</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="complicating-factors">
+<h3><a class="toc-backref" href="#id27">Complicating Factors</a><a class="headerlink" href="#complicating-factors" title="Permalink to this headline">¶</a></h3>
+<p>While the above example is straightforward, things are a bit more
+complicated if the intermediate generator ‘condenses’ values, that is,
+it pulls in two or more values for each value it produces. For
+example,</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">pair</span><span class="p">(</span><span class="n">iterLeft</span><span class="p">,</span><span class="n">iterRight</span><span class="p">):</span>
+    <span class="n">rhs</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">iterRight</span><span class="p">)</span>
+    <span class="n">lhs</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">iterLeft</span><span class="p">)</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+       <span class="k">yield</span> <span class="p">(</span><span class="n">rhs</span><span class="o">.</span><span class="n">next</span><span class="p">(),</span> <span class="n">lhs</span><span class="o">.</span><span class="n">next</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>In this case, the corresponding iterator behavior has to be a bit more
+subtle to handle the case of either the right or left iterator raising
+SuspendIteration.  It seems to be a matter of decomposing the
+generator to recognize intermediate states where a SuspendIterator
+exception from the producing context could happen.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">pair</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iterLeft</span><span class="p">,</span> <span class="n">iterRight</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">iterLeft</span> <span class="o">=</span> <span class="n">iterLeft</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">iterRight</span> <span class="o">=</span> <span class="n">iterRight</span>
+
+    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rhs</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">iterRight</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lhs</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">iterLeft</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_temp_rhs</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_temp_lhs</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_next</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_rhs</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="nf">next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_next</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">state_rhs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_temp_rhs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rhs</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_next</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_lhs</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">state_lhs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_temp_lhs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lhs</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_next</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_pair</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">state_pair</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_next</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_rhs</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_temp_rhs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_temp_lhs</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This proposal assumes that a corresponding iterator written using
+this class-based method is possible for existing generators.  The
+challenge seems to be the identification of distinct states within
+the generator where suspension could occur.</p>
+</div>
+<div class="section" id="resource-cleanup">
+<h3><a class="toc-backref" href="#id28">Resource Cleanup</a><a class="headerlink" href="#resource-cleanup" title="Permalink to this headline">¶</a></h3>
+<p>The current generator mechanism has a strange interaction with
+exceptions where a ‘yield’ statement is not allowed within a
+try/finally block.  The SuspendIterator exception provides another
+similar issue.  The impacts of this issue are not clear. However it
+may be that re-writing the generator into a state machine, as the
+previous section did, could resolve this issue allowing for the
+situation to be no-worse than, and perhaps even removing the
+yield/finally situation.  More investigation is needed in this area.</p>
+</div>
+<div class="section" id="api-and-limitations">
+<h3><a class="toc-backref" href="#id29">API and Limitations</a><a class="headerlink" href="#api-and-limitations" title="Permalink to this headline">¶</a></h3>
+<p>This proposal only covers ‘suspending’ a chain of iterators, and does
+not cover (of course) suspending general functions, methods, or “C”
+extension function.  While there could be no direct support for
+creating generators in “C” code, native “C” iterators which comply
+with the SuspendIterator semantics are certainly possible.</p>
+</div>
+</div>
+<div class="section" id="low-level-implementation">
+<h2><a class="toc-backref" href="#id30">Low-Level Implementation</a><a class="headerlink" href="#low-level-implementation" title="Permalink to this headline">¶</a></h2>
+<p>The author of the PEP is not yet familiar with the Python execution
+model to comment in this area.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id31">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id11"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>Twisted
+(<a class="reference external" href="http://twistedmatrix.com">http://twistedmatrix.com</a>)</dd>
+<dt class="label" id="id12"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>Peak
+(<a class="reference external" href="http://peak.telecommunity.com">http://peak.telecommunity.com</a>)</dd>
+<dt class="label" id="id13"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd>C10K
+(<a class="reference external" href="http://www.kegel.com/c10k.html">http://www.kegel.com/c10k.html</a>)</dd>
+<dt class="label" id="id14"><span class="brackets"><a class="fn-backref" href="#id4">4</a></span></dt>
+<dd>Coroutines
+(<a class="reference external" href="http://c2.com/cgi/wiki?CallWithCurrentContinuation">http://c2.com/cgi/wiki?CallWithCurrentContinuation</a>)</dd>
+<dt class="label" id="id15"><span class="brackets"><a class="fn-backref" href="#id5">5</a></span></dt>
+<dd>PEP 234, Iterators
+(<a class="reference external" href="http://www.python.org/dev/peps/pep-0234/">http://www.python.org/dev/peps/pep-0234/</a>)</dd>
+<dt class="label" id="id16"><span class="brackets"><a class="fn-backref" href="#id6">6</a></span></dt>
+<dd>Stackless Python
+(<a class="reference external" href="http://stackless.com">http://stackless.com</a>)</dd>
+<dt class="label" id="id17"><span class="brackets"><a class="fn-backref" href="#id7">7</a></span></dt>
+<dd>Parrot /w coroutines
+(<a class="reference external" href="http://www.sidhe.org/~dan/blog/archives/000178.html">http://www.sidhe.org/~dan/blog/archives/000178.html</a>)</dd>
+<dt class="label" id="id18"><span class="brackets"><a class="fn-backref" href="#id8">8</a></span></dt>
+<dd>PEP 255, Simple Generators
+(<a class="reference external" href="http://www.python.org/dev/peps/pep-0255/">http://www.python.org/dev/peps/pep-0255/</a>)</dd>
+<dt class="label" id="id19"><span class="brackets"><a class="fn-backref" href="#id9">9</a></span></dt>
+<dd>itertools - Functions creating iterators
+(<a class="reference external" href="http://docs.python.org/library/itertools.html">http://docs.python.org/library/itertools.html</a>)</dd>
+<dt class="label" id="id20"><span class="brackets"><a class="fn-backref" href="#id10">10</a></span></dt>
+<dd>Microthreads in Python, David Mertz
+(<a class="reference external" href="http://www-106.ibm.com/developerworks/linux/library/l-pythrd.html">http://www-106.ibm.com/developerworks/linux/library/l-pythrd.html</a>)</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id32">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0334.txt">https://github.com/python/peps/blob/master/pep-0334.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0334.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0333.html">PEP 0333</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0335.html">PEP 0335</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 334 – Simple Coroutines via SuspendIteration</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#semantics">Semantics</a><ul>
+<li><a class="reference internal" href="#simple-iterators">Simple Iterators</a></li>
+<li><a class="reference internal" href="#introducing-suspenditeration">Introducing SuspendIteration</a></li>
+<li><a class="reference internal" href="#application-iterators">Application Iterators</a></li>
+<li><a class="reference internal" href="#complicating-factors">Complicating Factors</a></li>
+<li><a class="reference internal" href="#resource-cleanup">Resource Cleanup</a></li>
+<li><a class="reference internal" href="#api-and-limitations">API and Limitations</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#low-level-implementation">Low-Level Implementation</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

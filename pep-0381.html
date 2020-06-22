@@ -1,0 +1,478 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 381 – Mirroring infrastructure for PyPI &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 382 – Namespace Packages" href="pep-0382.html" />
+    <link rel="prev" title="PEP 380 – Syntax for Delegating to a Subgenerator" href="pep-0380.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 381 – Mirroring infrastructure for PyPI</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-381-mirroring-infrastructure-for-pypi">
+<h1 class="page-title">PEP 381 – Mirroring infrastructure for PyPI<a class="headerlink" href="#pep-381-mirroring-infrastructure-for-pypi" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">381</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Mirroring infrastructure for PyPI</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Tarek Ziadé &lt;tarek&#32;&#97;t&#32;ziade.org&gt;, Martin v. Löwis &lt;martin&#32;&#97;t&#32;v.loewis.de&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Withdrawn</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">21-March-2009</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">N.A.</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id9">Abstract</a></li>
+<li><a class="reference internal" href="#pep-withdrawal" id="id10">PEP Withdrawal</a></li>
+<li><a class="reference internal" href="#rationale" id="id11">Rationale</a></li>
+<li><a class="reference internal" href="#mirror-listing-and-registering" id="id12">Mirror listing and registering</a><ul>
+<li><a class="reference internal" href="#statistics-page" id="id13">Statistics page</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#mirror-authenticity" id="id14">Mirror Authenticity</a></li>
+<li><a class="reference internal" href="#special-pages-a-mirror-needs-to-provide" id="id15">Special pages a mirror needs to provide</a><ul>
+<li><a class="reference internal" href="#last-modified-date" id="id16">Last modified date</a></li>
+<li><a class="reference internal" href="#local-statistics" id="id17">Local statistics</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#how-a-mirror-should-synchronize-with-pypi" id="id18">How a mirror should synchronize with PyPI</a><ul>
+<li><a class="reference internal" href="#the-mirroring-protocol" id="id19">The mirroring protocol</a></li>
+<li><a class="reference internal" href="#user-agent-request-header" id="id20">User-agent request header</a></li>
+<li><a class="reference internal" href="#how-a-client-can-use-pypi-and-its-mirrors" id="id21">How a client can use PyPI and its mirrors</a></li>
+<li><a class="reference internal" href="#fail-over-mechanism" id="id22">Fail-over mechanism</a></li>
+<li><a class="reference internal" href="#extra-package-indexes" id="id23">Extra package indexes</a></li>
+<li><a class="reference internal" href="#merging-several-indexes" id="id24">Merging several indexes</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references" id="id25">References</a></li>
+<li><a class="reference internal" href="#acknowledgments" id="id26">Acknowledgments</a></li>
+<li><a class="reference internal" href="#copyright" id="id27">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id9">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP describes a mirroring infrastructure for PyPI.</p>
+</div>
+<div class="section" id="pep-withdrawal">
+<h2><a class="toc-backref" href="#id10">PEP Withdrawal</a><a class="headerlink" href="#pep-withdrawal" title="Permalink to this headline">¶</a></h2>
+<p>The main PyPI web service was moved behind the Fastly caching CDN in May 2013:
+<a class="reference external" href="https://mail.python.org/pipermail/distutils-sig/2013-May/020848.html">https://mail.python.org/pipermail/distutils-sig/2013-May/020848.html</a></p>
+<p>Subsequently, this arrangement was formalised as an in-kind sponsorship with
+the PSF, and the PSF has also taken on the task of risk management in the event
+that that sponsorship arrangement were to ever cease.</p>
+<p>The download statistics that were previously provided directly on PyPI, are now
+published indirectly via Google Big Query:
+<a class="reference external" href="https://packaging.python.org/guides/analyzing-pypi-package-downloads/">https://packaging.python.org/guides/analyzing-pypi-package-downloads/</a></p>
+<p>Accordingly, the mirroring proposal described in this PEP is no longer required,
+and has been marked as Withdrawn.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id11">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>PyPI is hosting over 6000 projects and is used on a daily basis
+by people to build applications. Especially systems like <cite>easy_install</cite>
+and <cite>zc.buildout</cite> make intensive usage of PyPI.</p>
+<p>For people making intensive use of PyPI, it can act as a single point
+of failure.  People have started to set up some mirrors, both private
+and public.  Those mirrors are active mirrors, which means that they
+are browsing PyPI to get synced.</p>
+<p>In order to make the system more reliable, this PEP describes:</p>
+<ul class="simple">
+<li>the mirror listing and registering at PyPI</li>
+<li>the pages a public mirror should maintain.  These pages will be used
+by PyPI, in order to get hit counts and the last modified date.</li>
+<li>how a mirror should synchronize with PyPI</li>
+<li>how a client can implement a fail-over mechanism</li>
+</ul>
+</div>
+<div class="section" id="mirror-listing-and-registering">
+<h2><a class="toc-backref" href="#id12">Mirror listing and registering</a><a class="headerlink" href="#mirror-listing-and-registering" title="Permalink to this headline">¶</a></h2>
+<p>People that wants to mirror PyPI make a proposal on catalog-SIG.
+When a mirror is proposed on the mailing list, it is manually
+added in a mirror list in the PyPI application after it
+has been checked to be compliant with the mirroring rules.</p>
+<p>The mirror list is provided as a list of host names of the
+form</p>
+<blockquote>
+<div>X.pypi.python.org</div></blockquote>
+<p>The values of X are the sequence a,b,c,…,aa,ab,…
+a.pypi.python.org is the master server; the mirrors start
+with b. A CNAME record last.pypi.python.org points to the
+last host name. Mirror operators should use a static address,
+and report planned changes to that address in advance to
+distutils-sig.</p>
+<p>The new mirror also appears at <cite>http://pypi.python.org/mirrors</cite>
+which is a human-readable page that gives the list of mirrors.
+This page also explains how to register a new mirror.</p>
+<div class="section" id="statistics-page">
+<h3><a class="toc-backref" href="#id13">Statistics page</a><a class="headerlink" href="#statistics-page" title="Permalink to this headline">¶</a></h3>
+<p>PyPI provides statistics on downloads at <cite>/stats</cite>. This page is
+calculated daily by PyPI, by reading all mirrors’ local stats and
+summing them.</p>
+<p>The stats are presented in daily or monthly files, under <cite>/stats/days</cite>
+and <cite>/stats/months</cite>. Each file is a <cite>bzip2</cite> file with these formats:</p>
+<ul class="simple">
+<li>YYYY-MM-DD.bz2 for daily files</li>
+<li>YYYY-MM.bz2 for monthly files</li>
+</ul>
+<p>Examples:</p>
+<ul class="simple">
+<li>/stats/days/2008-11-06.bz2</li>
+<li>/stats/days/2008-11-07.bz2</li>
+<li>/stats/days/2008-11-08.bz2</li>
+<li>/stats/months/2008-11.bz2</li>
+<li>/stats/months/2008-10.bz2</li>
+</ul>
+</div>
+</div>
+<div class="section" id="mirror-authenticity">
+<h2><a class="toc-backref" href="#id14">Mirror Authenticity</a><a class="headerlink" href="#mirror-authenticity" title="Permalink to this headline">¶</a></h2>
+<p>With a distributed mirroring system, clients may want to verify that
+the mirrored copies are authentic. There are multiple threats to
+consider:</p>
+<ol class="arabic simple">
+<li>the central index may get compromised</li>
+<li>the central index is assumed to be trusted, but the mirrors might
+be tampered.</li>
+<li>a man in the middle between the central index and the end user,
+or between a mirror and the end user might tamper with datagrams.</li>
+</ol>
+<p>This specification only deals with the second threat. Some provisions
+are made to detect man-in-the-middle attacks. To detect the first
+attack, package authors need to sign their packages using PGP keys, so
+that users verify that the package comes from the author they trust.</p>
+<p>The central index provides a DSA key at the URL /serverkey, in the PEM
+format as generated by “openssl dsa -pubout” (i.e. RFC 3280
+SubjectPublicKeyInfo, with the algorithm 1.3.14.3.2.12). This URL must
+<em>not</em> be mirrored, and clients must fetch the official serverkey from
+PyPI directly, or use the copy that came with the PyPI client software.
+Mirrors should still download the key, to detect a key rollover.</p>
+<p>For each package, a mirrored signature is provided at
+/serversig/&lt;package&gt;. This is the DSA signature of the parallel URL
+/simple/&lt;package&gt;, in DER form, using SHA-1 with DSA (i.e. as a RFC
+3279 Dsa-Sig-Value, created by algorithm 1.2.840.10040.4.3)</p>
+<p>Clients using a mirror need to perform the following steps to verify
+a package:</p>
+<ol class="arabic simple">
+<li>download the /simple page, and compute its SHA-1 hash</li>
+<li>compute the DSA signature of that hash</li>
+<li>download the corresponding /serversig, and compare it (byte-for-byte)
+with the value computed in step 2.</li>
+<li>compute and verify (against the /simple page) the MD-5 hashes
+of all files they download from the mirror.</li>
+</ol>
+<p>An implementation of the verification algorithm is available from
+<a class="reference external" href="https://svn.python.org/packages/trunk/pypi/tools/verify.py">https://svn.python.org/packages/trunk/pypi/tools/verify.py</a></p>
+<p>Verification is not needed when downloading from central index, and
+should be avoided to reduce the computation overhead.</p>
+<p>About once a year, the key will be replaced with a new one. Mirrors
+will have to re-fetch all /serversig pages. Clients using mirrors need
+to find a trusted copy of the new server key. One way to obtain one
+is to download it from <a class="reference external" href="https://pypi.python.org/serverkey">https://pypi.python.org/serverkey</a>. To detect
+man-in-the-middle attacks, clients need to verify the SSL server
+certificate, which will be signed by the CACert authority.</p>
+</div>
+<div class="section" id="special-pages-a-mirror-needs-to-provide">
+<h2><a class="toc-backref" href="#id15">Special pages a mirror needs to provide</a><a class="headerlink" href="#special-pages-a-mirror-needs-to-provide" title="Permalink to this headline">¶</a></h2>
+<p>A mirror is a subset copy of PyPI, so it provides the same structure
+by copying it.</p>
+<ul class="simple">
+<li>simple: rest version of the package index</li>
+<li>packages: packages, stored by Python version, and letters</li>
+<li>serversig: signatures for the simple pages</li>
+</ul>
+<p>It also needs to provide two specific elements:</p>
+<ul class="simple">
+<li>last-modified</li>
+<li>local-stats</li>
+</ul>
+<div class="section" id="last-modified-date">
+<h3><a class="toc-backref" href="#id16">Last modified date</a><a class="headerlink" href="#last-modified-date" title="Permalink to this headline">¶</a></h3>
+<p>CPAN uses a freshness date system where the mirror’s last
+synchronisation date is made available.</p>
+<p>For PyPI, each mirror needs to maintain a URL with simple text content
+that represents the last synchronisation date the mirror maintains.</p>
+<p>The date is provided in GMT time, using the ISO 8601 format <a class="footnote-reference brackets" href="#iso8601" id="id1">3</a>.
+Each mirror will be responsible to maintain its last modified date.</p>
+<p>This page must be located at : <cite>/last-modified</cite> and must be a
+text/plain page.</p>
+</div>
+<div class="section" id="local-statistics">
+<h3><a class="toc-backref" href="#id17">Local statistics</a><a class="headerlink" href="#local-statistics" title="Permalink to this headline">¶</a></h3>
+<p>Each mirror is responsible to count all the downloads that where done
+via it.  This is used by PyPI to sum up all downloads, to be able to
+display the grand total.</p>
+<p>These statistics are in CSV-like form, with a header in the first
+line.  It needs to obey PEP 305 <a class="footnote-reference brackets" href="#pep305" id="id2">1</a>.  Basically, it should be
+readable by Python’s <cite>csv</cite> module.</p>
+<p>The fields in this file are:</p>
+<ul class="simple">
+<li>package: the distutils id of the package.</li>
+<li>filename: the filename that has been downloaded.</li>
+<li>useragent: the User-Agent of the client that has downloaded the
+package.</li>
+<li>count: the number of downloads.</li>
+</ul>
+<p>The content will look like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># package,filename,useragent,count</span>
+<span class="n">zc</span><span class="o">.</span><span class="n">buildout</span><span class="p">,</span><span class="n">zc</span><span class="o">.</span><span class="n">buildout</span><span class="o">-</span><span class="mf">1.6</span><span class="o">.</span><span class="mf">0.</span><span class="n">tgz</span><span class="p">,</span><span class="n">MyAgent</span><span class="p">,</span><span class="mi">142</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+<p>The counting starts the day the mirror is launched, and there is one
+file per day, compressed using the <cite>bzip2</cite> format.  Each file is named
+like the day.  For example, <cite>2008-11-06.bz2</cite> is the file for the 6th of
+November 2008.</p>
+<p>They are then provided in a folder called <cite>days</cite>. For example:</p>
+<ul class="simple">
+<li>/local-stats/days/2008-11-06.bz2</li>
+<li>/local-stats/days/2008-11-07.bz2</li>
+<li>/local-stats/days/2008-11-08.bz2</li>
+</ul>
+<p>This page must be located at <cite>/local-stats</cite>.</p>
+</div>
+</div>
+<div class="section" id="how-a-mirror-should-synchronize-with-pypi">
+<h2><a class="toc-backref" href="#id18">How a mirror should synchronize with PyPI</a><a class="headerlink" href="#how-a-mirror-should-synchronize-with-pypi" title="Permalink to this headline">¶</a></h2>
+<p>A mirroring protocol called <cite>Simple Index</cite> was described and
+implemented by Martin v. Loewis and Jim Fulton, based on how
+<cite>easy_install</cite> works.  This section synthesizes it and gives a few
+relevant links, plus a small part about <cite>User-Agent</cite>.</p>
+<div class="section" id="the-mirroring-protocol">
+<h3><a class="toc-backref" href="#id19">The mirroring protocol</a><a class="headerlink" href="#the-mirroring-protocol" title="Permalink to this headline">¶</a></h3>
+<p>Mirrors must reduce the amount of data transferred between the central
+server and the mirror. To achieve that, they MUST use the changelog()
+PyPI XML-RPC call, and only refetch the packages that have been
+changed since the last time. For each package P, they MUST copy
+documents /simple/P/ and /serversig/P. If a package is deleted on the
+central server, they MUST delete the package and all associated files.
+To detect modification of package files, they MAY cache the file’s
+ETag, and MAY request skipping it using the If-none-match header.</p>
+<p>Each mirroring tool MUST identify itself using a descripte User-agent
+header.</p>
+<p>The pep381client package <a class="footnote-reference brackets" href="#pep381client" id="id3">2</a> provides an application that
+respects this protocol to browse PyPI.</p>
+</div>
+<div class="section" id="user-agent-request-header">
+<h3><a class="toc-backref" href="#id20">User-agent request header</a><a class="headerlink" href="#user-agent-request-header" title="Permalink to this headline">¶</a></h3>
+<p>In order to be able to differentiate actions taken by clients over
+PyPI, a specific user agent name should be provided by all mirroring
+software.</p>
+<p>This is also true for all clients like:</p>
+<ul class="simple">
+<li>zc.buildout <a class="footnote-reference brackets" href="#zc-buildout" id="id4">4</a>.</li>
+<li>setuptools <a class="footnote-reference brackets" href="#setuptools" id="id5">5</a>.</li>
+<li>pip <a class="footnote-reference brackets" href="#pip" id="id6">6</a>.</li>
+</ul>
+<p>XXX user agent registering mechanism at PyPI ?</p>
+</div>
+<div class="section" id="how-a-client-can-use-pypi-and-its-mirrors">
+<h3><a class="toc-backref" href="#id21">How a client can use PyPI and its mirrors</a><a class="headerlink" href="#how-a-client-can-use-pypi-and-its-mirrors" title="Permalink to this headline">¶</a></h3>
+<p>Clients that are browsing PyPI should be able to use alternative
+mirrors, by getting the list of the mirrors using <cite>last.pypi.python.org</cite>.</p>
+<p>Code example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">socket</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">socket</span><span class="o">.</span><span class="n">gethostbyname_ex</span><span class="p">(</span><span class="s1">&#39;last.pypi.python.org&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<span class="go">&#39;h.pypi.python.org&#39;</span>
+</pre></div>
+</div>
+<p>The clients so far that could use this mechanism:</p>
+<ul class="simple">
+<li>setuptools</li>
+<li>zc.buildout (through setuptools)</li>
+<li>pip</li>
+</ul>
+</div>
+<div class="section" id="fail-over-mechanism">
+<h3><a class="toc-backref" href="#id22">Fail-over mechanism</a><a class="headerlink" href="#fail-over-mechanism" title="Permalink to this headline">¶</a></h3>
+<p>Clients that are browsing PyPI should be able to use a fail-over
+mechanism when PyPI or the used mirror is not responding.</p>
+<p>It is up to the client to decide which mirror should be used, maybe by
+looking at its geographical location and its responsiveness.</p>
+<p>This PEP does not describe how this fail-over mechanism should work,
+but it is strongly encouraged that the clients try to use the nearest
+mirror.</p>
+<p>The clients so far that could use this mechanism:</p>
+<ul class="simple">
+<li>setuptools</li>
+<li>zc.buildout (through setuptools)</li>
+<li>pip</li>
+</ul>
+</div>
+<div class="section" id="extra-package-indexes">
+<h3><a class="toc-backref" href="#id23">Extra package indexes</a><a class="headerlink" href="#extra-package-indexes" title="Permalink to this headline">¶</a></h3>
+<p>It is obvious that some packages will not be uploaded to PyPI, whether
+because they are private or whether because the project maintainer
+runs his own server where people might get the project package.
+However, it is strongly encouraged that a public package index follows
+PyPI and Distutils protocols.</p>
+<p>In other words, the <cite>register</cite> and <cite>upload</cite> command should be
+compatible with any package index server out there.</p>
+<p>Software that are compatible with PyPI and Distutils so far:</p>
+<ul class="simple">
+<li>PloneSoftwareCenter <a class="footnote-reference brackets" href="#psc" id="id7">7</a> which is used to run plone.org products section.</li>
+<li>EggBasket <a class="footnote-reference brackets" href="#eggbasket" id="id8">8</a>.</li>
+</ul>
+<p><strong>An extra package index is not a mirror of PyPI, but can have some
+mirrors itself.</strong></p>
+</div>
+<div class="section" id="merging-several-indexes">
+<h3><a class="toc-backref" href="#id24">Merging several indexes</a><a class="headerlink" href="#merging-several-indexes" title="Permalink to this headline">¶</a></h3>
+<p>When a client needs to get some packages from several distinct
+indexes, it should be able to use each one of them as a potential
+source of packages.  Different indexes should be defined as a sorted
+list for the client to look for a package.</p>
+<p>Each independent index can of course provide a list of its mirrors.</p>
+<p>XXX define how to get the hostname for the mirrors of an arbitrary
+index.</p>
+<p>That permits all combinations at client level, for a reliable
+packaging system with all levels of privacy.</p>
+<p>It is up the client to deal with the merging.</p>
+</div>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id25">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="pep305"><span class="brackets"><a class="fn-backref" href="#id2">1</a></span></dt>
+<dd><a class="reference external" href="http://www.python.org/dev/peps/pep-0305/#id19">http://www.python.org/dev/peps/pep-0305/#id19</a></dd>
+<dt class="label" id="pep381client"><span class="brackets"><a class="fn-backref" href="#id3">2</a></span></dt>
+<dd><a class="reference external" href="http://pypi.python.org/pypi/pep381client">http://pypi.python.org/pypi/pep381client</a></dd>
+<dt class="label" id="iso8601"><span class="brackets"><a class="fn-backref" href="#id1">3</a></span></dt>
+<dd><a class="reference external" href="http://en.wikipedia.org/wiki/ISO_8601">http://en.wikipedia.org/wiki/ISO_8601</a></dd>
+<dt class="label" id="zc-buildout"><span class="brackets"><a class="fn-backref" href="#id4">4</a></span></dt>
+<dd><a class="reference external" href="http://pypi.python.org/pypi/zc.buildout">http://pypi.python.org/pypi/zc.buildout</a></dd>
+<dt class="label" id="setuptools"><span class="brackets"><a class="fn-backref" href="#id5">5</a></span></dt>
+<dd><a class="reference external" href="http://pypi.python.org/pypi/setuptools">http://pypi.python.org/pypi/setuptools</a></dd>
+<dt class="label" id="pip"><span class="brackets"><a class="fn-backref" href="#id6">6</a></span></dt>
+<dd><a class="reference external" href="http://pypi.python.org/pypi/pip">http://pypi.python.org/pypi/pip</a></dd>
+<dt class="label" id="psc"><span class="brackets"><a class="fn-backref" href="#id7">7</a></span></dt>
+<dd><a class="reference external" href="http://plone.org/products/plonesoftwarecenter">http://plone.org/products/plonesoftwarecenter</a></dd>
+<dt class="label" id="eggbasket"><span class="brackets"><a class="fn-backref" href="#id8">8</a></span></dt>
+<dd><a class="reference external" href="http://www.chrisarndt.de/projects/eggbasket">http://www.chrisarndt.de/projects/eggbasket</a></dd>
+</dl>
+</div>
+<div class="section" id="acknowledgments">
+<h2><a class="toc-backref" href="#id26">Acknowledgments</a><a class="headerlink" href="#acknowledgments" title="Permalink to this headline">¶</a></h2>
+<p>Georg Brandl.</p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id27">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0381.txt">https://github.com/python/peps/blob/master/pep-0381.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0381.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0380.html">PEP 0380</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0382.html">PEP 0382</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 381 – Mirroring infrastructure for PyPI</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#pep-withdrawal">PEP Withdrawal</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#mirror-listing-and-registering">Mirror listing and registering</a><ul>
+<li><a class="reference internal" href="#statistics-page">Statistics page</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#mirror-authenticity">Mirror Authenticity</a></li>
+<li><a class="reference internal" href="#special-pages-a-mirror-needs-to-provide">Special pages a mirror needs to provide</a><ul>
+<li><a class="reference internal" href="#last-modified-date">Last modified date</a></li>
+<li><a class="reference internal" href="#local-statistics">Local statistics</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#how-a-mirror-should-synchronize-with-pypi">How a mirror should synchronize with PyPI</a><ul>
+<li><a class="reference internal" href="#the-mirroring-protocol">The mirroring protocol</a></li>
+<li><a class="reference internal" href="#user-agent-request-header">User-agent request header</a></li>
+<li><a class="reference internal" href="#how-a-client-can-use-pypi-and-its-mirrors">How a client can use PyPI and its mirrors</a></li>
+<li><a class="reference internal" href="#fail-over-mechanism">Fail-over mechanism</a></li>
+<li><a class="reference internal" href="#extra-package-indexes">Extra package indexes</a></li>
+<li><a class="reference internal" href="#merging-several-indexes">Merging several indexes</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#acknowledgments">Acknowledgments</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

@@ -1,0 +1,379 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 452 – API for Cryptographic Hash Functions v2.0 &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 453 – Explicit bootstrapping of pip in Python installations" href="pep-0453.html" />
+    <link rel="prev" title="PEP 451 – A ModuleSpec Type for the Import System" href="pep-0451.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 452 – API for Cryptographic Hash Functions v2.0</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-452-api-for-cryptographic-hash-functions-v2-0">
+<h1 class="page-title">PEP 452 – API for Cryptographic Hash Functions v2.0<a class="headerlink" href="#pep-452-api-for-cryptographic-hash-functions-v2-0" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">452</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">API for Cryptographic Hash Functions v2.0</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">A.M. Kuchling &lt;amk&#32;&#97;t&#32;amk.ca&gt;, Christian Heimes &lt;christian&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Informational</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">15-Aug-2013</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd"><p></p></dd>
+<dt class="field-even">Replaces</dt>
+<dd class="field-even"><a class="reference external" href="./pep-0247.html">247</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id4">Abstract</a></li>
+<li><a class="reference internal" href="#specification" id="id5">Specification</a></li>
+<li><a class="reference internal" href="#rationale" id="id6">Rationale</a></li>
+<li><a class="reference internal" href="#changes-from-version-1-0-to-version-2-0" id="id7">Changes from Version 1.0 to Version 2.0</a></li>
+<li><a class="reference internal" href="#recommended-names-for-common-hashing-algorithms" id="id8">Recommended names for common hashing algorithms</a></li>
+<li><a class="reference internal" href="#changes" id="id9">Changes</a></li>
+<li><a class="reference internal" href="#acknowledgements" id="id10">Acknowledgements</a></li>
+<li><a class="reference internal" href="#id1" id="id11">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id12">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id4">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>There are several different modules available that implement
+cryptographic hashing algorithms such as MD5 or SHA.  This
+document specifies a standard API for such algorithms, to make it
+easier to switch between different implementations.</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id5">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>All hashing modules should present the same interface.  Additional
+methods or variables can be added, but those described in this
+document should always be present.</p>
+<p>Hash function modules define one function:</p>
+<p><code class="docutils literal notranslate"><span class="pre">new([string])</span>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160; <span class="pre">(unkeyed</span> <span class="pre">hashes)</span></code></p>
+<dl>
+<dt><code class="docutils literal notranslate"><span class="pre">new(key,</span> <span class="pre">[string],</span> <span class="pre">[digestmod])</span>&#160;&#160;&#160; <span class="pre">(keyed</span> <span class="pre">hashes)</span></code></dt><dd><p>Create a new hashing object and return it.  The first form is
+for hashes that are unkeyed, such as MD5 or SHA.  For keyed
+hashes such as HMAC, ‘key’ is a required parameter containing
+a string giving the key to use.  In both cases, the optional
+‘string’ parameter, if supplied, will be immediately hashed
+into the object’s starting state, as if <code class="docutils literal notranslate"><span class="pre">obj.update(string)</span></code> was
+called.</p>
+<p>After creating a hashing object, arbitrary bytes can be fed
+into the object using its <code class="docutils literal notranslate"><span class="pre">update()</span></code> method, and the hash value
+can be obtained at any time by calling the object’s <code class="docutils literal notranslate"><span class="pre">digest()</span></code>
+method.</p>
+<p>Although the parameter is called ‘string’, hashing objects operate
+on 8-bit data only. Both ‘key’ and ‘string’ must be a bytes-like
+object (bytes, bytearray…). A hashing object may support
+one-dimensional, contiguous buffers as argument, too. Text
+(unicode) is no longer supported in Python 3.x. Python 2.x
+implementations may take ASCII-only unicode as argument, but
+portable code should not rely on the feature.</p>
+<p>Arbitrary additional keyword arguments can be added to this
+function, but if they’re not supplied, sensible default values
+should be used.  For example, ‘rounds’ and ‘digest_size’
+keywords could be added for a hash function which supports a
+variable number of rounds and several different output sizes,
+and they should default to values believed to be secure.</p>
+</dd>
+</dl>
+<p>Hash function modules define one variable:</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">digest_size</span></code></dt><dd>An integer value; the size of the digest produced by the
+hashing objects created by this module, measured in bytes.
+You could also obtain this value by creating a sample object
+and accessing its ‘digest_size’ attribute, but it can be
+convenient to have this value available from the module.
+Hashes with a variable output size will set this variable to
+None.</dd>
+</dl>
+<p>Hashing objects require the following attribute:</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">digest_size</span></code></dt><dd>This attribute is identical to the module-level digest_size
+variable, measuring the size of the digest produced by the
+hashing object, measured in bytes.  If the hash has a variable
+output size, this output size must be chosen when the hashing
+object is created, and this attribute must contain the
+selected size.  Therefore, <code class="docutils literal notranslate"><span class="pre">None</span></code> is <strong>not</strong> a legal value for this
+attribute.</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">block_size</span></code></dt><dd>An integer value or <code class="docutils literal notranslate"><span class="pre">NotImplemented</span></code>; the internal block size
+of the hash algorithm in bytes. The block size is used by the
+HMAC module to pad the secret key to <code class="docutils literal notranslate"><span class="pre">digest_size</span></code> or to hash the
+secret key if it is longer than <code class="docutils literal notranslate"><span class="pre">digest_size</span></code>. If no HMAC
+algorithm is standardized for the hash algorithm, return
+<code class="docutils literal notranslate"><span class="pre">NotImplemented</span></code> instead.</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">name</span></code></dt><dd>A text string value; the canonical, lowercase name of the hashing
+algorithm. The name should be a suitable parameter for
+<code class="docutils literal notranslate"><span class="pre">hashlib.new</span></code>.</dd>
+</dl>
+<p>Hashing objects require the following methods:</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">copy()</span></code></dt><dd>Return a separate copy of this hashing object.  An update to
+this copy won’t affect the original object.</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">digest()</span></code></dt><dd>Return the hash value of this hashing object as a bytes
+containing 8-bit data.  The object is not altered in any way
+by this function; you can continue updating the object after
+calling this function.</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">hexdigest()</span></code></dt><dd>Return the hash value of this hashing object as a string
+containing hexadecimal digits.  Lowercase letters should be used
+for the digits ‘a’ through ‘f’.  Like the <code class="docutils literal notranslate"><span class="pre">.digest()</span></code> method, this
+method mustn’t alter the object.</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">update(string)</span></code></dt><dd>Hash bytes-like ‘string’ into the current state of the hashing
+object. <code class="docutils literal notranslate"><span class="pre">update()</span></code> can be called any number of times during a
+hashing object’s lifetime.</dd>
+</dl>
+<p>Hashing modules can define additional module-level functions or
+object methods and still be compliant with this specification.</p>
+<p>Here’s an example, using a module named ‘MD5’:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">hashlib</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">Crypto.Hash</span> <span class="kn">import</span> <span class="n">MD5</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span> <span class="o">=</span> <span class="n">MD5</span><span class="o">.</span><span class="n">new</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">isinstance</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">CryptoHash</span><span class="p">)</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">name</span>
+<span class="go">&#39;md5&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">digest_size</span>
+<span class="go">16</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">block_size</span>
+<span class="go">64</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;abc&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">digest</span><span class="p">()</span>
+<span class="go">b&#39;\x90\x01P\x98&lt;\xd2O\xb0\xd6\x96?}(\xe1\x7fr&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+<span class="go">&#39;900150983cd24fb0d6963f7d28e17f72&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">MD5</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;abc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">digest</span><span class="p">()</span>
+<span class="go">b&#39;\x90\x01P\x98&lt;\xd2O\xb0\xd6\x96?}(\xe1\x7fr&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id6">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>The digest size is measured in bytes, not bits, even though hash
+algorithm sizes are usually quoted in bits; MD5 is a 128-bit
+algorithm and not a 16-byte one, for example.  This is because, in
+the sample code I looked at, the length in bytes is often needed
+(to seek ahead or behind in a file; to compute the length of an
+output string) while the length in bits is rarely used.
+Therefore, the burden will fall on the few people actually needing
+the size in bits, who will have to multiply digest_size by 8.</p>
+<p>It’s been suggested that the <code class="docutils literal notranslate"><span class="pre">update()</span></code> method would be better named
+<code class="docutils literal notranslate"><span class="pre">append()</span></code>.  However, that method is really causing the current
+state of the hashing object to be updated, and <code class="docutils literal notranslate"><span class="pre">update()</span></code> is already
+used by the md5 and sha modules included with Python, so it seems
+simplest to leave the name <code class="docutils literal notranslate"><span class="pre">update()</span></code> alone.</p>
+<p>The order of the constructor’s arguments for keyed hashes was a
+sticky issue.  It wasn’t clear whether the key should come first
+or second.  It’s a required parameter, and the usual convention is
+to place required parameters first, but that also means that the
+‘string’ parameter moves from the first position to the second.
+It would be possible to get confused and pass a single argument to
+a keyed hash, thinking that you’re passing an initial string to an
+unkeyed hash, but it doesn’t seem worth making the interface
+for keyed hashes more obscure to avoid this potential error.</p>
+</div>
+<div class="section" id="changes-from-version-1-0-to-version-2-0">
+<h2><a class="toc-backref" href="#id7">Changes from Version 1.0 to Version 2.0</a><a class="headerlink" href="#changes-from-version-1-0-to-version-2-0" title="Permalink to this headline">¶</a></h2>
+<p>Version 2.0 of API for Cryptographic Hash Functions clarifies some
+aspects of the API and brings it up-to-date. It also formalized aspects
+that were already de facto standards and provided by most
+implementations.</p>
+<p>Version 2.0 introduces the following new attributes:</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">name</span></code></dt><dd>The name property was made mandatory by <a class="reference external" href="http://bugs.python.org/issue18532">issue 18532</a> <a class="footnote-reference brackets" href="#id2" id="id3">1</a>.</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">block_size</span></code></dt><dd>The new version also specifies that the return value
+<code class="docutils literal notranslate"><span class="pre">NotImplemented</span></code> prevents HMAC support.</dd>
+</dl>
+<p>Version 2.0 takes the separation of binary and text data in Python
+3.0 into account. The ‘string’ argument to <code class="docutils literal notranslate"><span class="pre">new()</span></code> and <code class="docutils literal notranslate"><span class="pre">update()</span></code> as
+well as the ‘key’ argument must be bytes-like objects. On Python
+2.x a hashing object may also support ASCII-only unicode. The actual
+name of argument is not changed as it is part of the public API.
+Code may depend on the fact that the argument is called ‘string’.</p>
+</div>
+<div class="section" id="recommended-names-for-common-hashing-algorithms">
+<h2><a class="toc-backref" href="#id8">Recommended names for common hashing algorithms</a><a class="headerlink" href="#recommended-names-for-common-hashing-algorithms" title="Permalink to this headline">¶</a></h2>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 28%" />
+<col style="width: 28%" />
+<col style="width: 44%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head">algorithm</th>
+<th class="head">variant</th>
+<th class="head">recommended name</th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td>MD5</td>
+<td></td>
+<td>md5</td>
+</tr>
+<tr class="row-odd"><td>RIPEMD-160</td>
+<td></td>
+<td>ripemd160</td>
+</tr>
+<tr class="row-even"><td>SHA-1</td>
+<td></td>
+<td>sha1</td>
+</tr>
+<tr class="row-odd"><td rowspan="4">SHA-2</td>
+<td>SHA-224</td>
+<td>sha224</td>
+</tr>
+<tr class="row-even"><td>SHA-256</td>
+<td>sha256</td>
+</tr>
+<tr class="row-odd"><td>SHA-384</td>
+<td>sha384</td>
+</tr>
+<tr class="row-even"><td>SHA-512</td>
+<td>sha512</td>
+</tr>
+<tr class="row-odd"><td rowspan="4">SHA-3</td>
+<td>SHA-3-224</td>
+<td>sha3_224</td>
+</tr>
+<tr class="row-even"><td>SHA-3-256</td>
+<td>sha3_256</td>
+</tr>
+<tr class="row-odd"><td>SHA-3-384</td>
+<td>sha3_384</td>
+</tr>
+<tr class="row-even"><td>SHA-3-512</td>
+<td>sha3_512</td>
+</tr>
+<tr class="row-odd"><td>WHIRLPOOL</td>
+<td></td>
+<td>whirlpool</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="changes">
+<h2><a class="toc-backref" href="#id9">Changes</a><a class="headerlink" href="#changes" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>2001-09-17: Renamed <code class="docutils literal notranslate"><span class="pre">clear()</span></code> to <code class="docutils literal notranslate"><span class="pre">reset()</span></code>; added <code class="docutils literal notranslate"><span class="pre">digest_size</span></code> attribute
+to objects; added <code class="docutils literal notranslate"><span class="pre">.hexdigest()</span></code> method.</li>
+<li>2001-09-20: Removed <code class="docutils literal notranslate"><span class="pre">reset()</span></code> method completely.</li>
+<li>2001-09-28: Set <code class="docutils literal notranslate"><span class="pre">digest_size</span></code> to <code class="docutils literal notranslate"><span class="pre">None</span></code> for variable-size hashes.</li>
+<li>2013-08-15: Added <code class="docutils literal notranslate"><span class="pre">block_size</span></code> and <code class="docutils literal notranslate"><span class="pre">name</span></code> attributes; clarified that
+‘string’ actually referes to bytes-like objects.</li>
+</ul>
+</div>
+<div class="section" id="acknowledgements">
+<h2><a class="toc-backref" href="#id10">Acknowledgements</a><a class="headerlink" href="#acknowledgements" title="Permalink to this headline">¶</a></h2>
+<p>Thanks to Aahz, Andrew Archibald, Rich Salz, Itamar
+Shtull-Trauring, and the readers of the python-crypto list for
+their comments on this PEP.</p>
+</div>
+<div class="section" id="id1">
+<h2><a class="toc-backref" href="#id11">References</a><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id3">1</a></span></dt>
+<dd><a class="reference external" href="http://bugs.python.org/issue18532">http://bugs.python.org/issue18532</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id12">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0452.txt">https://github.com/python/peps/blob/master/pep-0452.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0452.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0451.html">PEP 0451</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0453.html">PEP 0453</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 452 – API for Cryptographic Hash Functions v2.0</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#changes-from-version-1-0-to-version-2-0">Changes from Version 1.0 to Version 2.0</a></li>
+<li><a class="reference internal" href="#recommended-names-for-common-hashing-algorithms">Recommended names for common hashing algorithms</a></li>
+<li><a class="reference internal" href="#changes">Changes</a></li>
+<li><a class="reference internal" href="#acknowledgements">Acknowledgements</a></li>
+<li><a class="reference internal" href="#id1">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

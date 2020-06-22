@@ -1,0 +1,386 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 241 – Metadata for Python Software Packages &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 242 – Numeric Kinds" href="pep-0242.html" />
+    <link rel="prev" title="PEP 240 – Adding a Rational Literal to Python" href="pep-0240.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 241 – Metadata for Python Software Packages</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-241-metadata-for-python-software-packages">
+<h1 class="page-title">PEP 241 – Metadata for Python Software Packages<a class="headerlink" href="#pep-241-metadata-for-python-software-packages" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">241</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Metadata for Python Software Packages</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">A.M. Kuchling &lt;amk&#32;&#97;t&#32;amk.ca&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">12-Mar-2001</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd">19-Mar-2001</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#introduction" id="id2">Introduction</a></li>
+<li><a class="reference internal" href="#including-metadata-in-packages" id="id3">Including Metadata in Packages</a></li>
+<li><a class="reference internal" href="#fields" id="id4">Fields</a><ul>
+<li><a class="reference internal" href="#metadata-version" id="id5">Metadata-Version</a></li>
+<li><a class="reference internal" href="#name" id="id6">Name</a></li>
+<li><a class="reference internal" href="#version" id="id7">Version</a></li>
+<li><a class="reference internal" href="#platform-multiple-use" id="id8">Platform (multiple use)</a></li>
+<li><a class="reference internal" href="#summary" id="id9">Summary</a></li>
+<li><a class="reference internal" href="#description-optional" id="id10">Description (optional)</a></li>
+<li><a class="reference internal" href="#keywords-optional" id="id11">Keywords (optional)</a></li>
+<li><a class="reference internal" href="#home-page-optional" id="id12">Home-page (optional)</a></li>
+<li><a class="reference internal" href="#author-optional" id="id13">Author (optional)</a></li>
+<li><a class="reference internal" href="#author-email" id="id14">Author-email</a></li>
+<li><a class="reference internal" href="#license" id="id15">License</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#acknowledgements" id="id16">Acknowledgements</a></li>
+<li><a class="reference internal" href="#copyright" id="id17">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="introduction">
+<h2><a class="toc-backref" href="#id2">Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>This PEP describes a mechanism for adding metadata to Python
+packages.  It includes specifics of the field names, and their
+semantics and usage.</p>
+</div>
+<div class="section" id="including-metadata-in-packages">
+<h2><a class="toc-backref" href="#id3">Including Metadata in Packages</a><a class="headerlink" href="#including-metadata-in-packages" title="Permalink to this headline">¶</a></h2>
+<p>The Distutils ‘sdist’ command will be modified to extract the
+metadata fields from the arguments and write them to a file in the
+generated zipfile or tarball.  This file will be named PKG-INFO
+and will be placed in the top directory of the source
+distribution (where the README, INSTALL, and other files usually
+go).</p>
+<p>Developers may not provide their own PKG-INFO file.  The “sdist”
+command will, if it detects an existing PKG-INFO file, terminate
+with an appropriate error message.  This should prevent confusion
+caused by the PKG-INFO and setup.py files being out of sync.</p>
+<p>The PKG-INFO file format is a single set of RFC-822 headers
+parseable by the rfc822.py module.  The field names listed in the
+following section are used as the header names.  There’s no
+extension mechanism in this simple format; the Catalog and Distutils
+SIGs will aim at getting a more flexible format ready for Python 2.2.</p>
+</div>
+<div class="section" id="fields">
+<h2><a class="toc-backref" href="#id4">Fields</a><a class="headerlink" href="#fields" title="Permalink to this headline">¶</a></h2>
+<p>This section specifies the names and semantics of each of the
+supported metadata fields.</p>
+<p>Fields marked with “(Multiple use)” may be specified multiple
+times in a single PKG-INFO file.  Other fields may only occur
+once in a PKG-INFO file.  Fields marked with “(optional)” are
+not required to appear in a valid PKG-INFO file, all other
+fields must be present.</p>
+<div class="section" id="metadata-version">
+<h3><a class="toc-backref" href="#id5">Metadata-Version</a><a class="headerlink" href="#metadata-version" title="Permalink to this headline">¶</a></h3>
+<p>Version of the file format; currently “1.0” is the only
+legal value here.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Metadata</span><span class="o">-</span><span class="n">Version</span><span class="p">:</span> <span class="mf">1.0</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="name">
+<h3><a class="toc-backref" href="#id6">Name</a><a class="headerlink" href="#name" title="Permalink to this headline">¶</a></h3>
+<p>The name of the package.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Name</span><span class="p">:</span> <span class="n">BeagleVote</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="version">
+<h3><a class="toc-backref" href="#id7">Version</a><a class="headerlink" href="#version" title="Permalink to this headline">¶</a></h3>
+<p>A string containing the package’s version number.  This
+field should be parseable by one of the Version classes
+(StrictVersion or LooseVersion) in the distutils.version
+module.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Version</span><span class="p">:</span> <span class="mf">1.0</span><span class="n">a2</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="platform-multiple-use">
+<h3><a class="toc-backref" href="#id8">Platform (multiple use)</a><a class="headerlink" href="#platform-multiple-use" title="Permalink to this headline">¶</a></h3>
+<p>A comma-separated list of platform specifications, summarizing
+the operating systems supported by the package.  The major
+supported platforms are listed below, but this list is
+necessarily incomplete.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">POSIX</span><span class="p">,</span> <span class="n">MacOS</span><span class="p">,</span> <span class="n">Windows</span><span class="p">,</span> <span class="n">BeOS</span><span class="p">,</span> <span class="n">PalmOS</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>Binary distributions will use the Supported-Platform field in
+their metadata to specify the OS and CPU for which the binary
+package was compiled.  The semantics of the Supported-Platform
+are not specified in this PEP.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Platform</span><span class="p">:</span> <span class="n">POSIX</span><span class="p">,</span> <span class="n">Windows</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="summary">
+<h3><a class="toc-backref" href="#id9">Summary</a><a class="headerlink" href="#summary" title="Permalink to this headline">¶</a></h3>
+<p>A one-line summary of what the package does.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Summary</span><span class="p">:</span> <span class="n">A</span> <span class="n">module</span> <span class="k">for</span> <span class="n">collecting</span> <span class="n">votes</span> <span class="kn">from</span> <span class="nn">beagles.</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="description-optional">
+<h3><a class="toc-backref" href="#id10">Description (optional)</a><a class="headerlink" href="#description-optional" title="Permalink to this headline">¶</a></h3>
+<p>A longer description of the package that can run to several
+paragraphs.  (Software that deals with metadata should not
+assume any maximum size for this field, though one hopes that
+people won’t include their instruction manual as the
+long-description.)</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Description</span><span class="p">:</span> <span class="n">This</span> <span class="n">module</span> <span class="n">collects</span> <span class="n">votes</span> <span class="kn">from</span> <span class="nn">beagles</span>
+             <span class="ow">in</span> <span class="n">order</span> <span class="n">to</span> <span class="n">determine</span> <span class="n">their</span> <span class="n">electoral</span> <span class="n">wishes</span><span class="o">.</span>
+             <span class="n">Do</span> <span class="n">NOT</span> <span class="k">try</span> <span class="n">to</span> <span class="n">use</span> <span class="n">this</span> <span class="n">module</span> <span class="k">with</span> <span class="n">basset</span> <span class="n">hounds</span><span class="p">;</span>
+             <span class="n">it</span> <span class="n">makes</span> <span class="n">them</span> <span class="n">grumpy</span><span class="o">.</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="keywords-optional">
+<h3><a class="toc-backref" href="#id11">Keywords (optional)</a><a class="headerlink" href="#keywords-optional" title="Permalink to this headline">¶</a></h3>
+<p>A list of additional keywords to be used to assist searching
+for the package in a larger catalog.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Keywords</span><span class="p">:</span> <span class="n">dog</span> <span class="n">puppy</span> <span class="n">voting</span> <span class="n">election</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="home-page-optional">
+<h3><a class="toc-backref" href="#id12">Home-page (optional)</a><a class="headerlink" href="#home-page-optional" title="Permalink to this headline">¶</a></h3>
+<p>A string containing the URL for the package’s home page.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Home</span><span class="o">-</span><span class="n">page</span><span class="p">:</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">www</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">com</span><span class="o">/~</span><span class="n">cschultz</span><span class="o">/</span><span class="n">bvote</span><span class="o">/</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="author-optional">
+<h3><a class="toc-backref" href="#id13">Author (optional)</a><a class="headerlink" href="#author-optional" title="Permalink to this headline">¶</a></h3>
+<p>A string containing at a minimum the author’s name.  Contact
+information can also be added, separating each line with
+newlines.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Author</span><span class="p">:</span> <span class="n">C</span><span class="o">.</span> <span class="n">Schultz</span>
+        <span class="n">Universal</span> <span class="n">Features</span> <span class="n">Syndicate</span>
+        <span class="n">Los</span> <span class="n">Angeles</span><span class="p">,</span> <span class="n">CA</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="author-email">
+<h3><a class="toc-backref" href="#id14">Author-email</a><a class="headerlink" href="#author-email" title="Permalink to this headline">¶</a></h3>
+<p>A string containing the author’s e-mail address.  It can contain
+a name and e-mail address in the legal forms for a RFC-822
+‘From:’ header.  It’s not optional because cataloging systems
+can use the e-mail portion of this field as a unique key
+representing the author.  A catalog might provide authors the
+ability to store their GPG key, personal home page, and other
+additional metadata <em>about the author</em>, and optionally the
+ability to associate several e-mail addresses with the same
+person.  Author-related metadata fields are not covered by this
+PEP.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Author</span><span class="o">-</span><span class="n">email</span><span class="p">:</span> <span class="s2">&quot;C. Schultz&quot;</span> <span class="o">&lt;</span><span class="n">cschultz</span><span class="nd">@example</span><span class="o">.</span><span class="n">com</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="license">
+<h3><a class="toc-backref" href="#id15">License</a><a class="headerlink" href="#license" title="Permalink to this headline">¶</a></h3>
+<p>A string selected from a short list of choices, specifying the
+license covering the package.  Some licenses result in the
+software being freely redistributable, so packagers and
+resellers can automatically know that they’re free to
+redistribute the software.  Other licenses will require
+a careful reading by a human to determine how the software can be
+repackaged and resold.</p>
+<p>The choices are:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Artistic</span><span class="p">,</span> <span class="n">BSD</span><span class="p">,</span> <span class="n">DFSG</span><span class="p">,</span> <span class="n">GNU</span> <span class="n">GPL</span><span class="p">,</span> <span class="n">GNU</span> <span class="n">LGPL</span><span class="p">,</span> <span class="s2">&quot;MIT&quot;</span><span class="p">,</span>
+<span class="n">Mozilla</span> <span class="n">PL</span><span class="p">,</span> <span class="s2">&quot;public domain&quot;</span><span class="p">,</span> <span class="n">Python</span><span class="p">,</span> <span class="n">Qt</span> <span class="n">PL</span><span class="p">,</span> <span class="n">Zope</span> <span class="n">PL</span><span class="p">,</span> <span class="n">unknown</span><span class="p">,</span>
+<span class="n">nocommercial</span><span class="p">,</span> <span class="n">nosell</span><span class="p">,</span> <span class="n">nosource</span><span class="p">,</span> <span class="n">shareware</span><span class="p">,</span> <span class="n">other</span>
+</pre></div>
+</div>
+<p>Definitions of some of the licenses are:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 80%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td>DFSG</td>
+<td>The license conforms to the Debian Free Software
+Guidelines, but does not use one of the other
+DFSG conforming licenses listed here.
+More information is available at:
+<a class="reference external" href="http://www.debian.org/social_contract#guidelines">http://www.debian.org/social_contract#guidelines</a></td>
+</tr>
+<tr class="row-even"><td>Python</td>
+<td>Python 1.6 or higher license.  Version 1.5.2 and
+earlier are under the MIT license.</td>
+</tr>
+<tr class="row-odd"><td>public domain</td>
+<td>Software is public domain, not copyrighted.</td>
+</tr>
+<tr class="row-even"><td>unknown</td>
+<td>Status is not known</td>
+</tr>
+<tr class="row-odd"><td>nocommercial</td>
+<td>Free private use but commercial use not permitted</td>
+</tr>
+<tr class="row-even"><td>nosell</td>
+<td>Free use but distribution for profit by arrangement</td>
+</tr>
+<tr class="row-odd"><td>nosource</td>
+<td>Freely distributable but no source code</td>
+</tr>
+<tr class="row-even"><td>shareware</td>
+<td>Payment is requested if software is used</td>
+</tr>
+<tr class="row-odd"><td>other</td>
+<td>General category for other non-DFSG licenses</td>
+</tr>
+</tbody>
+</table>
+<p>Some of these licenses can be interpreted to mean the software is
+freely redistributable.  The list of redistributable licenses is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Artistic</span><span class="p">,</span> <span class="n">BSD</span><span class="p">,</span> <span class="n">DFSG</span><span class="p">,</span> <span class="n">GNU</span> <span class="n">GPL</span><span class="p">,</span> <span class="n">GNU</span> <span class="n">LGPL</span><span class="p">,</span> <span class="s2">&quot;MIT&quot;</span><span class="p">,</span>
+<span class="n">Mozilla</span> <span class="n">PL</span><span class="p">,</span> <span class="s2">&quot;public domain&quot;</span><span class="p">,</span> <span class="n">Python</span><span class="p">,</span> <span class="n">Qt</span> <span class="n">PL</span><span class="p">,</span> <span class="n">Zope</span> <span class="n">PL</span><span class="p">,</span>
+<span class="n">nosource</span><span class="p">,</span> <span class="n">shareware</span>
+</pre></div>
+</div>
+<p>Note that being redistributable does not mean a package
+qualifies as free software, ‘nosource’ and ‘shareware’ being
+examples.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">License</span><span class="p">:</span> <span class="n">MIT</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="acknowledgements">
+<h2><a class="toc-backref" href="#id16">Acknowledgements</a><a class="headerlink" href="#acknowledgements" title="Permalink to this headline">¶</a></h2>
+<p>Many changes and rewrites to this document were suggested by the
+readers of the Distutils SIG.  In particular, Sean Reifschneider
+often contributed actual text for inclusion in this PEP.</p>
+<p>The list of licenses was compiled using the SourceForge license
+list and the CTAN license list compiled by Graham Williams; Carey
+Evans also offered several useful suggestions on this list.</p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id17">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0241.txt">https://github.com/python/peps/blob/master/pep-0241.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0241.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0240.html">PEP 0240</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0242.html">PEP 0242</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 241 – Metadata for Python Software Packages</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#including-metadata-in-packages">Including Metadata in Packages</a></li>
+<li><a class="reference internal" href="#fields">Fields</a><ul>
+<li><a class="reference internal" href="#metadata-version">Metadata-Version</a></li>
+<li><a class="reference internal" href="#name">Name</a></li>
+<li><a class="reference internal" href="#version">Version</a></li>
+<li><a class="reference internal" href="#platform-multiple-use">Platform (multiple use)</a></li>
+<li><a class="reference internal" href="#summary">Summary</a></li>
+<li><a class="reference internal" href="#description-optional">Description (optional)</a></li>
+<li><a class="reference internal" href="#keywords-optional">Keywords (optional)</a></li>
+<li><a class="reference internal" href="#home-page-optional">Home-page (optional)</a></li>
+<li><a class="reference internal" href="#author-optional">Author (optional)</a></li>
+<li><a class="reference internal" href="#author-email">Author-email</a></li>
+<li><a class="reference internal" href="#license">License</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#acknowledgements">Acknowledgements</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

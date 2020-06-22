@@ -1,0 +1,377 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 3117 – Postfix type declarations &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 3118 – Revising the buffer protocol" href="pep-3118.html" />
+    <link rel="prev" title="PEP 3116 – New I/O" href="pep-3116.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 3117 – Postfix type declarations</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-3117-postfix-type-declarations">
+<h1 class="page-title">PEP 3117 – Postfix type declarations<a class="headerlink" href="#pep-3117-postfix-type-declarations" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">3117</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Postfix type declarations</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Georg Brandl &lt;georg&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Rejected</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">01-Apr-2007</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.0</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id13">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id14">Rationale</a></li>
+<li><a class="reference internal" href="#specification" id="id15">Specification</a></li>
+<li><a class="reference internal" href="#unicode-replacement-units" id="id16">Unicode replacement units</a></li>
+<li><a class="reference internal" href="#the-typedef-statement" id="id17">The <code class="docutils literal notranslate"><span class="pre">typedef</span></code> statement</a></li>
+<li><a class="reference internal" href="#example" id="id18">Example</a></li>
+<li><a class="reference internal" href="#compatibility-issues" id="id19">Compatibility issues</a></li>
+<li><a class="reference internal" href="#rejection" id="id20">Rejection</a></li>
+<li><a class="reference internal" href="#references" id="id21">References</a></li>
+<li><a class="reference internal" href="#acknowledgements" id="id22">Acknowledgements</a></li>
+<li><a class="reference internal" href="#copyright" id="id23">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id13">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes the addition of a postfix type declaration syntax to
+Python. It also specifies a new <code class="docutils literal notranslate"><span class="pre">typedef</span></code> statement which is used to create
+new mappings between types and declarators.</p>
+<p>Its acceptance will greatly enhance the Python user experience as well as
+eliminate one of the warts that deter users of other programming languages from
+switching to Python.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id14">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Python has long suffered from the lack of explicit type declarations.  Being one
+of the few aspects in which the language deviates from its Zen, this wart has
+sparked many a discussion between Python heretics and members of the PSU (for
+a few examples, see <a class="reference internal" href="#ex1" id="id1"><span>[EX1]</span></a>, <a class="reference internal" href="#ex2" id="id2"><span>[EX2]</span></a> or <a class="reference internal" href="#ex3" id="id3"><span>[EX3]</span></a>), and it also made it a large-scale
+enterprise success unlikely.</p>
+<p>However, if one wants to put an end to this misery, a decent Pythonic syntax
+must be found. In almost all languages that have them, type declarations lack
+this quality: they are verbose, often needing <em>multiple words</em> for a single
+type, or they are hard to comprehend (e.g., a certain language uses completely
+unrelated <a class="footnote-reference brackets" href="#id9" id="id4">1</a> adjectives like <code class="docutils literal notranslate"><span class="pre">dim</span></code> for type declaration).</p>
+<p>Therefore, this PEP combines the move to type declarations with another bold
+move that will once again prove that Python is not only future-proof but
+future-embracing: the introduction of Unicode characters as an integral
+constituent of source code.</p>
+<p>Unicode makes it possible to express much more with much less characters, which
+is in accordance with the Zen (“Readability counts.”) <a class="reference internal" href="#zen" id="id5"><span>[ZEN]</span></a>. Additionally, it
+eliminates the need for a separate type declaration statement, and last but not
+least, it makes Python measure up to Perl 6, which already uses Unicode for its
+operators. <a class="footnote-reference brackets" href="#id10" id="id6">2</a></p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id15">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>When the type declaration mode is in operation, the grammar is changed so that
+each <code class="docutils literal notranslate"><span class="pre">NAME</span></code> must consist of two parts: a name and a type declarator, which is
+exactly one Unicode character.</p>
+<p>The declarator uniquely specifies the type of the name, and if it occurs on the
+left hand side of an expression, this type is enforced: an <code class="docutils literal notranslate"><span class="pre">InquisitionError</span></code>
+exception is raised if the returned type doesn’t match the declared type. <a class="footnote-reference brackets" href="#id11" id="id7">3</a></p>
+<p>Also, function call result types have to be specified. If the result of the call
+does not have the declared type, an <code class="docutils literal notranslate"><span class="pre">InquisitionError</span></code> is raised.  Caution: the
+declarator for the result should not be confused with the declarator for the
+function object (see the example below).</p>
+<p>Type declarators after names that are only read, not assigned to, are not strictly
+necessary but enforced anyway (see the Python Zen: “Explicit is better than
+implicit.”).</p>
+<p>The mapping between types and declarators is not static. It can be completely
+customized by the programmer, but for convenience there are some predefined
+mappings for some built-in types:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 67%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head">Type</th>
+<th class="head">Declarator</th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">object</span></code></td>
+<td>� (REPLACEMENT CHARACTER)</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">int</span></code></td>
+<td>ℕ (DOUBLE-STRUCK CAPITAL N)</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">float</span></code></td>
+<td>℮ (ESTIMATED SYMBOL)</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">bool</span></code></td>
+<td>✓ (CHECK MARK)</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">complex</span></code></td>
+<td>ℂ (DOUBLE-STRUCK CAPITAL C)</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">str</span></code></td>
+<td>✎ (LOWER RIGHT PENCIL)</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">unicode</span></code></td>
+<td>✒ (BLACK NIB)</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">tuple</span></code></td>
+<td>⒯ (PARENTHESIZED LATIN SMALL LETTER T)</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">list</span></code></td>
+<td>♨ (HOT SPRINGS)</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">dict</span></code></td>
+<td>⧟ (DOUBLE-ENDED MULTIMAP)</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">set</span></code></td>
+<td>∅ (EMPTY SET) (<em>Note:</em> this is also for full sets)</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">frozenset</span></code></td>
+<td>☃ (SNOWMAN)</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">datetime</span></code></td>
+<td>⌚ (WATCH)</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">function</span></code></td>
+<td>ƛ (LATIN SMALL LETTER LAMBDA WITH STROKE)</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">generator</span></code></td>
+<td>⚛ (ATOM SYMBOL)</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">Exception</span></code></td>
+<td>⌁ (ELECTRIC ARROW)</td>
+</tr>
+</tbody>
+</table>
+<p>The declarator for the <code class="docutils literal notranslate"><span class="pre">None</span></code> type is a zero-width space.</p>
+<p>These characters should be obvious and easy to remember and type for every
+programmer.</p>
+</div>
+<div class="section" id="unicode-replacement-units">
+<h2><a class="toc-backref" href="#id16">Unicode replacement units</a><a class="headerlink" href="#unicode-replacement-units" title="Permalink to this headline">¶</a></h2>
+<p>Since even in our modern, globalized world there are still some old-fashioned
+rebels who can’t or don’t want to use Unicode in their source code, and since
+Python is a forgiving language, a fallback is provided for those:</p>
+<p>Instead of the single Unicode character, they can type <code class="docutils literal notranslate"><span class="pre">name${UNICODE</span> <span class="pre">NAME</span> <span class="pre">OF</span>
+<span class="pre">THE</span> <span class="pre">DECLARATOR}$</span></code>. For example, these two function definitions are equivalent:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">fooƛ</span><span class="p">(</span><span class="n">xℂ</span><span class="p">):</span>
+    <span class="k">return</span> <span class="kc">None</span>
+</pre></div>
+</div>
+<p>and</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>def foo${LATIN SMALL LETTER LAMBDA WITH STROKE}$(x${DOUBLE-STRUCK CAPITAL C}$):
+    return None${ZERO WIDTH NO-BREAK SPACE}$
+</pre></div>
+</div>
+<p>This is still easy to read and makes the full power of type-annotated Python
+available to ASCII believers.</p>
+</div>
+<div class="section" id="the-typedef-statement">
+<h2><a class="toc-backref" href="#id17">The <code class="docutils literal notranslate"><span class="pre">typedef</span></code> statement</a><a class="headerlink" href="#the-typedef-statement" title="Permalink to this headline">¶</a></h2>
+<p>The mapping between types and declarators can be extended with this new statement.</p>
+<p>The syntax is as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">typedef_stmt</span>  <span class="p">:</span><span class="o">:=</span>  <span class="s2">&quot;typedef&quot;</span> <span class="n">expr</span> <span class="n">DECLARATOR</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">expr</span></code> resolves to a type object. For convenience, the <code class="docutils literal notranslate"><span class="pre">typedef</span></code> statement
+can also be mixed with the <code class="docutils literal notranslate"><span class="pre">class</span></code> statement for new classes, like so:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>typedef class Foo☺(object�):
+    pass
+</pre></div>
+</div>
+</div>
+<div class="section" id="example">
+<h2><a class="toc-backref" href="#id18">Example</a><a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
+<p>This is the standard <code class="docutils literal notranslate"><span class="pre">os.path.normpath</span></code> function, converted to type declaration
+syntax:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>def normpathƛ(path✎)✎:
+    &quot;&quot;&quot;Normalize path, eliminating double slashes, etc.&quot;&quot;&quot;
+    if path✎ == &#39;&#39;:
+        return &#39;.&#39;
+    initial_slashes✓ = path✎.startswithƛ(&#39;/&#39;)✓
+    # POSIX allows one or two initial slashes, but treats three or more
+    # as single slash.
+    if (initial_slashes✓ and
+        path✎.startswithƛ(&#39;//&#39;)✓ and not path✎.startswithƛ(&#39;///&#39;)✓)✓:
+        initial_slashesℕ = 2
+    comps♨ = path✎.splitƛ(&#39;/&#39;)♨
+    new_comps♨ = []♨
+    for comp✎ in comps♨:
+        if comp✎ in (&#39;&#39;, &#39;.&#39;)⒯:
+            continue
+        if (comp✎ != &#39;..&#39; or (not initial_slashesℕ and not new_comps♨)✓ or
+             (new_comps♨ and new_comps♨[-1]✎ == &#39;..&#39;)✓)✓:
+            new_comps♨.appendƛ(comp✎)
+        elif new_comps♨:
+            new_comps♨.popƛ()✎
+    comps♨ = new_comps♨
+    path✎ = &#39;/&#39;.join(comps♨)✎
+    if initial_slashesℕ:
+        path✎ = &#39;/&#39;*initial_slashesℕ + path✎
+    return path✎ or &#39;.&#39;
+</pre></div>
+</div>
+<p>As you can clearly see, the type declarations add expressiveness, while at the
+same time they make the code look much more professional.</p>
+</div>
+<div class="section" id="compatibility-issues">
+<h2><a class="toc-backref" href="#id19">Compatibility issues</a><a class="headerlink" href="#compatibility-issues" title="Permalink to this headline">¶</a></h2>
+<p>To enable type declaration mode, one has to write:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">type_declarations</span>
+</pre></div>
+</div>
+<p>which enables Unicode parsing of the source <a class="footnote-reference brackets" href="#id12" id="id8">4</a>, makes <code class="docutils literal notranslate"><span class="pre">typedef</span></code> a keyword
+and enforces correct types for all assignments and function calls.</p>
+</div>
+<div class="section" id="rejection">
+<h2><a class="toc-backref" href="#id20">Rejection</a><a class="headerlink" href="#rejection" title="Permalink to this headline">¶</a></h2>
+<p>After careful considering, much soul-searching, gnashing of teeth and rending
+of garments, it has been decided to reject this PEP.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id21">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="citation">
+<dt class="label" id="ex1"><span class="brackets"><a class="fn-backref" href="#id1">EX1</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-list/2003-June/210588.html">https://mail.python.org/pipermail/python-list/2003-June/210588.html</a></dd>
+<dt class="label" id="ex2"><span class="brackets"><a class="fn-backref" href="#id2">EX2</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-list/2000-May/034685.html">https://mail.python.org/pipermail/python-list/2000-May/034685.html</a></dd>
+<dt class="label" id="ex3"><span class="brackets"><a class="fn-backref" href="#id3">EX3</a></span></dt>
+<dd><a class="reference external" href="http://groups.google.com/group/comp.lang.python/browse_frm/thread/6ae8c6add913635a/de40d4ffe9bd4304?lnk=gst&amp;q=type+declarations&amp;rnum=6">http://groups.google.com/group/comp.lang.python/browse_frm/thread/6ae8c6add913635a/de40d4ffe9bd4304?lnk=gst&amp;q=type+declarations&amp;rnum=6</a></dd>
+</dl>
+<dl class="footnote brackets">
+<dt class="label" id="id9"><span class="brackets"><a class="fn-backref" href="#id4">1</a></span></dt>
+<dd>Though, if you know the language in question, it may not be <em>that</em> unrelated.</dd>
+</dl>
+<dl class="citation">
+<dt class="label" id="zen"><span class="brackets"><a class="fn-backref" href="#id5">ZEN</a></span></dt>
+<dd><a class="reference external" href="http://www.python.org/dev/peps/pep-0020/">http://www.python.org/dev/peps/pep-0020/</a></dd>
+</dl>
+<dl class="footnote brackets">
+<dt class="label" id="id10"><span class="brackets"><a class="fn-backref" href="#id6">2</a></span></dt>
+<dd>Well, it would, if there was a Perl 6.</dd>
+<dt class="label" id="id11"><span class="brackets"><a class="fn-backref" href="#id7">3</a></span></dt>
+<dd>Since the name <code class="docutils literal notranslate"><span class="pre">TypeError</span></code> is already in use, this name has been chosen
+for obvious reasons.</dd>
+<dt class="label" id="id12"><span class="brackets"><a class="fn-backref" href="#id8">4</a></span></dt>
+<dd>The encoding in which the code is written is read from a standard coding
+cookie. There will also be an autodetection mechanism, invoked by <code class="docutils literal notranslate"><span class="pre">from</span>
+<span class="pre">__future__</span> <span class="pre">import</span> <span class="pre">encoding_hell</span></code>.</dd>
+</dl>
+</div>
+<div class="section" id="acknowledgements">
+<h2><a class="toc-backref" href="#id22">Acknowledgements</a><a class="headerlink" href="#acknowledgements" title="Permalink to this headline">¶</a></h2>
+<p>Many thanks go to Armin Ronacher, Alexander Schremmer and Marek Kubica who helped
+find the most suitable and mnemonic declarator for built-in types.</p>
+<p>Thanks also to the Unicode Consortium for including all those useful characters
+in the Unicode standard.</p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id23">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-3117.txt">https://github.com/python/peps/blob/master/pep-3117.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-3117.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-3116.html">PEP 3116</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-3118.html">PEP 3118</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 3117 – Postfix type declarations</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#unicode-replacement-units">Unicode replacement units</a></li>
+<li><a class="reference internal" href="#the-typedef-statement">The <code class="docutils literal notranslate"><span class="pre">typedef</span></code> statement</a></li>
+<li><a class="reference internal" href="#example">Example</a></li>
+<li><a class="reference internal" href="#compatibility-issues">Compatibility issues</a></li>
+<li><a class="reference internal" href="#rejection">Rejection</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#acknowledgements">Acknowledgements</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

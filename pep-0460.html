@@ -1,0 +1,280 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 460 – Add binary interpolation and formatting &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 461 – Adding % formatting to bytes and bytearray" href="pep-0461.html" />
+    <link rel="prev" title="PEP 459 – Standard Metadata Extensions for Python Software Packages" href="pep-0459.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 460 – Add binary interpolation and formatting</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-460-add-binary-interpolation-and-formatting">
+<h1 class="page-title">PEP 460 – Add binary interpolation and formatting<a class="headerlink" href="#pep-460-add-binary-interpolation-and-formatting" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">460</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Add binary interpolation and formatting</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Antoine Pitrou &lt;solipsis&#32;&#97;t&#32;pitrou.net&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Withdrawn</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">6-Jan-2014</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.5</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id1">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id2">Rationale</a></li>
+<li><a class="reference internal" href="#binary-formatting-features" id="id3">Binary formatting features</a><ul>
+<li><a class="reference internal" href="#supported-features" id="id4">Supported features</a></li>
+<li><a class="reference internal" href="#unsupported-features" id="id5">Unsupported features</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#criticisms" id="id6">Criticisms</a></li>
+<li><a class="reference internal" href="#other-proposals" id="id7">Other proposals</a><ul>
+<li><a class="reference internal" href="#a-new-type-datatype" id="id8">A new type datatype</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#resolution" id="id9">Resolution</a></li>
+<li><a class="reference internal" href="#references" id="id10">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id11">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id1">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes to add minimal formatting operations to bytes and
+bytearray objects.  The proposed additions are:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">bytes</span> <span class="pre">%</span> <span class="pre">...</span></code> and <code class="docutils literal notranslate"><span class="pre">bytearray</span> <span class="pre">%</span> <span class="pre">...</span></code> for percent-formatting,
+similar in syntax to percent-formatting on <code class="docutils literal notranslate"><span class="pre">str</span></code> objects
+(accepting a single object, a tuple or a dict).</li>
+<li><code class="docutils literal notranslate"><span class="pre">bytes.format(...)</span></code> and <code class="docutils literal notranslate"><span class="pre">bytearray.format(...)</span></code> for a formatting
+similar in syntax to <code class="docutils literal notranslate"><span class="pre">str.format()</span></code> (accepting positional as well as
+keyword arguments).</li>
+<li><code class="docutils literal notranslate"><span class="pre">bytes.format_map(...)</span></code> and <code class="docutils literal notranslate"><span class="pre">bytearray.format_map(...)</span></code> for an
+API similar to <code class="docutils literal notranslate"><span class="pre">str.format_map(...)</span></code>, with the same formatting
+syntax and semantics as <code class="docutils literal notranslate"><span class="pre">bytes.format()</span></code> and <code class="docutils literal notranslate"><span class="pre">bytearray.format()</span></code>.</li>
+</ul>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id2">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>In Python 2, <code class="docutils literal notranslate"><span class="pre">str</span> <span class="pre">%</span> <span class="pre">args</span></code> and <code class="docutils literal notranslate"><span class="pre">str.format(args)</span></code> allow the formatting
+and interpolation of bytestrings.  This feature has commonly been used
+for the assembling of protocol messages when protocols are known to use
+a fixed encoding.</p>
+<p>Python 3 generally mandates that text be stored and manipulated as unicode
+(i.e. <code class="docutils literal notranslate"><span class="pre">str</span></code> objects, not <code class="docutils literal notranslate"><span class="pre">bytes</span></code>).  In some cases, though, it makes
+sense to manipulate <code class="docutils literal notranslate"><span class="pre">bytes</span></code> objects directly.  Typical usage is binary
+network protocols, where you can want to interpolate and assemble several
+bytes object (some of them literals, some of them compute) to produce
+complete protocol messages.  For example, protocols such as HTTP or SIP
+have headers with ASCII names and opaque “textual” values using a varying
+and/or sometimes ill-defined encoding.  Moreover, those headers can be
+followed by a binary body… which can be chunked and decorated with ASCII
+headers and trailers!</p>
+<p>While there are reasonably efficient ways to accumulate binary data
+(such as using a <code class="docutils literal notranslate"><span class="pre">bytearray</span></code> object, the <code class="docutils literal notranslate"><span class="pre">bytes.join</span></code> method or
+even <code class="docutils literal notranslate"><span class="pre">io.BytesIO</span></code>), none of them leads to the kind of readable and
+intuitive code that is produced by a %-formatted or {}-formatted template
+and a formatting operation.</p>
+</div>
+<div class="section" id="binary-formatting-features">
+<h2><a class="toc-backref" href="#id3">Binary formatting features</a><a class="headerlink" href="#binary-formatting-features" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="supported-features">
+<h3><a class="toc-backref" href="#id4">Supported features</a><a class="headerlink" href="#supported-features" title="Permalink to this headline">¶</a></h3>
+<p>In this proposal, percent-formatting for <code class="docutils literal notranslate"><span class="pre">bytes</span></code> and <code class="docutils literal notranslate"><span class="pre">bytearray</span></code>
+supports the following features:</p>
+<ul class="simple">
+<li>Looking up formatting arguments by position as well as by name (i.e.,
+<code class="docutils literal notranslate"><span class="pre">%s</span></code> as well as <code class="docutils literal notranslate"><span class="pre">%(name)s</span></code>).</li>
+<li><code class="docutils literal notranslate"><span class="pre">%s</span></code> will try to get a <code class="docutils literal notranslate"><span class="pre">Py_buffer</span></code> on the given value, and fallback
+on calling <code class="docutils literal notranslate"><span class="pre">__bytes__</span></code>.  The resulting binary data is inserted at
+the given point in the string.  This is expected to work with bytes,
+bytearray and memoryview objects (as well as a couple others such
+as pathlib’s path objects).</li>
+<li><code class="docutils literal notranslate"><span class="pre">%c</span></code> will accept an integer between 0 and 255, and insert a byte of the
+given value.</li>
+</ul>
+<p>Braces-formatting for <code class="docutils literal notranslate"><span class="pre">bytes</span></code> and <code class="docutils literal notranslate"><span class="pre">bytearray</span></code> supports the following
+features:</p>
+<ul class="simple">
+<li>All the kinds of argument lookup supported by <code class="docutils literal notranslate"><span class="pre">str.format()</span></code> (explicit
+positional lookup, auto-incremented positional lookup, keyword lookup,
+attribute lookup, etc.)</li>
+<li>Insertion of binary data when no modifier or layout is specified
+(e.g. <code class="docutils literal notranslate"><span class="pre">{}</span></code>, <code class="docutils literal notranslate"><span class="pre">{0}</span></code>, <code class="docutils literal notranslate"><span class="pre">{name}</span></code>).  This has the same semantics as
+<code class="docutils literal notranslate"><span class="pre">%s</span></code> for percent-formatting (see above).</li>
+<li>The <code class="docutils literal notranslate"><span class="pre">c</span></code> modifier will accept an integer between 0 and 255, and insert a
+byte of the given value (same as <code class="docutils literal notranslate"><span class="pre">%c</span></code> above).</li>
+</ul>
+</div>
+<div class="section" id="unsupported-features">
+<h3><a class="toc-backref" href="#id5">Unsupported features</a><a class="headerlink" href="#unsupported-features" title="Permalink to this headline">¶</a></h3>
+<p>All other features present in formatting of <code class="docutils literal notranslate"><span class="pre">str</span></code> objects (either
+through the percent operator or the <code class="docutils literal notranslate"><span class="pre">str.format()</span></code> method) are
+unsupported.  Those features imply treating the recipient of the
+operator or method as text, which goes counter to the text / bytes
+separation (for example, accepting <code class="docutils literal notranslate"><span class="pre">%d</span></code> as a format code would imply
+that the bytes object really is an ASCII-compatible text string).</p>
+<p>Amongst those unsupported features are not only most type-specific
+format codes, but also the various layout specifiers such as padding
+or alignment.  Besides, <code class="docutils literal notranslate"><span class="pre">str</span></code> objects are not acceptable as arguments
+to the formatting operations, even when using e.g. the <code class="docutils literal notranslate"><span class="pre">%s</span></code> format code.</p>
+<p><code class="docutils literal notranslate"><span class="pre">__format__</span></code> isn’t called.</p>
+</div>
+</div>
+<div class="section" id="criticisms">
+<h2><a class="toc-backref" href="#id6">Criticisms</a><a class="headerlink" href="#criticisms" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>The development cost and maintenance cost.</li>
+<li>In 3.3 encoding to ASCII or latin-1 is as fast as memcpy (but it still
+creates a separate object).</li>
+<li>Developers will have to work around the lack of binary formatting anyway,
+if they want to support Python 3.4 and earlier.</li>
+<li>bytes.join() is consistently faster than format to join bytes strings
+(XXX <em>is it?</em>).</li>
+<li>Formatting functions could be implemented in a third party module,
+rather than added to builtin types.</li>
+</ul>
+</div>
+<div class="section" id="other-proposals">
+<h2><a class="toc-backref" href="#id7">Other proposals</a><a class="headerlink" href="#other-proposals" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="a-new-type-datatype">
+<h3><a class="toc-backref" href="#id8">A new type datatype</a><a class="headerlink" href="#a-new-type-datatype" title="Permalink to this headline">¶</a></h3>
+<p>It was proposed to create a new datatype specialized for “network
+programming”.  The authors of this PEP believe this is counter-productive.
+Python 3 already has several major types dedicated to manipulation of
+binary data: <code class="docutils literal notranslate"><span class="pre">bytes</span></code>, <code class="docutils literal notranslate"><span class="pre">bytearray</span></code>, <code class="docutils literal notranslate"><span class="pre">memoryview</span></code>, <code class="docutils literal notranslate"><span class="pre">io.BytesIO</span></code>.</p>
+<p>Adding yet another type would make things more confusing for users, and
+interoperability between libraries more painful (also potentially
+sub-optimal, due to the necessary conversions).</p>
+<p>Moreover, not one type would be needed, but two: one immutable type (to
+allow for hashing), and one mutable type (as efficient accumulation is
+often necessary when working with network messages).</p>
+</div>
+</div>
+<div class="section" id="resolution">
+<h2><a class="toc-backref" href="#id9">Resolution</a><a class="headerlink" href="#resolution" title="Permalink to this headline">¶</a></h2>
+<p>This PEP is made obsolete by the <a class="reference external" href="https://mail.python.org/pipermail/python-dev/2014-March/133621.html">acceptance</a>
+of <span class="target" id="index-0"></span><a class="pep reference external" href="./pep-0461.html"><strong>PEP 461</strong></a>, which introduces a more extended formatting language for
+bytes objects in conjunction with the modulo operator.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id10">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference external" href="http://bugs.python.org/issue3982">Issue #3982: support .format for bytes</a></li>
+<li><a class="reference external" href="http://mercurial.selenic.com/">Mercurial project</a></li>
+<li><a class="reference external" href="http://twistedmatrix.com/trac/">Twisted project</a></li>
+<li><a class="reference external" href="http://docs.python.org/2/library/stdtypes.html#string-formatting">Documentation of Python 2 formatting (str % args)</a></li>
+<li><a class="reference external" href="http://docs.python.org/2/library/string.html#formatstrings">Documentation of Python 2 formatting (str.format)</a></li>
+</ul>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id11">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0460.txt">https://github.com/python/peps/blob/master/pep-0460.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0460.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0459.html">PEP 0459</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0461.html">PEP 0461</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 460 – Add binary interpolation and formatting</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#binary-formatting-features">Binary formatting features</a><ul>
+<li><a class="reference internal" href="#supported-features">Supported features</a></li>
+<li><a class="reference internal" href="#unsupported-features">Unsupported features</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#criticisms">Criticisms</a></li>
+<li><a class="reference internal" href="#other-proposals">Other proposals</a><ul>
+<li><a class="reference internal" href="#a-new-type-datatype">A new type datatype</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#resolution">Resolution</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

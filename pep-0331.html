@@ -1,0 +1,310 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 331 – Locale-Independent Float/String Conversions &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 332 – Byte vectors and String/Unicode Unification" href="pep-0332.html" />
+    <link rel="prev" title="PEP 330 – Python Bytecode Verification" href="pep-0330.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 331 – Locale-Independent Float/String Conversions</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-331-locale-independent-float-string-conversions">
+<h1 class="page-title">PEP 331 – Locale-Independent Float/String Conversions<a class="headerlink" href="#pep-331-locale-independent-float-string-conversions" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">331</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Locale-Independent Float/String Conversions</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Christian R. Reis &lt;kiko at async.com.br&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">19-Jul-2003</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.4</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">21-Jul-2003, 13-Aug-2003, 18-Jun-2004</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id22">Abstract</a></li>
+<li><a class="reference internal" href="#introduction" id="id23">Introduction</a></li>
+<li><a class="reference internal" href="#rationale" id="id24">Rationale</a></li>
+<li><a class="reference internal" href="#example-problem" id="id25">Example Problem</a></li>
+<li><a class="reference internal" href="#proposal" id="id26">Proposal</a></li>
+<li><a class="reference internal" href="#potential-code-contributions" id="id27">Potential Code Contributions</a></li>
+<li><a class="reference internal" href="#risks" id="id28">Risks</a></li>
+<li><a class="reference internal" href="#implementation" id="id29">Implementation</a></li>
+<li><a class="reference internal" href="#references" id="id30">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id31">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id22">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Support for the <code class="docutils literal notranslate"><span class="pre">LC_NUMERIC</span></code> locale category in Python 2.3 is
+implemented only in Python-space.  This causes inconsistent
+behavior and thread-safety issues for applications that use
+extension modules and libraries implemented in C that parse and
+generate floats from strings.  This document proposes a plan for
+removing this inconsistency by providing and using substitute
+locale-agnostic functions as necessary.</p>
+</div>
+<div class="section" id="introduction">
+<h2><a class="toc-backref" href="#id23">Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>Python provides generic localization services through the locale
+module, which among other things allows localizing the display and
+conversion process of numeric types.  Locale categories, such as
+<code class="docutils literal notranslate"><span class="pre">LC_TIME</span></code> and <code class="docutils literal notranslate"><span class="pre">LC_COLLATE</span></code>, allow configuring precisely what aspects
+of the application are to be localized.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">LC_NUMERIC</span></code> category specifies formatting for non-monetary
+numeric information, such as the decimal separator in float and
+fixed-precision numbers.  Localization of the <code class="docutils literal notranslate"><span class="pre">LC_NUMERIC</span></code> category
+is currently implemented only in Python-space; C libraries invoked
+from the Python runtime are unaware of Python’s <code class="docutils literal notranslate"><span class="pre">LC_NUMERIC</span></code>
+setting.  This is done to avoid changing the behavior of certain
+low-level functions that are used by the Python parser and related
+code <a class="footnote-reference brackets" href="#id12" id="id1">2</a>.</p>
+<p>However, this presents a problem for extension modules that wrap C
+libraries.  Applications that use these extension modules will
+inconsistently display and convert floating-point values.</p>
+<p>James Henstridge, the author of PyGTK <a class="footnote-reference brackets" href="#id13" id="id2">3</a>, has additionally
+pointed out that the <code class="docutils literal notranslate"><span class="pre">setlocale()</span></code> function also presents
+thread-safety issues, since a thread may call the C library
+<code class="docutils literal notranslate"><span class="pre">setlocale()</span></code> outside of the GIL, and cause Python to parse and
+generate floats incorrectly.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id24">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>The inconsistency between Python and C library localization for
+<code class="docutils literal notranslate"><span class="pre">LC_NUMERIC</span></code> is a problem for any localized application using C
+extensions.  The exact nature of the problem will vary depending
+on the application, but it will most likely occur when parsing or
+formatting a floating-point value.</p>
+</div>
+<div class="section" id="example-problem">
+<h2><a class="toc-backref" href="#id25">Example Problem</a><a class="headerlink" href="#example-problem" title="Permalink to this headline">¶</a></h2>
+<p>The initial problem that motivated this PEP is related to the
+GtkSpinButton <a class="footnote-reference brackets" href="#id14" id="id3">4</a> widget in the GTK+ UI toolkit, wrapped by the
+PyGTK module.  The widget can be set to numeric mode, and when
+this occurs, characters typed into it are evaluated as a number.</p>
+<p>Problems occur when <code class="docutils literal notranslate"><span class="pre">LC_NUMERIC</span></code> is set to a locale with a float
+separator that differs from the C locale’s standard (for instance,
+‘,’ instead of ‘.’ for the Brazilian locale pt_BR).  Because
+<code class="docutils literal notranslate"><span class="pre">LC_NUMERIC</span></code> is not set at the libc level, float values are
+displayed incorrectly (using ‘.’ as a separator) in the
+spinbutton’s text entry, and it is impossible to enter fractional
+values using the ‘,’ separator.</p>
+<p>This small example demonstrates reduced usability for localized
+applications using this toolkit when coded in Python.</p>
+</div>
+<div class="section" id="proposal">
+<h2><a class="toc-backref" href="#id26">Proposal</a><a class="headerlink" href="#proposal" title="Permalink to this headline">¶</a></h2>
+<p>Martin v. Löwis commented on the initial constraints for an
+acceptable solution to the problem on python-dev:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">LC_NUMERIC</span></code> can be set at the C library level without
+breaking the parser.</li>
+<li><code class="docutils literal notranslate"><span class="pre">float()</span></code> and <code class="docutils literal notranslate"><span class="pre">str()</span></code> stay locale-unaware.</li>
+<li>locale-aware <code class="docutils literal notranslate"><span class="pre">str()</span></code> and <code class="docutils literal notranslate"><span class="pre">atof()</span></code> stay in the locale module.</li>
+</ul>
+<p>An analysis of the Python source suggests that the following
+functions currently depend on <code class="docutils literal notranslate"><span class="pre">LC_NUMERIC</span></code> being set to the C
+locale:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">Python/compile.c:parsenumber()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">Python/marshal.c:r_object()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">Objects/complexobject.c:complex_to_buf()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">Objects/complexobject.c:complex_subtype_from_string()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">Objects/floatobject.c:PyFloat_FromString()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">Objects/floatobject.c:format_float()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">Objects/stringobject.c:formatfloat()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">Modules/stropmodule.c:strop_atof()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">Modules/cPickle.c:load_float()</span></code></li>
+</ul>
+<p>The proposed approach is to implement <code class="docutils literal notranslate"><span class="pre">LC_NUMERIC</span></code>-agnostic
+functions for converting from (<code class="docutils literal notranslate"><span class="pre">strtod()</span></code>/<code class="docutils literal notranslate"><span class="pre">atof()</span></code>) and to
+(<code class="docutils literal notranslate"><span class="pre">snprintf()</span></code>) float formats, using these functions where the
+formatting should not vary according to the user-specified locale.</p>
+<p>The locale module should also be changed to remove the
+special-casing for <code class="docutils literal notranslate"><span class="pre">LC_NUMERIC</span></code>.</p>
+<p>This change should also solve the aforementioned thread-safety
+problems.</p>
+</div>
+<div class="section" id="potential-code-contributions">
+<h2><a class="toc-backref" href="#id27">Potential Code Contributions</a><a class="headerlink" href="#potential-code-contributions" title="Permalink to this headline">¶</a></h2>
+<p>This problem was initially reported as a problem in the GTK+
+libraries <a class="footnote-reference brackets" href="#id15" id="id4">5</a>; since then it has been correctly diagnosed as an
+inconsistency in Python’s implementation.  However, in a fortunate
+coincidence, the glib library (developed primarily for GTK+, not
+to be confused with the GNU C library) implements a number of
+<code class="docutils literal notranslate"><span class="pre">LC_NUMERIC</span></code>-agnostic functions (for an example, see <a class="footnote-reference brackets" href="#id16" id="id5">6</a>) for
+reasons similar to those presented in this paper.</p>
+<p>In the same GTK+ problem report, Havoc Pennington suggested that
+the glib authors would be willing to contribute this code to the
+PSF, which would simplify implementation of this PEP considerably.
+Alex Larsson, the original author of the glib code, submitted a
+PSF Contributor Agreement <a class="footnote-reference brackets" href="#id17" id="id6">7</a> on 2003-08-20 <a class="footnote-reference brackets" href="#id18" id="id7">8</a> to ensure the code
+could be safely integrated; this agreement has been received and
+accepted.</p>
+</div>
+<div class="section" id="risks">
+<h2><a class="toc-backref" href="#id28">Risks</a><a class="headerlink" href="#risks" title="Permalink to this headline">¶</a></h2>
+<p>There may be cross-platform issues with the provided
+locale-agnostic functions, though this risk is low given that the
+code supplied simply reverses any locale-dependent changes made to
+floating-point numbers.</p>
+<p>Martin and Guido pointed out potential copyright issues with the
+contributed code.  I believe we will have no problems in this area
+as members of the GTK+ and glib teams have said they are fine with
+relicensing the code, and a PSF contributor agreement has been
+mailed in to ensure this safety.</p>
+<p>Tim Peters has pointed out <a class="footnote-reference brackets" href="#id19" id="id8">9</a> that there are situations involving
+threading in which the proposed change is insufficient to solve
+the problem completely.  A complete solution, however, does not
+currently exist.</p>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id29">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>An implementation was developed by Gustavo Carneiro &lt;gjc at
+inescporto.pt&gt;, and attached to Sourceforge.net bug 774665 <a class="footnote-reference brackets" href="#id20" id="id9">10</a></p>
+<p>The final patch <a class="footnote-reference brackets" href="#id21" id="id10">11</a> was integrated into Python CVS by Martin v.
+Löwis on 2004-06-08, as stated in the bug report.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id30">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id11"><span class="brackets">1</span></dt>
+<dd>PEP 1, PEP Purpose and Guidelines, Warsaw, Hylton
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0001/">http://www.python.org/dev/peps/pep-0001/</a></dd>
+<dt class="label" id="id12"><span class="brackets"><a class="fn-backref" href="#id1">2</a></span></dt>
+<dd>Python locale documentation for embedding,
+<a class="reference external" href="http://docs.python.org/library/locale.html">http://docs.python.org/library/locale.html</a></dd>
+<dt class="label" id="id13"><span class="brackets"><a class="fn-backref" href="#id2">3</a></span></dt>
+<dd>PyGTK homepage, <a class="reference external" href="http://www.daa.com.au/~james/pygtk/">http://www.daa.com.au/~james/pygtk/</a></dd>
+<dt class="label" id="id14"><span class="brackets"><a class="fn-backref" href="#id3">4</a></span></dt>
+<dd>GtkSpinButton screenshot (demonstrating problem),
+<a class="reference external" href="http://www.async.com.br/~kiko/spin.png">http://www.async.com.br/~kiko/spin.png</a></dd>
+<dt class="label" id="id15"><span class="brackets"><a class="fn-backref" href="#id4">5</a></span></dt>
+<dd>GNOME bug report, <a class="reference external" href="http://bugzilla.gnome.org/show_bug.cgi?id=114132">http://bugzilla.gnome.org/show_bug.cgi?id=114132</a></dd>
+<dt class="label" id="id16"><span class="brackets"><a class="fn-backref" href="#id5">6</a></span></dt>
+<dd>Code submission of g_ascii_strtod and g_ascii_dtostr (later
+renamed g_ascii_formatd) by Alex Larsson,
+<a class="reference external" href="http://mail.gnome.org/archives/gtk-devel-list/2001-October/msg00114.html">http://mail.gnome.org/archives/gtk-devel-list/2001-October/msg00114.html</a></dd>
+<dt class="label" id="id17"><span class="brackets"><a class="fn-backref" href="#id6">7</a></span></dt>
+<dd>PSF Contributor Agreement,
+<a class="reference external" href="https://www.python.org/psf/contrib/contrib-form/">https://www.python.org/psf/contrib/contrib-form/</a></dd>
+<dt class="label" id="id18"><span class="brackets"><a class="fn-backref" href="#id7">8</a></span></dt>
+<dd>Alex Larsson’s email confirming his agreement was mailed in,
+<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2003-August/037755.html">https://mail.python.org/pipermail/python-dev/2003-August/037755.html</a></dd>
+<dt class="label" id="id19"><span class="brackets"><a class="fn-backref" href="#id8">9</a></span></dt>
+<dd>Tim Peters’ email summarizing LC_NUMERIC trouble with Spambayes,
+<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2003-September/037898.html">https://mail.python.org/pipermail/python-dev/2003-September/037898.html</a></dd>
+<dt class="label" id="id20"><span class="brackets"><a class="fn-backref" href="#id9">10</a></span></dt>
+<dd>Python bug report, <a class="reference external" href="https://bugs.python.org/issue774665">https://bugs.python.org/issue774665</a></dd>
+<dt class="label" id="id21"><span class="brackets"><a class="fn-backref" href="#id10">11</a></span></dt>
+<dd>Integrated LC_NUMERIC-agnostic patch,
+<a class="reference external" href="https://sourceforge.net/tracker/download.php?group_id=5470&amp;atid=305470&amp;file_id=89685&amp;aid=774665">https://sourceforge.net/tracker/download.php?group_id=5470&amp;atid=305470&amp;file_id=89685&amp;aid=774665</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id31">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0331.txt">https://github.com/python/peps/blob/master/pep-0331.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0331.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0330.html">PEP 0330</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0332.html">PEP 0332</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 331 – Locale-Independent Float/String Conversions</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#example-problem">Example Problem</a></li>
+<li><a class="reference internal" href="#proposal">Proposal</a></li>
+<li><a class="reference internal" href="#potential-code-contributions">Potential Code Contributions</a></li>
+<li><a class="reference internal" href="#risks">Risks</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

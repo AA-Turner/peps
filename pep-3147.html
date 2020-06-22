@@ -1,0 +1,746 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 3147 – PYC Repository Directories &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 3148 – futures - execute computations asynchronously" href="pep-3148.html" />
+    <link rel="prev" title="PEP 3146 – Merging Unladen Swallow into CPython" href="pep-3146.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 3147 – PYC Repository Directories</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-3147-pyc-repository-directories">
+<h1 class="page-title">PEP 3147 – PYC Repository Directories<a class="headerlink" href="#pep-3147-pyc-repository-directories" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">3147</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">PYC Repository Directories</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Barry Warsaw &lt;barry&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">2009-12-16</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.2</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">2010-01-30, 2010-02-25, 2010-03-03, 2010-04-12</dd>
+<dt class="field-odd">Resolution</dt>
+<dd class="field-odd"><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2010-April/099414.html">https://mail.python.org/pipermail/python-dev/2010-April/099414.html</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id50">Abstract</a></li>
+<li><a class="reference internal" href="#background" id="id51">Background</a></li>
+<li><a class="reference internal" href="#rationale" id="id52">Rationale</a></li>
+<li><a class="reference internal" href="#proposal" id="id53">Proposal</a><ul>
+<li><a class="reference internal" href="#examples" id="id54">Examples</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#python-behavior" id="id55">Python behavior</a><ul>
+<li><a class="reference internal" href="#case-0-the-steady-state" id="id56">Case 0: The steady state</a></li>
+<li><a class="reference internal" href="#case-1-the-first-import" id="id57">Case 1: The first import</a></li>
+<li><a class="reference internal" href="#case-2-the-second-import" id="id58">Case 2: The second import</a></li>
+<li><a class="reference internal" href="#case-3-pycache-foo-magic-pyc-with-no-source" id="id59">Case 3: __pycache__/foo.&lt;magic&gt;.pyc with no source</a></li>
+<li><a class="reference internal" href="#case-4-legacy-pyc-files-and-source-less-imports" id="id60">Case 4: legacy pyc files and source-less imports</a></li>
+<li><a class="reference internal" href="#case-5-read-only-file-systems" id="id61">Case 5: read-only file systems</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#flow-chart" id="id62">Flow chart</a></li>
+<li><a class="reference internal" href="#alternative-python-implementations" id="id63">Alternative Python implementations</a></li>
+<li><a class="reference internal" href="#implementation-strategy" id="id64">Implementation strategy</a></li>
+<li><a class="reference internal" href="#effects-on-existing-code" id="id65">Effects on existing code</a><ul>
+<li><a class="reference internal" href="#detecting-pep-3147-availability" id="id66">Detecting PEP 3147 availability</a></li>
+<li><a class="reference internal" href="#file" id="id67">__file__</a></li>
+<li><a class="reference internal" href="#py-compile-and-compileall" id="id68">py_compile and compileall</a></li>
+<li><a class="reference internal" href="#bdist-wininst-and-the-windows-installer" id="id69">bdist_wininst and the Windows installer</a></li>
+<li><a class="reference internal" href="#file-extension-checks" id="id70">File extension checks</a></li>
+<li><a class="reference internal" href="#backports" id="id71">Backports</a></li>
+<li><a class="reference internal" href="#makefiles-and-other-dependency-tools" id="id72">Makefiles and other dependency tools</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#alternatives" id="id73">Alternatives</a><ul>
+<li><a class="reference internal" href="#hexadecimal-magic-tags" id="id74">Hexadecimal magic tags</a></li>
+<li><a class="reference internal" href="#pep-304" id="id75">PEP 304</a></li>
+<li><a class="reference internal" href="#fat-byte-compilation-files" id="id76">Fat byte compilation files</a></li>
+<li><a class="reference internal" href="#multiple-file-extensions" id="id77">Multiple file extensions</a></li>
+<li><a class="reference internal" href="#pyc" id="id78">.pyc</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#reference-implementation" id="id79">Reference implementation</a></li>
+<li><a class="reference internal" href="#references" id="id80">References</a></li>
+<li><a class="reference internal" href="#acknowledgments" id="id81">ACKNOWLEDGMENTS</a></li>
+<li><a class="reference internal" href="#copyright" id="id82">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id50">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP describes an extension to Python’s import mechanism which
+improves sharing of Python source code files among multiple installed
+different versions of the Python interpreter.  It does this by
+allowing more than one byte compilation file (.pyc files) to be
+co-located with the Python source file (.py file).  The extension
+described here can also be used to support different Python
+compilation caches, such as JIT output that may be produced by an
+Unladen Swallow <a class="footnote-reference brackets" href="#id26" id="id1">1</a> enabled C Python.</p>
+</div>
+<div class="section" id="background">
+<h2><a class="toc-backref" href="#id51">Background</a><a class="headerlink" href="#background" title="Permalink to this headline">¶</a></h2>
+<p>CPython compiles its source code into “byte code”, and for performance
+reasons, it caches this byte code on the file system whenever the
+source file has changes.  This makes loading of Python modules much
+faster because the compilation phase can be bypassed.  When your
+source file is <cite>foo.py</cite>, CPython caches the byte code in a <cite>foo.pyc</cite>
+file right next to the source.</p>
+<p>Byte code files contain two 32-bit big-endian numbers followed by the
+marshaled <a class="footnote-reference brackets" href="#id27" id="id2">2</a> code object.  The 32-bit numbers represent a magic
+number and a timestamp.  The magic number changes whenever Python
+changes the byte code format, e.g. by adding new byte codes to its
+virtual machine.  This ensures that pyc files built for previous
+versions of the VM won’t cause problems.  The timestamp is used to
+make sure that the pyc file match the py file that was used to create
+it.  When either the magic number or timestamp do not match, the py
+file is recompiled and a new pyc file is written.</p>
+<p>In practice, it is well known that pyc files are not compatible across
+Python major releases.  A reading of import.c <a class="footnote-reference brackets" href="#id28" id="id3">3</a> in the Python
+source code proves that within recent memory, every new CPython major
+release has bumped the pyc magic number.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id52">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Linux distributions such as Ubuntu <a class="footnote-reference brackets" href="#id29" id="id4">4</a> and Debian <a class="footnote-reference brackets" href="#id30" id="id5">5</a> provide more
+than one Python version at the same time to their users.  For example,
+Ubuntu 9.10 Karmic Koala users can install Python 2.5, 2.6, and 3.1,
+with Python 2.6 being the default.</p>
+<p>This causes a conflict for third party Python source files installed
+by the system, because you cannot compile a single Python source file
+for more than one Python version at a time.  When Python finds a <cite>pyc</cite>
+file with a non-matching magic number, it falls back to the slower
+process of recompiling the source.  Thus if your system installed a
+<cite>/usr/share/python/foo.py</cite>, two different versions of Python would
+fight over the <cite>pyc</cite> file and rewrite it each time the source is
+compiled.  (The standard library is unaffected by this, since multiple
+versions of the stdlib <em>are</em> installed on such distributions..)</p>
+<p>Furthermore, in order to ease the burden on operating system packagers
+for these distributions, the distribution packages do not contain
+Python version numbers <a class="footnote-reference brackets" href="#id31" id="id6">6</a>; they are shared across all Python
+versions installed on the system.  Putting Python version numbers in
+the packages would be a maintenance nightmare, since all the packages
+- <em>and their dependencies</em> - would have to be updated every time a new
+Python release was added or removed from the distribution.  Because of
+the sheer number of packages available, this amount of work is
+infeasible.</p>
+<p>(PEP 384 <a class="footnote-reference brackets" href="#id32" id="id7">7</a> has been proposed to address binary compatibility issues
+of third party extension modules across different versions of Python.)</p>
+<p>Because these distributions cannot share pyc files, elaborate
+mechanisms have been developed to put the resulting pyc files in
+non-shared locations while the source code is still shared.  Examples
+include the symlink-based Debian regimes python-support <a class="footnote-reference brackets" href="#id33" id="id8">8</a> and
+python-central <a class="footnote-reference brackets" href="#id34" id="id9">9</a>.  These approaches make for much more complicated,
+fragile, inscrutable, and fragmented policies for delivering Python
+applications to a wide range of users.  Arguably more users get Python
+from their operating system vendor than from upstream tarballs.  Thus,
+solving this pyc sharing problem for CPython is a high priority for
+such vendors.</p>
+<p>This PEP proposes a solution to this problem.</p>
+</div>
+<div class="section" id="proposal">
+<h2><a class="toc-backref" href="#id53">Proposal</a><a class="headerlink" href="#proposal" title="Permalink to this headline">¶</a></h2>
+<p>Python’s import machinery is extended to write and search for byte
+code cache files in a single directory inside every Python package
+directory.  This directory will be called <cite>__pycache__</cite>.</p>
+<p>Further, pyc file names will contain a magic string (called a “tag”)
+that differentiates the Python version they were compiled for.  This
+allows multiple byte compiled cache files to co-exist for a single
+Python source file.</p>
+<p>The magic tag is implementation defined, but should contain the
+implementation name and a version number shorthand, e.g. <cite>cpython-32</cite>.
+It must be unique among all versions of Python, and whenever the magic
+number is bumped, a new magic tag must be defined.  An example <cite>pyc</cite>
+file for Python 3.2 is thus <cite>foo.cpython-32.pyc</cite>.</p>
+<p>The magic tag is available in the <cite>imp</cite> module via the <cite>get_tag()</cite>
+function.  This is parallel to the <cite>imp.get_magic()</cite> function.</p>
+<p>This scheme has the added benefit of reducing the clutter in a Python
+package directory.</p>
+<p>When a Python source file is imported for the first time, a
+<cite>__pycache__</cite> directory will be created in the package directory, if
+one does not already exist.  The pyc file for the imported source will
+be written to the <cite>__pycache__</cite> directory, using the magic-tag
+formatted name.  If either the creation of the <cite>__pycache__</cite> directory
+or the pyc file inside that fails, the import will still succeed, just
+as it does in a pre-PEP-3147 world.</p>
+<p>If the py source file is missing, the pyc file inside <cite>__pycache__</cite>
+will be ignored.  This eliminates the problem of accidental stale pyc
+file imports.</p>
+<p>For backward compatibility, Python will still support pyc-only
+distributions, however it will only do so when the pyc file lives in
+the directory where the py file <em>would</em> have been, i.e. not in the
+<cite>__pycache__</cite> directory.  pyc file outside of <cite>__pycache__</cite> will only
+be imported if the py source file is missing.</p>
+<p>Tools such as <cite>py_compile</cite> <a class="footnote-reference brackets" href="#id40" id="id10">15</a> and <cite>compileall</cite> <a class="footnote-reference brackets" href="#id41" id="id11">16</a> will be
+extended to create PEP 3147 formatted layouts automatically, but will
+have an option to create pyc-only distribution layouts.</p>
+<div class="section" id="examples">
+<h3><a class="toc-backref" href="#id54">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h3>
+<p>What would this look like in practice?</p>
+<p>Let’s say we have a Python package named <cite>alpha</cite> which contains a
+sub-package name <cite>beta</cite>.  The source directory layout before byte
+compilation might look like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">alpha</span><span class="o">/</span>
+    <span class="fm">__init__</span><span class="o">.</span><span class="n">py</span>
+    <span class="n">one</span><span class="o">.</span><span class="n">py</span>
+    <span class="n">two</span><span class="o">.</span><span class="n">py</span>
+    <span class="n">beta</span><span class="o">/</span>
+        <span class="fm">__init__</span><span class="o">.</span><span class="n">py</span>
+        <span class="n">three</span><span class="o">.</span><span class="n">py</span>
+        <span class="n">four</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+<p>After byte compiling this package with Python 3.2, you would see the
+following layout:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">alpha</span><span class="o">/</span>
+    <span class="n">__pycache__</span><span class="o">/</span>
+        <span class="fm">__init__</span><span class="o">.</span><span class="n">cpython</span><span class="o">-</span><span class="mf">32.</span><span class="n">pyc</span>
+        <span class="n">one</span><span class="o">.</span><span class="n">cpython</span><span class="o">-</span><span class="mf">32.</span><span class="n">pyc</span>
+        <span class="n">two</span><span class="o">.</span><span class="n">cpython</span><span class="o">-</span><span class="mf">32.</span><span class="n">pyc</span>
+    <span class="fm">__init__</span><span class="o">.</span><span class="n">py</span>
+    <span class="n">one</span><span class="o">.</span><span class="n">py</span>
+    <span class="n">two</span><span class="o">.</span><span class="n">py</span>
+    <span class="n">beta</span><span class="o">/</span>
+        <span class="n">__pycache__</span><span class="o">/</span>
+            <span class="fm">__init__</span><span class="o">.</span><span class="n">cpython</span><span class="o">-</span><span class="mf">32.</span><span class="n">pyc</span>
+            <span class="n">three</span><span class="o">.</span><span class="n">cpython</span><span class="o">-</span><span class="mf">32.</span><span class="n">pyc</span>
+            <span class="n">four</span><span class="o">.</span><span class="n">cpython</span><span class="o">-</span><span class="mf">32.</span><span class="n">pyc</span>
+        <span class="fm">__init__</span><span class="o">.</span><span class="n">py</span>
+        <span class="n">three</span><span class="o">.</span><span class="n">py</span>
+        <span class="n">four</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+<p><em>Note: listing order may differ depending on the platform.</em></p>
+<p>Let’s say that two new versions of Python are installed, one is Python
+3.3 and another is Unladen Swallow.  After byte compilation, the file
+system would look like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">alpha</span><span class="o">/</span>
+    <span class="n">__pycache__</span><span class="o">/</span>
+        <span class="fm">__init__</span><span class="o">.</span><span class="n">cpython</span><span class="o">-</span><span class="mf">32.</span><span class="n">pyc</span>
+        <span class="fm">__init__</span><span class="o">.</span><span class="n">cpython</span><span class="o">-</span><span class="mf">33.</span><span class="n">pyc</span>
+        <span class="fm">__init__</span><span class="o">.</span><span class="n">unladen</span><span class="o">-</span><span class="mf">10.</span><span class="n">pyc</span>
+        <span class="n">one</span><span class="o">.</span><span class="n">cpython</span><span class="o">-</span><span class="mf">32.</span><span class="n">pyc</span>
+        <span class="n">one</span><span class="o">.</span><span class="n">cpython</span><span class="o">-</span><span class="mf">33.</span><span class="n">pyc</span>
+        <span class="n">one</span><span class="o">.</span><span class="n">unladen</span><span class="o">-</span><span class="mf">10.</span><span class="n">pyc</span>
+        <span class="n">two</span><span class="o">.</span><span class="n">cpython</span><span class="o">-</span><span class="mf">32.</span><span class="n">pyc</span>
+        <span class="n">two</span><span class="o">.</span><span class="n">cpython</span><span class="o">-</span><span class="mf">33.</span><span class="n">pyc</span>
+        <span class="n">two</span><span class="o">.</span><span class="n">unladen</span><span class="o">-</span><span class="mf">10.</span><span class="n">pyc</span>
+    <span class="fm">__init__</span><span class="o">.</span><span class="n">py</span>
+    <span class="n">one</span><span class="o">.</span><span class="n">py</span>
+    <span class="n">two</span><span class="o">.</span><span class="n">py</span>
+    <span class="n">beta</span><span class="o">/</span>
+        <span class="n">__pycache__</span><span class="o">/</span>
+            <span class="fm">__init__</span><span class="o">.</span><span class="n">cpython</span><span class="o">-</span><span class="mf">32.</span><span class="n">pyc</span>
+            <span class="fm">__init__</span><span class="o">.</span><span class="n">cpython</span><span class="o">-</span><span class="mf">33.</span><span class="n">pyc</span>
+            <span class="fm">__init__</span><span class="o">.</span><span class="n">unladen</span><span class="o">-</span><span class="mf">10.</span><span class="n">pyc</span>
+            <span class="n">three</span><span class="o">.</span><span class="n">cpython</span><span class="o">-</span><span class="mf">32.</span><span class="n">pyc</span>
+            <span class="n">three</span><span class="o">.</span><span class="n">cpython</span><span class="o">-</span><span class="mf">33.</span><span class="n">pyc</span>
+            <span class="n">three</span><span class="o">.</span><span class="n">unladen</span><span class="o">-</span><span class="mf">10.</span><span class="n">pyc</span>
+            <span class="n">four</span><span class="o">.</span><span class="n">cpython</span><span class="o">-</span><span class="mf">32.</span><span class="n">pyc</span>
+            <span class="n">four</span><span class="o">.</span><span class="n">cpython</span><span class="o">-</span><span class="mf">33.</span><span class="n">pyc</span>
+            <span class="n">four</span><span class="o">.</span><span class="n">unladen</span><span class="o">-</span><span class="mf">10.</span><span class="n">pyc</span>
+        <span class="fm">__init__</span><span class="o">.</span><span class="n">py</span>
+        <span class="n">three</span><span class="o">.</span><span class="n">py</span>
+        <span class="n">four</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+<p>As you can see, as long as the Python version identifier string is
+unique, any number of pyc files can co-exist.  These identifier
+strings are described in more detail below.</p>
+<p>A nice property of this layout is that the <cite>__pycache__</cite> directories
+can generally be ignored, such that a normal directory listing would
+show something like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">alpha</span><span class="o">/</span>
+    <span class="n">__pycache__</span><span class="o">/</span>
+    <span class="fm">__init__</span><span class="o">.</span><span class="n">py</span>
+    <span class="n">one</span><span class="o">.</span><span class="n">py</span>
+    <span class="n">two</span><span class="o">.</span><span class="n">py</span>
+    <span class="n">beta</span><span class="o">/</span>
+        <span class="n">__pycache__</span><span class="o">/</span>
+        <span class="fm">__init__</span><span class="o">.</span><span class="n">py</span>
+        <span class="n">three</span><span class="o">.</span><span class="n">py</span>
+        <span class="n">four</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+<p>This is much less cluttered than even today’s Python.</p>
+</div>
+</div>
+<div class="section" id="python-behavior">
+<h2><a class="toc-backref" href="#id55">Python behavior</a><a class="headerlink" href="#python-behavior" title="Permalink to this headline">¶</a></h2>
+<p>When Python searches for a module to import (say <cite>foo</cite>), it may find
+one of several situations.  As per current Python rules, the term
+“matching pyc” means that the magic number matches the current
+interpreter’s magic number, and the source file’s timestamp matches
+the timestamp in the <cite>pyc</cite> file exactly.</p>
+<div class="section" id="case-0-the-steady-state">
+<h3><a class="toc-backref" href="#id56">Case 0: The steady state</a><a class="headerlink" href="#case-0-the-steady-state" title="Permalink to this headline">¶</a></h3>
+<p>When Python is asked to import module <cite>foo</cite>, it searches for a
+<cite>foo.py</cite> file (or <cite>foo</cite> package, but that’s not important for this
+discussion) along its <cite>sys.path</cite>.  If found, Python looks to see if
+there is a matching <cite>__pycache__/foo.&lt;magic&gt;.pyc</cite> file, and if so,
+that <cite>pyc</cite> file is loaded.</p>
+</div>
+<div class="section" id="case-1-the-first-import">
+<h3><a class="toc-backref" href="#id57">Case 1: The first import</a><a class="headerlink" href="#case-1-the-first-import" title="Permalink to this headline">¶</a></h3>
+<p>When Python locates the <cite>foo.py</cite>, if the <cite>__pycache__/foo.&lt;magic&gt;.pyc</cite>
+file is missing, Python will create it, also creating the
+<cite>__pycache__</cite> directory if necessary.  Python will parse and byte
+compile the <cite>foo.py</cite> file and save the byte code in
+<cite>__pycache__/foo.&lt;magic&gt;.pyc</cite>.</p>
+</div>
+<div class="section" id="case-2-the-second-import">
+<h3><a class="toc-backref" href="#id58">Case 2: The second import</a><a class="headerlink" href="#case-2-the-second-import" title="Permalink to this headline">¶</a></h3>
+<p>When Python is asked to import module <cite>foo</cite> a second time (in a
+different process of course), it will again search for the <cite>foo.py</cite>
+file along its <cite>sys.path</cite>.  When Python locates the <cite>foo.py</cite> file, it
+looks for a matching <cite>__pycache__/foo.&lt;magic&gt;.pyc</cite> and finding this,
+it reads the byte code and continues as usual.</p>
+</div>
+<div class="section" id="case-3-pycache-foo-magic-pyc-with-no-source">
+<h3><a class="toc-backref" href="#id59">Case 3: __pycache__/foo.&lt;magic&gt;.pyc with no source</a><a class="headerlink" href="#case-3-pycache-foo-magic-pyc-with-no-source" title="Permalink to this headline">¶</a></h3>
+<p>It’s possible that the <cite>foo.py</cite> file somehow got removed, while
+leaving the cached pyc file still on the file system.  If the
+<cite>__pycache__/foo.&lt;magic&gt;.pyc</cite> file exists, but the <cite>foo.py</cite> file used
+to create it does not, Python will raise an <cite>ImportError</cite> when asked
+to import foo.  In other words, Python will not import a pyc file from
+the cache directory unless the source file exists.</p>
+</div>
+<div class="section" id="case-4-legacy-pyc-files-and-source-less-imports">
+<h3><a class="toc-backref" href="#id60">Case 4: legacy pyc files and source-less imports</a><a class="headerlink" href="#case-4-legacy-pyc-files-and-source-less-imports" title="Permalink to this headline">¶</a></h3>
+<p>Python will ignore all legacy pyc files when a source file exists next
+to it.  In other words, if a <cite>foo.pyc</cite> file exists next to the
+<cite>foo.py</cite> file, the pyc file will be ignored in all cases</p>
+<p>In order to continue to support source-less distributions though, if
+the source file is missing, Python will import a lone pyc file if it
+lives where the source file would have been.</p>
+</div>
+<div class="section" id="case-5-read-only-file-systems">
+<h3><a class="toc-backref" href="#id61">Case 5: read-only file systems</a><a class="headerlink" href="#case-5-read-only-file-systems" title="Permalink to this headline">¶</a></h3>
+<p>When the source lives on a read-only file system, or the <cite>__pycache__</cite>
+directory or pyc file cannot otherwise be written, all the same rules
+apply.  This is also the case when <cite>__pycache__</cite> happens to be written
+with permissions which do not allow for writing containing pyc files.</p>
+</div>
+</div>
+<div class="section" id="flow-chart">
+<h2><a class="toc-backref" href="#id62">Flow chart</a><a class="headerlink" href="#flow-chart" title="Permalink to this headline">¶</a></h2>
+<p>Here is a flow chart describing how modules are loaded:</p>
+<a class="reference internal image-reference" href="_images/pep-3147-1.png"><img alt="_images/pep-3147-1.png" src="_images/pep-3147-1.png" style="width: 777.75px; height: 609.0px;" /></a>
+</div>
+<div class="section" id="alternative-python-implementations">
+<h2><a class="toc-backref" href="#id63">Alternative Python implementations</a><a class="headerlink" href="#alternative-python-implementations" title="Permalink to this headline">¶</a></h2>
+<p>Alternative Python implementations such as Jython <a class="footnote-reference brackets" href="#id36" id="id12">11</a>, IronPython
+<a class="footnote-reference brackets" href="#id37" id="id13">12</a>, PyPy <a class="footnote-reference brackets" href="#id38" id="id14">13</a>, Pynie <a class="footnote-reference brackets" href="#id39" id="id15">14</a>, and Unladen Swallow can also use the
+<cite>__pycache__</cite> directory to store whatever compilation artifacts make
+sense for their platforms.  For example, Jython could store the class
+file for the module in <cite>__pycache__/foo.jython-32.class</cite>.</p>
+</div>
+<div class="section" id="implementation-strategy">
+<h2><a class="toc-backref" href="#id64">Implementation strategy</a><a class="headerlink" href="#implementation-strategy" title="Permalink to this headline">¶</a></h2>
+<p>This feature is targeted for Python 3.2, solving the problem for those
+and all future versions.  It may be back-ported to Python 2.7.
+Vendors are free to backport the changes to earlier distributions as
+they see fit.  For backports of this feature to Python 2, when the
+<cite>-U</cite> flag is used, a file such as <cite>foo.cpython-27u.pyc</cite> can be
+written.</p>
+</div>
+<div class="section" id="effects-on-existing-code">
+<h2><a class="toc-backref" href="#id65">Effects on existing code</a><a class="headerlink" href="#effects-on-existing-code" title="Permalink to this headline">¶</a></h2>
+<p>Adoption of this PEP will affect existing code and idioms, both inside
+Python and outside.  This section enumerates some of these effects.</p>
+<div class="section" id="detecting-pep-3147-availability">
+<h3><a class="toc-backref" href="#id66">Detecting PEP 3147 availability</a><a class="headerlink" href="#detecting-pep-3147-availability" title="Permalink to this headline">¶</a></h3>
+<p>The easiest way to detect whether your version of Python provides PEP
+3147 functionality is to do the following check:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">imp</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">has3147</span> <span class="o">=</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">imp</span><span class="p">,</span> <span class="s1">&#39;get_tag&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="file">
+<h3><a class="toc-backref" href="#id67">__file__</a><a class="headerlink" href="#file" title="Permalink to this headline">¶</a></h3>
+<p>In Python 3, when you import a module, its <cite>__file__</cite> attribute points
+to its source <cite>py</cite> file (in Python 2, it points to the <cite>pyc</cite> file).  A
+package’s <cite>__file__</cite> points to the <cite>py</cite> file for its <cite>__init__.py</cite>.
+E.g.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">foo</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">foo</span><span class="o">.</span><span class="vm">__file__</span>
+<span class="go">&#39;foo.py&#39;</span>
+<span class="go"># baz is a package</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">baz</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">baz</span><span class="o">.</span><span class="vm">__file__</span>
+<span class="go">&#39;baz/__init__.py&#39;</span>
+</pre></div>
+</div>
+<p>Nothing in this PEP would change the semantics of <cite>__file__</cite>.</p>
+<p>This PEP proposes the addition of an <cite>__cached__</cite> attribute to
+modules, which will always point to the actual <cite>pyc</cite> file that was
+read or written.  When the environment variable
+<cite>$PYTHONDONTWRITEBYTECODE</cite> is set, or the <cite>-B</cite> option is given, or if
+the source lives on a read-only filesystem, then the <cite>__cached__</cite>
+attribute will point to the location that the <cite>pyc</cite> file <em>would</em> have
+been written to if it didn’t exist.  This location of course includes
+the <cite>__pycache__</cite> subdirectory in its path.</p>
+<p>For alternative Python implementations which do not support <cite>pyc</cite>
+files, the <cite>__cached__</cite> attribute may point to whatever information
+makes sense.  E.g. on Jython, this might be the <cite>.class</cite> file for the
+module: <cite>__pycache__/foo.jython-32.class</cite>.  Some implementations may
+use multiple compiled files to create the module, in which case
+<cite>__cached__</cite> may be a tuple.  The exact contents of <cite>__cached__</cite> are
+Python implementation specific.</p>
+<p>It is recommended that when nothing sensible can be calculated,
+implementations should set the <cite>__cached__</cite> attribute to <cite>None</cite>.</p>
+</div>
+<div class="section" id="py-compile-and-compileall">
+<h3><a class="toc-backref" href="#id68">py_compile and compileall</a><a class="headerlink" href="#py-compile-and-compileall" title="Permalink to this headline">¶</a></h3>
+<p>Python comes with two modules, <cite>py_compile</cite> <a class="footnote-reference brackets" href="#id40" id="id16">15</a> and <cite>compileall</cite>
+<a class="footnote-reference brackets" href="#id41" id="id17">16</a> which support compiling Python modules external to the built-in
+import machinery.  <cite>py_compile</cite> in particular has intimate knowledge
+of byte compilation, so these will be updated to understand the new
+layout.  The <cite>-b</cite> flag is added to <cite>compileall</cite> for writing legacy
+<cite>.pyc</cite> byte-compiled file path names.</p>
+</div>
+<div class="section" id="bdist-wininst-and-the-windows-installer">
+<h3><a class="toc-backref" href="#id69">bdist_wininst and the Windows installer</a><a class="headerlink" href="#bdist-wininst-and-the-windows-installer" title="Permalink to this headline">¶</a></h3>
+<p>These tools also compile modules explicitly on installation.  If they
+do not use <cite>py_compile</cite> and <cite>compileall</cite>, then they would also have to
+be modified to understand the new layout.</p>
+</div>
+<div class="section" id="file-extension-checks">
+<h3><a class="toc-backref" href="#id70">File extension checks</a><a class="headerlink" href="#file-extension-checks" title="Permalink to this headline">¶</a></h3>
+<p>There exists some code which checks for files ending in <cite>.pyc</cite> and
+simply chops off the last character to find the matching <cite>.py</cite> file.
+This code will obviously fail once this PEP is implemented.</p>
+<p>To support this use case, we’ll add two new methods to the <cite>imp</cite>
+package <a class="footnote-reference brackets" href="#id42" id="id18">17</a>:</p>
+<ul class="simple">
+<li><cite>imp.cache_from_source(py_path)</cite> -&gt; <cite>pyc_path</cite></li>
+<li><cite>imp.source_from_cache(pyc_path)</cite> -&gt; <cite>py_path</cite></li>
+</ul>
+<p>Alternative implementations are free to override these functions to
+return reasonable values based on their own support for this PEP.
+These methods are allowed to return <cite>None</cite> when the implementation (or
+PEP 302 loader <a class="footnote-reference brackets" href="#id43" id="id19">18</a> in effect) for whatever reason cannot calculate
+the appropriate file name.  They should not raise exceptions.</p>
+</div>
+<div class="section" id="backports">
+<h3><a class="toc-backref" href="#id71">Backports</a><a class="headerlink" href="#backports" title="Permalink to this headline">¶</a></h3>
+<p>For versions of Python earlier than 3.2 (and possibly 2.7), it is
+possible to backport this PEP.  However, in Python 3.2 (and possibly
+2.7), this behavior will be turned on by default, and in fact, it will
+replace the old behavior.  Backports will need to support the old
+layout by default.  We suggest supporting PEP 3147 through the use of
+an environment variable called <cite>$PYTHONENABLECACHEDIR</cite> or the command
+line switch <cite>-Xenablecachedir</cite> to enable the feature.</p>
+</div>
+<div class="section" id="makefiles-and-other-dependency-tools">
+<h3><a class="toc-backref" href="#id72">Makefiles and other dependency tools</a><a class="headerlink" href="#makefiles-and-other-dependency-tools" title="Permalink to this headline">¶</a></h3>
+<p>Makefiles and other tools which calculate dependencies on <cite>.pyc</cite> files
+(e.g. to byte-compile the source if the <cite>.pyc</cite> is missing) will have
+to be updated to check the new paths.</p>
+</div>
+</div>
+<div class="section" id="alternatives">
+<h2><a class="toc-backref" href="#id73">Alternatives</a><a class="headerlink" href="#alternatives" title="Permalink to this headline">¶</a></h2>
+<p>This section describes some alternative approaches or details that
+were considered and rejected during the PEP’s development.</p>
+<div class="section" id="hexadecimal-magic-tags">
+<h3><a class="toc-backref" href="#id74">Hexadecimal magic tags</a><a class="headerlink" href="#hexadecimal-magic-tags" title="Permalink to this headline">¶</a></h3>
+<p>pyc files inside of the <cite>__pycache__</cite> directories contain a magic tag
+in their file names.  These are mnemonic tags for the actual magic
+numbers used by the importer.  We could have used the hexadecimal
+representation <a class="footnote-reference brackets" href="#id35" id="id20">10</a> of the binary magic number as a unique
+identifier.  For example, in Python 3.2:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">binascii</span> <span class="kn">import</span> <span class="n">hexlify</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">imp</span> <span class="kn">import</span> <span class="n">get_magic</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="s1">&#39;foo.</span><span class="si">{}</span><span class="s1">.pyc&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">hexlify</span><span class="p">(</span><span class="n">get_magic</span><span class="p">())</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;ascii&#39;</span><span class="p">))</span>
+<span class="go">&#39;foo.580c0d0a.pyc&#39;</span>
+</pre></div>
+</div>
+<p>This isn’t particularly human friendly though, thus the magic tag
+proposed in this PEP.</p>
+</div>
+<div class="section" id="pep-304">
+<h3><a class="toc-backref" href="#id75">PEP 304</a><a class="headerlink" href="#pep-304" title="Permalink to this headline">¶</a></h3>
+<p>There is some overlap between the goals of this PEP and PEP 304 <a class="footnote-reference brackets" href="#id44" id="id21">19</a>,
+which has been withdrawn.  However PEP 304 would allow a user to
+create a shadow file system hierarchy in which to store <cite>pyc</cite> files.
+This concept of a shadow hierarchy for <cite>pyc</cite> files could be used to
+satisfy the aims of this PEP.  Although the PEP 304 does not indicate
+why it was withdrawn, shadow directories have a number of problems.
+The location of the shadow <cite>pyc</cite> files would not be easily discovered
+and would depend on the proper and consistent use of the
+<cite>$PYTHONBYTECODE</cite> environment variable both by the system and by end
+users.  There are also global implications, meaning that while the
+system might want to shadow <cite>pyc</cite> files, users might not want to, but
+the PEP defines only an all-or-nothing approach.</p>
+<p>As an example of the problem, a common (though fragile) Python idiom
+for locating data files is to do something like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">os</span> <span class="kn">import</span> <span class="n">dirname</span><span class="p">,</span> <span class="n">join</span>
+<span class="kn">import</span> <span class="nn">foo.bar</span>
+<span class="n">data_file</span> <span class="o">=</span> <span class="n">join</span><span class="p">(</span><span class="n">dirname</span><span class="p">(</span><span class="n">foo</span><span class="o">.</span><span class="n">bar</span><span class="o">.</span><span class="vm">__file__</span><span class="p">),</span> <span class="s1">&#39;my.dat&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This would be problematic since <cite>foo.bar.__file__</cite> will give the
+location of the <cite>pyc</cite> file in the shadow directory, and it may not be
+possible to find the <cite>my.dat</cite> file relative to the source directory
+from there.</p>
+</div>
+<div class="section" id="fat-byte-compilation-files">
+<h3><a class="toc-backref" href="#id76">Fat byte compilation files</a><a class="headerlink" href="#fat-byte-compilation-files" title="Permalink to this headline">¶</a></h3>
+<p>An earlier version of this PEP described “fat” Python byte code files.
+These files would contain the equivalent of multiple <cite>pyc</cite> files in a
+single <cite>pyf</cite> file, with a lookup table keyed off the appropriate magic
+number.  This was an extensible file format so that the first 5
+parallel Python implementations could be supported fairly efficiently,
+but with extension lookup tables available to scale <cite>pyf</cite> byte code
+objects as large as necessary.</p>
+<p>The fat byte compilation files were fairly complex, and inherently
+introduced difficult race conditions, so the current simplification of
+using directories was suggested.  The same problem applies to using
+zip files as the fat pyc file format.</p>
+</div>
+<div class="section" id="multiple-file-extensions">
+<h3><a class="toc-backref" href="#id77">Multiple file extensions</a><a class="headerlink" href="#multiple-file-extensions" title="Permalink to this headline">¶</a></h3>
+<p>The PEP author also considered an approach where multiple thin byte
+compiled files lived in the same place, but used different file
+extensions to designate the Python version.  E.g. foo.pyc25,
+foo.pyc26, foo.pyc31 etc.  This was rejected because of the clutter
+involved in writing so many different files.  The multiple extension
+approach makes it more difficult (and an ongoing task) to update any
+tools that are dependent on the file extension.</p>
+</div>
+<div class="section" id="pyc">
+<h3><a class="toc-backref" href="#id78">.pyc</a><a class="headerlink" href="#pyc" title="Permalink to this headline">¶</a></h3>
+<p>A proposal was floated to call the <cite>__pycache__</cite> directory <cite>.pyc</cite> or
+some other dot-file name.  This would have the effect on *nix systems
+of hiding the directory.  There are many reasons why this was
+rejected by the BDFL <a class="footnote-reference brackets" href="#id45" id="id22">20</a> including the fact that dot-files are only
+special on some platforms, and we actually do <em>not</em> want to hide these
+completely from users.</p>
+</div>
+</div>
+<div class="section" id="reference-implementation">
+<h2><a class="toc-backref" href="#id79">Reference implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>Work on this code is tracked in a Bazaar branch on Launchpad <a class="footnote-reference brackets" href="#id47" id="id23">22</a>
+until it’s ready for merge into Python 3.2.  The work-in-progress diff
+can also be viewed <a class="footnote-reference brackets" href="#id48" id="id24">23</a> and is updated automatically as new changes
+are uploaded.</p>
+<p>A Rietveld code review issue <a class="footnote-reference brackets" href="#id49" id="id25">24</a> has been opened as of 2010-04-01 (no,
+this is not an April Fools joke :).</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id80">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id26"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>PEP 3146</dd>
+<dt class="label" id="id27"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>The marshal module:
+<a class="reference external" href="https://docs.python.org/dev/library/marshal.html">https://docs.python.org/dev/library/marshal.html</a></dd>
+<dt class="label" id="id28"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd>import.c:
+<a class="reference external" href="http://svn.python.org/view/python/branches/py3k/Python/import.c?view=markup">http://svn.python.org/view/python/branches/py3k/Python/import.c?view=markup</a></dd>
+<dt class="label" id="id29"><span class="brackets"><a class="fn-backref" href="#id4">4</a></span></dt>
+<dd>Ubuntu: &lt;<a class="reference external" href="http://www.ubuntu.com">http://www.ubuntu.com</a>&gt;</dd>
+<dt class="label" id="id30"><span class="brackets"><a class="fn-backref" href="#id5">5</a></span></dt>
+<dd>Debian: &lt;<a class="reference external" href="http://www.debian.org">http://www.debian.org</a>&gt;</dd>
+<dt class="label" id="id31"><span class="brackets"><a class="fn-backref" href="#id6">6</a></span></dt>
+<dd>Debian Python Policy:
+<a class="reference external" href="http://www.debian.org/doc/packaging-manuals/python-policy/">http://www.debian.org/doc/packaging-manuals/python-policy/</a></dd>
+<dt class="label" id="id32"><span class="brackets"><a class="fn-backref" href="#id7">7</a></span></dt>
+<dd>PEP 384</dd>
+<dt class="label" id="id33"><span class="brackets"><a class="fn-backref" href="#id8">8</a></span></dt>
+<dd>python-support:
+<a class="reference external" href="http://wiki.debian.org/DebianPythonFAQ#Whatispython-support.3F">http://wiki.debian.org/DebianPythonFAQ#Whatispython-support.3F</a></dd>
+<dt class="label" id="id34"><span class="brackets"><a class="fn-backref" href="#id9">9</a></span></dt>
+<dd>python-central:
+<a class="reference external" href="http://wiki.debian.org/DebianPythonFAQ#Whatispython-central.3F">http://wiki.debian.org/DebianPythonFAQ#Whatispython-central.3F</a></dd>
+<dt class="label" id="id35"><span class="brackets"><a class="fn-backref" href="#id20">10</a></span></dt>
+<dd>binascii.hexlify():
+<a class="reference external" href="http://www.python.org/doc/current/library/binascii.html#binascii.hexlify">http://www.python.org/doc/current/library/binascii.html#binascii.hexlify</a></dd>
+<dt class="label" id="id36"><span class="brackets"><a class="fn-backref" href="#id12">11</a></span></dt>
+<dd>Jython: <a class="reference external" href="http://www.jython.org/">http://www.jython.org/</a></dd>
+<dt class="label" id="id37"><span class="brackets"><a class="fn-backref" href="#id13">12</a></span></dt>
+<dd>IronPython: <a class="reference external" href="http://ironpython.net/">http://ironpython.net/</a></dd>
+<dt class="label" id="id38"><span class="brackets"><a class="fn-backref" href="#id14">13</a></span></dt>
+<dd>PyPy: <a class="reference external" href="http://codespeak.net/pypy/dist/pypy/doc/">http://codespeak.net/pypy/dist/pypy/doc/</a></dd>
+<dt class="label" id="id39"><span class="brackets"><a class="fn-backref" href="#id15">14</a></span></dt>
+<dd>Pynie: <a class="reference external" href="http://code.google.com/p/pynie/">http://code.google.com/p/pynie/</a></dd>
+<dt class="label" id="id40"><span class="brackets">15</span><span class='fn-backref'><em> (<a href="#id10">1</a>, <a href="#id16">2</a>) </em></span></dt>
+<dd>py_compile: <a class="reference external" href="http://docs.python.org/library/py_compile.html">http://docs.python.org/library/py_compile.html</a></dd>
+<dt class="label" id="id41"><span class="brackets">16</span><span class='fn-backref'><em> (<a href="#id11">1</a>, <a href="#id17">2</a>) </em></span></dt>
+<dd>compileall: <a class="reference external" href="http://docs.python.org/library/compileall.html">http://docs.python.org/library/compileall.html</a></dd>
+<dt class="label" id="id42"><span class="brackets"><a class="fn-backref" href="#id18">17</a></span></dt>
+<dd>imp: <a class="reference external" href="http://www.python.org/doc/current/library/imp.html">http://www.python.org/doc/current/library/imp.html</a></dd>
+<dt class="label" id="id43"><span class="brackets"><a class="fn-backref" href="#id19">18</a></span></dt>
+<dd>PEP 302</dd>
+<dt class="label" id="id44"><span class="brackets"><a class="fn-backref" href="#id21">19</a></span></dt>
+<dd>PEP 304</dd>
+<dt class="label" id="id45"><span class="brackets"><a class="fn-backref" href="#id22">20</a></span></dt>
+<dd><a class="reference external" href="http://www.mail-archive.com/python-dev&#64;python.org/msg45203.html">http://www.mail-archive.com/python-dev&#64;python.org/msg45203.html</a></dd>
+<dt class="label" id="id46"><span class="brackets">21</span></dt>
+<dd>importlib: <a class="reference external" href="http://docs.python.org/3.1/library/importlib.html">http://docs.python.org/3.1/library/importlib.html</a></dd>
+<dt class="label" id="id47"><span class="brackets"><a class="fn-backref" href="#id23">22</a></span></dt>
+<dd><a class="reference external" href="https://code.launchpad.net/~barry/python/pep3147">https://code.launchpad.net/~barry/python/pep3147</a></dd>
+<dt class="label" id="id48"><span class="brackets"><a class="fn-backref" href="#id24">23</a></span></dt>
+<dd><a class="reference external" href="https://code.launchpad.net/~barry/python/pep3147/+merge/22648">https://code.launchpad.net/~barry/python/pep3147/+merge/22648</a></dd>
+<dt class="label" id="id49"><span class="brackets"><a class="fn-backref" href="#id25">24</a></span></dt>
+<dd><a class="reference external" href="http://codereview.appspot.com/842043/show">http://codereview.appspot.com/842043/show</a></dd>
+</dl>
+</div>
+<div class="section" id="acknowledgments">
+<h2><a class="toc-backref" href="#id81">ACKNOWLEDGMENTS</a><a class="headerlink" href="#acknowledgments" title="Permalink to this headline">¶</a></h2>
+<p>Barry Warsaw’s original idea was for fat Python byte code files.
+Martin von Loewis reviewed an early draft of the PEP and suggested the
+simplification to store traditional <cite>pyc</cite> and <cite>pyo</cite> files in a
+directory.  Many other people reviewed early versions of this PEP and
+provided useful feedback including but not limited to:</p>
+<ul class="simple">
+<li>David Malcolm</li>
+<li>Josselin Mouette</li>
+<li>Matthias Klose</li>
+<li>Michael Hudson</li>
+<li>Michael Vogt</li>
+<li>Piotr Ożarowski</li>
+<li>Scott Kitterman</li>
+<li>Toshio Kuratomi</li>
+</ul>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id82">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-3147.txt">https://github.com/python/peps/blob/master/pep-3147.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-3147.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-3146.html">PEP 3146</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-3148.html">PEP 3148</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 3147 – PYC Repository Directories</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#background">Background</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#proposal">Proposal</a><ul>
+<li><a class="reference internal" href="#examples">Examples</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#python-behavior">Python behavior</a><ul>
+<li><a class="reference internal" href="#case-0-the-steady-state">Case 0: The steady state</a></li>
+<li><a class="reference internal" href="#case-1-the-first-import">Case 1: The first import</a></li>
+<li><a class="reference internal" href="#case-2-the-second-import">Case 2: The second import</a></li>
+<li><a class="reference internal" href="#case-3-pycache-foo-magic-pyc-with-no-source">Case 3: __pycache__/foo.&lt;magic&gt;.pyc with no source</a></li>
+<li><a class="reference internal" href="#case-4-legacy-pyc-files-and-source-less-imports">Case 4: legacy pyc files and source-less imports</a></li>
+<li><a class="reference internal" href="#case-5-read-only-file-systems">Case 5: read-only file systems</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#flow-chart">Flow chart</a></li>
+<li><a class="reference internal" href="#alternative-python-implementations">Alternative Python implementations</a></li>
+<li><a class="reference internal" href="#implementation-strategy">Implementation strategy</a></li>
+<li><a class="reference internal" href="#effects-on-existing-code">Effects on existing code</a><ul>
+<li><a class="reference internal" href="#detecting-pep-3147-availability">Detecting PEP 3147 availability</a></li>
+<li><a class="reference internal" href="#file">__file__</a></li>
+<li><a class="reference internal" href="#py-compile-and-compileall">py_compile and compileall</a></li>
+<li><a class="reference internal" href="#bdist-wininst-and-the-windows-installer">bdist_wininst and the Windows installer</a></li>
+<li><a class="reference internal" href="#file-extension-checks">File extension checks</a></li>
+<li><a class="reference internal" href="#backports">Backports</a></li>
+<li><a class="reference internal" href="#makefiles-and-other-dependency-tools">Makefiles and other dependency tools</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#alternatives">Alternatives</a><ul>
+<li><a class="reference internal" href="#hexadecimal-magic-tags">Hexadecimal magic tags</a></li>
+<li><a class="reference internal" href="#pep-304">PEP 304</a></li>
+<li><a class="reference internal" href="#fat-byte-compilation-files">Fat byte compilation files</a></li>
+<li><a class="reference internal" href="#multiple-file-extensions">Multiple file extensions</a></li>
+<li><a class="reference internal" href="#pyc">.pyc</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#reference-implementation">Reference implementation</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#acknowledgments">ACKNOWLEDGMENTS</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

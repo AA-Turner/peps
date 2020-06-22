@@ -1,0 +1,305 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 303 – Extend divmod() for Multiple Divisors &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 304 – Controlling Generation of Bytecode Files" href="pep-0304.html" />
+    <link rel="prev" title="PEP 302 – New Import Hooks" href="pep-0302.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 303 – Extend divmod() for Multiple Divisors</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-303-extend-divmod-for-multiple-divisors">
+<h1 class="page-title">PEP 303 – Extend divmod() for Multiple Divisors<a class="headerlink" href="#pep-303-extend-divmod-for-multiple-divisors" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">303</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Extend divmod() for Multiple Divisors</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Thomas Bellman &lt;bellman+pep-divmod&#32;&#97;t&#32;lysator.liu.se&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Rejected</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">31-Dec-2002</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.3</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id3">Abstract</a></li>
+<li><a class="reference internal" href="#pronouncement" id="id4">Pronouncement</a></li>
+<li><a class="reference internal" href="#specification" id="id5">Specification</a></li>
+<li><a class="reference internal" href="#motivation" id="id6">Motivation</a></li>
+<li><a class="reference internal" href="#rationale" id="id7">Rationale</a></li>
+<li><a class="reference internal" href="#backwards-compatibility" id="id8">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#reference-implementation" id="id9">Reference Implementation</a></li>
+<li><a class="reference internal" href="#references" id="id10">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id11">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id3">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP describes an extension to the built-in <code class="docutils literal notranslate"><span class="pre">divmod()</span></code> function,
+allowing it to take multiple divisors, chaining several calls to
+<code class="docutils literal notranslate"><span class="pre">divmod()</span></code> into one.</p>
+</div>
+<div class="section" id="pronouncement">
+<h2><a class="toc-backref" href="#id4">Pronouncement</a><a class="headerlink" href="#pronouncement" title="Permalink to this headline">¶</a></h2>
+<p>This PEP is rejected.  Most uses for chained <code class="docutils literal notranslate"><span class="pre">divmod()</span></code> involve a
+constant modulus (in radix conversions for example) and are more
+properly coded as a loop.  The example of splitting seconds
+into days/hours/minutes/seconds does not generalize to months
+and years; rather, the whole use case is handled more flexibly and
+robustly by date and time modules.  The other use cases mentioned
+in the PEP are somewhat rare in real code.  The proposal is also
+problematic in terms of clarity and obviousness.  In the examples,
+it is not immediately clear that the argument order is correct or
+that the target tuple is of the right length.  Users from other
+languages are more likely to understand the standard two argument
+form without having to re-read the documentation.  See python-dev
+discussion on 17 June 2005 <a class="footnote-reference brackets" href="#id2" id="id1">1</a>.</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id5">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>The built-in <code class="docutils literal notranslate"><span class="pre">divmod()</span></code> function would be changed to accept multiple
+divisors, changing its signature from <code class="docutils literal notranslate"><span class="pre">divmod(dividend,</span> <span class="pre">divisor)</span></code> to
+<code class="docutils literal notranslate"><span class="pre">divmod(dividend,</span> <span class="pre">*divisors)</span></code>.  The dividend is divided by the last
+divisor, giving a quotient and a remainder.  The quotient is then
+divided by the second to last divisor, giving a new quotient and
+remainder.  This is repeated until all divisors have been used,
+and <code class="docutils literal notranslate"><span class="pre">divmod()</span></code> then returns a tuple consisting of the quotient from
+the last step, and the remainders from all the steps.</p>
+<p>A Python implementation of the new <code class="docutils literal notranslate"><span class="pre">divmod()</span></code> behaviour could look
+like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">divmod</span><span class="p">(</span><span class="n">dividend</span><span class="p">,</span> <span class="o">*</span><span class="n">divisors</span><span class="p">):</span>
+    <span class="n">modulos</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">dividend</span>
+    <span class="k">while</span> <span class="n">divisors</span><span class="p">:</span>
+        <span class="n">q</span><span class="p">,</span> <span class="n">r</span> <span class="o">=</span> <span class="n">q</span><span class="o">.</span><span class="fm">__divmod__</span><span class="p">(</span><span class="n">divisors</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">modulos</span> <span class="o">=</span> <span class="p">(</span><span class="n">r</span><span class="p">,)</span> <span class="o">+</span> <span class="n">modulos</span>
+        <span class="n">divisors</span> <span class="o">=</span> <span class="n">divisors</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">q</span><span class="p">,)</span> <span class="o">+</span> <span class="n">modulos</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id6">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>Occasionally one wants to perform a chain of <code class="docutils literal notranslate"><span class="pre">divmod()</span></code> operations,
+calling <code class="docutils literal notranslate"><span class="pre">divmod()</span></code> on the quotient from the previous step, with
+varying divisors.  The most common case is probably converting a
+number of seconds into weeks, days, hours, minutes and seconds.
+This would today be written as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">secs_to_wdhms</span><span class="p">(</span><span class="n">seconds</span><span class="p">):</span>
+    <span class="n">m</span><span class="p">,</span> <span class="n">s</span> <span class="o">=</span> <span class="nb">divmod</span><span class="p">(</span><span class="n">seconds</span><span class="p">,</span> <span class="mi">60</span><span class="p">)</span>
+    <span class="n">h</span><span class="p">,</span> <span class="n">m</span> <span class="o">=</span> <span class="nb">divmod</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="mi">60</span><span class="p">)</span>
+    <span class="n">d</span><span class="p">,</span> <span class="n">h</span> <span class="o">=</span> <span class="nb">divmod</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="mi">24</span><span class="p">)</span>
+    <span class="n">w</span><span class="p">,</span> <span class="n">d</span> <span class="o">=</span> <span class="nb">divmod</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="mi">7</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This is tedious and easy to get wrong each time you need it.</p>
+<p>If instead the <code class="docutils literal notranslate"><span class="pre">divmod()</span></code> built-in is changed according the proposal,
+the code for converting seconds to weeks, days, hours, minutes and
+seconds then become</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">secs_to_wdhms</span><span class="p">(</span><span class="n">seconds</span><span class="p">):</span>
+    <span class="n">w</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">s</span> <span class="o">=</span> <span class="nb">divmod</span><span class="p">(</span><span class="n">seconds</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">24</span><span class="p">,</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">60</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>which is easier to type, easier to type correctly, and easier to
+read.</p>
+<p>Other applications are:</p>
+<ul class="simple">
+<li>Astronomical angles (declination is measured in degrees, minutes
+and seconds, right ascension is measured in hours, minutes and
+seconds).</li>
+<li>Old British currency (1 pound = 20 shilling, 1 shilling = 12 pence).</li>
+<li>Anglo-Saxon length units: 1 mile = 1760 yards, 1 yard = 3 feet,
+1 foot = 12 inches.</li>
+<li>Anglo-Saxon weight units: 1 long ton = 160 stone, 1 stone = 14
+pounds, 1 pound = 16 ounce, 1 ounce = 16 dram.</li>
+<li>British volumes: 1 gallon = 4 quart, 1 quart = 2 pint, 1 pint
+= 20 fluid ounces.</li>
+</ul>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id7">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>The idea comes from APL, which has an operator that does this.  (I
+don’t remember what the operator looks like, and it would probably
+be impossible to render in ASCII anyway.)</p>
+<p>The APL operator takes a list as its second operand, while this
+PEP proposes that each divisor should be a separate argument to
+the <code class="docutils literal notranslate"><span class="pre">divmod()</span></code> function.  This is mainly because it is expected that
+the most common uses will have the divisors as constants right in
+the call (as the 7, 24, 60, 60 above), and adding a set of
+parentheses or brackets would just clutter the call.</p>
+<p>Requiring an explicit sequence as the second argument to <code class="docutils literal notranslate"><span class="pre">divmod()</span></code>
+would seriously break backwards compatibility.  Making <code class="docutils literal notranslate"><span class="pre">divmod()</span></code>
+check its second argument for being a sequence is deemed to be too
+ugly to contemplate.  And in the case where one <em>does</em> have a
+sequence that is computed other-where, it is easy enough to write
+<code class="docutils literal notranslate"><span class="pre">divmod(x,</span> <span class="pre">*divs)</span></code> instead.</p>
+<p>Requiring at least one divisor, i.e rejecting <code class="docutils literal notranslate"><span class="pre">divmod(x)</span></code>, has been
+considered, but no good reason to do so has come to mind, and is
+thus allowed in the name of generality.</p>
+<p>Calling <code class="docutils literal notranslate"><span class="pre">divmod()</span></code> with no divisors should still return a tuple (of
+one element).  Code that calls <code class="docutils literal notranslate"><span class="pre">divmod()</span></code> with a varying number of
+divisors, and thus gets a return value with an “unknown” number of
+elements, would otherwise have to special case that case.  Code
+that <em>knows</em> it is calling <code class="docutils literal notranslate"><span class="pre">divmod()</span></code> with no divisors is considered
+to be too silly to warrant a special case.</p>
+<p>Processing the divisors in the other direction, i.e dividing with
+the first divisor first, instead of dividing with the last divisor
+first, has been considered.  However, the result comes with the
+most significant part first and the least significant part last
+(think of the chained divmod as a way of splitting a number into
+“digits”, with varying weights), and it is reasonable to specify
+the divisors (weights) in the same order as the result.</p>
+<p>The inverse operation:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">inverse_divmod</span><span class="p">(</span><span class="n">seq</span><span class="p">,</span> <span class="o">*</span><span class="n">factors</span><span class="p">):</span>
+    <span class="n">product</span> <span class="o">=</span> <span class="n">seq</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">factors</span><span class="p">,</span> <span class="n">seq</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
+        <span class="n">product</span> <span class="o">=</span> <span class="n">product</span> <span class="o">*</span> <span class="n">x</span> <span class="o">+</span> <span class="n">y</span>
+    <span class="k">return</span> <span class="n">product</span>
+</pre></div>
+</div>
+<p>could also be useful.  However, writing</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seconds</span> <span class="o">=</span> <span class="p">(((((</span><span class="n">w</span> <span class="o">*</span> <span class="mi">7</span><span class="p">)</span> <span class="o">+</span> <span class="n">d</span><span class="p">)</span> <span class="o">*</span> <span class="mi">24</span> <span class="o">+</span> <span class="n">h</span><span class="p">)</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">+</span> <span class="n">m</span><span class="p">)</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">+</span> <span class="n">s</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>is less cumbersome both to write and to read than the chained
+divmods.  It is therefore deemed to be less important, and its
+introduction can be deferred to its own PEP.  Also, such a
+function needs a good name, and the PEP author has not managed to
+come up with one yet.</p>
+<p>Calling <code class="docutils literal notranslate"><span class="pre">divmod(&quot;spam&quot;)</span></code> does not raise an error, despite strings
+supporting neither division nor modulo.  However, unless we know
+the other object too, we can’t determine whether <code class="docutils literal notranslate"><span class="pre">divmod()</span></code> would
+work or not, and thus it seems silly to forbid it.</p>
+</div>
+<div class="section" id="backwards-compatibility">
+<h2><a class="toc-backref" href="#id8">Backwards Compatibility</a><a class="headerlink" href="#backwards-compatibility" title="Permalink to this headline">¶</a></h2>
+<p>Any module that replaces the <code class="docutils literal notranslate"><span class="pre">divmod()</span></code> function in the <code class="docutils literal notranslate"><span class="pre">__builtin__</span></code>
+module, may cause other modules using the new syntax to break.  It
+is expected that this is very uncommon.</p>
+<p>Code that expects a <code class="docutils literal notranslate"><span class="pre">TypeError</span></code> exception when calling <code class="docutils literal notranslate"><span class="pre">divmod()</span></code> with
+anything but two arguments will break.  This is also expected to
+be very uncommon.</p>
+<p>No other issues regarding backwards compatibility are known.</p>
+</div>
+<div class="section" id="reference-implementation">
+<h2><a class="toc-backref" href="#id9">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>Not finished yet, but it seems a rather straightforward
+new implementation of the function <code class="docutils literal notranslate"><span class="pre">builtin_divmod()</span></code> in
+<code class="docutils literal notranslate"><span class="pre">Python/bltinmodule.c</span></code>.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id10">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>Raymond Hettinger, “Propose rejection of PEP 303 – Extend divmod() for
+Multiple Divisors” <a class="reference external" href="https://mail.python.org/pipermail/python-dev/2005-June/054283.html">https://mail.python.org/pipermail/python-dev/2005-June/054283.html</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id11">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0303.txt">https://github.com/python/peps/blob/master/pep-0303.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0303.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0302.html">PEP 0302</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0304.html">PEP 0304</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 303 – Extend divmod() for Multiple Divisors</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#pronouncement">Pronouncement</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

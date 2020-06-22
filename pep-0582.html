@@ -1,0 +1,292 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 582 – Python local packages directory &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 583 – A Concurrency Memory Model for Python" href="pep-0583.html" />
+    <link rel="prev" title="PEP 581 – Using GitHub Issues for CPython" href="pep-0581.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 582 – Python local packages directory</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-582-python-local-packages-directory">
+<h1 class="page-title">PEP 582 – Python local packages directory<a class="headerlink" href="#pep-582-python-local-packages-directory" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">582</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Python local packages directory</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Kushal Das &lt;mail&#32;&#97;t&#32;kushaldas.in&gt;, Steve Dower &lt;steve.dower&#32;&#97;t&#32;python.org&gt;,
+Donald Stufft &lt;donald&#32;&#97;t&#32;stufft.io&gt;, Nick Coghlan &lt;ncoghlan&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Draft</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">16-May-2018</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.8</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id2">Abstract</a></li>
+<li><a class="reference internal" href="#motivation" id="id3">Motivation</a></li>
+<li><a class="reference internal" href="#specification" id="id4">Specification</a><ul>
+<li><a class="reference internal" href="#example" id="id5">Example</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#security-considerations" id="id6">Security Considerations</a></li>
+<li><a class="reference internal" href="#backwards-compatibility" id="id7">Backwards Compatibility</a><ul>
+<li><a class="reference internal" href="#impact-on-other-python-implementations" id="id8">Impact on other Python implementations</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#reference-implementation" id="id9">Reference Implementation</a></li>
+<li><a class="reference internal" href="#rejected-ideas" id="id10">Rejected Ideas</a></li>
+<li><a class="reference internal" href="#copyright" id="id11">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id2">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes to add to Python a mechanism to automatically recognize a
+<code class="docutils literal notranslate"><span class="pre">__pypackages__</span></code> directory and prefer importing packages installed in this
+location over user or global site-packages. This will avoid the steps to create,
+activate or deactivate “virtual environments”. Python will use the
+<code class="docutils literal notranslate"><span class="pre">__pypackages__</span></code> from the base directory of the script when present.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id3">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>Python virtual environments have become an essential part of development and
+teaching workflow in the community, but at the same time, they create a barrier
+to entry for many. The following are a few of the issues people run into while
+being introduced to Python (or programming for the first time).</p>
+<ul class="simple">
+<li>How virtual environments work is a lot of information for anyone new. It takes
+a lot of extra time and effort to explain them.</li>
+<li>Different platforms and shell environments require different sets of commands
+to activate the virtual environments. Any workshop or teaching environment with
+people coming with different operating systems installed on their laptops create a
+lot of confusion among the participants.</li>
+<li>Virtual environments need to be activated on each opened terminal. If someone
+creates/opens a new terminal, that by default does not get the same environment
+as in a previous terminal with virtual environment activated.</li>
+</ul>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id4">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>When the Python binary is executed, it attempts to determine its prefix (as
+stored in <code class="docutils literal notranslate"><span class="pre">sys.prefix</span></code>), which is then used to find the standard library and
+other key files, and by the <code class="docutils literal notranslate"><span class="pre">site</span></code> module to determine the location of the
+<code class="docutils literal notranslate"><span class="pre">site-package</span></code> directories.  Currently the prefix is found – assuming
+<code class="docutils literal notranslate"><span class="pre">PYTHONHOME</span></code> is not set – by first walking up the filesystem tree looking for
+a marker file (<code class="docutils literal notranslate"><span class="pre">os.py</span></code>) that signifies the presence of the standard library,
+and if none is found, falling back to the build-time prefix hard coded in the
+binary. The result of this process is the contents of <code class="docutils literal notranslate"><span class="pre">sys.path</span></code> - a list of
+locations that the Python import system will search for modules.</p>
+<p>This PEP proposes to add a new step in this process. If a <code class="docutils literal notranslate"><span class="pre">__pypackages__</span></code>
+directory is found in the current working directory, then it will be included in
+<code class="docutils literal notranslate"><span class="pre">sys.path</span></code> after the current working directory and just before the system
+site-packages. This way, if the Python executable starts in the given project
+directory, it will automatically find all the dependencies inside of
+<code class="docutils literal notranslate"><span class="pre">__pypackages__</span></code>.</p>
+<p>In case of Python scripts, Python will try to find <code class="docutils literal notranslate"><span class="pre">__pypackages__</span></code> in the
+same directory as the script. If found (along with the current Python version
+directory inside), then it will be used, otherwise Python will behave as it does
+currently.</p>
+<p>If any package management tool finds the same <code class="docutils literal notranslate"><span class="pre">__pypackages__</span></code> directory in
+the current working directory, it will install any packages there and also
+create it if required based on Python version.</p>
+<p>Projects that use a source management system can include a <code class="docutils literal notranslate"><span class="pre">__pypackages__</span></code>
+directory (empty or with e.g. a file like <code class="docutils literal notranslate"><span class="pre">.gitignore</span></code>). After doing a fresh
+check out the source code, a tool like <code class="docutils literal notranslate"><span class="pre">pip</span></code> can be used to install the
+required dependencies directly into this directory.</p>
+<div class="section" id="example">
+<h3><a class="toc-backref" href="#id5">Example</a><a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h3>
+<p>The following shows an example project directory structure, and different ways
+the Python executable and any script will behave.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">foo</span>
+    <span class="n">__pypackages__</span>
+        <span class="mf">3.8</span>
+            <span class="n">lib</span>
+                <span class="n">bottle</span>
+    <span class="n">myscript</span><span class="o">.</span><span class="n">py</span>
+
+<span class="o">/&gt;</span> <span class="n">python</span> <span class="n">foo</span><span class="o">/</span><span class="n">myscript</span><span class="o">.</span><span class="n">py</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;foo&#39;</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;foo/__pypackages__/3.8/lib&#39;</span>
+
+
+<span class="n">cd</span> <span class="n">foo</span>
+
+<span class="n">foo</span><span class="o">&gt;</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">ansible</span>
+    <span class="c1">#! /usr/bin/env python3</span>
+<span class="n">foo</span><span class="o">&gt;</span> <span class="n">python</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">ansible</span>
+
+<span class="n">foo</span><span class="o">&gt;</span> <span class="n">python</span> <span class="n">myscript</span><span class="o">.</span><span class="n">py</span>
+
+<span class="n">foo</span><span class="o">&gt;</span> <span class="n">python</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;.&#39;</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;./__pypackages__/3.8/lib&#39;</span>
+
+<span class="n">foo</span><span class="o">&gt;</span> <span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">bottle</span>
+</pre></div>
+</div>
+<p>We have a project directory called <code class="docutils literal notranslate"><span class="pre">foo</span></code> and it has a <code class="docutils literal notranslate"><span class="pre">__pypackages__</span></code>
+inside of it. We have <code class="docutils literal notranslate"><span class="pre">bottle</span></code> installed in that
+<code class="docutils literal notranslate"><span class="pre">__pypackages__/3.8/lib</span></code>, and have a <code class="docutils literal notranslate"><span class="pre">myscript.py</span></code> file inside of the
+project directory. We have used whatever tool we generally use to install <code class="docutils literal notranslate"><span class="pre">bottle</span></code>
+in that location.</p>
+<p>For invoking a script, Python will try to find a <code class="docutils literal notranslate"><span class="pre">__pypackages__</span></code> inside of
+the directory that the script resides[1]_, <code class="docutils literal notranslate"><span class="pre">/usr/bin</span></code>.  The same will happen
+in case of the last example, where we are executing <code class="docutils literal notranslate"><span class="pre">/usr/bin/ansible</span></code> from
+inside of the <code class="docutils literal notranslate"><span class="pre">foo</span></code> directory. In both cases, it will <strong>not</strong> use the
+<code class="docutils literal notranslate"><span class="pre">__pypackages__</span></code> in the current working directory.</p>
+<p>Similarly, if we invoke <code class="docutils literal notranslate"><span class="pre">myscript.py</span></code> from the first example, it will use the
+<code class="docutils literal notranslate"><span class="pre">__pypackages__</span></code> directory that was in the <code class="docutils literal notranslate"><span class="pre">foo</span></code> directory.</p>
+<p>If we go inside of the <code class="docutils literal notranslate"><span class="pre">foo</span></code> directory and start the Python executable (the
+interpreter), it will find the <code class="docutils literal notranslate"><span class="pre">__pypackages__</span></code> directory inside of the
+current working directory and use it in the <code class="docutils literal notranslate"><span class="pre">sys.path</span></code>. The same happens if we
+try to use the <code class="docutils literal notranslate"><span class="pre">-m</span></code> and use a module. In our example, <code class="docutils literal notranslate"><span class="pre">bottle</span></code> module will
+be found inside of the <code class="docutils literal notranslate"><span class="pre">__pypackages__</span></code> directory.</p>
+<p>The above two examples are only cases where <code class="docutils literal notranslate"><span class="pre">__pypackages__</span></code> from current
+working directory is used.</p>
+<p>In another example scenario, a trainer of a Python class can say “Today we are
+going to learn how to use Twisted! To start, please checkout our example
+project, go to that directory, and then run <code class="docutils literal notranslate"><span class="pre">python3</span> <span class="pre">-m</span> <span class="pre">pip</span> <span class="pre">install</span> <span class="pre">twisted</span></code>.”</p>
+<p>That will install Twisted into a directory separate from <code class="docutils literal notranslate"><span class="pre">python3</span></code>. There’s no
+need to discuss virtual environments, global versus user installs, etc. as the
+install will be local by default. The trainer can then just keep telling them to
+use <code class="docutils literal notranslate"><span class="pre">python3</span></code> without any activation step, etc.</p>
+</div>
+</div>
+<div class="section" id="security-considerations">
+<h2><a class="toc-backref" href="#id6">Security Considerations</a><a class="headerlink" href="#security-considerations" title="Permalink to this headline">¶</a></h2>
+<p>While executing a Python script, it will not consider the <code class="docutils literal notranslate"><span class="pre">__pypackages__</span></code> in
+the current directory, instead if there is a <code class="docutils literal notranslate"><span class="pre">__pypackages__</span></code> directory in the
+same path of the script, that will be used.</p>
+<p>For example, if we execute <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">/usr/share/myproject/fancy.py</span></code> from the
+<code class="docutils literal notranslate"><span class="pre">/tmp</span></code> directory and  if there is a <code class="docutils literal notranslate"><span class="pre">__pypackages__</span></code> directory inside of
+<code class="docutils literal notranslate"><span class="pre">/usr/share/myproject/</span></code> directory, it will be used. Any potential
+<code class="docutils literal notranslate"><span class="pre">__pypackages__</span></code> directory in <code class="docutils literal notranslate"><span class="pre">/tmp</span></code> will be ignored.</p>
+</div>
+<div class="section" id="backwards-compatibility">
+<h2><a class="toc-backref" href="#id7">Backwards Compatibility</a><a class="headerlink" href="#backwards-compatibility" title="Permalink to this headline">¶</a></h2>
+<p>This does not affect any older version of Python implementation.</p>
+<div class="section" id="impact-on-other-python-implementations">
+<h3><a class="toc-backref" href="#id8">Impact on other Python implementations</a><a class="headerlink" href="#impact-on-other-python-implementations" title="Permalink to this headline">¶</a></h3>
+<p>Other Python implementations will need to replicate the new behavior of the
+interpreter bootstrap, including locating the <code class="docutils literal notranslate"><span class="pre">__pypackages__</span></code> directory and
+adding it the <code class="docutils literal notranslate"><span class="pre">sys.path</span></code> just before site packages, if it is present.</p>
+</div>
+</div>
+<div class="section" id="reference-implementation">
+<h2><a class="toc-backref" href="#id9">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="https://github.com/kushaldas/cpython/tree/pypackages">Here</a> is a PoC
+implementation (in the <code class="docutils literal notranslate"><span class="pre">pypackages</span></code> branch).</p>
+</div>
+<div class="section" id="rejected-ideas">
+<h2><a class="toc-backref" href="#id10">Rejected Ideas</a><a class="headerlink" href="#rejected-ideas" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">__pylocal__</span></code> and <code class="docutils literal notranslate"><span class="pre">python_modules</span></code>.</p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id11">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0582.rst">https://github.com/python/peps/blob/master/pep-0582.rst</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0582.rst.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0581.html">PEP 0581</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0583.html">PEP 0583</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 582 – Python local packages directory</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#example">Example</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#security-considerations">Security Considerations</a></li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a><ul>
+<li><a class="reference internal" href="#impact-on-other-python-implementations">Impact on other Python implementations</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#rejected-ideas">Rejected Ideas</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

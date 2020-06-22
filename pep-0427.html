@@ -1,0 +1,604 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 427 – The Wheel Binary Package Format 1.0 &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 428 – The pathlib module – object-oriented filesystem paths" href="pep-0428.html" />
+    <link rel="prev" title="PEP 426 – Metadata for Python Software Packages 2.0" href="pep-0426.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 427 – The Wheel Binary Package Format 1.0</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-427-the-wheel-binary-package-format-1-0">
+<h1 class="page-title">PEP 427 – The Wheel Binary Package Format 1.0<a class="headerlink" href="#pep-427-the-wheel-binary-package-format-1-0" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">427</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">The Wheel Binary Package Format 1.0</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Daniel Holth &lt;dholth&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even">Nick Coghlan &lt;ncoghlan&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-odd">Discussions-To</dt>
+<dd class="field-odd">&lt;<a class="reference external" href="mailto:distutils-sig&#37;&#52;&#48;python&#46;org?subject=PEP%20427">distutils-sig&#32;&#97;t&#32;python.org</a>&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">20-Sep-2012</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd">18-Oct-2012, 15-Feb-2013</dd>
+<dt class="field-even">Resolution</dt>
+<dd class="field-even"><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2013-February/124103.html">https://mail.python.org/pipermail/python-dev/2013-February/124103.html</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id3">Abstract</a></li>
+<li><a class="reference internal" href="#pep-acceptance" id="id4">PEP Acceptance</a></li>
+<li><a class="reference internal" href="#rationale" id="id5">Rationale</a></li>
+<li><a class="reference internal" href="#details" id="id6">Details</a><ul>
+<li><a class="reference internal" href="#installing-a-wheel-distribution-1-0-py32-none-any-whl" id="id7">Installing a wheel ‘distribution-1.0-py32-none-any.whl’</a><ul>
+<li><a class="reference internal" href="#recommended-installer-features" id="id8">Recommended installer features</a></li>
+<li><a class="reference internal" href="#recommended-archiver-features" id="id9">Recommended archiver features</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#file-format" id="id10">File Format</a><ul>
+<li><a class="reference internal" href="#file-name-convention" id="id11">File name convention</a></li>
+<li><a class="reference internal" href="#escaping-and-unicode" id="id12">Escaping and Unicode</a></li>
+<li><a class="reference internal" href="#file-contents" id="id13">File contents</a><ul>
+<li><a class="reference internal" href="#the-dist-info-directory" id="id14">The .dist-info directory</a></li>
+<li><a class="reference internal" href="#the-data-directory" id="id15">The .data directory</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#signed-wheel-files" id="id16">Signed wheel files</a></li>
+<li><a class="reference internal" href="#comparison-to-egg" id="id17">Comparison to .egg</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#faq" id="id18">FAQ</a><ul>
+<li><a class="reference internal" href="#wheel-defines-a-data-directory-should-i-put-all-my-data-there" id="id19">Wheel defines a .data directory.  Should I put all my data there?</a></li>
+<li><a class="reference internal" href="#why-does-wheel-include-attached-signatures" id="id20">Why does wheel include attached signatures?</a></li>
+<li><a class="reference internal" href="#why-does-wheel-allow-jws-signatures" id="id21">Why does wheel allow JWS signatures?</a></li>
+<li><a class="reference internal" href="#why-does-wheel-also-allow-s-mime-signatures" id="id22">Why does wheel also allow S/MIME signatures?</a></li>
+<li><a class="reference internal" href="#what-s-the-deal-with-purelib-vs-platlib" id="id23">What’s the deal with “purelib” vs. “platlib”?</a></li>
+<li><a class="reference internal" href="#is-it-possible-to-import-python-code-directly-from-a-wheel-file" id="id24">Is it possible to import Python code directly from a wheel file?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references" id="id25">References</a></li>
+<li><a class="reference internal" href="#appendix" id="id26">Appendix</a></li>
+<li><a class="reference internal" href="#copyright" id="id27">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id3">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP describes a built-package format for Python called “wheel”.</p>
+<p>A wheel is a ZIP-format archive with a specially formatted file name and
+the <code class="docutils literal notranslate"><span class="pre">.whl</span></code> extension.  It contains a single distribution nearly as it
+would be installed according to PEP 376 with a particular installation
+scheme.  Although a specialized installer is recommended, a wheel file
+may be installed by simply unpacking into site-packages with the standard
+‘unzip’ tool while preserving enough information to spread its contents
+out onto their final paths at any later time.</p>
+</div>
+<div class="section" id="pep-acceptance">
+<h2><a class="toc-backref" href="#id4">PEP Acceptance</a><a class="headerlink" href="#pep-acceptance" title="Permalink to this headline">¶</a></h2>
+<p>This PEP was accepted, and the defined wheel version updated to 1.0, by
+Nick Coghlan on 16th February, 2013 <a class="footnote-reference brackets" href="#id2" id="id1">1</a></p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id5">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Python needs a package format that is easier to install than sdist.
+Python’s sdist packages are defined by and require the distutils and
+setuptools build systems, running arbitrary code to build-and-install,
+and re-compile, code just so it can be installed into a new
+virtualenv.  This system of conflating build-install is slow, hard to
+maintain, and hinders innovation in both build systems and installers.</p>
+<p>Wheel attempts to remedy these problems by providing a simpler
+interface between the build system and the installer.  The wheel
+binary package format frees installers from having to know about the
+build system, saves time by amortizing compile time over many
+installations, and removes the need to install a build system in the
+target environment.</p>
+</div>
+<div class="section" id="details">
+<h2><a class="toc-backref" href="#id6">Details</a><a class="headerlink" href="#details" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="installing-a-wheel-distribution-1-0-py32-none-any-whl">
+<h3><a class="toc-backref" href="#id7">Installing a wheel ‘distribution-1.0-py32-none-any.whl’</a><a class="headerlink" href="#installing-a-wheel-distribution-1-0-py32-none-any-whl" title="Permalink to this headline">¶</a></h3>
+<p>Wheel installation notionally consists of two phases:</p>
+<ul class="simple">
+<li>Unpack.<ol class="loweralpha simple">
+<li>Parse <code class="docutils literal notranslate"><span class="pre">distribution-1.0.dist-info/WHEEL</span></code>.</li>
+<li>Check that installer is compatible with Wheel-Version.  Warn if
+minor version is greater, abort if major version is greater.</li>
+<li>If Root-Is-Purelib == ‘true’, unpack archive into purelib
+(site-packages).</li>
+<li>Else unpack archive into platlib (site-packages).</li>
+</ol>
+</li>
+<li>Spread.<ol class="loweralpha simple">
+<li>Unpacked archive includes <code class="docutils literal notranslate"><span class="pre">distribution-1.0.dist-info/</span></code> and (if
+there is data) <code class="docutils literal notranslate"><span class="pre">distribution-1.0.data/</span></code>.</li>
+<li>Move each subtree of <code class="docutils literal notranslate"><span class="pre">distribution-1.0.data/</span></code> onto its
+destination path. Each subdirectory of <code class="docutils literal notranslate"><span class="pre">distribution-1.0.data/</span></code>
+is a key into a dict of destination directories, such as
+<code class="docutils literal notranslate"><span class="pre">distribution-1.0.data/(purelib|platlib|headers|scripts|data)</span></code>.
+The initially supported paths are taken from
+<code class="docutils literal notranslate"><span class="pre">distutils.command.install</span></code>.</li>
+<li>If applicable, update scripts starting with <code class="docutils literal notranslate"><span class="pre">#!python</span></code> to point
+to the correct interpreter.</li>
+<li>Update <code class="docutils literal notranslate"><span class="pre">distribution-1.0.dist-info/RECORD</span></code> with the installed
+paths.</li>
+<li>Remove empty <code class="docutils literal notranslate"><span class="pre">distribution-1.0.data</span></code> directory.</li>
+<li>Compile any installed .py to .pyc. (Uninstallers should be smart
+enough to remove .pyc even if it is not mentioned in RECORD.)</li>
+</ol>
+</li>
+</ul>
+<div class="section" id="recommended-installer-features">
+<h4><a class="toc-backref" href="#id8">Recommended installer features</a><a class="headerlink" href="#recommended-installer-features" title="Permalink to this headline">¶</a></h4>
+<dl>
+<dt>Rewrite <code class="docutils literal notranslate"><span class="pre">#!python</span></code>.</dt><dd><p>In wheel, scripts are packaged in
+<code class="docutils literal notranslate"><span class="pre">{distribution}-{version}.data/scripts/</span></code>.  If the first line of
+a file in <code class="docutils literal notranslate"><span class="pre">scripts/</span></code> starts with exactly <code class="docutils literal notranslate"><span class="pre">b'#!python'</span></code>, rewrite to
+point to the correct interpreter.  Unix installers may need to add
+the +x bit to these files if the archive was created on Windows.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">b'#!pythonw'</span></code> convention is allowed. <code class="docutils literal notranslate"><span class="pre">b'#!pythonw'</span></code> indicates
+a GUI script instead of a console script.</p>
+</dd>
+<dt>Generate script wrappers.</dt><dd>In wheel, scripts packaged on Unix systems will certainly not have
+accompanying .exe wrappers.  Windows installers may want to add them
+during install.</dd>
+</dl>
+</div>
+<div class="section" id="recommended-archiver-features">
+<h4><a class="toc-backref" href="#id9">Recommended archiver features</a><a class="headerlink" href="#recommended-archiver-features" title="Permalink to this headline">¶</a></h4>
+<dl class="simple">
+<dt>Place <code class="docutils literal notranslate"><span class="pre">.dist-info</span></code> at the end of the archive.</dt><dd>Archivers are encouraged to place the <code class="docutils literal notranslate"><span class="pre">.dist-info</span></code> files physically
+at the end of the archive.  This enables some potentially interesting
+ZIP tricks including the ability to amend the metadata without
+rewriting the entire archive.</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="file-format">
+<h3><a class="toc-backref" href="#id10">File Format</a><a class="headerlink" href="#file-format" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="file-name-convention">
+<h4><a class="toc-backref" href="#id11">File name convention</a><a class="headerlink" href="#file-name-convention" title="Permalink to this headline">¶</a></h4>
+<p>The wheel filename is <code class="docutils literal notranslate"><span class="pre">{distribution}-{version}(-{build</span>
+<span class="pre">tag})?-{python</span> <span class="pre">tag}-{abi</span> <span class="pre">tag}-{platform</span> <span class="pre">tag}.whl</span></code>.</p>
+<dl class="simple">
+<dt>distribution</dt><dd>Distribution name, e.g. ‘django’, ‘pyramid’.</dd>
+<dt>version</dt><dd>Distribution version, e.g. 1.0.</dd>
+<dt>build tag</dt><dd>Optional build number.  Must start with a digit.  A tie breaker
+if two wheels have the same version.  Sort as the empty string
+if unspecified, else sort the initial digits as a number, and the
+remainder lexicographically.</dd>
+<dt>language implementation and version tag</dt><dd>E.g. ‘py27’, ‘py2’, ‘py3’.</dd>
+<dt>abi tag</dt><dd>E.g. ‘cp33m’, ‘abi3’, ‘none’.</dd>
+<dt>platform tag</dt><dd>E.g. ‘linux_x86_64’, ‘any’.</dd>
+</dl>
+<p>For example, <code class="docutils literal notranslate"><span class="pre">distribution-1.0-1-py27-none-any.whl</span></code> is the first
+build of a package called ‘distribution’, and is compatible with
+Python 2.7 (any Python 2.7 implementation), with no ABI (pure Python),
+on any CPU architecture.</p>
+<p>The last three components of the filename before the extension are
+called “compatibility tags.”  The compatibility tags express the
+package’s basic interpreter requirements and are detailed in PEP 425.</p>
+</div>
+<div class="section" id="escaping-and-unicode">
+<h4><a class="toc-backref" href="#id12">Escaping and Unicode</a><a class="headerlink" href="#escaping-and-unicode" title="Permalink to this headline">¶</a></h4>
+<p>Each component of the filename is escaped by replacing runs of
+non-alphanumeric characters with an underscore <code class="docutils literal notranslate"><span class="pre">_</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s2">&quot;[^\w\d.]+&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="n">distribution</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">UNICODE</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The archive filename is Unicode.  It will be some time before the tools
+are updated to support non-ASCII filenames, but they are supported in
+this specification.</p>
+<p>The filenames <em>inside</em> the archive are encoded as UTF-8.  Although some
+ZIP clients in common use do not properly display UTF-8 filenames,
+the encoding is supported by both the ZIP specification and Python’s
+<code class="docutils literal notranslate"><span class="pre">zipfile</span></code>.</p>
+</div>
+<div class="section" id="file-contents">
+<h4><a class="toc-backref" href="#id13">File contents</a><a class="headerlink" href="#file-contents" title="Permalink to this headline">¶</a></h4>
+<p>The contents of a wheel file, where {distribution} is replaced with the
+name of the package, e.g. <code class="docutils literal notranslate"><span class="pre">beaglevote</span></code> and {version} is replaced with
+its version, e.g. <code class="docutils literal notranslate"><span class="pre">1.0.0</span></code>, consist of:</p>
+<ol class="arabic">
+<li><code class="docutils literal notranslate"><span class="pre">/</span></code>, the root of the archive, contains all files to be installed in
+<code class="docutils literal notranslate"><span class="pre">purelib</span></code> or <code class="docutils literal notranslate"><span class="pre">platlib</span></code> as specified in <code class="docutils literal notranslate"><span class="pre">WHEEL</span></code>.  <code class="docutils literal notranslate"><span class="pre">purelib</span></code> and
+<code class="docutils literal notranslate"><span class="pre">platlib</span></code> are usually both <code class="docutils literal notranslate"><span class="pre">site-packages</span></code>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">{distribution}-{version}.dist-info/</span></code> contains metadata.</li>
+<li><code class="docutils literal notranslate"><span class="pre">{distribution}-{version}.data/</span></code> contains one subdirectory
+for each non-empty install scheme key not already covered, where
+the subdirectory name is an index into a dictionary of install paths
+(e.g. <code class="docutils literal notranslate"><span class="pre">data</span></code>, <code class="docutils literal notranslate"><span class="pre">scripts</span></code>, <code class="docutils literal notranslate"><span class="pre">include</span></code>, <code class="docutils literal notranslate"><span class="pre">purelib</span></code>, <code class="docutils literal notranslate"><span class="pre">platlib</span></code>).</li>
+<li>Python scripts must appear in <code class="docutils literal notranslate"><span class="pre">scripts</span></code> and begin with exactly
+<code class="docutils literal notranslate"><span class="pre">b'#!python'</span></code> in order to enjoy script wrapper generation and
+<code class="docutils literal notranslate"><span class="pre">#!python</span></code> rewriting at install time.  They may have any or no
+extension.</li>
+<li><code class="docutils literal notranslate"><span class="pre">{distribution}-{version}.dist-info/METADATA</span></code> is Metadata version 1.1
+or greater format metadata.</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">{distribution}-{version}.dist-info/WHEEL</span></code> is metadata about the archive
+itself in the same basic key: value format:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Wheel</span><span class="o">-</span><span class="n">Version</span><span class="p">:</span> <span class="mf">1.0</span>
+<span class="n">Generator</span><span class="p">:</span> <span class="n">bdist_wheel</span> <span class="mf">1.0</span>
+<span class="n">Root</span><span class="o">-</span><span class="n">Is</span><span class="o">-</span><span class="n">Purelib</span><span class="p">:</span> <span class="n">true</span>
+<span class="n">Tag</span><span class="p">:</span> <span class="n">py2</span><span class="o">-</span><span class="n">none</span><span class="o">-</span><span class="nb">any</span>
+<span class="n">Tag</span><span class="p">:</span> <span class="n">py3</span><span class="o">-</span><span class="n">none</span><span class="o">-</span><span class="nb">any</span>
+<span class="n">Build</span><span class="p">:</span> <span class="mi">1</span>
+</pre></div>
+</div>
+</li>
+<li><code class="docutils literal notranslate"><span class="pre">Wheel-Version</span></code> is the version number of the Wheel specification.</li>
+<li><code class="docutils literal notranslate"><span class="pre">Generator</span></code> is the name and optionally the version of the software
+that produced the archive.</li>
+<li><code class="docutils literal notranslate"><span class="pre">Root-Is-Purelib</span></code> is true if the top level directory of the archive
+should be installed into purelib; otherwise the root should be installed
+into platlib.</li>
+<li><code class="docutils literal notranslate"><span class="pre">Tag</span></code> is the wheel’s expanded compatibility tags; in the example the
+filename would contain <code class="docutils literal notranslate"><span class="pre">py2.py3-none-any</span></code>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">Build</span></code> is the build number and is omitted if there is no build number.</li>
+<li>A wheel installer should warn if Wheel-Version is greater than the
+version it supports, and must fail if Wheel-Version has a greater
+major version than the version it supports.</li>
+<li>Wheel, being an installation format that is intended to work across
+multiple versions of Python, does not generally include .pyc files.</li>
+<li>Wheel does not contain setup.py or setup.cfg.</li>
+</ol>
+<p>This version of the wheel specification is based on the distutils install
+schemes and does not define how to install files to other locations.
+The layout offers a superset of the functionality provided by the existing
+wininst and egg binary formats.</p>
+<div class="section" id="the-dist-info-directory">
+<h5><a class="toc-backref" href="#id14">The .dist-info directory</a><a class="headerlink" href="#the-dist-info-directory" title="Permalink to this headline">¶</a></h5>
+<ol class="arabic simple">
+<li>Wheel .dist-info directories include at a minimum METADATA, WHEEL,
+and RECORD.</li>
+<li>METADATA is the package metadata, the same format as PKG-INFO as
+found at the root of sdists.</li>
+<li>WHEEL is the wheel metadata specific to a build of the package.</li>
+<li>RECORD is a list of (almost) all the files in the wheel and their
+secure hashes.  Unlike PEP 376, every file except RECORD, which
+cannot contain a hash of itself, must include its hash.  The hash
+algorithm must be sha256 or better; specifically, md5 and sha1 are
+not permitted, as signed wheel files rely on the strong hashes in
+RECORD to validate the integrity of the archive.</li>
+<li>PEP 376’s INSTALLER and REQUESTED are not included in the archive.</li>
+<li>RECORD.jws is used for digital signatures.  It is not mentioned in
+RECORD.</li>
+<li>RECORD.p7s is allowed as a courtesy to anyone who would prefer to
+use S/MIME signatures to secure their wheel files.  It is not
+mentioned in RECORD.</li>
+<li>During extraction, wheel installers verify all the hashes in RECORD
+against the file contents.  Apart from RECORD and its signatures,
+installation will fail if any file in the archive is not both
+mentioned and correctly hashed in RECORD.</li>
+</ol>
+</div>
+<div class="section" id="the-data-directory">
+<h5><a class="toc-backref" href="#id15">The .data directory</a><a class="headerlink" href="#the-data-directory" title="Permalink to this headline">¶</a></h5>
+<p>Any file that is not normally installed inside site-packages goes into
+the .data directory, named as the .dist-info directory but with the
+.data/ extension:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">distribution</span><span class="o">-</span><span class="mf">1.0</span><span class="o">.</span><span class="n">dist</span><span class="o">-</span><span class="n">info</span><span class="o">/</span>
+
+<span class="n">distribution</span><span class="o">-</span><span class="mf">1.0</span><span class="o">.</span><span class="n">data</span><span class="o">/</span>
+</pre></div>
+</div>
+<p>The .data directory contains subdirectories with the scripts, headers,
+documentation and so forth from the distribution.  During installation the
+contents of these subdirectories are moved onto their destination paths.</p>
+</div>
+</div>
+</div>
+<div class="section" id="signed-wheel-files">
+<h3><a class="toc-backref" href="#id16">Signed wheel files</a><a class="headerlink" href="#signed-wheel-files" title="Permalink to this headline">¶</a></h3>
+<p>Wheel files include an extended RECORD that enables digital
+signatures.  PEP 376’s RECORD is altered to include a secure hash
+<code class="docutils literal notranslate"><span class="pre">digestname=urlsafe_b64encode_nopad(digest)</span></code> (urlsafe base64
+encoding with no trailing = characters) as the second column instead
+of an md5sum.  All possible entries are hashed, including any
+generated files such as .pyc files, but not RECORD which cannot contain its
+own hash. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">file</span><span class="o">.</span><span class="n">py</span><span class="p">,</span><span class="n">sha256</span><span class="o">=</span><span class="n">AVTFPZpEKzuHr7OvQZmhaU3LvwKz06AJw8mT</span>\<span class="n">_pNh2yI</span><span class="p">,</span><span class="mi">3144</span>
+<span class="n">distribution</span><span class="o">-</span><span class="mf">1.0</span><span class="o">.</span><span class="n">dist</span><span class="o">-</span><span class="n">info</span><span class="o">/</span><span class="n">RECORD</span><span class="p">,,</span>
+</pre></div>
+</div>
+<p>The signature file(s) RECORD.jws and RECORD.p7s are not mentioned in
+RECORD at all since they can only be added after RECORD is generated.
+Every other file in the archive must have a correct hash in RECORD
+or the installation will fail.</p>
+<p>If JSON web signatures are used, one or more JSON Web Signature JSON
+Serialization (JWS-JS) signatures is stored in a file RECORD.jws adjacent
+to RECORD.  JWS is used to sign RECORD by including the SHA-256 hash of
+RECORD as the signature’s JSON payload:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span> <span class="s2">&quot;hash&quot;</span><span class="p">:</span> <span class="s2">&quot;sha256=ADD-r2urObZHcxBW3Cr-vDCu5RJwT4CaRTHiFmbcIYY&quot;</span> <span class="p">}</span>
+</pre></div>
+</div>
+<p>(The hash value is the same format used in RECORD.)</p>
+<p>If RECORD.p7s is used, it must contain a detached S/MIME format signature
+of RECORD.</p>
+<p>A wheel installer is not required to understand digital signatures but
+MUST verify the hashes in RECORD against the extracted file contents.
+When the installer checks file hashes against RECORD, a separate signature
+checker only needs to establish that RECORD matches the signature.</p>
+<p>See</p>
+<ul class="simple">
+<li><a class="reference external" href="http://self-issued.info/docs/draft-ietf-jose-json-web-signature.html">http://self-issued.info/docs/draft-ietf-jose-json-web-signature.html</a></li>
+<li><a class="reference external" href="http://self-issued.info/docs/draft-jones-jose-jws-json-serialization.html">http://self-issued.info/docs/draft-jones-jose-jws-json-serialization.html</a></li>
+<li><a class="reference external" href="http://self-issued.info/docs/draft-ietf-jose-json-web-key.html">http://self-issued.info/docs/draft-ietf-jose-json-web-key.html</a></li>
+<li><a class="reference external" href="http://self-issued.info/docs/draft-jones-jose-json-private-key.html">http://self-issued.info/docs/draft-jones-jose-json-private-key.html</a></li>
+</ul>
+</div>
+<div class="section" id="comparison-to-egg">
+<h3><a class="toc-backref" href="#id17">Comparison to .egg</a><a class="headerlink" href="#comparison-to-egg" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic simple">
+<li>Wheel is an installation format; egg is importable.  Wheel archives
+do not need to include .pyc and are less tied to a specific Python
+version or implementation. Wheel can install (pure Python) packages
+built with previous versions of Python so you don’t always have to
+wait for the packager to catch up.</li>
+<li>Wheel uses .dist-info directories; egg uses .egg-info.  Wheel is
+compatible with the new world of Python packaging and the new
+concepts it brings.</li>
+<li>Wheel has a richer file naming convention for today’s
+multi-implementation world.  A single wheel archive can indicate
+its compatibility with a number of Python language versions and
+implementations, ABIs, and system architectures.  Historically the
+ABI has been specific to a CPython release, wheel is ready for the
+stable ABI.</li>
+<li>Wheel is lossless.  The first wheel implementation bdist_wheel
+always generates egg-info, and then converts it to a .whl.  It is
+also possible to convert existing eggs and bdist_wininst
+distributions.</li>
+<li>Wheel is versioned.  Every wheel file contains the version of the
+wheel specification and the implementation that packaged it.
+Hopefully the next migration can simply be to Wheel 2.0.</li>
+<li>Wheel is a reference to the other Python.</li>
+</ol>
+</div>
+</div>
+<div class="section" id="faq">
+<h2><a class="toc-backref" href="#id18">FAQ</a><a class="headerlink" href="#faq" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="wheel-defines-a-data-directory-should-i-put-all-my-data-there">
+<h3><a class="toc-backref" href="#id19">Wheel defines a .data directory.  Should I put all my data there?</a><a class="headerlink" href="#wheel-defines-a-data-directory-should-i-put-all-my-data-there" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div>This specification does not have an opinion on how you should organize
+your code.  The .data directory is just a place for any files that are
+not normally installed inside <code class="docutils literal notranslate"><span class="pre">site-packages</span></code> or on the PYTHONPATH.
+In other words, you may continue to use <code class="docutils literal notranslate"><span class="pre">pkgutil.get_data(package,</span>
+<span class="pre">resource)</span></code> even though <em>those</em> files will usually not be distributed
+in <em>wheel’s</em> <code class="docutils literal notranslate"><span class="pre">.data</span></code> directory.</div></blockquote>
+</div>
+<div class="section" id="why-does-wheel-include-attached-signatures">
+<h3><a class="toc-backref" href="#id20">Why does wheel include attached signatures?</a><a class="headerlink" href="#why-does-wheel-include-attached-signatures" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div>Attached signatures are more convenient than detached signatures
+because they travel with the archive.  Since only the individual files
+are signed, the archive can be recompressed without invalidating
+the signature or individual files can be verified without having
+to download the whole archive.</div></blockquote>
+</div>
+<div class="section" id="why-does-wheel-allow-jws-signatures">
+<h3><a class="toc-backref" href="#id21">Why does wheel allow JWS signatures?</a><a class="headerlink" href="#why-does-wheel-allow-jws-signatures" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div>The JOSE specifications of which JWS is a part are designed to be easy
+to implement, a feature that is also one of wheel’s primary design
+goals.  JWS yields a useful, concise pure-Python implementation.</div></blockquote>
+</div>
+<div class="section" id="why-does-wheel-also-allow-s-mime-signatures">
+<h3><a class="toc-backref" href="#id22">Why does wheel also allow S/MIME signatures?</a><a class="headerlink" href="#why-does-wheel-also-allow-s-mime-signatures" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><p>S/MIME signatures are allowed for users who need or want to use
+existing public key infrastructure with wheel.</p>
+<p>Signed packages are only a basic building block in a secure package
+update system.  Wheel only provides the building block.</p>
+</div></blockquote>
+</div>
+<div class="section" id="what-s-the-deal-with-purelib-vs-platlib">
+<h3><a class="toc-backref" href="#id23">What’s the deal with “purelib” vs. “platlib”?</a><a class="headerlink" href="#what-s-the-deal-with-purelib-vs-platlib" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><p>Wheel preserves the “purelib” vs. “platlib” distinction, which is
+significant on some platforms. For example, Fedora installs pure
+Python packages to ‘/usr/lib/pythonX.Y/site-packages’ and platform
+dependent packages to ‘/usr/lib64/pythonX.Y/site-packages’.</p>
+<p>A wheel with “Root-Is-Purelib: false” with all its files
+in <code class="docutils literal notranslate"><span class="pre">{name}-{version}.data/purelib</span></code> is equivalent to a wheel with
+“Root-Is-Purelib: true” with those same files in the root, and it
+is legal to have files in both the “purelib” and “platlib” categories.</p>
+<p>In practice a wheel should have only one of “purelib” or “platlib”
+depending on whether it is pure Python or not and those files should
+be at the root with the appropriate setting given for “Root-is-purelib”.</p>
+</div></blockquote>
+</div>
+<div class="section" id="is-it-possible-to-import-python-code-directly-from-a-wheel-file">
+<h3><a class="toc-backref" href="#id24">Is it possible to import Python code directly from a wheel file?</a><a class="headerlink" href="#is-it-possible-to-import-python-code-directly-from-a-wheel-file" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><p>Technically, due to the combination of supporting installation via
+simple extraction and using an archive format that is compatible with
+<code class="docutils literal notranslate"><span class="pre">zipimport</span></code>, a subset of wheel files <em>do</em> support being placed directly
+on <code class="docutils literal notranslate"><span class="pre">sys.path</span></code>. However, while this behaviour is a natural consequence
+of the format design, actually relying on it is generally discouraged.</p>
+<p>Firstly, wheel <em>is</em> designed primarily as a distribution format, so
+skipping the installation step also means deliberately avoiding any
+reliance on features that assume full installation (such as being able
+to use standard tools like <code class="docutils literal notranslate"><span class="pre">pip</span></code> and <code class="docutils literal notranslate"><span class="pre">virtualenv</span></code> to capture and
+manage dependencies in a way that can be properly tracked for auditing
+and security update purposes, or integrating fully with the standard
+build machinery for C extensions by publishing header files in the
+appropriate place).</p>
+<p>Secondly, while some Python software is written to support running
+directly from a zip archive, it is still common for code to be written
+assuming it has been fully installed. When that assumption is broken
+by trying to run the software from a zip archive, the failures can often
+be obscure and hard to diagnose (especially when they occur in third
+party libraries). The two most common sources of problems with this
+are the fact that importing C extensions from a zip archive is <em>not</em>
+supported by CPython (since doing so is not supported directly by the
+dynamic loading machinery on any platform) and that when running from
+a zip archive the <code class="docutils literal notranslate"><span class="pre">__file__</span></code> attribute no longer refers to an
+ordinary filesystem path, but to a combination path that includes
+both the location of the zip archive on the filesystem and the
+relative path to the module inside the archive. Even when software
+correctly uses the abstract resource APIs internally, interfacing with
+external components may still require the availability of an actual
+on-disk file.</p>
+<p>Like metaclasses, monkeypatching and metapath importers, if you’re not
+already sure you need to take advantage of this feature, you almost
+certainly don’t need it. If you <em>do</em> decide to use it anyway, be
+aware that many projects will require a failure to be reproduced with
+a fully installed package before accepting it as a genuine bug.</p>
+</div></blockquote>
+</div>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id25">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>PEP acceptance
+(<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2013-February/124103.html">https://mail.python.org/pipermail/python-dev/2013-February/124103.html</a>)</dd>
+</dl>
+</div>
+<div class="section" id="appendix">
+<h2><a class="toc-backref" href="#id26">Appendix</a><a class="headerlink" href="#appendix" title="Permalink to this headline">¶</a></h2>
+<p>Example urlsafe-base64-nopad implementation:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># urlsafe-base64-nopad for Python 3</span>
+<span class="kn">import</span> <span class="nn">base64</span>
+
+<span class="k">def</span> <span class="nf">urlsafe_b64encode_nopad</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">base64</span><span class="o">.</span><span class="n">urlsafe_b64encode</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;=&#39;</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">urlsafe_b64decode_nopad</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="n">pad</span> <span class="o">=</span> <span class="sa">b</span><span class="s1">&#39;=&#39;</span> <span class="o">*</span> <span class="p">(</span><span class="mi">4</span> <span class="o">-</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mi">3</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">base64</span><span class="o">.</span><span class="n">urlsafe_b64decode</span><span class="p">(</span><span class="n">data</span> <span class="o">+</span> <span class="n">pad</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id27">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed into the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0427.txt">https://github.com/python/peps/blob/master/pep-0427.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0427.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0426.html">PEP 0426</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0428.html">PEP 0428</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 427 – The Wheel Binary Package Format 1.0</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#pep-acceptance">PEP Acceptance</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#details">Details</a><ul>
+<li><a class="reference internal" href="#installing-a-wheel-distribution-1-0-py32-none-any-whl">Installing a wheel ‘distribution-1.0-py32-none-any.whl’</a><ul>
+<li><a class="reference internal" href="#recommended-installer-features">Recommended installer features</a></li>
+<li><a class="reference internal" href="#recommended-archiver-features">Recommended archiver features</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#file-format">File Format</a><ul>
+<li><a class="reference internal" href="#file-name-convention">File name convention</a></li>
+<li><a class="reference internal" href="#escaping-and-unicode">Escaping and Unicode</a></li>
+<li><a class="reference internal" href="#file-contents">File contents</a><ul>
+<li><a class="reference internal" href="#the-dist-info-directory">The .dist-info directory</a></li>
+<li><a class="reference internal" href="#the-data-directory">The .data directory</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#signed-wheel-files">Signed wheel files</a></li>
+<li><a class="reference internal" href="#comparison-to-egg">Comparison to .egg</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#faq">FAQ</a><ul>
+<li><a class="reference internal" href="#wheel-defines-a-data-directory-should-i-put-all-my-data-there">Wheel defines a .data directory.  Should I put all my data there?</a></li>
+<li><a class="reference internal" href="#why-does-wheel-include-attached-signatures">Why does wheel include attached signatures?</a></li>
+<li><a class="reference internal" href="#why-does-wheel-allow-jws-signatures">Why does wheel allow JWS signatures?</a></li>
+<li><a class="reference internal" href="#why-does-wheel-also-allow-s-mime-signatures">Why does wheel also allow S/MIME signatures?</a></li>
+<li><a class="reference internal" href="#what-s-the-deal-with-purelib-vs-platlib">What’s the deal with “purelib” vs. “platlib”?</a></li>
+<li><a class="reference internal" href="#is-it-possible-to-import-python-code-directly-from-a-wheel-file">Is it possible to import Python code directly from a wheel file?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#appendix">Appendix</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

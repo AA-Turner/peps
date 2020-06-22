@@ -1,0 +1,510 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 540 – Add a new UTF-8 Mode &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 541 – Package Index Name Retention" href="pep-0541.html" />
+    <link rel="prev" title="PEP 539 – A New C-API for Thread-Local Storage in CPython" href="pep-0539.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 540 – Add a new UTF-8 Mode</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-540-add-a-new-utf-8-mode">
+<h1 class="page-title">PEP 540 – Add a new UTF-8 Mode<a class="headerlink" href="#pep-540-add-a-new-utf-8-mode" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">540</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Add a new UTF-8 Mode</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Victor Stinner &lt;vstinner&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even">INADA Naoki</dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd">Final</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even">Standards Track</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">5-January-2016</dd>
+<dt class="field-even">Python-Version</dt>
+<dd class="field-even">3.7</dd>
+<dt class="field-odd">Resolution</dt>
+<dd class="field-odd"><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2017-December/151173.html">https://mail.python.org/pipermail/python-dev/2017-December/151173.html</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id2">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id3">Rationale</a><ul>
+<li><a class="reference internal" href="#locale-encoding-and-utf-8" id="id4">Locale encoding and UTF-8</a></li>
+<li><a class="reference internal" href="#passthough-for-undecodable-bytes-surrogateescape" id="id5">Passthough for undecodable bytes: surrogateescape</a></li>
+<li><a class="reference internal" href="#no-change-by-default-for-best-backward-compatibility" id="id6">No change by default for best backward compatibility</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#proposal" id="id7">Proposal</a></li>
+<li><a class="reference internal" href="#relationship-with-the-locale-coercion-pep-538" id="id8">Relationship with the locale coercion (PEP 538)</a></li>
+<li><a class="reference internal" href="#backward-compatibility" id="id9">Backward Compatibility</a></li>
+<li><a class="reference internal" href="#annex-encodings-and-error-handlers" id="id10">Annex: Encodings And Error Handlers</a><ul>
+<li><a class="reference internal" href="#encoding-and-error-handler" id="id11">Encoding and error handler</a></li>
+<li><a class="reference internal" href="#encoding-and-error-handler-on-windows" id="id12">Encoding and error handler on Windows</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#links" id="id13">Links</a></li>
+<li><a class="reference internal" href="#post-history" id="id14">Post History</a></li>
+<li><a class="reference internal" href="#version-history" id="id15">Version History</a></li>
+<li><a class="reference internal" href="#copyright" id="id16">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id2">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Add a new “UTF-8 Mode” to enhance Python’s use of UTF-8.  When UTF-8 Mode
+is active, Python will:</p>
+<ul class="simple">
+<li>use the <code class="docutils literal notranslate"><span class="pre">utf-8</span></code> encoding, regardless of the locale currently set by
+the current platform, and</li>
+<li>change the <code class="docutils literal notranslate"><span class="pre">stdin</span></code> and <code class="docutils literal notranslate"><span class="pre">stdout</span></code> error handlers to
+<code class="docutils literal notranslate"><span class="pre">surrogateescape</span></code>.</li>
+</ul>
+<p>This mode is off by default, but is automatically activated when using
+the “POSIX” locale.</p>
+<p>Add the <code class="docutils literal notranslate"><span class="pre">-X</span> <span class="pre">utf8</span></code> command line option and <code class="docutils literal notranslate"><span class="pre">PYTHONUTF8</span></code> environment
+variable to control UTF-8 Mode.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id3">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="locale-encoding-and-utf-8">
+<h3><a class="toc-backref" href="#id4">Locale encoding and UTF-8</a><a class="headerlink" href="#locale-encoding-and-utf-8" title="Permalink to this headline">¶</a></h3>
+<p>Python 3.6 uses the locale encoding for filenames, environment
+variables, standard streams, etc. The locale encoding is inherited from
+the locale; the encoding and the locale are tightly coupled.</p>
+<p>Many users inherit the ASCII encoding from the POSIX locale, aka the “C”
+locale, but are unable change the locale for various reasons.  This
+encoding is very limited in term of Unicode support: any non-ASCII
+character is likely to cause trouble.</p>
+<p>It isn’t always easy to get an accurate locale.  Locales don’t get the
+exact same name on different Linux distributions, FreeBSD, macOS, etc.
+And some locales, like the recent <code class="docutils literal notranslate"><span class="pre">C.UTF-8</span></code> locale, are only supported
+by a few platforms.  The current locale can even vary on the <em>same</em>
+platform depending on context; for example, a SSH connection can use a
+different encoding than the filesystem or local terminal encoding on the
+same machine.</p>
+<p>On the flip side, Python 3.6 is already using UTF-8 by default on macOS,
+Android and Windows (<span class="target" id="index-0"></span><a class="pep reference external" href="./pep-0529.html"><strong>PEP 529</strong></a>) for most functions – although
+<code class="docutils literal notranslate"><span class="pre">open()</span></code> is a notable exception here. UTF-8 is also the default
+encoding of Python scripts, XML and JSON file formats. The Go
+programming language
+uses UTF-8 for all strings.</p>
+<p>UTF-8 support is nearly ubiquitous for data read and written by modern
+platforms.  It also has excellent support in Python.  The problem is
+simply that the locale is frequently misconfigured.  An obvious solution
+suggests itself: ignore the locale encoding and use UTF-8.</p>
+</div>
+<div class="section" id="passthough-for-undecodable-bytes-surrogateescape">
+<h3><a class="toc-backref" href="#id5">Passthough for undecodable bytes: surrogateescape</a><a class="headerlink" href="#passthough-for-undecodable-bytes-surrogateescape" title="Permalink to this headline">¶</a></h3>
+<p>When decoding bytes from UTF-8 using the default <code class="docutils literal notranslate"><span class="pre">strict</span></code> error
+handler, Python 3 raises a <code class="docutils literal notranslate"><span class="pre">UnicodeDecodeError</span></code> on the first
+undecodable byte.</p>
+<p>Unix command line tools like <code class="docutils literal notranslate"><span class="pre">cat</span></code> or <code class="docutils literal notranslate"><span class="pre">grep</span></code> and most Python 2
+applications simply do not have this class of bugs: they don’t decode
+data, but process data as a raw bytes sequence.</p>
+<p>Python 3 already has a solution to behave like Unix tools and Python 2:
+the <code class="docutils literal notranslate"><span class="pre">surrogateescape</span></code> error handler (<span class="target" id="index-1"></span><a class="pep reference external" href="./pep-0383.html"><strong>PEP 383</strong></a>). It allows processing
+data as if it were bytes, but uses Unicode in practice; undecodable
+bytes are stored as surrogate characters.</p>
+<p>UTF-8 Mode sets the <code class="docutils literal notranslate"><span class="pre">surrogateescape</span></code> error handler for <code class="docutils literal notranslate"><span class="pre">stdin</span></code>
+and <code class="docutils literal notranslate"><span class="pre">stdout</span></code>, since these streams as commonly associated to Unix
+command line tools.</p>
+<p>However, users have a different expectation on files. Files are expected
+to be properly encoded, and Python is expected to fail early when
+<code class="docutils literal notranslate"><span class="pre">open()</span></code> is called with the wrong options, like opening a JPEG picture
+in text mode. The <code class="docutils literal notranslate"><span class="pre">open()</span></code> default error handler remains <code class="docutils literal notranslate"><span class="pre">strict</span></code>
+for these reasons.</p>
+</div>
+<div class="section" id="no-change-by-default-for-best-backward-compatibility">
+<h3><a class="toc-backref" href="#id6">No change by default for best backward compatibility</a><a class="headerlink" href="#no-change-by-default-for-best-backward-compatibility" title="Permalink to this headline">¶</a></h3>
+<p>While UTF-8 is perfect in most cases, sometimes the locale encoding is
+actually the best encoding.</p>
+<p>This PEP changes the behaviour for the POSIX locale since this locale is
+usually equivalent to the ASCII encoding, whereas UTF-8 is a much better
+choice. It does not change the behaviour for other locales to prevent
+any risk or regression.</p>
+<p>As users are responsible to enable explicitly the new UTF-8 Mode for
+these other locales, they are responsible for any potential mojibake
+issues caused by UTF-8 Mode.</p>
+</div>
+</div>
+<div class="section" id="proposal">
+<h2><a class="toc-backref" href="#id7">Proposal</a><a class="headerlink" href="#proposal" title="Permalink to this headline">¶</a></h2>
+<p>Add a new UTF-8 Mode to use the UTF-8 encoding, ignore the locale
+encoding, and change <code class="docutils literal notranslate"><span class="pre">stdin</span></code> and <code class="docutils literal notranslate"><span class="pre">stdout</span></code> error handlers to
+<code class="docutils literal notranslate"><span class="pre">surrogateescape</span></code>.</p>
+<p>Add the new <code class="docutils literal notranslate"><span class="pre">-X</span> <span class="pre">utf8</span></code> command line option and <code class="docutils literal notranslate"><span class="pre">PYTHONUTF8</span></code>
+environment variable.  Users can explicitly activate UTF-8 Mode with the
+command-line option <code class="docutils literal notranslate"><span class="pre">-X</span> <span class="pre">utf8</span></code> or by setting the environment variable
+<code class="docutils literal notranslate"><span class="pre">PYTHONUTF8=1</span></code>.</p>
+<p>This mode is disabled by default and enabled by the POSIX locale.  Users
+can explicitly disable UTF-8 Mode with the command-line option <code class="docutils literal notranslate"><span class="pre">-X</span>
+<span class="pre">utf8=0</span></code> or by setting the environment variable <code class="docutils literal notranslate"><span class="pre">PYTHONUTF8=0</span></code>.</p>
+<p>For standard streams, the <code class="docutils literal notranslate"><span class="pre">PYTHONIOENCODING</span></code> environment variable has
+priority over UTF-8 Mode.</p>
+<p>On Windows, the <code class="docutils literal notranslate"><span class="pre">PYTHONLEGACYWINDOWSFSENCODING</span></code> environment variable
+(<span class="target" id="index-2"></span><a class="pep reference external" href="./pep-0529.html"><strong>PEP 529</strong></a>) has the priority over UTF-8 Mode.</p>
+<p>Effects of UTF-8 Mode:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">sys.getfilesystemencoding()</span></code> returns <code class="docutils literal notranslate"><span class="pre">'UTF-8'</span></code>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">locale.getpreferredencoding()</span></code> returns <code class="docutils literal notranslate"><span class="pre">UTF-8</span></code>; its
+<em>do_setlocale</em> argument, and the locale encoding, are ignored.</li>
+<li><code class="docutils literal notranslate"><span class="pre">sys.stdin</span></code> and <code class="docutils literal notranslate"><span class="pre">sys.stdout</span></code> error handler is set to
+<code class="docutils literal notranslate"><span class="pre">surrogateescape</span></code>.</li>
+</ul>
+<p>Side effects:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">open()</span></code> uses the UTF-8 encoding by default.  However, it still
+uses the <code class="docutils literal notranslate"><span class="pre">strict</span></code> error handler by default.</li>
+<li><code class="docutils literal notranslate"><span class="pre">os.fsdecode()</span></code> and <code class="docutils literal notranslate"><span class="pre">os.fsencode()</span></code> use the UTF-8 encoding.</li>
+<li>Command line arguments, environment variables and filenames use the
+UTF-8 encoding.</li>
+</ul>
+</div>
+<div class="section" id="relationship-with-the-locale-coercion-pep-538">
+<h2><a class="toc-backref" href="#id8">Relationship with the locale coercion (PEP 538)</a><a class="headerlink" href="#relationship-with-the-locale-coercion-pep-538" title="Permalink to this headline">¶</a></h2>
+<p>The POSIX locale enables the locale coercion (<span class="target" id="index-3"></span><a class="pep reference external" href="./pep-0538.html"><strong>PEP 538</strong></a>) and the UTF-8
+mode (<span class="target" id="index-4"></span><a class="pep reference external" href="./pep-0540.html"><strong>PEP 540</strong></a>). When the locale coercion is enabled, enabling the
+UTF-8 mode has no additional effect.</p>
+<p>The UTF-8 Mode has the same effect as locale coercion:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">sys.getfilesystemencoding()</span></code> returns <code class="docutils literal notranslate"><span class="pre">'UTF-8'</span></code>,</li>
+<li><code class="docutils literal notranslate"><span class="pre">locale.getpreferredencoding()</span></code> returns <code class="docutils literal notranslate"><span class="pre">UTF-8</span></code>, and</li>
+<li>the <code class="docutils literal notranslate"><span class="pre">sys.stdin</span></code> and <code class="docutils literal notranslate"><span class="pre">sys.stdout</span></code> error handlers are set to
+<code class="docutils literal notranslate"><span class="pre">surrogateescape</span></code>.</li>
+</ul>
+<p>These changes only affect Python code. But the locale coercion has
+additional effects: the <code class="docutils literal notranslate"><span class="pre">LC_CTYPE</span></code> environment variable and the
+<code class="docutils literal notranslate"><span class="pre">LC_CTYPE</span></code> locale are set to a UTF-8 locale like <code class="docutils literal notranslate"><span class="pre">C.UTF-8</span></code>. One side
+effect is that non-Python code is also impacted by the locale coercion.
+The two PEPs are complementary.</p>
+<p>On platforms like Centos 7 where locale coercion is not supported, the
+POSIX locale only enables UTF-8 Mode.  In this case, Python code uses
+the UTF-8 encoding and ignores the locale encoding, whereas non-Python
+code uses the locale encoding, which is usually ASCII for the POSIX
+locale.</p>
+<p>While the UTF-8 Mode is supported on all platforms and can be enabled
+with any locale, the locale coercion is not supported by all platforms
+and is restricted to the POSIX locale.</p>
+<p>The UTF-8 Mode has only an impact on Python child processes when the
+<code class="docutils literal notranslate"><span class="pre">PYTHONUTF8</span></code> environment variable is set to <code class="docutils literal notranslate"><span class="pre">1</span></code>, whereas the locale
+coercion sets the <code class="docutils literal notranslate"><span class="pre">LC_CTYPE</span></code> environment variables which impacts all
+child processes.</p>
+<p>The benefit of the locale coercion approach is that it helps ensure that
+encoding handling in binary extension modules and child processes is
+consistent with Python’s encoding handling. The upside of the UTF-8 Mode
+approach is that it allows an embedding application to change the
+interpreter’s behaviour without having to change the process global
+locale settings.</p>
+</div>
+<div class="section" id="backward-compatibility">
+<h2><a class="toc-backref" href="#id9">Backward Compatibility</a><a class="headerlink" href="#backward-compatibility" title="Permalink to this headline">¶</a></h2>
+<p>The only backward incompatible change is that the POSIX locale now
+enables the UTF-8 Mode by default: it will now use the UTF-8 encoding,
+ignore the locale encoding, and change <code class="docutils literal notranslate"><span class="pre">stdin</span></code> and <code class="docutils literal notranslate"><span class="pre">stdout</span></code> error
+handlers to <code class="docutils literal notranslate"><span class="pre">surrogateescape</span></code>.</p>
+</div>
+<div class="section" id="annex-encodings-and-error-handlers">
+<h2><a class="toc-backref" href="#id10">Annex: Encodings And Error Handlers</a><a class="headerlink" href="#annex-encodings-and-error-handlers" title="Permalink to this headline">¶</a></h2>
+<p>UTF-8 Mode changes the default encoding and error handler used by
+<code class="docutils literal notranslate"><span class="pre">open()</span></code>, <code class="docutils literal notranslate"><span class="pre">os.fsdecode()</span></code>, <code class="docutils literal notranslate"><span class="pre">os.fsencode()</span></code>, <code class="docutils literal notranslate"><span class="pre">sys.stdin</span></code>,
+<code class="docutils literal notranslate"><span class="pre">sys.stdout</span></code> and <code class="docutils literal notranslate"><span class="pre">sys.stderr</span></code>.</p>
+<div class="section" id="encoding-and-error-handler">
+<h3><a class="toc-backref" href="#id11">Encoding and error handler</a><a class="headerlink" href="#encoding-and-error-handler" title="Permalink to this headline">¶</a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 36%" />
+<col style="width: 30%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head">Function</th>
+<th class="head">Default</th>
+<th class="head">UTF-8 Mode or POSIX locale</th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td>open()</td>
+<td>locale/strict</td>
+<td><strong>UTF-8</strong>/strict</td>
+</tr>
+<tr class="row-odd"><td>os.fsdecode(), os.fsencode()</td>
+<td>locale/surrogateescape</td>
+<td><strong>UTF-8</strong>/surrogateescape</td>
+</tr>
+<tr class="row-even"><td>sys.stdin, sys.stdout</td>
+<td>locale/strict</td>
+<td><strong>UTF-8/surrogateescape</strong></td>
+</tr>
+<tr class="row-odd"><td>sys.stderr</td>
+<td>locale/backslashreplace</td>
+<td><strong>UTF-8</strong>/backslashreplace</td>
+</tr>
+</tbody>
+</table>
+<p>By comparison, Python 3.6 uses:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 36%" />
+<col style="width: 30%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head">Function</th>
+<th class="head">Default</th>
+<th class="head">POSIX locale</th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td>open()</td>
+<td>locale/strict</td>
+<td>locale/strict</td>
+</tr>
+<tr class="row-odd"><td>os.fsdecode(), os.fsencode()</td>
+<td>locale/surrogateescape</td>
+<td>locale/surrogateescape</td>
+</tr>
+<tr class="row-even"><td>sys.stdin, sys.stdout</td>
+<td>locale/strict</td>
+<td>locale/<strong>surrogateescape</strong></td>
+</tr>
+<tr class="row-odd"><td>sys.stderr</td>
+<td>locale/backslashreplace</td>
+<td>locale/backslashreplace</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="encoding-and-error-handler-on-windows">
+<h3><a class="toc-backref" href="#id12">Encoding and error handler on Windows</a><a class="headerlink" href="#encoding-and-error-handler-on-windows" title="Permalink to this headline">¶</a></h3>
+<p>On Windows, the encodings and error handlers are different:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 27%" />
+<col style="width: 22%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head">Function</th>
+<th class="head">Default</th>
+<th class="head">Legacy Windows FS encoding</th>
+<th class="head">UTF-8 Mode</th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td>open()</td>
+<td>mbcs/strict</td>
+<td>mbcs/strict</td>
+<td><strong>UTF-8</strong>/strict</td>
+</tr>
+<tr class="row-odd"><td>os.fsdecode(), os.fsencode()</td>
+<td>UTF-8/surrogatepass</td>
+<td><strong>mbcs/replace</strong></td>
+<td>UTF-8/surrogatepass</td>
+</tr>
+<tr class="row-even"><td>sys.stdin, sys.stdout</td>
+<td>UTF-8/surrogateescape</td>
+<td>UTF-8/surrogateescape</td>
+<td>UTF-8/surrogateescape</td>
+</tr>
+<tr class="row-odd"><td>sys.stderr</td>
+<td>UTF-8/backslashreplace</td>
+<td>UTF-8/backslashreplace</td>
+<td>UTF-8/backslashreplace</td>
+</tr>
+</tbody>
+</table>
+<p>By comparison, Python 3.6 uses:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 36%" />
+<col style="width: 30%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head">Function</th>
+<th class="head">Default</th>
+<th class="head">Legacy Windows FS encoding</th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td>open()</td>
+<td>mbcs/strict</td>
+<td>mbcs/strict</td>
+</tr>
+<tr class="row-odd"><td>os.fsdecode(), os.fsencode()</td>
+<td>UTF-8/surrogatepass</td>
+<td><strong>mbcs/replace</strong></td>
+</tr>
+<tr class="row-even"><td>sys.stdin, sys.stdout</td>
+<td>UTF-8/surrogateescape</td>
+<td>UTF-8/surrogateescape</td>
+</tr>
+<tr class="row-odd"><td>sys.stderr</td>
+<td>UTF-8/backslashreplace</td>
+<td>UTF-8/backslashreplace</td>
+</tr>
+</tbody>
+</table>
+<p>The “Legacy Windows FS encoding” is enabled by the
+<code class="docutils literal notranslate"><span class="pre">PYTHONLEGACYWINDOWSFSENCODING</span></code> environment variable.</p>
+<p>If stdin and/or stdout is redirected to a pipe, <code class="docutils literal notranslate"><span class="pre">sys.stdin</span></code> and/or
+<code class="docutils literal notranslate"><span class="pre">sys.output</span></code> uses <code class="docutils literal notranslate"><span class="pre">mbcs</span></code> encoding by default rather than UTF-8.
+But in UTF-8 Mode, <code class="docutils literal notranslate"><span class="pre">sys.stdin</span></code> and <code class="docutils literal notranslate"><span class="pre">sys.stdout</span></code> always use the UTF-8
+encoding.</p>
+</div>
+</div>
+<div class="section" id="links">
+<h2><a class="toc-backref" href="#id13">Links</a><a class="headerlink" href="#links" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference external" href="http://bugs.python.org/issue29240">bpo-29240: Implementation of the PEP 540: Add a new UTF-8 Mode</a></li>
+<li><a class="reference external" href="https://www.python.org/dev/peps/pep-0538/">PEP 538</a>:
+“Coercing the legacy C locale to C.UTF-8”</li>
+<li><a class="reference external" href="https://www.python.org/dev/peps/pep-0529/">PEP 529</a>:
+“Change Windows filesystem encoding to UTF-8”</li>
+<li><a class="reference external" href="https://www.python.org/dev/peps/pep-0528/">PEP 528</a>:
+“Change Windows console encoding to UTF-8”</li>
+<li><a class="reference external" href="https://www.python.org/dev/peps/pep-0383/">PEP 383</a>:
+“Non-decodable Bytes in System Character Interfaces”</li>
+</ul>
+</div>
+<div class="section" id="post-history">
+<h2><a class="toc-backref" href="#id14">Post History</a><a class="headerlink" href="#post-history" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>2017-12: <a class="reference external" href="https://mail.python.org/pipermail/python-dev/2017-December/151054.html">[Python-Dev] PEP 540: Add a new UTF-8 Mode</a></li>
+<li>2017-04: <a class="reference external" href="https://mail.python.org/pipermail/python-dev/2017-April/147795.html">[Python-Dev] Proposed BDFL Delegate update for PEPs 538 &amp;
+540 (assuming UTF-8 for *nix system boundaries)</a></li>
+<li>2017-01: <a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2017-January/044089.html">[Python-ideas] PEP 540: Add a new UTF-8 Mode</a></li>
+<li>2017-01: <a class="reference external" href="https://bugs.python.org/issue28180#msg284764">bpo-28180: Implementation of the PEP 538: coerce C locale to
+C.utf-8 (msg284764)</a></li>
+<li>2016-08-17: <a class="reference external" href="https://bugs.python.org/issue27781#msg272916">bpo-27781: Change sys.getfilesystemencoding() on Windows
+to UTF-8 (msg272916)</a>
+– Victor proposed <code class="docutils literal notranslate"><span class="pre">-X</span> <span class="pre">utf8</span></code> for the <span class="target" id="index-5"></span><a class="pep reference external" href="./pep-0529.html"><strong>PEP 529</strong></a> (Change Windows
+filesystem encoding to UTF-8)</li>
+</ul>
+</div>
+<div class="section" id="version-history">
+<h2><a class="toc-backref" href="#id15">Version History</a><a class="headerlink" href="#version-history" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Version 4: <code class="docutils literal notranslate"><span class="pre">locale.getpreferredencoding()</span></code> now returns <code class="docutils literal notranslate"><span class="pre">'UTF-8'</span></code>
+in the UTF-8 Mode.</li>
+<li>Version 3: The UTF-8 Mode does not change the <code class="docutils literal notranslate"><span class="pre">open()</span></code> default error
+handler (<code class="docutils literal notranslate"><span class="pre">strict</span></code>) anymore, and the Strict UTF-8 Mode has been
+removed.</li>
+<li>Version 2: Rewrite the PEP from scratch to make it much shorter and
+easier to understand.</li>
+<li>Version 1: First version posted to python-dev.</li>
+</ul>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id16">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0540.txt">https://github.com/python/peps/blob/master/pep-0540.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0540.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0539.html">PEP 0539</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0541.html">PEP 0541</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 540 – Add a new UTF-8 Mode</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a><ul>
+<li><a class="reference internal" href="#locale-encoding-and-utf-8">Locale encoding and UTF-8</a></li>
+<li><a class="reference internal" href="#passthough-for-undecodable-bytes-surrogateescape">Passthough for undecodable bytes: surrogateescape</a></li>
+<li><a class="reference internal" href="#no-change-by-default-for-best-backward-compatibility">No change by default for best backward compatibility</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#proposal">Proposal</a></li>
+<li><a class="reference internal" href="#relationship-with-the-locale-coercion-pep-538">Relationship with the locale coercion (PEP 538)</a></li>
+<li><a class="reference internal" href="#backward-compatibility">Backward Compatibility</a></li>
+<li><a class="reference internal" href="#annex-encodings-and-error-handlers">Annex: Encodings And Error Handlers</a><ul>
+<li><a class="reference internal" href="#encoding-and-error-handler">Encoding and error handler</a></li>
+<li><a class="reference internal" href="#encoding-and-error-handler-on-windows">Encoding and error handler on Windows</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#links">Links</a></li>
+<li><a class="reference internal" href="#post-history">Post History</a></li>
+<li><a class="reference internal" href="#version-history">Version History</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

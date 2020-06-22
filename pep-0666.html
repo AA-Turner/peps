@@ -1,0 +1,208 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 666 – Reject Foolish Indentation &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 754 – IEEE 754 Floating Point Special Values" href="pep-0754.html" />
+    <link rel="prev" title="PEP 628 – Add ``math.tau``" href="pep-0628.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 666 – Reject Foolish Indentation</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-666-reject-foolish-indentation">
+<h1 class="page-title">PEP 666 – Reject Foolish Indentation<a class="headerlink" href="#pep-666-reject-foolish-indentation" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">666</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Reject Foolish Indentation</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">lac&#32;&#97;t&#32;strakt.com (Laura Creighton)</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Rejected</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">3-Dec-2001</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.2</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">5-Dec-2001</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id4">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id5">Rationale</a></li>
+<li><a class="reference internal" href="#references" id="id6">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id7">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id4">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Everybody agrees that mixing tabs and spaces is a bad idea.  Some
+people want more than this.  I propose that we let people define
+whatever Python behaviour they want, so it will only run the way
+they like it, and will not run the way they don’t like it.  We
+will do this with a command line switch.  Programs that aren’t
+formatted the way the programmer wants things will raise
+<code class="docutils literal notranslate"><span class="pre">IndentationError</span></code>.</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-TNone</span></code> will refuse to run when there are any tabs.</li>
+<li><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-Tn</span></code> will refuse to run when tabs are not exactly <code class="docutils literal notranslate"><span class="pre">n</span></code> spaces</li>
+<li><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-TOnly</span></code> will refuse to run when blocks are indented by anything
+other than tabs</li>
+</ul>
+<p>People who mix tabs and spaces, naturally, will find that their
+programs do not run.  Alas, we haven’t found a way to give them an
+electric shock as from a cattle prod remotely.  (Though if somebody
+finds out a way to do this, I will be pleased to add this option to
+the PEP.)</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id5">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="mailto:Python-list&#37;&#52;&#48;python&#46;org">Python-list<span>&#64;</span>python<span>&#46;</span>org</a> (a.k.a. comp.lang.python) is periodically
+awash with discussions about tabs and spaces.  This is inevitable,
+given that indentation is syntactically significant in Python.
+This has never solved anything, and just makes various people
+frustrated and angry.  Eventually they start saying rude things to
+each other which is sad for all of us.  And it is also sad that
+they are wasting their valuable time which they could spend
+creating something with Python.  Moreover, for the Python community
+as a whole, from a public relations point of view, this is quite
+unfortunate.  The people who aren’t posting about tabs and spaces,
+are, (unsurprisingly) invisible, while the people who are posting
+make the rest of us look somewhat foolish.</p>
+<p>The problem is that there is no polite way to say ‘Stop wasting
+your valuable time and mine.’  People who are already in the middle
+of a flame war are not well disposed to believe that you are acting
+out of compassion for them, and quite rightly insist that their own
+time is their own to do with as they please.  They are stuck like
+flies in treacle in this wretched argument, and it is self-evident
+that they cannot disengage or they would have already done so.</p>
+<p>But today I had to spend time cleaning my keyboard because the ‘n’
+key is sticking.  So, in addition to feeling compassion for these
+people, I am pretty annoyed.  I figure if I make this PEP, we can
+then ask Guido to quickly reject it, and then when this argument
+next starts up again, we can say ‘Guido isn’t changing things to
+suit the tab-haters or the only-tabbers, so this conversation is a
+waste of time.’  Then everybody can quietly believe that a) they
+are correct and b) other people are fools and c) they are
+undeniably fortunate to not have to share a lab with idiots, (which
+is something the arguers could do _now_, but apparently have
+forgotten).</p>
+<p>And python-list can go back to worrying if it is too smug, rather
+than whether it is too hostile for newcomers.  Possibly somebody
+could get around to explaining to me what is the difference between
+<code class="docutils literal notranslate"><span class="pre">__getattr__</span></code> and <code class="docutils literal notranslate"><span class="pre">__getattribute__</span></code> in non-Classic classes in 2.2, a
+question I have foolishly posted in the middle of the current tab
+thread.  I would like to know the answer to that question <a class="footnote-reference brackets" href="#id3" id="id1">2</a>.</p>
+<p>This proposal, if accepted, will probably mean a heck of a lot of
+work for somebody.  But since I don’t want it accepted, I don’t
+care.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id6">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets">1</span></dt>
+<dd>PEP 1, PEP Purpose and Guidelines
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0001/">http://www.python.org/dev/peps/pep-0001/</a></dd>
+<dt class="label" id="id3"><span class="brackets"><a class="fn-backref" href="#id1">2</a></span></dt>
+<dd>Tim Peters already has (private correspondence).  My early 2.2
+didn’t have a <code class="docutils literal notranslate"><span class="pre">__getattribute__</span></code>, and <code class="docutils literal notranslate"><span class="pre">__getattr__</span></code> was
+implemented like <code class="docutils literal notranslate"><span class="pre">__getattribute__</span></code> now is.  This has been
+fixed.  The important conclusion is that my Decorator Pattern
+is safe and all is right with the world.</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id7">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0666.txt">https://github.com/python/peps/blob/master/pep-0666.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0666.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0628.html">PEP 0628</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0754.html">PEP 0754</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 666 – Reject Foolish Indentation</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

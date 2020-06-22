@@ -1,0 +1,523 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 603 – Adding a frozenmap type to collections &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 604 – Complementary syntax for ``Union[]``" href="pep-0604.html" />
+    <link rel="prev" title="PEP 602 – Annual Release Cycle for Python" href="pep-0602.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 603 – Adding a frozenmap type to collections</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-603-adding-a-frozenmap-type-to-collections">
+<h1 class="page-title">PEP 603 – Adding a frozenmap type to collections<a class="headerlink" href="#pep-603-adding-a-frozenmap-type-to-collections" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">603</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Adding a frozenmap type to collections</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Yury Selivanov &lt;yury&#32;&#97;t&#32;edgedb.com&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Draft</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">12-Sep-2019</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.9</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">12-Sep-2019</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id21">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id22">Rationale</a></li>
+<li><a class="reference internal" href="#specification" id="id23">Specification</a><ul>
+<li><a class="reference internal" href="#construction" id="id24">Construction</a></li>
+<li><a class="reference internal" href="#data-access" id="id25">Data Access</a></li>
+<li><a class="reference internal" href="#mutation" id="id26">Mutation</a><ul>
+<li><a class="reference internal" href="#frozenmap-including-key-value" id="id27">frozenmap.including(key, value)</a></li>
+<li><a class="reference internal" href="#frozenmap-excluding-key" id="id28">frozenmap.excluding(key)</a></li>
+<li><a class="reference internal" href="#frozenmap-union-mapping-none-kw" id="id29">frozenmap.union(mapping=None, **kw)</a></li>
+<li><a class="reference internal" href="#frozenmap-mutating" id="id30">frozenmap.mutating()</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#iteration" id="id31">Iteration</a></li>
+<li><a class="reference internal" href="#hashing" id="id32">Hashing</a></li>
+<li><a class="reference internal" href="#typing" id="id33">Typing</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation" id="id34">Implementation</a><ul>
+<li><a class="reference internal" href="#hamt" id="id35">HAMT</a></li>
+<li><a class="reference internal" href="#performance" id="id36">Performance</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#design-considerations" id="id37">Design Considerations</a><ul>
+<li><a class="reference internal" href="#why-frozenmap-and-not-frozenmap" id="id38">Why “frozenmap” and not “FrozenMap”</a></li>
+<li><a class="reference internal" href="#why-frozenmap-and-not-frozendict" id="id39">Why “frozenmap” and not “frozendict”</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id9" id="id40">Implementation</a></li>
+<li><a class="reference internal" href="#references" id="id41">References</a></li>
+<li><a class="reference internal" href="#acknowledgments" id="id42">Acknowledgments</a></li>
+<li><a class="reference internal" href="#copyright" id="id43">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id21">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>A <em>persistent data structure</em> is defined as a data structure that
+preserves the previous version of the data when the data is modified.
+Such data structures are effectively <em>immutable</em>, as operations on
+them do not update the structure in-place, but instead always yield
+a new updated structure (see <a class="footnote-reference brackets" href="#id12" id="id1">0</a> for more details.)</p>
+<p>This PEP proposes to add a new fully persistent and immutable mapping
+type called <code class="docutils literal notranslate"><span class="pre">frozenmap</span></code> to the <code class="docutils literal notranslate"><span class="pre">collections</span></code> module.</p>
+<p>The bulk of <code class="docutils literal notranslate"><span class="pre">frozenmap</span></code>’s reference implementation is already
+used in CPython to implement the <code class="docutils literal notranslate"><span class="pre">contextvars</span></code> module.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id22">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Python has two immutable collection types: <code class="docutils literal notranslate"><span class="pre">tuple</span></code> and
+<code class="docutils literal notranslate"><span class="pre">frozenset</span></code>.  These types can be used to represent immutable lists
+and sets. However, a way to represent immutable <em>mappings</em> does not yet
+exist, and this PEP proposes a <code class="docutils literal notranslate"><span class="pre">frozenmap</span></code> to implement an
+immutable <em>mapping</em>.</p>
+<p>The proposed <code class="docutils literal notranslate"><span class="pre">frozenmap</span></code> type:</p>
+<ul class="simple">
+<li>implements the <code class="docutils literal notranslate"><span class="pre">collections.abc.Mapping</span></code> protocol,</li>
+<li>supports pickling, and</li>
+<li>provides an API for efficient creation of “modified” versions.</li>
+</ul>
+<p>The following use cases illustrate why an immutable mapping is
+desirable:</p>
+<ul>
+<li><p>Immutable mappings are hashable which allows their use
+as dictionary keys or set elements.</p>
+<p>This hashable property permits functions decorated with
+<code class="docutils literal notranslate"><span class="pre">&#64;functools.lru_cache()</span></code> to accept immutable mappings as
+arguments. Unlike an immutable mapping, passing a plain <code class="docutils literal notranslate"><span class="pre">dict</span></code>
+to such a function results in error.</p>
+</li>
+<li><p>Immutable mappings can hold complex state. Since immutable mappings
+can be copied by reference, transactional mutation of state can be
+efficiently implemented.</p>
+</li>
+<li><p>Immutable mappings can be used to safely share dictionaries across
+thread and asynchronous task boundaries. The immutability makes it
+easier to reason about threads and asynchronous tasks.</p>
+</li>
+</ul>
+<p>Lastly, CPython <a class="footnote-reference brackets" href="#id13" id="id2">1</a> already contains the main portion of the C code
+required for the <code class="docutils literal notranslate"><span class="pre">frozenmap</span></code> implementation.  The C code already
+exists to implement the <code class="docutils literal notranslate"><span class="pre">contextvars</span></code> module (see <span class="target" id="index-0"></span><a class="pep reference external" href="./pep-0567.html"><strong>PEP 567</strong></a> for
+more details.) Exposing this C code via a public collection type
+drastically increases the number of users of the code.  This leads to
+increased code quality by discovering bugs and improving performance
+which without a <code class="docutils literal notranslate"><span class="pre">frozenmap</span></code> collection would be very challenging
+because most programs use the <code class="docutils literal notranslate"><span class="pre">contextvars</span></code> module indirectly.</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id23">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>A new public immutable type <code class="docutils literal notranslate"><span class="pre">frozenmap</span></code> is added to the
+<code class="docutils literal notranslate"><span class="pre">collections</span></code> module.</p>
+<div class="section" id="construction">
+<h3><a class="toc-backref" href="#id24">Construction</a><a class="headerlink" href="#construction" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">frozenmap</span></code> implements a <code class="docutils literal notranslate"><span class="pre">dict</span></code>-like construction API:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">frozenmap()</span></code> creates a new empty immutable mapping;</li>
+<li><code class="docutils literal notranslate"><span class="pre">frozenmap(**kwargs)</span></code> creates a mapping from <code class="docutils literal notranslate"><span class="pre">**kwargs</span></code>, e.g.
+<code class="docutils literal notranslate"><span class="pre">frozenmap(x=10,</span> <span class="pre">y=0,</span> <span class="pre">z=-1)</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">frozenmap(collection)</span></code> creates a mapping from the passed
+<code class="docutils literal notranslate"><span class="pre">collection</span></code> object. The passed <code class="docutils literal notranslate"><span class="pre">collection</span></code> object can be:<ul>
+<li>a <code class="docutils literal notranslate"><span class="pre">dict</span></code>,</li>
+<li>another <code class="docutils literal notranslate"><span class="pre">frozenmap</span></code>,</li>
+<li>an object with an <code class="docutils literal notranslate"><span class="pre">items()</span></code> method that is expected to return
+a series of key/value tuples, or</li>
+<li>an iterable of key/value tuples.</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="data-access">
+<h3><a class="toc-backref" href="#id25">Data Access</a><a class="headerlink" href="#data-access" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">frozenmap</span></code> implements the <code class="docutils literal notranslate"><span class="pre">collection.abc.Mapping</span></code> protocol.
+Therefore, getters, membership checks, and iteration work the same
+way that they would for a <code class="docutils literal notranslate"><span class="pre">dict</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">frozenmap</span><span class="p">(</span><span class="n">foo</span><span class="o">=</span><span class="s1">&#39;bar&#39;</span><span class="p">)</span>
+
+<span class="k">assert</span> <span class="n">m</span><span class="p">[</span><span class="s1">&#39;foo&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;bar&#39;</span>
+<span class="k">assert</span> <span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;foo&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;bar&#39;</span>
+<span class="k">assert</span> <span class="s1">&#39;foo&#39;</span> <span class="ow">in</span> <span class="n">m</span>
+
+<span class="k">assert</span> <span class="s1">&#39;baz&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">m</span>
+<span class="k">assert</span> <span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;baz&#39;</span><span class="p">,</span> <span class="s1">&#39;missing&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;missing&#39;</span>
+
+<span class="k">assert</span> <span class="n">m</span> <span class="o">==</span> <span class="n">m</span>
+<span class="k">assert</span> <span class="n">m</span> <span class="o">!=</span> <span class="n">frozenmap</span><span class="p">()</span>  <span class="c1"># m is not equal to an empty frozenmap</span>
+
+<span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+
+<span class="c1"># etc.</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="mutation">
+<h3><a class="toc-backref" href="#id26">Mutation</a><a class="headerlink" href="#mutation" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">frozenmap</span></code> instances are immutable. That said, it is possible
+to efficiently produce mutated <em>copies</em> of the immutable instance.</p>
+<p>The complexity of mutation operations is O(log N) and the resulting
+<code class="docutils literal notranslate"><span class="pre">frozenmap</span></code> copies often consume very little additional memory due
+to the use of structural sharing (read <a class="footnote-reference brackets" href="#id18" id="id3">6</a> for more details.)</p>
+<div class="section" id="frozenmap-including-key-value">
+<h4><a class="toc-backref" href="#id27">frozenmap.including(key, value)</a><a class="headerlink" href="#frozenmap-including-key-value" title="Permalink to this headline">¶</a></h4>
+<p>The method creates a new <code class="docutils literal notranslate"><span class="pre">frozenmap</span></code> copy with a new <em>key</em> / <em>value</em>
+pair:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">frozenmap</span><span class="p">(</span><span class="n">foo</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">m2</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">including</span><span class="p">(</span><span class="s1">&#39;bar&#39;</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>   <span class="c1"># will print frozenmap({&#39;foo&#39;: 1})</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">m2</span><span class="p">)</span>  <span class="c1"># will print frozenmap({&#39;foo&#39;: 1, &#39;bar&#39;: 100})</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="frozenmap-excluding-key">
+<h4><a class="toc-backref" href="#id28">frozenmap.excluding(key)</a><a class="headerlink" href="#frozenmap-excluding-key" title="Permalink to this headline">¶</a></h4>
+<p>The method produces a copy of the <code class="docutils literal notranslate"><span class="pre">frozenmap</span></code> which does not
+include a deleted <em>key</em>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">frozenmap</span><span class="p">(</span><span class="n">foo</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">bar</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+
+<span class="n">m2</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">excluding</span><span class="p">(</span><span class="s1">&#39;foo&#39;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>   <span class="c1"># will print frozenmap({&#39;foo&#39;: 1, &#39;bar&#39;: 100})</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">m2</span><span class="p">)</span>  <span class="c1"># will print frozenmap({&#39;bar&#39;: 1})</span>
+
+<span class="n">m3</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">excluding</span><span class="p">(</span><span class="s1">&#39;spam&#39;</span><span class="p">)</span>  <span class="c1"># will throw a KeyError(&#39;spam&#39;)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="frozenmap-union-mapping-none-kw">
+<h4><a class="toc-backref" href="#id29">frozenmap.union(mapping=None, **kw)</a><a class="headerlink" href="#frozenmap-union-mapping-none-kw" title="Permalink to this headline">¶</a></h4>
+<p>The method produces a copy of the <code class="docutils literal notranslate"><span class="pre">frozenmap</span></code> and adds or modifies
+multiple key/values for the created copy.  The signature of
+the method matches the signature of the <code class="docutils literal notranslate"><span class="pre">frozenmap</span></code> constructor:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">frozenmap</span><span class="p">(</span><span class="n">foo</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">m2</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">union</span><span class="p">({</span><span class="s1">&#39;spam&#39;</span><span class="p">:</span> <span class="s1">&#39;ham&#39;</span><span class="p">})</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">m2</span><span class="p">)</span>  <span class="c1"># will print frozenmap({&#39;foo&#39;: 1, &#39;spam&#39;: &#39;ham&#39;})</span>
+
+<span class="n">m3</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">foo</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">m3</span><span class="p">)</span>  <span class="c1"># will print frozenmap({&#39;foo&#39;: 100, &#39;y&#39;: 2})</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>   <span class="c1"># will print frozenmap({&#39;foo&#39;: 1})</span>
+</pre></div>
+</div>
+<p>Calling the <code class="docutils literal notranslate"><span class="pre">union()</span></code> method to add/replace N keys is more efficient
+than calling the <code class="docutils literal notranslate"><span class="pre">including()</span></code> method N times.</p>
+</div>
+<div class="section" id="frozenmap-mutating">
+<h4><a class="toc-backref" href="#id30">frozenmap.mutating()</a><a class="headerlink" href="#frozenmap-mutating" title="Permalink to this headline">¶</a></h4>
+<p>The method allows efficient copying of a <code class="docutils literal notranslate"><span class="pre">frozenmap</span></code> instance with
+multiple modifications applied.  This method is especially useful
+when the frozenmap in question contains thousands of key/value pairs
+and there’s a need to update many of them in a performance-critical
+section of the code.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">frozenmap.mutating()</span></code> method returns a mutable dict-like
+copy of the <code class="docutils literal notranslate"><span class="pre">frozenmap</span></code> object: an instance of
+<code class="docutils literal notranslate"><span class="pre">collections.FrozenMapCopy</span></code>.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">FrozenMapCopy</span></code> objects:</p>
+<ul class="simple">
+<li>are copy-on-write views of the data of <code class="docutils literal notranslate"><span class="pre">frozenmap</span></code> instances
+they were created from;</li>
+<li>are mutable, although any mutations on them do not affect the
+<code class="docutils literal notranslate"><span class="pre">frozenmap</span></code> instances they were created from;</li>
+<li>can be passed to the <code class="docutils literal notranslate"><span class="pre">frozenmap</span></code> constructor; creating a
+frozenmap from a <code class="docutils literal notranslate"><span class="pre">FrozenMapCopy</span></code> object is an O(1)
+operation;</li>
+<li>have O(log N) complexity for get/set operations; creating
+them is an O(1) operation;</li>
+<li>have a <code class="docutils literal notranslate"><span class="pre">FrozenMapCopy.close()</span></code> method that prevents any
+further access/mutation of the data;</li>
+<li>can be used as a context manager.</li>
+</ul>
+<p>The below example illustrates how <code class="docutils literal notranslate"><span class="pre">mutating()</span></code> can be used with
+a context manager:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">numbers</span> <span class="o">=</span> <span class="n">frozenmap</span><span class="p">((</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1_000_000</span><span class="p">))</span>
+
+<span class="k">with</span> <span class="n">numbers</span><span class="o">.</span><span class="n">mutating</span><span class="p">()</span> <span class="k">as</span> <span class="n">copy</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">numbers</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">numbers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">%</span> <span class="mi">997</span><span class="p">):</span>
+            <span class="k">del</span> <span class="n">copy</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+    <span class="n">numbers_without_997_multiples</span> <span class="o">=</span> <span class="n">frozenmap</span><span class="p">(</span><span class="n">copy</span><span class="p">)</span>
+
+    <span class="c1"># at this point, *numbers* still has 1_000_000 key/values, and</span>
+    <span class="c1"># *numbers_without_997_multiples* is a copy of *numbers* without</span>
+    <span class="c1"># values that are multiples of 997.</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">numbers</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">numbers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">%</span> <span class="mi">593</span><span class="p">):</span>
+            <span class="k">del</span> <span class="n">copy</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+    <span class="n">numbers_without_593_multiples</span> <span class="o">=</span> <span class="n">frozenmap</span><span class="p">(</span><span class="n">copy</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">copy</span><span class="p">[</span><span class="mi">10</span><span class="p">])</span>  <span class="c1"># will print 100.</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">copy</span><span class="p">[</span><span class="mi">10</span><span class="p">])</span>  <span class="c1"># This will throw a ValueError as *copy*</span>
+                 <span class="c1"># has been closed when the &quot;with&quot; block</span>
+                 <span class="c1"># was executed.</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="iteration">
+<h3><a class="toc-backref" href="#id31">Iteration</a><a class="headerlink" href="#iteration" title="Permalink to this headline">¶</a></h3>
+<p>As <code class="docutils literal notranslate"><span class="pre">frozenmap</span></code> implements the standard <code class="docutils literal notranslate"><span class="pre">collections.abc.Mapping</span></code>
+protocol, so all expected methods of iteration are supported:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">assert</span> <span class="nb">list</span><span class="p">(</span><span class="n">m</span><span class="p">)</span> <span class="o">==</span> <span class="p">[</span><span class="s1">&#39;foo&#39;</span><span class="p">]</span>
+<span class="k">assert</span> <span class="nb">list</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">items</span><span class="p">())</span> <span class="o">==</span> <span class="p">[(</span><span class="s1">&#39;foo&#39;</span><span class="p">,</span> <span class="s1">&#39;bar&#39;</span><span class="p">)]</span>
+<span class="k">assert</span> <span class="nb">list</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">==</span> <span class="p">[</span><span class="s1">&#39;foo&#39;</span><span class="p">]</span>
+<span class="k">assert</span> <span class="nb">list</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">values</span><span class="p">())</span> <span class="o">==</span> <span class="p">[</span><span class="s1">&#39;bar&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Iteration in <code class="docutils literal notranslate"><span class="pre">frozenmap</span></code>, unlike in <code class="docutils literal notranslate"><span class="pre">dict</span></code>, does not preserve the
+insertion order.</p>
+</div>
+<div class="section" id="hashing">
+<h3><a class="toc-backref" href="#id32">Hashing</a><a class="headerlink" href="#hashing" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">frozenmap</span></code> instances can be hashable just like <code class="docutils literal notranslate"><span class="pre">tuple</span></code> objects:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">hash</span><span class="p">(</span><span class="n">frozenmap</span><span class="p">(</span><span class="n">foo</span><span class="o">=</span><span class="s1">&#39;bar&#39;</span><span class="p">))</span>  <span class="c1"># works</span>
+<span class="nb">hash</span><span class="p">(</span><span class="n">frozenmap</span><span class="p">(</span><span class="n">foo</span><span class="o">=</span><span class="p">[]))</span>     <span class="c1"># will throw an error</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="typing">
+<h3><a class="toc-backref" href="#id33">Typing</a><a class="headerlink" href="#typing" title="Permalink to this headline">¶</a></h3>
+<p>It is possible to use the standard typing notation for frozenmaps:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">m</span><span class="p">:</span> <span class="n">frozenmap</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">frozenmap</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id34">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>The proposed <code class="docutils literal notranslate"><span class="pre">frozenmap</span></code> immutable type uses a Hash Array Mapped
+Trie (HAMT) data structure. Functional programming languages,
+like Clojure, use HAMT to efficiently implement immutable hash tables,
+vectors, and sets.</p>
+<div class="section" id="hamt">
+<h3><a class="toc-backref" href="#id35">HAMT</a><a class="headerlink" href="#hamt" title="Permalink to this headline">¶</a></h3>
+<p>The key design contract of HAMT is the guarantee of a predictable
+<em>value</em> when given the hash of a <em>key</em>. For a pair of <em>key</em> and <em>value</em>,
+the hash of the <em>key</em> can be used to determine the location of
+<em>value</em> in the hash map tree.</p>
+<p>Immutable mappings implemented with HAMT have O(log N) performance
+for <code class="docutils literal notranslate"><span class="pre">set()</span></code> and <code class="docutils literal notranslate"><span class="pre">get()</span></code> operations.  This efficiency is possible
+because mutation operations only affect one branch of the tree,
+making it possible to reuse non-mutated branches, and, therefore,
+avoiding copying of unmodified data.</p>
+<p>Read more about HAMT in <a class="footnote-reference brackets" href="#id17" id="id4">5</a>.  The CPython implementation <a class="footnote-reference brackets" href="#id13" id="id5">1</a> has a
+fairly detailed description of the algorithm as well.</p>
+</div>
+<div class="section" id="performance">
+<h3><a class="toc-backref" href="#id36">Performance</a><a class="headerlink" href="#performance" title="Permalink to this headline">¶</a></h3>
+<div class="figure align-center" id="id19">
+<a class="reference internal image-reference" href="_images/pep-0603-hamt_vs_dict.png"><img alt="_images/pep-0603-hamt_vs_dict.png" src="_images/pep-0603-hamt_vs_dict.png" style="width: 100%;" /></a>
+<p class="caption"><span class="caption-text">Figure 1.  Benchmark code can be found here: <a class="footnote-reference brackets" href="#id15" id="id6">3</a>.</span><a class="headerlink" href="#id19" title="Permalink to this image">¶</a></p>
+</div>
+<p>The above chart demonstrates that:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">frozenmap</span></code> implemented with HAMT displays near O(1) performance
+for all benchmarked dictionary sizes.</li>
+<li><code class="docutils literal notranslate"><span class="pre">dict.copy()</span></code> becomes less efficient when using around
+100-200 items.</li>
+</ul>
+<div class="figure align-center" id="id20">
+<a class="reference internal image-reference" href="_images/pep-0550-lookup_hamt.png"><img alt="_images/pep-0550-lookup_hamt.png" src="_images/pep-0550-lookup_hamt.png" style="width: 100%;" /></a>
+<p class="caption"><span class="caption-text">Figure 2.  Benchmark code can be found here: <a class="footnote-reference brackets" href="#id16" id="id7">4</a>.</span><a class="headerlink" href="#id20" title="Permalink to this image">¶</a></p>
+</div>
+<p>Figure 2 compares the lookup costs of <code class="docutils literal notranslate"><span class="pre">dict</span></code> versus a HAMT-based
+immutable mapping.  HAMT lookup time is ~30% slower than Python dict
+lookups on average. This performance difference exists since traversing
+a shallow tree is less efficient than lookup in a flat continuous array.</p>
+<p>Further to that, quoting <a class="footnote-reference brackets" href="#id18" id="id8">6</a>: “[using HAMT] means that in practice
+while insertions, deletions, and lookups into a persistent hash array
+mapped trie have a computational complexity of O(log n), for most
+applications they are effectively constant time, as it would require
+an extremely large number of entries to make any operation take more
+than a dozen steps.”</p>
+</div>
+</div>
+<div class="section" id="design-considerations">
+<h2><a class="toc-backref" href="#id37">Design Considerations</a><a class="headerlink" href="#design-considerations" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="why-frozenmap-and-not-frozenmap">
+<h3><a class="toc-backref" href="#id38">Why “frozenmap” and not “FrozenMap”</a><a class="headerlink" href="#why-frozenmap-and-not-frozenmap" title="Permalink to this headline">¶</a></h3>
+<p>The lower-case “frozenmap” resonates well with the <code class="docutils literal notranslate"><span class="pre">frozenset</span></code>
+built-in as well as with types like <code class="docutils literal notranslate"><span class="pre">collections.defaultdict</span></code>.</p>
+</div>
+<div class="section" id="why-frozenmap-and-not-frozendict">
+<h3><a class="toc-backref" href="#id39">Why “frozenmap” and not “frozendict”</a><a class="headerlink" href="#why-frozenmap-and-not-frozendict" title="Permalink to this headline">¶</a></h3>
+<p>“Dict” has a very specific meaning in Python:</p>
+<ul class="simple">
+<li>a dict is a concrete implementation of <code class="docutils literal notranslate"><span class="pre">abc.MutableMapping</span></code> with
+O(1) get and set operations (<code class="docutils literal notranslate"><span class="pre">frozenmap</span></code> has O(log N) complexity);</li>
+<li>Python dicts preserve insertion order.</li>
+</ul>
+<p>The proposed <code class="docutils literal notranslate"><span class="pre">frozenmap</span></code> does not have these mentioned
+properties. Instead, <code class="docutils literal notranslate"><span class="pre">frozenmap</span></code> has an O(log N) cost of set/get
+operations, and it only implements the <code class="docutils literal notranslate"><span class="pre">abc.Mapping</span></code> protocol.</p>
+</div>
+</div>
+<div class="section" id="id9">
+<h2><a class="toc-backref" href="#id40">Implementation</a><a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h2>
+<p>The full implementation of the proposed <code class="docutils literal notranslate"><span class="pre">frozenmap</span></code> type is
+available at <a class="footnote-reference brackets" href="#id14" id="id10">2</a>.  The package includes C and pure Python
+implementations of the type.</p>
+<p>See also the HAMT collection implementation as part of the
+CPython project tree here: <a class="footnote-reference brackets" href="#id13" id="id11">1</a>.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id41">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id12"><span class="brackets"><a class="fn-backref" href="#id1">0</a></span></dt>
+<dd><a class="reference external" href="https://en.wikipedia.org/wiki/Persistent_data_structure">https://en.wikipedia.org/wiki/Persistent_data_structure</a></dd>
+<dt class="label" id="id13"><span class="brackets">1</span><span class='fn-backref'><em> (<a href="#id2">1</a>, <a href="#id5">2</a>, <a href="#id11">3</a>) </em></span></dt>
+<dd><a class="reference external" href="https://github.com/python/cpython/blob/3.8/Python/hamt.c">https://github.com/python/cpython/blob/3.8/Python/hamt.c</a></dd>
+<dt class="label" id="id14"><span class="brackets"><a class="fn-backref" href="#id10">2</a></span></dt>
+<dd><a class="reference external" href="https://github.com/MagicStack/immutables">https://github.com/MagicStack/immutables</a></dd>
+<dt class="label" id="id15"><span class="brackets"><a class="fn-backref" href="#id6">3</a></span></dt>
+<dd><a class="reference external" href="https://gist.github.com/1st1/be5a1c10aceb0775d0406e879cf87344">https://gist.github.com/1st1/be5a1c10aceb0775d0406e879cf87344</a></dd>
+<dt class="label" id="id16"><span class="brackets"><a class="fn-backref" href="#id7">4</a></span></dt>
+<dd><a class="reference external" href="https://gist.github.com/1st1/dbe27f2e14c30cce6f0b5fddfc8c437e">https://gist.github.com/1st1/dbe27f2e14c30cce6f0b5fddfc8c437e</a></dd>
+<dt class="label" id="id17"><span class="brackets"><a class="fn-backref" href="#id4">5</a></span></dt>
+<dd><a class="reference external" href="https://en.wikipedia.org/wiki/Hash_array_mapped_trie#cite_note-bagwell-1">https://en.wikipedia.org/wiki/Hash_array_mapped_trie#cite_note-bagwell-1</a></dd>
+<dt class="label" id="id18"><span class="brackets">6</span><span class='fn-backref'><em> (<a href="#id3">1</a>, <a href="#id8">2</a>) </em></span></dt>
+<dd><a class="reference external" href="https://en.wikipedia.org/wiki/Persistent_data_structure#Trees">https://en.wikipedia.org/wiki/Persistent_data_structure#Trees</a></dd>
+</dl>
+</div>
+<div class="section" id="acknowledgments">
+<h2><a class="toc-backref" href="#id42">Acknowledgments</a><a class="headerlink" href="#acknowledgments" title="Permalink to this headline">¶</a></h2>
+<p>I thank Carol Willing, Łukasz Langa, Larry Hastings, and
+Guido van Rossum for their feedback, ideas, edits, and discussions
+around this PEP.</p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id43">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document is placed in the public domain or under the
+CC0-1.0-Universal license, whichever is more permissive.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0603.rst">https://github.com/python/peps/blob/master/pep-0603.rst</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0603.rst.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0602.html">PEP 0602</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0604.html">PEP 0604</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 603 – Adding a frozenmap type to collections</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#construction">Construction</a></li>
+<li><a class="reference internal" href="#data-access">Data Access</a></li>
+<li><a class="reference internal" href="#mutation">Mutation</a><ul>
+<li><a class="reference internal" href="#frozenmap-including-key-value">frozenmap.including(key, value)</a></li>
+<li><a class="reference internal" href="#frozenmap-excluding-key">frozenmap.excluding(key)</a></li>
+<li><a class="reference internal" href="#frozenmap-union-mapping-none-kw">frozenmap.union(mapping=None, **kw)</a></li>
+<li><a class="reference internal" href="#frozenmap-mutating">frozenmap.mutating()</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#iteration">Iteration</a></li>
+<li><a class="reference internal" href="#hashing">Hashing</a></li>
+<li><a class="reference internal" href="#typing">Typing</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation">Implementation</a><ul>
+<li><a class="reference internal" href="#hamt">HAMT</a></li>
+<li><a class="reference internal" href="#performance">Performance</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#design-considerations">Design Considerations</a><ul>
+<li><a class="reference internal" href="#why-frozenmap-and-not-frozenmap">Why “frozenmap” and not “FrozenMap”</a></li>
+<li><a class="reference internal" href="#why-frozenmap-and-not-frozendict">Why “frozenmap” and not “frozendict”</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id9">Implementation</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#acknowledgments">Acknowledgments</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

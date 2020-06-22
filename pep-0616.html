@@ -1,0 +1,507 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 616 – String methods to remove prefixes and suffixes &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 617 – New PEG parser for CPython" href="pep-0617.html" />
+    <link rel="prev" title="PEP 615 – Support for the IANA Time Zone Database in the Standard Library" href="pep-0615.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 616 – String methods to remove prefixes and suffixes</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-616-string-methods-to-remove-prefixes-and-suffixes">
+<h1 class="page-title">PEP 616 – String methods to remove prefixes and suffixes<a class="headerlink" href="#pep-616-string-methods-to-remove-prefixes-and-suffixes" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">616</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">String methods to remove prefixes and suffixes</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Dennis Sweeney &lt;sweeney.dennis650&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">Sponsor</dt>
+<dd class="field-even">Eric V. Smith &lt;eric&#32;&#97;t&#32;trueblade.com&gt;</dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd">Accepted</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even">Standards Track</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">19-Mar-2020</dd>
+<dt class="field-even">Python-Version</dt>
+<dd class="field-even">3.9</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd">20-Mar-2020</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id15">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id16">Rationale</a></li>
+<li><a class="reference internal" href="#specification" id="id17">Specification</a></li>
+<li><a class="reference internal" href="#motivating-examples-from-the-python-standard-library" id="id18">Motivating examples from the Python standard library</a><ul>
+<li><a class="reference internal" href="#find-recursionlimit-py" id="id19">find_recursionlimit.py</a></li>
+<li><a class="reference internal" href="#deccheck-py" id="id20">deccheck.py</a></li>
+<li><a class="reference internal" href="#cookiejar-py" id="id21">cookiejar.py</a></li>
+<li><a class="reference internal" href="#test-concurrent-futures-py" id="id22">test_concurrent_futures.py</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rejected-ideas" id="id23">Rejected Ideas</a><ul>
+<li><a class="reference internal" href="#expand-the-lstrip-and-rstrip-apis" id="id24">Expand the lstrip and rstrip APIs</a></li>
+<li><a class="reference internal" href="#remove-multiple-copies-of-a-prefix" id="id25">Remove multiple copies of a prefix</a></li>
+<li><a class="reference internal" href="#raising-an-exception-when-not-found" id="id26">Raising an exception when not found</a></li>
+<li><a class="reference internal" href="#accepting-a-tuple-of-affixes" id="id27">Accepting a tuple of affixes</a></li>
+<li><a class="reference internal" href="#alternative-method-names" id="id28">Alternative Method Names</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#how-to-teach-this" id="id29">How to Teach This</a></li>
+<li><a class="reference internal" href="#reference-implementation" id="id30">Reference Implementation</a></li>
+<li><a class="reference internal" href="#history-of-major-revisions" id="id31">History of Major revisions</a></li>
+<li><a class="reference internal" href="#references" id="id32">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id33">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id15">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This is a proposal to add two new methods, <code class="docutils literal notranslate"><span class="pre">removeprefix()</span></code> and
+<code class="docutils literal notranslate"><span class="pre">removesuffix()</span></code>, to the APIs of Python’s various string objects.  These
+methods would remove a prefix or suffix (respectively) from a string,
+if present, and would be added to Unicode <code class="docutils literal notranslate"><span class="pre">str</span></code> objects, binary
+<code class="docutils literal notranslate"><span class="pre">bytes</span></code> and <code class="docutils literal notranslate"><span class="pre">bytearray</span></code> objects, and <code class="docutils literal notranslate"><span class="pre">collections.UserString</span></code>.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id16">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>There have been repeated issues on Python-Ideas <a class="footnote-reference brackets" href="#pyid" id="id1">2</a> <a class="footnote-reference brackets" href="#id10" id="id2">3</a>,
+Python-Dev <a class="footnote-reference brackets" href="#id11" id="id3">4</a> <a class="footnote-reference brackets" href="#id12" id="id4">5</a> <a class="footnote-reference brackets" href="#id13" id="id5">6</a> <a class="footnote-reference brackets" href="#id14" id="id6">7</a>, the Bug Tracker, and
+StackOverflow <a class="footnote-reference brackets" href="#confusion" id="id7">8</a>, related to user confusion about the
+existing <code class="docutils literal notranslate"><span class="pre">str.lstrip</span></code> and <code class="docutils literal notranslate"><span class="pre">str.rstrip</span></code> methods.  These users are
+typically expecting the behavior of <code class="docutils literal notranslate"><span class="pre">removeprefix</span></code> and <code class="docutils literal notranslate"><span class="pre">removesuffix</span></code>,
+but they are surprised that the parameter for <code class="docutils literal notranslate"><span class="pre">lstrip</span></code> is
+interpreted as a set of characters, not a substring.  This repeated
+issue is evidence that these methods are useful.  The new methods
+allow a cleaner redirection of users to the desired behavior.</p>
+<p>As another testimonial for the usefulness of these methods, several
+users on Python-Ideas <a class="footnote-reference brackets" href="#pyid" id="id8">2</a> reported frequently including similar
+functions in their code for productivity.  The implementation
+often contained subtle mistakes regarding the handling of the empty
+string, so a well-tested built-in method would be useful.</p>
+<p>The existing solutions for creating the desired behavior are to either
+implement the methods as in the <a class="reference internal" href="#specification">Specification</a> below, or to use
+regular expressions as in the expression
+<code class="docutils literal notranslate"><span class="pre">re.sub('^'</span> <span class="pre">+</span> <span class="pre">re.escape(prefix),</span> <span class="pre">'',</span> <span class="pre">s)</span></code>, which is less discoverable,
+requires a module import, and results in less readable code.</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id17">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>The builtin <code class="docutils literal notranslate"><span class="pre">str</span></code> class will gain two new methods which will behave
+as follows when <code class="docutils literal notranslate"><span class="pre">type(self)</span> <span class="pre">is</span> <span class="pre">type(prefix)</span> <span class="pre">is</span> <span class="pre">type(suffix)</span> <span class="pre">is</span> <span class="pre">str</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">removeprefix</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">prefix</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">prefix</span><span class="p">):]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">[:]</span>
+
+<span class="k">def</span> <span class="nf">removesuffix</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">suffix</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="c1"># suffix=&#39;&#39; should not call self[:-0].</span>
+    <span class="k">if</span> <span class="n">suffix</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">suffix</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">[:</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">suffix</span><span class="p">)]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">[:]</span>
+</pre></div>
+</div>
+<p>When the arguments are instances of <code class="docutils literal notranslate"><span class="pre">str</span></code> subclasses, the methods should
+behave as though those arguments were first coerced to base <code class="docutils literal notranslate"><span class="pre">str</span></code>
+objects, and the return value should always be a base <code class="docutils literal notranslate"><span class="pre">str</span></code>.</p>
+<p>Methods with the corresponding semantics will be added to the builtin
+<code class="docutils literal notranslate"><span class="pre">bytes</span></code> and <code class="docutils literal notranslate"><span class="pre">bytearray</span></code> objects.  If <code class="docutils literal notranslate"><span class="pre">b</span></code> is either a <code class="docutils literal notranslate"><span class="pre">bytes</span></code>
+or <code class="docutils literal notranslate"><span class="pre">bytearray</span></code> object, then <code class="docutils literal notranslate"><span class="pre">b.removeprefix()</span></code> and <code class="docutils literal notranslate"><span class="pre">b.removesuffix()</span></code>
+will accept any bytes-like object as an argument. The two methods will
+also be added to <code class="docutils literal notranslate"><span class="pre">collections.UserString</span></code>, with similar behavior.</p>
+</div>
+<div class="section" id="motivating-examples-from-the-python-standard-library">
+<h2><a class="toc-backref" href="#id18">Motivating examples from the Python standard library</a><a class="headerlink" href="#motivating-examples-from-the-python-standard-library" title="Permalink to this headline">¶</a></h2>
+<p>The examples below demonstrate how the proposed methods can make code
+one or more of the following:</p>
+<ol class="arabic">
+<li><p>Less fragile:</p>
+<p>The code will not depend on the user to count the length of a literal.</p>
+</li>
+<li><p>More performant:</p>
+<p>The code does not require a call to the Python built-in <code class="docutils literal notranslate"><span class="pre">len</span></code>
+function nor to the more expensive <code class="docutils literal notranslate"><span class="pre">str.replace()</span></code> method.</p>
+</li>
+<li><p>More descriptive:</p>
+<p>The methods give a higher-level API for code readability as
+opposed to the traditional method of string slicing.</p>
+</li>
+</ol>
+<div class="section" id="find-recursionlimit-py">
+<h3><a class="toc-backref" href="#id19">find_recursionlimit.py</a><a class="headerlink" href="#find-recursionlimit-py" title="Permalink to this headline">¶</a></h3>
+<ul>
+<li><p>Current:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">test_func_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;test_&quot;</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">test_func_name</span><span class="p">[</span><span class="mi">5</span><span class="p">:])</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">test_func_name</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p>Improved:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">test_func_name</span><span class="o">.</span><span class="n">removeprefix</span><span class="p">(</span><span class="s2">&quot;test_&quot;</span><span class="p">))</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</div>
+<div class="section" id="deccheck-py">
+<h3><a class="toc-backref" href="#id20">deccheck.py</a><a class="headerlink" href="#deccheck-py" title="Permalink to this headline">¶</a></h3>
+<p>This is an interesting case because the author chose to use the
+<code class="docutils literal notranslate"><span class="pre">str.replace</span></code> method in a situation where only a prefix was
+intended to be removed.</p>
+<ul>
+<li><p>Current:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">funcname</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;context.&quot;</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">funcname</span> <span class="o">=</span> <span class="n">funcname</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;context.&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">contextfunc</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">funcname</span> <span class="o">=</span> <span class="n">funcname</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">contextfunc</span> <span class="o">=</span> <span class="kc">False</span>
+</pre></div>
+</div>
+</li>
+<li><p>Improved:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">funcname</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;context.&quot;</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">funcname</span> <span class="o">=</span> <span class="n">funcname</span><span class="o">.</span><span class="n">removeprefix</span><span class="p">(</span><span class="s2">&quot;context.&quot;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">contextfunc</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">funcname</span> <span class="o">=</span> <span class="n">funcname</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">contextfunc</span> <span class="o">=</span> <span class="kc">False</span>
+</pre></div>
+</div>
+</li>
+<li><p>Arguably further improved:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="bp">self</span><span class="o">.</span><span class="n">contextfunc</span> <span class="o">=</span> <span class="n">funcname</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;context.&quot;</span><span class="p">)</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">funcname</span> <span class="o">=</span> <span class="n">funcname</span><span class="o">.</span><span class="n">removeprefix</span><span class="p">(</span><span class="s2">&quot;context.&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</div>
+<div class="section" id="cookiejar-py">
+<h3><a class="toc-backref" href="#id21">cookiejar.py</a><a class="headerlink" href="#cookiejar-py" title="Permalink to this headline">¶</a></h3>
+<ul>
+<li><p>Current:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">strip_quotes</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">text</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">):</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+    <span class="k">if</span> <span class="n">text</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">):</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">text</span>
+</pre></div>
+</div>
+</li>
+<li><p>Improved:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">strip_quotes</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">text</span><span class="o">.</span><span class="n">removeprefix</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">removesuffix</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</div>
+<div class="section" id="test-concurrent-futures-py">
+<h3><a class="toc-backref" href="#id22">test_concurrent_futures.py</a><a class="headerlink" href="#test-concurrent-futures-py" title="Permalink to this headline">¶</a></h3>
+<p>In the following example, the meaning of the code changes slightly,
+but in context, it behaves the same.</p>
+<ul>
+<li><p>Current:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">endswith</span><span class="p">((</span><span class="s1">&#39;Mixin&#39;</span><span class="p">,</span> <span class="s1">&#39;Tests&#39;</span><span class="p">)):</span>
+    <span class="k">return</span> <span class="n">name</span><span class="p">[:</span><span class="o">-</span><span class="mi">5</span><span class="p">]</span>
+<span class="k">elif</span> <span class="n">name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;Test&#39;</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">name</span><span class="p">[:</span><span class="o">-</span><span class="mi">4</span><span class="p">]</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">name</span>
+</pre></div>
+</div>
+</li>
+<li><p>Improved:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">return</span> <span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="n">removesuffix</span><span class="p">(</span><span class="s1">&#39;Mixin&#39;</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">removesuffix</span><span class="p">(</span><span class="s1">&#39;Tests&#39;</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">removesuffix</span><span class="p">(</span><span class="s1">&#39;Test&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<p>There were many other such examples in the stdlib.</p>
+</div>
+</div>
+<div class="section" id="rejected-ideas">
+<h2><a class="toc-backref" href="#id23">Rejected Ideas</a><a class="headerlink" href="#rejected-ideas" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="expand-the-lstrip-and-rstrip-apis">
+<h3><a class="toc-backref" href="#id24">Expand the lstrip and rstrip APIs</a><a class="headerlink" href="#expand-the-lstrip-and-rstrip-apis" title="Permalink to this headline">¶</a></h3>
+<p>Because <code class="docutils literal notranslate"><span class="pre">lstrip</span></code> takes a string as its argument, it could be viewed
+as taking an iterable of length-1 strings.  The API could, therefore, be
+generalized to accept any iterable of strings, which would be
+successively removed as prefixes.  While this behavior would be
+consistent, it would not be obvious for users to have to call
+<code class="docutils literal notranslate"><span class="pre">'foobar'.lstrip(('foo',))</span></code> for the common use case of a
+single prefix.</p>
+</div>
+<div class="section" id="remove-multiple-copies-of-a-prefix">
+<h3><a class="toc-backref" href="#id25">Remove multiple copies of a prefix</a><a class="headerlink" href="#remove-multiple-copies-of-a-prefix" title="Permalink to this headline">¶</a></h3>
+<p>This is the behavior that would be consistent with the aforementioned
+expansion of the <code class="docutils literal notranslate"><span class="pre">lstrip</span></code>/<code class="docutils literal notranslate"><span class="pre">rstrip</span></code> API – repeatedly applying the
+function until the argument is unchanged.  This behavior is attainable
+from the proposed behavior via by the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">s</span> <span class="o">=</span> <span class="s1">&#39;Foo&#39;</span> <span class="o">*</span> <span class="mi">100</span> <span class="o">+</span> <span class="s1">&#39;Bar&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">prefix</span> <span class="o">=</span> <span class="s1">&#39;Foo&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">while</span> <span class="n">s</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">prefix</span><span class="p">):</span> <span class="n">s</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">removeprefix</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">s</span>
+<span class="go">&#39;Bar&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="raising-an-exception-when-not-found">
+<h3><a class="toc-backref" href="#id26">Raising an exception when not found</a><a class="headerlink" href="#raising-an-exception-when-not-found" title="Permalink to this headline">¶</a></h3>
+<p>There was a suggestion that <code class="docutils literal notranslate"><span class="pre">s.removeprefix(pre)</span></code> should raise an
+exception if <code class="docutils literal notranslate"><span class="pre">not</span> <span class="pre">s.startswith(pre)</span></code>.  However, this does not match
+with the behavior and feel of other string methods.  There could be
+<code class="docutils literal notranslate"><span class="pre">required=False</span></code> keyword added, but this violates the KISS
+principle.</p>
+</div>
+<div class="section" id="accepting-a-tuple-of-affixes">
+<h3><a class="toc-backref" href="#id27">Accepting a tuple of affixes</a><a class="headerlink" href="#accepting-a-tuple-of-affixes" title="Permalink to this headline">¶</a></h3>
+<p>It could be convenient to write the <code class="docutils literal notranslate"><span class="pre">test_concurrent_futures.py</span></code>
+example above as <code class="docutils literal notranslate"><span class="pre">name.removesuffix(('Mixin',</span> <span class="pre">'Tests',</span> <span class="pre">'Test'))</span></code>, so
+there was a suggestion that the new methods be able to take a tuple of
+strings as an argument, similar to the <code class="docutils literal notranslate"><span class="pre">startswith()</span></code> API.  Within
+the tuple, only the first matching affix would be removed.  This was
+rejected on the following grounds:</p>
+<ul class="simple">
+<li>This behavior can be surprising or visually confusing, especially
+when one prefix is empty or is a substring of another prefix, as in
+<code class="docutils literal notranslate"><span class="pre">'FooBar'.removeprefix(('',</span> <span class="pre">'Foo'))</span> <span class="pre">==</span> <span class="pre">'Foo'</span></code>
+or <code class="docutils literal notranslate"><span class="pre">'FooBar</span> <span class="pre">text'.removeprefix(('Foo',</span> <span class="pre">'FooBar</span> <span class="pre">'))</span> <span class="pre">==</span> <span class="pre">'Bar</span> <span class="pre">text'</span></code>.</li>
+<li>The API for <code class="docutils literal notranslate"><span class="pre">str.replace()</span></code> only accepts a single pair of
+replacement strings, but has stood the test of time by refusing the
+temptation to guess in the face of ambiguous multiple replacements.</li>
+<li>There may be a compelling use case for such a feature in the future,
+but generalization before the basic feature sees real-world use would
+be easy to get permanently wrong.</li>
+</ul>
+</div>
+<div class="section" id="alternative-method-names">
+<h3><a class="toc-backref" href="#id28">Alternative Method Names</a><a class="headerlink" href="#alternative-method-names" title="Permalink to this headline">¶</a></h3>
+<p>Several alternatives method names have been proposed.  Some are listed
+below, along with commentary for why they should be rejected in favor
+of <code class="docutils literal notranslate"><span class="pre">removeprefix</span></code> (the same arguments hold for <code class="docutils literal notranslate"><span class="pre">removesuffix</span></code>).</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">ltrim</span></code>, <code class="docutils literal notranslate"><span class="pre">trimprefix</span></code>, etc.:</p>
+<p>“Trim” does in other languages (e.g. JavaScript, Java, Go, PHP)
+what <code class="docutils literal notranslate"><span class="pre">strip</span></code> methods do in Python.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">lstrip(string=...)</span></code></p>
+<p>This would avoid adding a new method, but for different
+behavior, it’s better to have two different methods than one
+method with a keyword argument that selects the behavior.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">remove_prefix</span></code>:</p>
+<p>All of the other methods of the string API, e.g.
+<code class="docutils literal notranslate"><span class="pre">str.startswith()</span></code>, use <code class="docutils literal notranslate"><span class="pre">lowercase</span></code> rather than
+<code class="docutils literal notranslate"><span class="pre">lower_case_with_underscores</span></code>.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">removeleft</span></code>, <code class="docutils literal notranslate"><span class="pre">leftremove</span></code>, or <code class="docutils literal notranslate"><span class="pre">lremove</span></code>:</p>
+<p>The explicitness of “prefix” is preferred.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cutprefix</span></code>, <code class="docutils literal notranslate"><span class="pre">deleteprefix</span></code>, <code class="docutils literal notranslate"><span class="pre">withoutprefix</span></code>, <code class="docutils literal notranslate"><span class="pre">dropprefix</span></code>, etc.:</p>
+<p>Many of these might have been acceptable, but “remove” is
+unambiguous and matches how one would describe the “remove the prefix”
+behavior in English.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">stripprefix</span></code>:</p>
+<p>Users may benefit from remembering that “strip” means working
+with sets of characters, while other methods work with
+substrings, so re-using “strip” here should be avoided.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="how-to-teach-this">
+<h2><a class="toc-backref" href="#id29">How to Teach This</a><a class="headerlink" href="#how-to-teach-this" title="Permalink to this headline">¶</a></h2>
+<p>Among the uses for the <code class="docutils literal notranslate"><span class="pre">partition()</span></code>, <code class="docutils literal notranslate"><span class="pre">startswith()</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">split()</span></code> string methods or the <code class="docutils literal notranslate"><span class="pre">enumerate()</span></code> or <code class="docutils literal notranslate"><span class="pre">zip()</span></code>
+built-in functions, a common theme is that if a beginner finds
+themselves manually indexing or slicing a string, then they should
+consider whether there is a higher-level method that better
+communicates <em>what</em> the code should do rather than merely <em>how</em> the
+code should do it.  The proposed  <code class="docutils literal notranslate"><span class="pre">removeprefix()</span></code> and
+<code class="docutils literal notranslate"><span class="pre">removesuffix()</span></code> methods expand the high-level string “toolbox” and
+further allow for this sort of skepticism toward manual slicing.</p>
+<p>The main opportunity for user confusion will be the conflation of
+<code class="docutils literal notranslate"><span class="pre">lstrip</span></code>/<code class="docutils literal notranslate"><span class="pre">rstrip</span></code> with <code class="docutils literal notranslate"><span class="pre">removeprefix</span></code>/<code class="docutils literal notranslate"><span class="pre">removesuffix</span></code>.
+It may therefore be helpful to emphasize (as the documentation will)
+the following differences between the methods:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">(l/r)strip</span></code>:<ul>
+<li>The argument is interpreted as a character set.</li>
+<li>The characters are repeatedly removed from the appropriate end of
+the string.</li>
+</ul>
+</li>
+<li><code class="docutils literal notranslate"><span class="pre">remove(prefix/suffix)</span></code>:<ul>
+<li>The argument is interpreted as an unbroken substring.</li>
+<li>Only at most one copy of the prefix/suffix is removed.</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="reference-implementation">
+<h2><a class="toc-backref" href="#id30">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>See the pull request on GitHub <a class="footnote-reference brackets" href="#pr" id="id9">1</a>.</p>
+</div>
+<div class="section" id="history-of-major-revisions">
+<h2><a class="toc-backref" href="#id31">History of Major revisions</a><a class="headerlink" href="#history-of-major-revisions" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Version 3: Remove tuple behavior.</li>
+<li>Version 2: Changed name to <code class="docutils literal notranslate"><span class="pre">removeprefix</span></code>/<code class="docutils literal notranslate"><span class="pre">removesuffix</span></code>;
+added support for tuples as arguments</li>
+<li>Version 1: Initial draft with <code class="docutils literal notranslate"><span class="pre">cutprefix</span></code>/<code class="docutils literal notranslate"><span class="pre">cutsuffix</span></code></li>
+</ul>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id32">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="pr"><span class="brackets"><a class="fn-backref" href="#id9">1</a></span></dt>
+<dd>GitHub pull request with implementation
+(<a class="reference external" href="https://github.com/python/cpython/pull/18939">https://github.com/python/cpython/pull/18939</a>)</dd>
+<dt class="label" id="pyid"><span class="brackets">2</span><span class='fn-backref'><em> (<a href="#id1">1</a>, <a href="#id8">2</a>) </em></span></dt>
+<dd>[Python-Ideas] “New explicit methods to trim strings”
+(<a class="reference external" href="https://mail.python.org/archives/list/python-ideas&#64;python.org/thread/RJARZSUKCXRJIP42Z2YBBAEN5XA7KEC3/">https://mail.python.org/archives/list/python-ideas&#64;python.org/thread/RJARZSUKCXRJIP42Z2YBBAEN5XA7KEC3/</a>)</dd>
+<dt class="label" id="id10"><span class="brackets"><a class="fn-backref" href="#id2">3</a></span></dt>
+<dd>“Re: [Python-ideas] adding a trim convenience function”
+(<a class="reference external" href="https://mail.python.org/archives/list/python-ideas&#64;python.org/thread/SJ7CKPZSKB5RWT7H3YNXOJUQ7QLD2R3X/#C2W5T7RCFSHU5XI72HG53A6R3J3SN4MV">https://mail.python.org/archives/list/python-ideas&#64;python.org/thread/SJ7CKPZSKB5RWT7H3YNXOJUQ7QLD2R3X/#C2W5T7RCFSHU5XI72HG53A6R3J3SN4MV</a>)</dd>
+<dt class="label" id="id11"><span class="brackets"><a class="fn-backref" href="#id3">4</a></span></dt>
+<dd>“Re: [Python-Dev] strip behavior provides inconsistent results with certain strings”
+(<a class="reference external" href="https://mail.python.org/archives/list/python-ideas&#64;python.org/thread/XYFQMFPUV6FR2N5BGYWPBVMZ5BE5PJ6C/#XYFQMFPUV6FR2N5BGYWPBVMZ5BE5PJ6C">https://mail.python.org/archives/list/python-ideas&#64;python.org/thread/XYFQMFPUV6FR2N5BGYWPBVMZ5BE5PJ6C/#XYFQMFPUV6FR2N5BGYWPBVMZ5BE5PJ6C</a>)</dd>
+<dt class="label" id="id12"><span class="brackets"><a class="fn-backref" href="#id4">5</a></span></dt>
+<dd>[Python-Dev] “correction of a bug”
+(<a class="reference external" href="https://mail.python.org/archives/list/python-dev&#64;python.org/thread/AOZ7RFQTQLCZCTVNKESZI67PB3PSS72X/#AOZ7RFQTQLCZCTVNKESZI67PB3PSS72X">https://mail.python.org/archives/list/python-dev&#64;python.org/thread/AOZ7RFQTQLCZCTVNKESZI67PB3PSS72X/#AOZ7RFQTQLCZCTVNKESZI67PB3PSS72X</a>)</dd>
+<dt class="label" id="id13"><span class="brackets"><a class="fn-backref" href="#id5">6</a></span></dt>
+<dd>[Python-Dev] “str.lstrip bug?”
+(<a class="reference external" href="https://mail.python.org/archives/list/python-dev&#64;python.org/thread/OJDKRIESKGTQFNLX6KZSGKU57UXNZYAN/#CYZUFFJ2Q5ZZKMJIQBZVZR4NSLK5ZPIH">https://mail.python.org/archives/list/python-dev&#64;python.org/thread/OJDKRIESKGTQFNLX6KZSGKU57UXNZYAN/#CYZUFFJ2Q5ZZKMJIQBZVZR4NSLK5ZPIH</a>)</dd>
+<dt class="label" id="id14"><span class="brackets"><a class="fn-backref" href="#id6">7</a></span></dt>
+<dd>[Python-Dev] “strip behavior provides inconsistent results with certain strings”
+(<a class="reference external" href="https://mail.python.org/archives/list/python-dev&#64;python.org/thread/ZWRGCGANHGVDPP44VQKRIYOYX7LNVDVG/#ZWRGCGANHGVDPP44VQKRIYOYX7LNVDVG">https://mail.python.org/archives/list/python-dev&#64;python.org/thread/ZWRGCGANHGVDPP44VQKRIYOYX7LNVDVG/#ZWRGCGANHGVDPP44VQKRIYOYX7LNVDVG</a>)</dd>
+<dt class="label" id="confusion"><span class="brackets"><a class="fn-backref" href="#id7">8</a></span></dt>
+<dd>Comment listing Bug Tracker and StackOverflow issues
+(<a class="reference external" href="https://mail.python.org/archives/list/python-ideas&#64;python.org/message/GRGAFIII3AX22K3N3KT7RB4DPBY3LPVG/">https://mail.python.org/archives/list/python-ideas&#64;python.org/message/GRGAFIII3AX22K3N3KT7RB4DPBY3LPVG/</a>)</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id33">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document is placed in the public domain or under the
+CC0-1.0-Universal license, whichever is more permissive.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0616.rst">https://github.com/python/peps/blob/master/pep-0616.rst</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0616.rst.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0615.html">PEP 0615</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0617.html">PEP 0617</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 616 – String methods to remove prefixes and suffixes</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#motivating-examples-from-the-python-standard-library">Motivating examples from the Python standard library</a><ul>
+<li><a class="reference internal" href="#find-recursionlimit-py">find_recursionlimit.py</a></li>
+<li><a class="reference internal" href="#deccheck-py">deccheck.py</a></li>
+<li><a class="reference internal" href="#cookiejar-py">cookiejar.py</a></li>
+<li><a class="reference internal" href="#test-concurrent-futures-py">test_concurrent_futures.py</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rejected-ideas">Rejected Ideas</a><ul>
+<li><a class="reference internal" href="#expand-the-lstrip-and-rstrip-apis">Expand the lstrip and rstrip APIs</a></li>
+<li><a class="reference internal" href="#remove-multiple-copies-of-a-prefix">Remove multiple copies of a prefix</a></li>
+<li><a class="reference internal" href="#raising-an-exception-when-not-found">Raising an exception when not found</a></li>
+<li><a class="reference internal" href="#accepting-a-tuple-of-affixes">Accepting a tuple of affixes</a></li>
+<li><a class="reference internal" href="#alternative-method-names">Alternative Method Names</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#how-to-teach-this">How to Teach This</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#history-of-major-revisions">History of Major revisions</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

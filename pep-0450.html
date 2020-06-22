@@ -1,0 +1,707 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 450 – Adding A Statistics Module To The Standard Library &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 451 – A ModuleSpec Type for the Import System" href="pep-0451.html" />
+    <link rel="prev" title="PEP 449 – Removal of the PyPI Mirror Auto Discovery and Naming Scheme" href="pep-0449.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 450 – Adding A Statistics Module To The Standard Library</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-450-adding-a-statistics-module-to-the-standard-library">
+<h1 class="page-title">PEP 450 – Adding A Statistics Module To The Standard Library<a class="headerlink" href="#pep-450-adding-a-statistics-module-to-the-standard-library" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">450</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Adding A Statistics Module To The Standard Library</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Steven D’Aprano &lt;steve&#32;&#97;t&#32;pearwood.info&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">01-Aug-2013</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.4</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">13-Sep-2013</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id50">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id51">Rationale</a></li>
+<li><a class="reference internal" href="#comparison-to-other-languages-packages" id="id52">Comparison To Other Languages/Packages</a><ul>
+<li><a class="reference internal" href="#r" id="id53">R</a></li>
+<li><a class="reference internal" href="#c" id="id54">C#</a></li>
+<li><a class="reference internal" href="#ruby" id="id55">Ruby</a></li>
+<li><a class="reference internal" href="#php" id="id56">PHP</a></li>
+<li><a class="reference internal" href="#delphi" id="id57">Delphi</a></li>
+<li><a class="reference internal" href="#gnu-scientific-library" id="id58">GNU Scientific Library</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#design-decisions-of-the-module" id="id59">Design Decisions Of The Module</a></li>
+<li><a class="reference internal" href="#api" id="id60">API</a><ul>
+<li><a class="reference internal" href="#calculating-mean-median-and-mode" id="id61">Calculating mean, median and mode</a></li>
+<li><a class="reference internal" href="#calculating-variance-and-standard-deviation" id="id62">Calculating variance and standard deviation</a></li>
+<li><a class="reference internal" href="#other-functions" id="id63">Other functions</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#specification" id="id64">Specification</a></li>
+<li><a class="reference internal" href="#what-should-be-the-name-of-the-module" id="id65">What Should Be The Name Of The Module?</a></li>
+<li><a class="reference internal" href="#discussion-and-resolved-issues" id="id66">Discussion And Resolved Issues</a></li>
+<li><a class="reference internal" href="#frequently-asked-questions" id="id67">Frequently Asked Questions</a><ul>
+<li><a class="reference internal" href="#shouldn-t-this-module-spend-time-on-pypi-before-being-considered-for-the-standard-library" id="id68">Shouldn’t this module spend time on PyPI before being considered for the standard library?</a></li>
+<li><a class="reference internal" href="#does-the-standard-library-really-need-yet-another-version-of-sum" id="id69">Does the standard library really need yet another version of <code class="docutils literal notranslate"><span class="pre">sum</span></code>?</a></li>
+<li><a class="reference internal" href="#will-this-module-be-backported-to-older-versions-of-python" id="id70">Will this module be backported to older versions of Python?</a></li>
+<li><a class="reference internal" href="#is-this-supposed-to-replace-numpy" id="id71">Is this supposed to replace numpy?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#future-work" id="id72">Future Work</a></li>
+<li><a class="reference internal" href="#references" id="id73">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id74">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id50">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes the addition of a module for common statistics functions such
+as mean, median, variance and standard deviation to the Python standard
+library. See also <a class="reference external" href="http://bugs.python.org/issue18606">http://bugs.python.org/issue18606</a></p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id51">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>The proposed statistics module is motivated by the “batteries included”
+philosophy towards the Python standard library.  Raymond Hettinger and other
+senior developers have requested a quality statistics library that falls
+somewhere in between high-end statistics libraries and ad hoc code. <a class="footnote-reference brackets" href="#id26" id="id1">1</a>
+Statistical functions such as mean, standard deviation and others are obvious
+and useful batteries, familiar to any Secondary School student. Even cheap
+scientific calculators typically include multiple statistical functions such
+as:</p>
+<ul class="simple">
+<li>mean</li>
+<li>population and sample variance</li>
+<li>population and sample standard deviation</li>
+<li>linear regression</li>
+<li>correlation coefficient</li>
+</ul>
+<p>Graphing calculators aimed at Secondary School students typically include all
+of the above, plus some or all of:</p>
+<ul class="simple">
+<li>median</li>
+<li>mode</li>
+<li>functions for calculating the probability of random variables from the
+normal, t, chi-squared, and F distributions</li>
+<li>inference on the mean</li>
+</ul>
+<p>and others <a class="footnote-reference brackets" href="#id27" id="id2">2</a>.  Likewise spreadsheet applications such as Microsoft Excel,
+LibreOffice and Gnumeric include rich collections of statistical
+functions <a class="footnote-reference brackets" href="#id28" id="id3">3</a>.</p>
+<p>In contrast, Python currently has no standard way to calculate even the
+simplest and most obvious statistical functions such as mean.  For those who
+need statistical functions in Python, there are two obvious solutions:</p>
+<ul class="simple">
+<li>install numpy and/or scipy <a class="footnote-reference brackets" href="#id29" id="id4">4</a>;</li>
+<li>or use a Do It Yourself solution.</li>
+</ul>
+<p>Numpy is perhaps the most full-featured solution, but it has a few
+disadvantages:</p>
+<ul>
+<li><p>It may be overkill for many purposes.  The documentation for numpy even warns</p>
+<blockquote>
+<div><p>“It can be hard to know what functions are available in numpy.  This is
+not a complete list, but it does cover most of them.”<a class="footnote-reference brackets" href="#id30" id="id5">5</a></p>
+</div></blockquote>
+<p>and then goes on to list over 270 functions, only a small number of which are
+related to statistics.</p>
+</li>
+<li><p>Numpy is aimed at those doing heavy numerical work, and may be intimidating
+to those who don’t have a background in computational mathematics and
+computer science.  For example, <code class="docutils literal notranslate"><span class="pre">numpy.mean</span></code> takes four arguments:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mean</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>although fortunately for the beginner or casual numpy user, three are
+optional and <code class="docutils literal notranslate"><span class="pre">numpy.mean</span></code> does the right thing in simple cases:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span> <span class="n">numpy</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">])</span>
+<span class="go">2.5</span>
+</pre></div>
+</div>
+</li>
+<li><p>For many people, installing numpy may be difficult or impossible.  For
+example, people in corporate environments may have to go through a difficult,
+time-consuming process before being permitted to install third-party
+software.  For the casual Python user, having to learn about installing
+third-party packages in order to average a list of numbers is unfortunate.</p>
+</li>
+</ul>
+<p>This leads to option number 2, DIY statistics functions.  At first glance, this
+appears to be an attractive option, due to the apparent simplicity of common
+statistical functions.  For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">mean</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">variance</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="c1"># Use the Computational Formula for Variance.</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">ss</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">data</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="n">n</span>
+    <span class="k">return</span> <span class="n">ss</span><span class="o">/</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">standard_deviation</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">variance</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>The above appears to be correct with a casual test:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">8</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">variance</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<span class="go">7.5</span>
+</pre></div>
+</div>
+<p>But adding a constant to every data point should not change the variance:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">+</span><span class="mf">1e12</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">data</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">variance</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<span class="go">0.0</span>
+</pre></div>
+</div>
+<p>And variance should <em>never</em> be negative:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">variance</span><span class="p">(</span><span class="n">data</span><span class="o">*</span><span class="mi">100</span><span class="p">)</span>
+<span class="go">-1239429440.1282566</span>
+</pre></div>
+</div>
+<p>By contrast, the proposed reference implementation gets the exactly correct
+answer 7.5 for the first two examples, and a reasonably close answer for the
+third: 6.012. numpy does no better <a class="footnote-reference brackets" href="#id31" id="id6">6</a>.</p>
+<p>Even simple statistical calculations contain traps for the unwary, starting
+with the Computational Formula itself.  Despite the name, it is numerically
+unstable and can be extremely inaccurate, as can be seen above.  It is
+completely unsuitable for computation by computer <a class="footnote-reference brackets" href="#id32" id="id7">7</a>.  This problem plagues
+users of many programming language, not just Python <a class="footnote-reference brackets" href="#id33" id="id8">8</a>, as coders reinvent
+the same numerically inaccurate code over and over again <a class="footnote-reference brackets" href="#id34" id="id9">9</a>, or advise others
+to do so <a class="footnote-reference brackets" href="#id35" id="id10">10</a>.</p>
+<p>It isn’t just the variance and standard deviation. Even the mean is not quite
+as straightforward as it might appear.  The above implementation seems too
+simple to have problems, but it does:</p>
+<ul>
+<li><p>The built-in <code class="docutils literal notranslate"><span class="pre">sum</span></code> can lose accuracy when dealing with floats of wildly
+differing magnitude.  Consequently, the above naive <code class="docutils literal notranslate"><span class="pre">mean</span></code> fails this
+“torture test”:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">assert</span> <span class="n">mean</span><span class="p">([</span><span class="mf">1e30</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mf">1e30</span><span class="p">])</span> <span class="o">==</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<p>returning 0 instead of 1, a purely computational error of 100%.</p>
+</li>
+<li><p>Using <code class="docutils literal notranslate"><span class="pre">math.fsum</span></code> inside <code class="docutils literal notranslate"><span class="pre">mean</span></code> will make it more accurate with float
+data, but it also has the side-effect of converting any arguments to float
+even when unnecessary.  E.g. we should expect the mean of a list of Fractions
+to be a Fraction, not a float.</p>
+</li>
+</ul>
+<p>While the above mean implementation does not fail quite as catastrophically as
+the naive variance does, a standard library function can do much better than
+the DIY versions.</p>
+<p>The example above involves an especially bad set of data, but even for more
+realistic data sets accuracy is important.  The first step in interpreting
+variation in data (including dealing with ill-conditioned data) is often to
+standardize it to a series with variance 1 (and often mean 0).  This
+standardization requires accurate computation of the mean and variance of the
+raw series.  Naive computation of mean and variance can lose precision very
+quickly.  Because precision bounds accuracy, it is important to use the most
+precise algorithms for computing mean and variance that are practical, or the
+results of standardization are themselves useless.</p>
+</div>
+<div class="section" id="comparison-to-other-languages-packages">
+<h2><a class="toc-backref" href="#id52">Comparison To Other Languages/Packages</a><a class="headerlink" href="#comparison-to-other-languages-packages" title="Permalink to this headline">¶</a></h2>
+<p>The proposed statistics library is not intended to be a competitor to such
+third-party libraries as numpy/scipy, or of proprietary full-featured
+statistics packages aimed at professional statisticians such as Minitab, SAS
+and Matlab.  It is aimed at the level of graphing and scientific calculators.</p>
+<p>Most programming languages have little or no built-in support for statistics
+functions.  Some exceptions:</p>
+<div class="section" id="r">
+<h3><a class="toc-backref" href="#id53">R</a><a class="headerlink" href="#r" title="Permalink to this headline">¶</a></h3>
+<p>R (and its proprietary cousin, S) is a programming language designed for
+statistics work. It is extremely popular with statisticians and is extremely
+feature-rich <a class="footnote-reference brackets" href="#id36" id="id11">11</a>.</p>
+</div>
+<div class="section" id="c">
+<h3><a class="toc-backref" href="#id54">C#</a><a class="headerlink" href="#c" title="Permalink to this headline">¶</a></h3>
+<p>The C# LINQ package includes extension methods to calculate the average of
+enumerables <a class="footnote-reference brackets" href="#id37" id="id12">12</a>.</p>
+</div>
+<div class="section" id="ruby">
+<h3><a class="toc-backref" href="#id55">Ruby</a><a class="headerlink" href="#ruby" title="Permalink to this headline">¶</a></h3>
+<p>Ruby does not ship with a standard statistics module, despite some apparent
+demand <a class="footnote-reference brackets" href="#id38" id="id13">13</a>.  Statsample appears to be a feature-rich third-party library,
+aiming to compete with R <a class="footnote-reference brackets" href="#id39" id="id14">14</a>.</p>
+</div>
+<div class="section" id="php">
+<h3><a class="toc-backref" href="#id56">PHP</a><a class="headerlink" href="#php" title="Permalink to this headline">¶</a></h3>
+<p>PHP has an extremely feature-rich (although mostly undocumented) set of
+advanced statistical functions <a class="footnote-reference brackets" href="#id40" id="id15">15</a>.</p>
+</div>
+<div class="section" id="delphi">
+<h3><a class="toc-backref" href="#id57">Delphi</a><a class="headerlink" href="#delphi" title="Permalink to this headline">¶</a></h3>
+<p>Delphi includes standard statistical functions including Mean, Sum,
+Variance, TotalVariance, MomentSkewKurtosis in its Math library <a class="footnote-reference brackets" href="#id41" id="id16">16</a>.</p>
+</div>
+<div class="section" id="gnu-scientific-library">
+<h3><a class="toc-backref" href="#id58">GNU Scientific Library</a><a class="headerlink" href="#gnu-scientific-library" title="Permalink to this headline">¶</a></h3>
+<p>The GNU Scientific Library includes standard statistical functions,
+percentiles, median and others <a class="footnote-reference brackets" href="#id42" id="id17">17</a>.  One innovation I have borrowed from the
+GSL is to allow the caller to optionally specify the pre-calculated mean of
+the sample (or an a priori known population mean) when calculating the variance
+and standard deviation <a class="footnote-reference brackets" href="#id43" id="id18">18</a>.</p>
+</div>
+</div>
+<div class="section" id="design-decisions-of-the-module">
+<h2><a class="toc-backref" href="#id59">Design Decisions Of The Module</a><a class="headerlink" href="#design-decisions-of-the-module" title="Permalink to this headline">¶</a></h2>
+<p>My intention is to start small and grow the library as needed, rather than try
+to include everything from the start.  Consequently, the current reference
+implementation includes only a small number of functions: mean, variance,
+standard deviation, median, mode. (See the reference implementation for a full
+list.)</p>
+<p>I have aimed for the following design features:</p>
+<ul class="simple">
+<li>Correctness over speed.  It is easier to speed up a correct but slow function
+than to correct a fast but buggy one.</li>
+<li>Concentrate on data in sequences, allowing two-passes over the data, rather
+than potentially compromise on accuracy for the sake of a one-pass algorithm.
+Functions expect data will be passed as a list or other sequence; if given an
+iterator, they may internally convert to a list.</li>
+<li>Functions should, as much as possible, honour any type of numeric data. E.g.
+the mean of a list of Decimals should be a Decimal, not a float. When this is
+not possible, treat float as the “lowest common data type”.</li>
+<li>Although functions support data sets of floats, Decimals or Fractions, there
+is no guarantee that <em>mixed</em> data sets will be supported. (But on the other
+hand, they aren’t explicitly rejected either.)</li>
+<li>Plenty of documentation, aimed at readers who understand the basic concepts
+but may not know (for example) which variance they should use (population or
+sample?).  Mathematicians and statisticians have a terrible habit of being
+inconsistent with both notation and terminology <a class="footnote-reference brackets" href="#id44" id="id19">19</a>, and having spent many
+hours making sense of the contradictory/confusing definitions in use, it is
+only fair that I do my best to clarify rather than obfuscate the topic.</li>
+<li>But avoid going into tedious <a class="footnote-reference brackets" href="#id45" id="id20">20</a> mathematical detail.</li>
+</ul>
+</div>
+<div class="section" id="api">
+<h2><a class="toc-backref" href="#id60">API</a><a class="headerlink" href="#api" title="Permalink to this headline">¶</a></h2>
+<p>The initial version of the library will provide univariate (single variable)
+statistics functions.  The general API will be based on a functional model
+<code class="docutils literal notranslate"><span class="pre">function(data,</span> <span class="pre">...)</span> <span class="pre">-&gt;</span> <span class="pre">result</span></code>, where <code class="docutils literal notranslate"><span class="pre">data</span></code> is a mandatory iterable of
+(usually) numeric data.</p>
+<p>The author expects that lists will be the most common data type used, but any
+iterable type should be acceptable.  Where necessary, functions may convert to
+lists internally.  Where possible, functions are expected to conserve the type
+of the data values, for example, the mean of a list of Decimals should be a
+Decimal rather than float.</p>
+<div class="section" id="calculating-mean-median-and-mode">
+<h3><a class="toc-backref" href="#id61">Calculating mean, median and mode</a><a class="headerlink" href="#calculating-mean-median-and-mode" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">mean</span></code>, <code class="docutils literal notranslate"><span class="pre">median*</span></code> and <code class="docutils literal notranslate"><span class="pre">mode</span></code> functions take a single mandatory
+argument and return the appropriate statistic, e.g.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">mean</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+<span class="go">2.0</span>
+</pre></div>
+</div>
+<p>Functions provided are:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">mean(data)</span></code></dt><dd>arithmetic mean of <em>data</em>.</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">median(data)</span></code></dt><dd>median (middle value) of <em>data</em>, taking the average of the two
+middle values when there are an even number of values.</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">median_high(data)</span></code></dt><dd>high median of <em>data</em>, taking the larger of the two middle
+values when the number of items is even.</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">median_low(data)</span></code></dt><dd>low median of <em>data</em>, taking the smaller of the two middle
+values when the number of items is even.</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">median_grouped(data,</span> <span class="pre">interval=1)</span></code></dt><dd>50th percentile of grouped <em>data</em>, using interpolation.</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">mode(data)</span></code></dt><dd>most common <em>data</em> point.</dd>
+</dl>
+</li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">mode</span></code> is the sole exception to the rule that the data argument must be
+numeric.  It will also accept an iterable of nominal data, such as strings.</p>
+</div>
+<div class="section" id="calculating-variance-and-standard-deviation">
+<h3><a class="toc-backref" href="#id62">Calculating variance and standard deviation</a><a class="headerlink" href="#calculating-variance-and-standard-deviation" title="Permalink to this headline">¶</a></h3>
+<p>In order to be similar to scientific calculators, the statistics module will
+include separate functions for population and sample variance and standard
+deviation.  All four functions have similar signatures, with a single mandatory
+argument, an iterable of numeric data, e.g.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">variance</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+<span class="go">0.5</span>
+</pre></div>
+</div>
+<p>All four functions also accept a second, optional, argument, the mean of the
+data.  This is modelled on a similar API provided by the GNU Scientific
+Library <a class="footnote-reference brackets" href="#id43" id="id21">18</a>.  There are three use-cases for using this argument, in no
+particular order:</p>
+<ol class="arabic simple">
+<li>The value of the mean is known <em>a priori</em>.</li>
+<li>You have already calculated the mean, and wish to avoid calculating
+it again.</li>
+<li>You wish to (ab)use the variance functions to calculate the second
+moment about some given point other than the mean.</li>
+</ol>
+<p>In each case, it is the caller’s responsibility to ensure that given
+argument is meaningful.</p>
+<p>Functions provided are:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">variance(data,</span> <span class="pre">xbar=None)</span></code></dt><dd>sample variance of <em>data</em>, optionally using <em>xbar</em> as the sample mean.</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">stdev(data,</span> <span class="pre">xbar=None)</span></code></dt><dd>sample standard deviation of <em>data</em>, optionally using <em>xbar</em> as the
+sample mean.</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">pvariance(data,</span> <span class="pre">mu=None)</span></code></dt><dd>population variance of <em>data</em>, optionally using <em>mu</em> as the population
+mean.</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">pstdev(data,</span> <span class="pre">mu=None)</span></code></dt><dd>population standard deviation of <em>data</em>, optionally using <em>mu</em> as the
+population mean.</dd>
+</dl>
+</li>
+</ul>
+</div>
+<div class="section" id="other-functions">
+<h3><a class="toc-backref" href="#id63">Other functions</a><a class="headerlink" href="#other-functions" title="Permalink to this headline">¶</a></h3>
+<p>There is one other public function:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">sum(data,</span> <span class="pre">start=0)</span></code></dt><dd>high-precision sum of numeric <em>data</em>.</dd>
+</dl>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id64">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>As the proposed reference implementation is in pure Python, other Python
+implementations can easily make use of the module unchanged, or adapt it as
+they see fit.</p>
+</div>
+<div class="section" id="what-should-be-the-name-of-the-module">
+<h2><a class="toc-backref" href="#id65">What Should Be The Name Of The Module?</a><a class="headerlink" href="#what-should-be-the-name-of-the-module" title="Permalink to this headline">¶</a></h2>
+<p>This will be a top-level module <code class="docutils literal notranslate"><span class="pre">statistics</span></code>.</p>
+<p>There was some interest in turning <code class="docutils literal notranslate"><span class="pre">math</span></code> into a package, and making this a
+sub-module of <code class="docutils literal notranslate"><span class="pre">math</span></code>, but the general consensus eventually agreed on a
+top-level module.  Other potential but rejected names included <code class="docutils literal notranslate"><span class="pre">stats</span></code> (too
+much risk of confusion with existing <code class="docutils literal notranslate"><span class="pre">stat</span></code> module), and <code class="docutils literal notranslate"><span class="pre">statslib</span></code>
+(described as “too C-like”).</p>
+</div>
+<div class="section" id="discussion-and-resolved-issues">
+<h2><a class="toc-backref" href="#id66">Discussion And Resolved Issues</a><a class="headerlink" href="#discussion-and-resolved-issues" title="Permalink to this headline">¶</a></h2>
+<p>This proposal has been previously discussed here <a class="footnote-reference brackets" href="#id46" id="id22">21</a>.</p>
+<p>A number of design issues were resolved during the discussion on Python-Ideas
+and the initial code review.  There was a lot of concern about the addition of
+yet another <code class="docutils literal notranslate"><span class="pre">sum</span></code> function to the standard library, see the FAQs below for
+more details.  In addition, the initial implementation of <code class="docutils literal notranslate"><span class="pre">sum</span></code> suffered from
+some rounding issues and other design problems when dealing with Decimals.
+Oscar Benjamin’s assistance in resolving this was invaluable.</p>
+<p>Another issue was the handling of data in the form of iterators.  The first
+implementation of variance silently swapped between a one- and two-pass
+algorithm, depending on whether the data was in the form of an iterator or
+sequence.  This proved to be a design mistake, as the calculated variance could
+differ slightly depending on the algorithm used, and <code class="docutils literal notranslate"><span class="pre">variance</span></code> etc. were
+changed to internally generate a list and always use the more accurate two-pass
+implementation.</p>
+<p>One controversial design involved the functions to calculate median, which were
+implemented as attributes on the <code class="docutils literal notranslate"><span class="pre">median</span></code> callable, e.g. <code class="docutils literal notranslate"><span class="pre">median</span></code>,
+<code class="docutils literal notranslate"><span class="pre">median.low</span></code>, <code class="docutils literal notranslate"><span class="pre">median.high</span></code> etc.  Although there is at least one existing
+use of this style in the standard library, in <code class="docutils literal notranslate"><span class="pre">unittest.mock</span></code>, the code
+reviewers felt that this was too unusual for the standard library.
+Consequently, the design has been changed to a more traditional design of
+separate functions with a pseudo-namespace naming convention, <code class="docutils literal notranslate"><span class="pre">median_low</span></code>,
+<code class="docutils literal notranslate"><span class="pre">median_high</span></code>, etc.</p>
+<p>Another issue that was of concern to code reviewers was the existence of a
+function calculating the sample mode of continuous data, with some people
+questioning the choice of algorithm, and whether it was a sufficiently common
+need to be included.  So it was dropped from the API, and <code class="docutils literal notranslate"><span class="pre">mode</span></code> now
+implements only the basic schoolbook algorithm based on counting unique values.</p>
+<p>Another significant point of discussion was calculating statistics of
+<code class="docutils literal notranslate"><span class="pre">timedelta</span></code> objects.  Although the statistics module will not directly
+support <code class="docutils literal notranslate"><span class="pre">timedelta</span></code> objects, it is possible to support this use-case by
+converting them to numbers first using the <code class="docutils literal notranslate"><span class="pre">timedelta.total_seconds</span></code> method.</p>
+</div>
+<div class="section" id="frequently-asked-questions">
+<h2><a class="toc-backref" href="#id67">Frequently Asked Questions</a><a class="headerlink" href="#frequently-asked-questions" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="shouldn-t-this-module-spend-time-on-pypi-before-being-considered-for-the-standard-library">
+<h3><a class="toc-backref" href="#id68">Shouldn’t this module spend time on PyPI before being considered for the standard library?</a><a class="headerlink" href="#shouldn-t-this-module-spend-time-on-pypi-before-being-considered-for-the-standard-library" title="Permalink to this headline">¶</a></h3>
+<p>Older versions of this module have been available on PyPI <a class="footnote-reference brackets" href="#id47" id="id23">22</a> since 2010.
+Being much simpler than numpy, it does not require many years of external
+development.</p>
+</div>
+<div class="section" id="does-the-standard-library-really-need-yet-another-version-of-sum">
+<h3><a class="toc-backref" href="#id69">Does the standard library really need yet another version of <code class="docutils literal notranslate"><span class="pre">sum</span></code>?</a><a class="headerlink" href="#does-the-standard-library-really-need-yet-another-version-of-sum" title="Permalink to this headline">¶</a></h3>
+<p>This proved to be the most controversial part of the reference implementation.
+In one sense, clearly three sums is two too many.  But in another sense, yes.
+The reasons why the two existing versions are unsuitable are described
+here <a class="footnote-reference brackets" href="#id48" id="id24">23</a> but the short summary is:</p>
+<ul class="simple">
+<li>the built-in sum can lose precision with floats;</li>
+<li>the built-in sum accepts any non-numeric data type that supports the <code class="docutils literal notranslate"><span class="pre">+</span></code>
+operator, apart from strings and bytes;</li>
+<li><code class="docutils literal notranslate"><span class="pre">math.fsum</span></code> is high-precision, but coerces all arguments to float.</li>
+</ul>
+<p>There was some interest in “fixing” one or the other of the existing sums. If
+this occurs before 3.4 feature-freeze, the decision to keep <code class="docutils literal notranslate"><span class="pre">statistics.sum</span></code>
+can be re-considered.</p>
+</div>
+<div class="section" id="will-this-module-be-backported-to-older-versions-of-python">
+<h3><a class="toc-backref" href="#id70">Will this module be backported to older versions of Python?</a><a class="headerlink" href="#will-this-module-be-backported-to-older-versions-of-python" title="Permalink to this headline">¶</a></h3>
+<p>The module currently targets 3.3, and I will make it available on PyPI for
+3.3 for the foreseeable future.  Backporting to older versions of the 3.x
+series is likely (but not yet decided).  Backporting to 2.7 is less likely but
+not ruled out.</p>
+</div>
+<div class="section" id="is-this-supposed-to-replace-numpy">
+<h3><a class="toc-backref" href="#id71">Is this supposed to replace numpy?</a><a class="headerlink" href="#is-this-supposed-to-replace-numpy" title="Permalink to this headline">¶</a></h3>
+<p>No. While it is likely to grow over the years (see open issues below) it is
+not aimed to replace, or even compete directly with, numpy.  Numpy is a
+full-featured numeric library aimed at professionals, the nuclear reactor of
+numeric libraries in the Python ecosystem. This is just a battery, as in
+“batteries included”, and is aimed at an intermediate level somewhere between
+“use numpy” and “roll your own version”.</p>
+</div>
+</div>
+<div class="section" id="future-work">
+<h2><a class="toc-backref" href="#id72">Future Work</a><a class="headerlink" href="#future-work" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p>At this stage, I am unsure of the best API for multivariate statistical
+functions such as linear regression, correlation coefficient, and covariance.
+Possible APIs include:</p>
+<ul>
+<li><p>Separate arguments for x and y data:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">function</span><span class="p">([</span><span class="n">x0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="p">[</span><span class="n">y0</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="o">...</span><span class="p">])</span>
+</pre></div>
+</div>
+</li>
+<li><p>A single argument for (x, y) data:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">function</span><span class="p">([(</span><span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">),</span> <span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">),</span> <span class="o">...</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>This API is preferred by GvR <a class="footnote-reference brackets" href="#id49" id="id25">24</a>.</p>
+</li>
+<li><p>Selecting arbitrary columns from a 2D array:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">function</span><span class="p">([[</span><span class="n">a0</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">z0</span><span class="p">],</span> <span class="p">[</span><span class="n">a1</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">z1</span><span class="p">],</span> <span class="o">...</span><span class="p">],</span> <span class="n">x</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p>Some combination of the above.</p>
+</li>
+</ul>
+<p>In the absence of a consensus of preferred API for multivariate stats, I will
+defer including such multivariate functions until Python 3.5.</p>
+</li>
+<li><p>Likewise, functions for calculating probability of random variables and
+inference testing (e.g. Student’s t-test) will be deferred until 3.5.</p>
+</li>
+<li><p>There is considerable interest in including one-pass functions that can
+calculate multiple statistics from data in iterator form, without having to
+convert to a list. The experimental <code class="docutils literal notranslate"><span class="pre">stats</span></code> package on PyPI includes
+co-routine versions of statistics functions. Including these will be deferred
+to 3.5.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id73">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id26"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2010-October/104721.html">https://mail.python.org/pipermail/python-dev/2010-October/104721.html</a></dd>
+<dt class="label" id="id27"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd><a class="reference external" href="http://support.casio.com/pdf/004/CP330PLUSver310_Soft_E.pdf">http://support.casio.com/pdf/004/CP330PLUSver310_Soft_E.pdf</a></dd>
+<dt class="label" id="id28"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd><p>Gnumeric::
+<a class="reference external" href="https://projects.gnome.org/gnumeric/functions.shtml">https://projects.gnome.org/gnumeric/functions.shtml</a></p>
+<p>LibreOffice:
+<a class="reference external" href="https://help.libreoffice.org/Calc/Statistical_Functions_Part_One">https://help.libreoffice.org/Calc/Statistical_Functions_Part_One</a>
+<a class="reference external" href="https://help.libreoffice.org/Calc/Statistical_Functions_Part_Two">https://help.libreoffice.org/Calc/Statistical_Functions_Part_Two</a>
+<a class="reference external" href="https://help.libreoffice.org/Calc/Statistical_Functions_Part_Three">https://help.libreoffice.org/Calc/Statistical_Functions_Part_Three</a>
+<a class="reference external" href="https://help.libreoffice.org/Calc/Statistical_Functions_Part_Four">https://help.libreoffice.org/Calc/Statistical_Functions_Part_Four</a>
+<a class="reference external" href="https://help.libreoffice.org/Calc/Statistical_Functions_Part_Five">https://help.libreoffice.org/Calc/Statistical_Functions_Part_Five</a></p>
+</dd>
+<dt class="label" id="id29"><span class="brackets"><a class="fn-backref" href="#id4">4</a></span></dt>
+<dd>Scipy: <a class="reference external" href="http://scipy-central.org/">http://scipy-central.org/</a>
+Numpy: <a class="reference external" href="http://www.numpy.org/">http://www.numpy.org/</a></dd>
+<dt class="label" id="id30"><span class="brackets"><a class="fn-backref" href="#id5">5</a></span></dt>
+<dd><a class="reference external" href="http://wiki.scipy.org/Numpy_Functions_by_Category">http://wiki.scipy.org/Numpy_Functions_by_Category</a></dd>
+<dt class="label" id="id31"><span class="brackets"><a class="fn-backref" href="#id6">6</a></span></dt>
+<dd>Tested with numpy 1.6.1 and Python 2.7.</dd>
+<dt class="label" id="id32"><span class="brackets"><a class="fn-backref" href="#id7">7</a></span></dt>
+<dd><a class="reference external" href="http://www.johndcook.com/blog/2008/09/26/comparing-three-methods-of-computing-standard-deviation/">http://www.johndcook.com/blog/2008/09/26/comparing-three-methods-of-computing-standard-deviation/</a></dd>
+<dt class="label" id="id33"><span class="brackets"><a class="fn-backref" href="#id8">8</a></span></dt>
+<dd><a class="reference external" href="http://rosettacode.org/wiki/Standard_deviation">http://rosettacode.org/wiki/Standard_deviation</a></dd>
+<dt class="label" id="id34"><span class="brackets"><a class="fn-backref" href="#id9">9</a></span></dt>
+<dd><a class="reference external" href="https://bitbucket.org/larsyencken/simplestats/src/c42e048a6625/src/basic.py">https://bitbucket.org/larsyencken/simplestats/src/c42e048a6625/src/basic.py</a></dd>
+<dt class="label" id="id35"><span class="brackets"><a class="fn-backref" href="#id10">10</a></span></dt>
+<dd><a class="reference external" href="http://stackoverflow.com/questions/2341340/calculate-mean-and-variance-with-one-iteration">http://stackoverflow.com/questions/2341340/calculate-mean-and-variance-with-one-iteration</a></dd>
+<dt class="label" id="id36"><span class="brackets"><a class="fn-backref" href="#id11">11</a></span></dt>
+<dd><a class="reference external" href="http://www.r-project.org/">http://www.r-project.org/</a></dd>
+<dt class="label" id="id37"><span class="brackets"><a class="fn-backref" href="#id12">12</a></span></dt>
+<dd><a class="reference external" href="http://msdn.microsoft.com/en-us/library/system.linq.enumerable.average.aspx">http://msdn.microsoft.com/en-us/library/system.linq.enumerable.average.aspx</a></dd>
+<dt class="label" id="id38"><span class="brackets"><a class="fn-backref" href="#id13">13</a></span></dt>
+<dd><a class="reference external" href="https://www.bcg.wisc.edu/webteam/support/ruby/standard_deviation">https://www.bcg.wisc.edu/webteam/support/ruby/standard_deviation</a></dd>
+<dt class="label" id="id39"><span class="brackets"><a class="fn-backref" href="#id14">14</a></span></dt>
+<dd><a class="reference external" href="http://ruby-statsample.rubyforge.org/">http://ruby-statsample.rubyforge.org/</a></dd>
+<dt class="label" id="id40"><span class="brackets"><a class="fn-backref" href="#id15">15</a></span></dt>
+<dd><a class="reference external" href="http://www.php.net/manual/en/ref.stats.php">http://www.php.net/manual/en/ref.stats.php</a></dd>
+<dt class="label" id="id41"><span class="brackets"><a class="fn-backref" href="#id16">16</a></span></dt>
+<dd><a class="reference external" href="http://www.ayton.id.au/gary/it/Delphi/D_maths.htm#Delphi%20Statistical%20functions">http://www.ayton.id.au/gary/it/Delphi/D_maths.htm#Delphi%20Statistical%20functions</a>.</dd>
+<dt class="label" id="id42"><span class="brackets"><a class="fn-backref" href="#id17">17</a></span></dt>
+<dd><a class="reference external" href="http://www.gnu.org/software/gsl/manual/html_node/Statistics.html">http://www.gnu.org/software/gsl/manual/html_node/Statistics.html</a></dd>
+<dt class="label" id="id43"><span class="brackets">18</span><span class='fn-backref'><em> (<a href="#id18">1</a>, <a href="#id21">2</a>) </em></span></dt>
+<dd><a class="reference external" href="http://www.gnu.org/software/gsl/manual/html_node/Mean-and-standard-deviation-and-variance.html">http://www.gnu.org/software/gsl/manual/html_node/Mean-and-standard-deviation-and-variance.html</a></dd>
+<dt class="label" id="id44"><span class="brackets"><a class="fn-backref" href="#id19">19</a></span></dt>
+<dd><a class="reference external" href="http://mathworld.wolfram.com/Skewness.html">http://mathworld.wolfram.com/Skewness.html</a></dd>
+<dt class="label" id="id45"><span class="brackets"><a class="fn-backref" href="#id20">20</a></span></dt>
+<dd>At least, tedious to those who don’t like this sort of thing.</dd>
+<dt class="label" id="id46"><span class="brackets"><a class="fn-backref" href="#id22">21</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2011-September/011524.html">https://mail.python.org/pipermail/python-ideas/2011-September/011524.html</a></dd>
+<dt class="label" id="id47"><span class="brackets"><a class="fn-backref" href="#id23">22</a></span></dt>
+<dd><a class="reference external" href="https://pypi.python.org/pypi/stats/">https://pypi.python.org/pypi/stats/</a></dd>
+<dt class="label" id="id48"><span class="brackets"><a class="fn-backref" href="#id24">23</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2013-August/022630.html">https://mail.python.org/pipermail/python-ideas/2013-August/022630.html</a></dd>
+<dt class="label" id="id49"><span class="brackets"><a class="fn-backref" href="#id25">24</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2013-September/128429.html">https://mail.python.org/pipermail/python-dev/2013-September/128429.html</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id74">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0450.txt">https://github.com/python/peps/blob/master/pep-0450.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0450.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0449.html">PEP 0449</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0451.html">PEP 0451</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 450 – Adding A Statistics Module To The Standard Library</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#comparison-to-other-languages-packages">Comparison To Other Languages/Packages</a><ul>
+<li><a class="reference internal" href="#r">R</a></li>
+<li><a class="reference internal" href="#c">C#</a></li>
+<li><a class="reference internal" href="#ruby">Ruby</a></li>
+<li><a class="reference internal" href="#php">PHP</a></li>
+<li><a class="reference internal" href="#delphi">Delphi</a></li>
+<li><a class="reference internal" href="#gnu-scientific-library">GNU Scientific Library</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#design-decisions-of-the-module">Design Decisions Of The Module</a></li>
+<li><a class="reference internal" href="#api">API</a><ul>
+<li><a class="reference internal" href="#calculating-mean-median-and-mode">Calculating mean, median and mode</a></li>
+<li><a class="reference internal" href="#calculating-variance-and-standard-deviation">Calculating variance and standard deviation</a></li>
+<li><a class="reference internal" href="#other-functions">Other functions</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#what-should-be-the-name-of-the-module">What Should Be The Name Of The Module?</a></li>
+<li><a class="reference internal" href="#discussion-and-resolved-issues">Discussion And Resolved Issues</a></li>
+<li><a class="reference internal" href="#frequently-asked-questions">Frequently Asked Questions</a><ul>
+<li><a class="reference internal" href="#shouldn-t-this-module-spend-time-on-pypi-before-being-considered-for-the-standard-library">Shouldn’t this module spend time on PyPI before being considered for the standard library?</a></li>
+<li><a class="reference internal" href="#does-the-standard-library-really-need-yet-another-version-of-sum">Does the standard library really need yet another version of <code class="docutils literal notranslate"><span class="pre">sum</span></code>?</a></li>
+<li><a class="reference internal" href="#will-this-module-be-backported-to-older-versions-of-python">Will this module be backported to older versions of Python?</a></li>
+<li><a class="reference internal" href="#is-this-supposed-to-replace-numpy">Is this supposed to replace numpy?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#future-work">Future Work</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

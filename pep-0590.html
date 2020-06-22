@@ -1,0 +1,450 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 590 – Vectorcall: a fast calling protocol for CPython &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 591 – Adding a final qualifier to typing" href="pep-0591.html" />
+    <link rel="prev" title="PEP 589 – TypedDict: Type Hints for Dictionaries with a Fixed Set of Keys" href="pep-0589.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 590 – Vectorcall: a fast calling protocol for CPython</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-590-vectorcall-a-fast-calling-protocol-for-cpython">
+<h1 class="page-title">PEP 590 – Vectorcall: a fast calling protocol for CPython<a class="headerlink" href="#pep-590-vectorcall-a-fast-calling-protocol-for-cpython" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">590</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Vectorcall: a fast calling protocol for CPython</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Mark Shannon &lt;mark&#32;&#97;t&#32;hotpy.org&gt;, Jeroen Demeyer &lt;J.Demeyer&#32;&#97;t&#32;UGent.be&gt;</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even">Petr Viktorin &lt;encukou&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd">Accepted</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even">Standards Track</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">29-Mar-2019</dd>
+<dt class="field-even">Python-Version</dt>
+<dd class="field-even">3.8</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id8">Abstract</a></li>
+<li><a class="reference internal" href="#motivation" id="id9">Motivation</a></li>
+<li><a class="reference internal" href="#specification" id="id10">Specification</a><ul>
+<li><a class="reference internal" href="#the-function-pointer-type" id="id11">The function pointer type</a></li>
+<li><a class="reference internal" href="#changes-to-the-pytypeobject-struct" id="id12">Changes to the <code class="docutils literal notranslate"><span class="pre">PyTypeObject</span></code> struct</a></li>
+<li><a class="reference internal" href="#descriptor-behavior" id="id13">Descriptor behavior</a></li>
+<li><a class="reference internal" href="#the-call" id="id14">The call</a></li>
+<li><a class="reference internal" href="#py-vectorcall-arguments-offset" id="id15">PY_VECTORCALL_ARGUMENTS_OFFSET</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#new-c-api-and-changes-to-cpython" id="id16">New C API and changes to CPython</a><ul>
+<li><a class="reference internal" href="#subclassing" id="id17">Subclassing</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#finalizing-the-api" id="id18">Finalizing the API</a></li>
+<li><a class="reference internal" href="#internal-cpython-changes" id="id19">Internal CPython changes</a><ul>
+<li><a class="reference internal" href="#changes-to-existing-classes" id="id20">Changes to existing classes</a></li>
+<li><a class="reference internal" href="#using-the-vectorcall-protocol-for-classes" id="id21">Using the vectorcall protocol for classes</a></li>
+<li><a class="reference internal" href="#the-pymethoddef-protocol-and-argument-clinic" id="id22">The <code class="docutils literal notranslate"><span class="pre">PyMethodDef</span></code> protocol and Argument Clinic</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#third-party-extension-classes-using-vectorcall" id="id23">Third-party extension classes using vectorcall</a></li>
+<li><a class="reference internal" href="#performance-implications-of-these-changes" id="id24">Performance implications of these changes</a></li>
+<li><a class="reference internal" href="#stable-abi" id="id25">Stable ABI</a></li>
+<li><a class="reference internal" href="#alternative-suggestions" id="id26">Alternative Suggestions</a><ul>
+<li><a class="reference internal" href="#bpo-29259" id="id27">bpo-29259</a></li>
+<li><a class="reference internal" href="#pep-576-and-pep-580" id="id28">PEP 576 and PEP 580</a></li>
+<li><a class="reference internal" href="#other-rejected-approaches" id="id29">Other rejected approaches</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#acknowledgements" id="id30">Acknowledgements</a></li>
+<li><a class="reference internal" href="#references" id="id31">References</a></li>
+<li><a class="reference internal" href="#reference-implementation" id="id32">Reference implementation</a></li>
+<li><a class="reference internal" href="#copyright" id="id33">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id8">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP introduces a new C API to optimize calls of objects.
+It introduces a new “vectorcall” protocol and calling convention.
+This is based on the “fastcall” convention, which is already used internally by CPython.
+The new features can be used by any user-defined extension class.</p>
+<p>Most of the new API is private in CPython 3.8.
+The plan is to finalize semantics and make it public in Python 3.9.</p>
+<p><strong>NOTE</strong>: This PEP deals only with the Python/C API,
+it does not affect the Python language or standard library.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id9">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>The choice of a calling convention impacts the performance and flexibility of code on either side of the call.
+Often there is tension between performance and flexibility.</p>
+<p>The current <code class="docutils literal notranslate"><span class="pre">tp_call</span></code> <a class="footnote-reference brackets" href="#id5" id="id1">2</a> calling convention is sufficiently flexible to cover all cases, but its performance is poor.
+The poor performance is largely a result of having to create intermediate tuples, and possibly intermediate dicts, during the call.
+This is mitigated in CPython by including special-case code to speed up calls to Python and builtin functions.
+Unfortunately, this means that other callables such as classes and third party extension objects are called using the
+slower, more general <code class="docutils literal notranslate"><span class="pre">tp_call</span></code> calling convention.</p>
+<p>This PEP proposes that the calling convention used internally for Python and builtin functions is generalized and published
+so that all calls can benefit from better performance.
+The new proposed calling convention is not fully general, but covers the large majority of calls.
+It is designed to remove the overhead of temporary object creation and multiple indirections.</p>
+<p>Another source of inefficiency in the <code class="docutils literal notranslate"><span class="pre">tp_call</span></code> convention is that it has one function pointer per class,
+rather than per object.
+This is inefficient for calls to classes as several intermediate objects need to be created.
+For a class <code class="docutils literal notranslate"><span class="pre">cls</span></code>, at least one intermediate object is created for each call in the sequence
+<code class="docutils literal notranslate"><span class="pre">type.__call__</span></code>, <code class="docutils literal notranslate"><span class="pre">cls.__new__</span></code>, <code class="docutils literal notranslate"><span class="pre">cls.__init__</span></code>.</p>
+<p>This PEP proposes an interface for use by extension modules.
+Such interfaces cannot effectively be tested, or designed, without having the
+consumers in the loop.
+For that reason, we provide private (underscore-prefixed) names.
+The API may change (based on consumer feedback) in Python 3.9, where we expect
+it to be finalized, and the underscores removed.</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id10">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="the-function-pointer-type">
+<h3><a class="toc-backref" href="#id11">The function pointer type</a><a class="headerlink" href="#the-function-pointer-type" title="Permalink to this headline">¶</a></h3>
+<p>Calls are made through a function pointer taking the following parameters:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">PyObject</span> <span class="pre">*callable</span></code>: The called object</li>
+<li><code class="docutils literal notranslate"><span class="pre">PyObject</span> <span class="pre">*const</span> <span class="pre">*args</span></code>: A vector of arguments</li>
+<li><code class="docutils literal notranslate"><span class="pre">size_t</span> <span class="pre">nargs</span></code>: The number of arguments plus the optional flag <code class="docutils literal notranslate"><span class="pre">PY_VECTORCALL_ARGUMENTS_OFFSET</span></code> (see below)</li>
+<li><code class="docutils literal notranslate"><span class="pre">PyObject</span> <span class="pre">*kwnames</span></code>: Either <code class="docutils literal notranslate"><span class="pre">NULL</span></code> or a tuple with the names of the keyword arguments</li>
+</ul>
+<p>This is implemented by the function pointer type:
+<code class="docutils literal notranslate"><span class="pre">typedef</span> <span class="pre">PyObject</span> <span class="pre">*(*vectorcallfunc)(PyObject</span> <span class="pre">*callable,</span> <span class="pre">PyObject</span> <span class="pre">*const</span> <span class="pre">*args,</span> <span class="pre">size_t</span> <span class="pre">nargs,</span> <span class="pre">PyObject</span> <span class="pre">*kwnames);</span></code></p>
+</div>
+<div class="section" id="changes-to-the-pytypeobject-struct">
+<h3><a class="toc-backref" href="#id12">Changes to the <code class="docutils literal notranslate"><span class="pre">PyTypeObject</span></code> struct</a><a class="headerlink" href="#changes-to-the-pytypeobject-struct" title="Permalink to this headline">¶</a></h3>
+<p>The unused slot <code class="docutils literal notranslate"><span class="pre">printfunc</span> <span class="pre">tp_print</span></code> is replaced with <code class="docutils literal notranslate"><span class="pre">tp_vectorcall_offset</span></code>. It has the type <code class="docutils literal notranslate"><span class="pre">Py_ssize_t</span></code>.
+A new <code class="docutils literal notranslate"><span class="pre">tp_flags</span></code> flag is added, <code class="docutils literal notranslate"><span class="pre">_Py_TPFLAGS_HAVE_VECTORCALL</span></code>,
+which must be set for any class that uses the vectorcall protocol.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">_Py_TPFLAGS_HAVE_VECTORCALL</span></code> is set, then <code class="docutils literal notranslate"><span class="pre">tp_vectorcall_offset</span></code> must be a positive integer.
+It is the offset into the object of the vectorcall function pointer of type <code class="docutils literal notranslate"><span class="pre">vectorcallfunc</span></code>.
+This pointer may be <code class="docutils literal notranslate"><span class="pre">NULL</span></code>, in which case the behavior is the same as if <code class="docutils literal notranslate"><span class="pre">_Py_TPFLAGS_HAVE_VECTORCALL</span></code> was not set.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">tp_print</span></code> slot is reused as the <code class="docutils literal notranslate"><span class="pre">tp_vectorcall_offset</span></code> slot to make it easier for for external projects to backport the vectorcall protocol to earlier Python versions.
+In particular, the Cython project has shown interest in doing that (see <a class="reference external" href="https://mail.python.org/pipermail/python-dev/2018-June/153927.html">https://mail.python.org/pipermail/python-dev/2018-June/153927.html</a>).</p>
+</div>
+<div class="section" id="descriptor-behavior">
+<h3><a class="toc-backref" href="#id13">Descriptor behavior</a><a class="headerlink" href="#descriptor-behavior" title="Permalink to this headline">¶</a></h3>
+<p>One additional type flag is specified: <code class="docutils literal notranslate"><span class="pre">Py_TPFLAGS_METHOD_DESCRIPTOR</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Py_TPFLAGS_METHOD_DESCRIPTOR</span></code> should be set if the callable uses the descriptor protocol to create a bound method-like object.
+This is used by the interpreter to avoid creating temporary objects when calling methods
+(see <code class="docutils literal notranslate"><span class="pre">_PyObject_GetMethod</span></code> and the <code class="docutils literal notranslate"><span class="pre">LOAD_METHOD</span></code>/<code class="docutils literal notranslate"><span class="pre">CALL_METHOD</span></code> opcodes).</p>
+<p>Concretely, if <code class="docutils literal notranslate"><span class="pre">Py_TPFLAGS_METHOD_DESCRIPTOR</span></code> is set for <code class="docutils literal notranslate"><span class="pre">type(func)</span></code>, then:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">func.__get__(obj,</span> <span class="pre">cls)(*args,</span> <span class="pre">**kwds)</span></code> (with <code class="docutils literal notranslate"><span class="pre">obj</span></code> not None)
+must be equivalent to <code class="docutils literal notranslate"><span class="pre">func(obj,</span> <span class="pre">*args,</span> <span class="pre">**kwds)</span></code>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">func.__get__(None,</span> <span class="pre">cls)(*args,</span> <span class="pre">**kwds)</span></code> must be equivalent to <code class="docutils literal notranslate"><span class="pre">func(*args,</span> <span class="pre">**kwds)</span></code>.</li>
+</ul>
+<p>There are no restrictions on the object <code class="docutils literal notranslate"><span class="pre">func.__get__(obj,</span> <span class="pre">cls)</span></code>.
+The latter is not required to implement the vectorcall protocol.</p>
+</div>
+<div class="section" id="the-call">
+<h3><a class="toc-backref" href="#id14">The call</a><a class="headerlink" href="#the-call" title="Permalink to this headline">¶</a></h3>
+<p>The call takes the form <code class="docutils literal notranslate"><span class="pre">((vectorcallfunc)(((char</span> <span class="pre">*)o)+offset))(o,</span> <span class="pre">args,</span> <span class="pre">n,</span> <span class="pre">kwnames)</span></code> where
+<code class="docutils literal notranslate"><span class="pre">offset</span></code> is <code class="docutils literal notranslate"><span class="pre">Py_TYPE(o)-&gt;tp_vectorcall_offset</span></code>.
+The caller is responsible for creating the <code class="docutils literal notranslate"><span class="pre">kwnames</span></code> tuple and ensuring that there are no duplicates in it.</p>
+<p><code class="docutils literal notranslate"><span class="pre">n</span></code> is the number of positional arguments plus possibly the <code class="docutils literal notranslate"><span class="pre">PY_VECTORCALL_ARGUMENTS_OFFSET</span></code> flag.</p>
+</div>
+<div class="section" id="py-vectorcall-arguments-offset">
+<h3><a class="toc-backref" href="#id15">PY_VECTORCALL_ARGUMENTS_OFFSET</a><a class="headerlink" href="#py-vectorcall-arguments-offset" title="Permalink to this headline">¶</a></h3>
+<p>The flag <code class="docutils literal notranslate"><span class="pre">PY_VECTORCALL_ARGUMENTS_OFFSET</span></code> should be added to <code class="docutils literal notranslate"><span class="pre">n</span></code>
+if the callee is allowed to temporarily change <code class="docutils literal notranslate"><span class="pre">args[-1]</span></code>.
+In other words, this can be used if <code class="docutils literal notranslate"><span class="pre">args</span></code> points to argument 1 in the allocated vector.
+The callee must restore the value of <code class="docutils literal notranslate"><span class="pre">args[-1]</span></code> before returning.</p>
+<p>Whenever they can do so cheaply (without allocation), callers are encouraged to use <code class="docutils literal notranslate"><span class="pre">PY_VECTORCALL_ARGUMENTS_OFFSET</span></code>.
+Doing so will allow callables such as bound methods to make their onward calls cheaply.
+The bytecode interpreter already allocates space on the stack for the callable,
+so it can use this trick at no additional cost.</p>
+<p>See <a class="footnote-reference brackets" href="#id6" id="id2">3</a> for an example of how <code class="docutils literal notranslate"><span class="pre">PY_VECTORCALL_ARGUMENTS_OFFSET</span></code> is used by a callee to avoid allocation.</p>
+<p>For getting the actual number of arguments from the parameter <code class="docutils literal notranslate"><span class="pre">n</span></code>,
+the macro <code class="docutils literal notranslate"><span class="pre">PyVectorcall_NARGS(n)</span></code> must be used.
+This allows for future changes or extensions.</p>
+</div>
+</div>
+<div class="section" id="new-c-api-and-changes-to-cpython">
+<h2><a class="toc-backref" href="#id16">New C API and changes to CPython</a><a class="headerlink" href="#new-c-api-and-changes-to-cpython" title="Permalink to this headline">¶</a></h2>
+<p>The following functions or macros are added to the C API:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">PyObject</span> <span class="pre">*_PyObject_Vectorcall(PyObject</span> <span class="pre">*obj,</span> <span class="pre">PyObject</span> <span class="pre">*const</span> <span class="pre">*args,</span> <span class="pre">size_t</span> <span class="pre">nargs,</span> <span class="pre">PyObject</span> <span class="pre">*keywords)</span></code>:
+Calls <code class="docutils literal notranslate"><span class="pre">obj</span></code> with the given arguments.
+Note that <code class="docutils literal notranslate"><span class="pre">nargs</span></code> may include the flag <code class="docutils literal notranslate"><span class="pre">PY_VECTORCALL_ARGUMENTS_OFFSET</span></code>.
+The actual number of positional arguments is given by <code class="docutils literal notranslate"><span class="pre">PyVectorcall_NARGS(nargs)</span></code>.
+The argument <code class="docutils literal notranslate"><span class="pre">keywords</span></code> is a tuple of keyword names or <code class="docutils literal notranslate"><span class="pre">NULL</span></code>.
+An empty tuple has the same effect as passing <code class="docutils literal notranslate"><span class="pre">NULL</span></code>.
+This uses either the vectorcall protocol or <code class="docutils literal notranslate"><span class="pre">tp_call</span></code> internally;
+if neither is supported, an exception is raised.</li>
+<li><code class="docutils literal notranslate"><span class="pre">PyObject</span> <span class="pre">*PyVectorcall_Call(PyObject</span> <span class="pre">*obj,</span> <span class="pre">PyObject</span> <span class="pre">*tuple,</span> <span class="pre">PyObject</span> <span class="pre">*dict)</span></code>:
+Call the object (which must support vectorcall) with the old
+<code class="docutils literal notranslate"><span class="pre">*args</span></code> and <code class="docutils literal notranslate"><span class="pre">**kwargs</span></code> calling convention.
+This is mostly meant to put in the <code class="docutils literal notranslate"><span class="pre">tp_call</span></code> slot.</li>
+<li><code class="docutils literal notranslate"><span class="pre">Py_ssize_t</span> <span class="pre">PyVectorcall_NARGS(size_t</span> <span class="pre">nargs)</span></code>: Given a vectorcall <code class="docutils literal notranslate"><span class="pre">nargs</span></code> argument,
+return the actual number of arguments.
+Currently equivalent to <code class="docutils literal notranslate"><span class="pre">nargs</span> <span class="pre">&amp;</span> <span class="pre">~PY_VECTORCALL_ARGUMENTS_OFFSET</span></code>.</li>
+</ul>
+<div class="section" id="subclassing">
+<h3><a class="toc-backref" href="#id17">Subclassing</a><a class="headerlink" href="#subclassing" title="Permalink to this headline">¶</a></h3>
+<p>Extension types inherit the type flag <code class="docutils literal notranslate"><span class="pre">_Py_TPFLAGS_HAVE_VECTORCALL</span></code>
+and the value <code class="docutils literal notranslate"><span class="pre">tp_vectorcall_offset</span></code> from the base class,
+provided that they implement <code class="docutils literal notranslate"><span class="pre">tp_call</span></code> the same way as the base class.
+Additionally, the flag <code class="docutils literal notranslate"><span class="pre">Py_TPFLAGS_METHOD_DESCRIPTOR</span></code>
+is inherited if <code class="docutils literal notranslate"><span class="pre">tp_descr_get</span></code> is implemented the same way as the base class.</p>
+<p>Heap types never inherit the vectorcall protocol because
+that would not be safe (heap types can be changed dynamically).
+This restriction may be lifted in the future, but that would require
+special-casing <code class="docutils literal notranslate"><span class="pre">__call__</span></code> in <code class="docutils literal notranslate"><span class="pre">type.__setattribute__</span></code>.</p>
+</div>
+</div>
+<div class="section" id="finalizing-the-api">
+<h2><a class="toc-backref" href="#id18">Finalizing the API</a><a class="headerlink" href="#finalizing-the-api" title="Permalink to this headline">¶</a></h2>
+<p>The underscore in the names <code class="docutils literal notranslate"><span class="pre">_PyObject_Vectorcall</span></code> and
+<code class="docutils literal notranslate"><span class="pre">_Py_TPFLAGS_HAVE_VECTORCALL</span></code> indicates that this API may change in minor
+Python versions.
+When finalized (which is planned for Python 3.9), they will be renamed to
+<code class="docutils literal notranslate"><span class="pre">PyObject_Vectorcall</span></code> and <code class="docutils literal notranslate"><span class="pre">Py_TPFLAGS_HAVE_VECTORCALL</span></code>.
+The old underscore-prefixed names will remain available as aliases.</p>
+<p>The new API will be documented as normal, but will warn of the above.</p>
+<p>Semantics for the other names introduced in this PEP (<code class="docutils literal notranslate"><span class="pre">PyVectorcall_NARGS</span></code>,
+<code class="docutils literal notranslate"><span class="pre">PyVectorcall_Call</span></code>, <code class="docutils literal notranslate"><span class="pre">Py_TPFLAGS_METHOD_DESCRIPTOR</span></code>,
+<code class="docutils literal notranslate"><span class="pre">PY_VECTORCALL_ARGUMENTS_OFFSET</span></code>) are final.</p>
+</div>
+<div class="section" id="internal-cpython-changes">
+<h2><a class="toc-backref" href="#id19">Internal CPython changes</a><a class="headerlink" href="#internal-cpython-changes" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="changes-to-existing-classes">
+<h3><a class="toc-backref" href="#id20">Changes to existing classes</a><a class="headerlink" href="#changes-to-existing-classes" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">function</span></code>, <code class="docutils literal notranslate"><span class="pre">builtin_function_or_method</span></code>, <code class="docutils literal notranslate"><span class="pre">method_descriptor</span></code>, <code class="docutils literal notranslate"><span class="pre">method</span></code>, <code class="docutils literal notranslate"><span class="pre">wrapper_descriptor</span></code>, <code class="docutils literal notranslate"><span class="pre">method-wrapper</span></code>
+classes will use the vectorcall protocol
+(not all of these will be changed in the initial implementation).</p>
+<p>For <code class="docutils literal notranslate"><span class="pre">builtin_function_or_method</span></code> and <code class="docutils literal notranslate"><span class="pre">method_descriptor</span></code>
+(which use the <code class="docutils literal notranslate"><span class="pre">PyMethodDef</span></code> data structure),
+one could implement a specific vectorcall wrapper for every existing calling convention.
+Whether or not it is worth doing that remains to be seen.</p>
+</div>
+<div class="section" id="using-the-vectorcall-protocol-for-classes">
+<h3><a class="toc-backref" href="#id21">Using the vectorcall protocol for classes</a><a class="headerlink" href="#using-the-vectorcall-protocol-for-classes" title="Permalink to this headline">¶</a></h3>
+<p>For a class <code class="docutils literal notranslate"><span class="pre">cls</span></code>, creating a new instance using <code class="docutils literal notranslate"><span class="pre">cls(xxx)</span></code>
+requires multiple calls.
+At least one intermediate object is created for each call in the sequence
+<code class="docutils literal notranslate"><span class="pre">type.__call__</span></code>, <code class="docutils literal notranslate"><span class="pre">cls.__new__</span></code>, <code class="docutils literal notranslate"><span class="pre">cls.__init__</span></code>.
+So it makes a lot of sense to use vectorcall for calling classes.
+This really means implementing the vectorcall protocol for <code class="docutils literal notranslate"><span class="pre">type</span></code>.
+Some of the most commonly used classes will use this protocol,
+probably <code class="docutils literal notranslate"><span class="pre">range</span></code>, <code class="docutils literal notranslate"><span class="pre">list</span></code>, <code class="docutils literal notranslate"><span class="pre">str</span></code>, and <code class="docutils literal notranslate"><span class="pre">type</span></code>.</p>
+</div>
+<div class="section" id="the-pymethoddef-protocol-and-argument-clinic">
+<h3><a class="toc-backref" href="#id22">The <code class="docutils literal notranslate"><span class="pre">PyMethodDef</span></code> protocol and Argument Clinic</a><a class="headerlink" href="#the-pymethoddef-protocol-and-argument-clinic" title="Permalink to this headline">¶</a></h3>
+<p>Argument Clinic <a class="footnote-reference brackets" href="#id7" id="id3">4</a> automatically generates wrapper functions around lower-level callables, providing safe unboxing of primitive types and
+other safety checks.
+Argument Clinic could be extended to generate wrapper objects conforming to the new <code class="docutils literal notranslate"><span class="pre">vectorcall</span></code> protocol.
+This will allow execution to flow from the caller to the Argument Clinic generated wrapper and
+thence to the hand-written code with only a single indirection.</p>
+</div>
+</div>
+<div class="section" id="third-party-extension-classes-using-vectorcall">
+<h2><a class="toc-backref" href="#id23">Third-party extension classes using vectorcall</a><a class="headerlink" href="#third-party-extension-classes-using-vectorcall" title="Permalink to this headline">¶</a></h2>
+<p>To enable call performance on a par with Python functions and built-in functions,
+third-party callables should include a <code class="docutils literal notranslate"><span class="pre">vectorcallfunc</span></code> function pointer,
+set <code class="docutils literal notranslate"><span class="pre">tp_vectorcall_offset</span></code> to the correct value and add the <code class="docutils literal notranslate"><span class="pre">_Py_TPFLAGS_HAVE_VECTORCALL</span></code> flag.
+Any class that does this must implement the <code class="docutils literal notranslate"><span class="pre">tp_call</span></code> function and make sure its behaviour is consistent with the <code class="docutils literal notranslate"><span class="pre">vectorcallfunc</span></code> function.
+Setting <code class="docutils literal notranslate"><span class="pre">tp_call</span></code> to <code class="docutils literal notranslate"><span class="pre">PyVectorcall_Call</span></code> is sufficient.</p>
+</div>
+<div class="section" id="performance-implications-of-these-changes">
+<h2><a class="toc-backref" href="#id24">Performance implications of these changes</a><a class="headerlink" href="#performance-implications-of-these-changes" title="Permalink to this headline">¶</a></h2>
+<p>This PEP should not have much impact on the performance of existing code
+(neither in the positive nor the negative sense).
+It is mainly meant to allow efficient new code to be written,
+not to make existing code faster.</p>
+<p>Nevertheless, this PEP optimizes for <code class="docutils literal notranslate"><span class="pre">METH_FASTCALL</span></code> functions.
+Performance of functions using <code class="docutils literal notranslate"><span class="pre">METH_VARARGS</span></code> will become slightly worse.</p>
+</div>
+<div class="section" id="stable-abi">
+<h2><a class="toc-backref" href="#id25">Stable ABI</a><a class="headerlink" href="#stable-abi" title="Permalink to this headline">¶</a></h2>
+<p>Nothing from this PEP is added to the stable ABI (PEP 384).</p>
+</div>
+<div class="section" id="alternative-suggestions">
+<h2><a class="toc-backref" href="#id26">Alternative Suggestions</a><a class="headerlink" href="#alternative-suggestions" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="bpo-29259">
+<h3><a class="toc-backref" href="#id27">bpo-29259</a><a class="headerlink" href="#bpo-29259" title="Permalink to this headline">¶</a></h3>
+<p>PEP 590 is close to what was proposed in bpo-29259 <a class="footnote-reference brackets" href="#bpo29259" id="id4">1</a>.
+The main difference is that this PEP stores the function pointer
+in the instance rather than in the class.
+This makes more sense for implementing functions in C,
+where every instance corresponds to a different C function.
+It also allows optimizing <code class="docutils literal notranslate"><span class="pre">type.__call__</span></code>, which is not possible with bpo-29259.</p>
+</div>
+<div class="section" id="pep-576-and-pep-580">
+<h3><a class="toc-backref" href="#id28">PEP 576 and PEP 580</a><a class="headerlink" href="#pep-576-and-pep-580" title="Permalink to this headline">¶</a></h3>
+<p>Both PEP 576 and PEP 580 are designed to enable 3rd party objects to be both expressive and performant (on a par with
+CPython objects). The purpose of this PEP is provide a uniform way to call objects in the CPython ecosystem that is
+both expressive and as performant as possible.</p>
+<p>This PEP is broader in scope than PEP 576 and uses variable rather than fixed offset function-pointers.
+The underlying calling convention is similar. Because PEP 576 only allows a fixed offset for the function pointer,
+it would not allow the improvements to any objects with constraints on their layout.</p>
+<p>PEP 580 proposes a major change to the <code class="docutils literal notranslate"><span class="pre">PyMethodDef</span></code> protocol used to define builtin functions.
+This PEP provides a more general and simpler mechanism in the form of a new calling convention.
+This PEP also extends the <code class="docutils literal notranslate"><span class="pre">PyMethodDef</span></code> protocol, but merely to formalise existing conventions.</p>
+</div>
+<div class="section" id="other-rejected-approaches">
+<h3><a class="toc-backref" href="#id29">Other rejected approaches</a><a class="headerlink" href="#other-rejected-approaches" title="Permalink to this headline">¶</a></h3>
+<p>A longer, 6 argument, form combining both the vector and optional tuple and dictionary arguments was considered.
+However, it was found that the code to convert between it and the old <code class="docutils literal notranslate"><span class="pre">tp_call</span></code> form was overly cumbersome and inefficient.
+Also, since only 4 arguments are passed in registers on x64 Windows, the two extra arguments would have non-negligible costs.</p>
+<p>Removing any special cases and making all calls use the <code class="docutils literal notranslate"><span class="pre">tp_call</span></code> form was also considered.
+However, unless a much more efficient way was found to create and destroy tuples, and to a lesser extent dictionaries,
+then it would be too slow.</p>
+</div>
+</div>
+<div class="section" id="acknowledgements">
+<h2><a class="toc-backref" href="#id30">Acknowledgements</a><a class="headerlink" href="#acknowledgements" title="Permalink to this headline">¶</a></h2>
+<p>Victor Stinner for developing the original “fastcall” calling convention internally to CPython.
+This PEP codifies and extends his work.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id31">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="bpo29259"><span class="brackets"><a class="fn-backref" href="#id4">1</a></span></dt>
+<dd>Add tp_fastcall to PyTypeObject: support FASTCALL calling convention for all callable objects,
+<a class="reference external" href="https://bugs.python.org/issue29259">https://bugs.python.org/issue29259</a></dd>
+<dt class="label" id="id5"><span class="brackets"><a class="fn-backref" href="#id1">2</a></span></dt>
+<dd>tp_call/PyObject_Call calling convention
+<a class="reference external" href="https://docs.python.org/3/c-api/typeobj.html#c.PyTypeObject.tp_call">https://docs.python.org/3/c-api/typeobj.html#c.PyTypeObject.tp_call</a></dd>
+<dt class="label" id="id6"><span class="brackets"><a class="fn-backref" href="#id2">3</a></span></dt>
+<dd>Using PY_VECTORCALL_ARGUMENTS_OFFSET in callee
+<a class="reference external" href="https://github.com/markshannon/cpython/blob/vectorcall-minimal/Objects/classobject.c#L53">https://github.com/markshannon/cpython/blob/vectorcall-minimal/Objects/classobject.c#L53</a></dd>
+<dt class="label" id="id7"><span class="brackets"><a class="fn-backref" href="#id3">4</a></span></dt>
+<dd>Argument Clinic
+<a class="reference external" href="https://docs.python.org/3/howto/clinic.html">https://docs.python.org/3/howto/clinic.html</a></dd>
+</dl>
+</div>
+<div class="section" id="reference-implementation">
+<h2><a class="toc-backref" href="#id32">Reference implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>A minimal implementation can be found at <a class="reference external" href="https://github.com/markshannon/cpython/tree/vectorcall-minimal">https://github.com/markshannon/cpython/tree/vectorcall-minimal</a></p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id33">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0590.rst">https://github.com/python/peps/blob/master/pep-0590.rst</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0590.rst.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0589.html">PEP 0589</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0591.html">PEP 0591</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 590 – Vectorcall: a fast calling protocol for CPython</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#the-function-pointer-type">The function pointer type</a></li>
+<li><a class="reference internal" href="#changes-to-the-pytypeobject-struct">Changes to the <code class="docutils literal notranslate"><span class="pre">PyTypeObject</span></code> struct</a></li>
+<li><a class="reference internal" href="#descriptor-behavior">Descriptor behavior</a></li>
+<li><a class="reference internal" href="#the-call">The call</a></li>
+<li><a class="reference internal" href="#py-vectorcall-arguments-offset">PY_VECTORCALL_ARGUMENTS_OFFSET</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#new-c-api-and-changes-to-cpython">New C API and changes to CPython</a><ul>
+<li><a class="reference internal" href="#subclassing">Subclassing</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#finalizing-the-api">Finalizing the API</a></li>
+<li><a class="reference internal" href="#internal-cpython-changes">Internal CPython changes</a><ul>
+<li><a class="reference internal" href="#changes-to-existing-classes">Changes to existing classes</a></li>
+<li><a class="reference internal" href="#using-the-vectorcall-protocol-for-classes">Using the vectorcall protocol for classes</a></li>
+<li><a class="reference internal" href="#the-pymethoddef-protocol-and-argument-clinic">The <code class="docutils literal notranslate"><span class="pre">PyMethodDef</span></code> protocol and Argument Clinic</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#third-party-extension-classes-using-vectorcall">Third-party extension classes using vectorcall</a></li>
+<li><a class="reference internal" href="#performance-implications-of-these-changes">Performance implications of these changes</a></li>
+<li><a class="reference internal" href="#stable-abi">Stable ABI</a></li>
+<li><a class="reference internal" href="#alternative-suggestions">Alternative Suggestions</a><ul>
+<li><a class="reference internal" href="#bpo-29259">bpo-29259</a></li>
+<li><a class="reference internal" href="#pep-576-and-pep-580">PEP 576 and PEP 580</a></li>
+<li><a class="reference internal" href="#other-rejected-approaches">Other rejected approaches</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#acknowledgements">Acknowledgements</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference implementation</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

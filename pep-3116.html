@@ -1,0 +1,594 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 3116 – New I/O &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 3117 – Postfix type declarations" href="pep-3117.html" />
+    <link rel="prev" title="PEP 3115 – Metaclasses in Python 3000" href="pep-3115.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 3116 – New I/O</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-3116-new-i-o">
+<h1 class="page-title">PEP 3116 – New I/O<a class="headerlink" href="#pep-3116-new-i-o" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">3116</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">New I/O</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Daniel Stutzbach &lt;daniel&#32;&#97;t&#32;stutzbachenterprises.com&gt;,
+Guido van Rossum &lt;guido&#32;&#97;t&#32;python.org&gt;,
+Mike Verdone &lt;mike.verdone&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">26-Feb-2007</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.0</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">26-Feb-2007</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#rationale-and-goals" id="id2">Rationale and Goals</a></li>
+<li><a class="reference internal" href="#specification" id="id3">Specification</a></li>
+<li><a class="reference internal" href="#raw-i-o" id="id4">Raw I/O</a></li>
+<li><a class="reference internal" href="#buffered-i-o" id="id5">Buffered I/O</a><ul>
+<li><a class="reference internal" href="#bufferedreader" id="id6"><code class="docutils literal notranslate"><span class="pre">BufferedReader</span></code></a></li>
+<li><a class="reference internal" href="#bufferedwriter" id="id7"><code class="docutils literal notranslate"><span class="pre">BufferedWriter</span></code></a></li>
+<li><a class="reference internal" href="#bufferedrwpair" id="id8"><code class="docutils literal notranslate"><span class="pre">BufferedRWPair</span></code></a></li>
+<li><a class="reference internal" href="#bufferedrandom" id="id9"><code class="docutils literal notranslate"><span class="pre">BufferedRandom</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#text-i-o" id="id10">Text I/O</a><ul>
+<li><a class="reference internal" href="#unicode-encoding-decoding-issues" id="id11">Unicode encoding/decoding Issues</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#non-blocking-i-o" id="id12">Non-blocking I/O</a></li>
+<li><a class="reference internal" href="#the-open-built-in-function" id="id13">The <code class="docutils literal notranslate"><span class="pre">open()</span></code> Built-in Function</a></li>
+<li><a class="reference internal" href="#copyright" id="id14">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="rationale-and-goals">
+<h2><a class="toc-backref" href="#id2">Rationale and Goals</a><a class="headerlink" href="#rationale-and-goals" title="Permalink to this headline">¶</a></h2>
+<p>Python allows for a variety of stream-like (a.k.a. file-like) objects
+that can be used via <code class="docutils literal notranslate"><span class="pre">read()</span></code> and <code class="docutils literal notranslate"><span class="pre">write()</span></code> calls.  Anything that
+provides <code class="docutils literal notranslate"><span class="pre">read()</span></code> and <code class="docutils literal notranslate"><span class="pre">write()</span></code> is stream-like.  However, more
+exotic and extremely useful functions like <code class="docutils literal notranslate"><span class="pre">readline()</span></code> or
+<code class="docutils literal notranslate"><span class="pre">seek()</span></code> may or may not be available on every stream-like object.
+Python needs a specification for basic byte-based I/O streams to which
+we can add buffering and text-handling features.</p>
+<p>Once we have a defined raw byte-based I/O interface, we can add
+buffering and text handling layers on top of any byte-based I/O class.
+The same buffering and text handling logic can be used for files,
+sockets, byte arrays, or custom I/O classes developed by Python
+programmers.  Developing a standard definition of a stream lets us
+separate stream-based operations like <code class="docutils literal notranslate"><span class="pre">read()</span></code> and <code class="docutils literal notranslate"><span class="pre">write()</span></code> from
+implementation specific operations like <code class="docutils literal notranslate"><span class="pre">fileno()</span></code> and <code class="docutils literal notranslate"><span class="pre">isatty()</span></code>.
+It encourages programmers to write code that uses streams as streams
+and not require that all streams support file-specific or
+socket-specific operations.</p>
+<p>The new I/O spec is intended to be similar to the Java I/O libraries,
+but generally less confusing.  Programmers who don’t want to muck
+about in the new I/O world can expect that the <code class="docutils literal notranslate"><span class="pre">open()</span></code> factory
+method will produce an object backwards-compatible with old-style file
+objects.</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id3">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>The Python I/O Library will consist of three layers: a raw I/O layer,
+a buffered I/O layer, and a text I/O layer.  Each layer is defined by
+an abstract base class, which may have multiple implementations.  The
+raw I/O and buffered I/O layers deal with units of bytes, while the
+text I/O layer deals with units of characters.</p>
+</div>
+<div class="section" id="raw-i-o">
+<h2><a class="toc-backref" href="#id4">Raw I/O</a><a class="headerlink" href="#raw-i-o" title="Permalink to this headline">¶</a></h2>
+<p>The abstract base class for raw I/O is RawIOBase.  It has several
+methods which are wrappers around the appropriate operating system
+calls.  If one of these functions would not make sense on the object,
+the implementation must raise an IOError exception.  For example, if a
+file is opened read-only, the <code class="docutils literal notranslate"><span class="pre">.write()</span></code> method will raise an
+<code class="docutils literal notranslate"><span class="pre">IOError</span></code>.  As another example, if the object represents a socket,
+then <code class="docutils literal notranslate"><span class="pre">.seek()</span></code>, <code class="docutils literal notranslate"><span class="pre">.tell()</span></code>, and <code class="docutils literal notranslate"><span class="pre">.truncate()</span></code> will raise an
+<code class="docutils literal notranslate"><span class="pre">IOError</span></code>.  Generally, a call to one of these functions maps to
+exactly one operating system call.</p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">.read(n:</span> <span class="pre">int)</span> <span class="pre">-&gt;</span> <span class="pre">bytes</span></code></p>
+<blockquote>
+<div>Read up to <code class="docutils literal notranslate"><span class="pre">n</span></code> bytes from the object and return them.  Fewer
+than <code class="docutils literal notranslate"><span class="pre">n</span></code> bytes may be returned if the operating system call
+returns fewer than <code class="docutils literal notranslate"><span class="pre">n</span></code> bytes.  If 0 bytes are returned, this
+indicates end of file.  If the object is in non-blocking mode
+and no bytes are available, the call returns <code class="docutils literal notranslate"><span class="pre">None</span></code>.</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">.readinto(b:</span> <span class="pre">bytes)</span> <span class="pre">-&gt;</span> <span class="pre">int</span></code></p>
+<blockquote>
+<div>Read up to <code class="docutils literal notranslate"><span class="pre">len(b)</span></code> bytes from the object and stores them in
+<code class="docutils literal notranslate"><span class="pre">b</span></code>, returning the number of bytes read.  Like .read, fewer
+than <code class="docutils literal notranslate"><span class="pre">len(b)</span></code> bytes may be read, and 0 indicates end of file.
+<code class="docutils literal notranslate"><span class="pre">None</span></code> is returned if a non-blocking object has no bytes
+available.  The length of <code class="docutils literal notranslate"><span class="pre">b</span></code> is never changed.</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">.write(b:</span> <span class="pre">bytes)</span> <span class="pre">-&gt;</span> <span class="pre">int</span></code></p>
+<blockquote>
+<div>Returns number of bytes written, which may be <code class="docutils literal notranslate"><span class="pre">&lt;</span> <span class="pre">len(b)</span></code>.</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">.seek(pos:</span> <span class="pre">int,</span> <span class="pre">whence:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">0)</span> <span class="pre">-&gt;</span> <span class="pre">int</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">.tell()</span> <span class="pre">-&gt;</span> <span class="pre">int</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">.truncate(n:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">None)</span> <span class="pre">-&gt;</span> <span class="pre">int</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">.close()</span> <span class="pre">-&gt;</span> <span class="pre">None</span></code></p>
+</div></blockquote>
+<p>Additionally, it defines a few other methods:</p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">.readable()</span> <span class="pre">-&gt;</span> <span class="pre">bool</span></code></p>
+<blockquote>
+<div>Returns <code class="docutils literal notranslate"><span class="pre">True</span></code> if the object was opened for reading,
+<code class="docutils literal notranslate"><span class="pre">False</span></code> otherwise.  If <code class="docutils literal notranslate"><span class="pre">False</span></code>, <code class="docutils literal notranslate"><span class="pre">.read()</span></code> will raise an
+<code class="docutils literal notranslate"><span class="pre">IOError</span></code> if called.</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">.writable()</span> <span class="pre">-&gt;</span> <span class="pre">bool</span></code></p>
+<blockquote>
+<div>Returns <code class="docutils literal notranslate"><span class="pre">True</span></code> if the object was opened for writing,
+<code class="docutils literal notranslate"><span class="pre">False</span></code> otherwise.  If <code class="docutils literal notranslate"><span class="pre">False</span></code>, <code class="docutils literal notranslate"><span class="pre">.write()</span></code> and
+<code class="docutils literal notranslate"><span class="pre">.truncate()</span></code> will raise an <code class="docutils literal notranslate"><span class="pre">IOError</span></code> if called.</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">.seekable()</span> <span class="pre">-&gt;</span> <span class="pre">bool</span></code></p>
+<blockquote>
+<div>Returns <code class="docutils literal notranslate"><span class="pre">True</span></code> if the object supports random access (such as
+disk files), or <code class="docutils literal notranslate"><span class="pre">False</span></code> if the object only supports
+sequential access (such as sockets, pipes, and ttys).  If
+<code class="docutils literal notranslate"><span class="pre">False</span></code>, <code class="docutils literal notranslate"><span class="pre">.seek()</span></code>, <code class="docutils literal notranslate"><span class="pre">.tell()</span></code>, and <code class="docutils literal notranslate"><span class="pre">.truncate()</span></code> will
+raise an IOError if called.</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">.__enter__()</span> <span class="pre">-&gt;</span> <span class="pre">ContextManager</span></code></p>
+<blockquote>
+<div>Context management protocol.  Returns <code class="docutils literal notranslate"><span class="pre">self</span></code>.</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">.__exit__(...)</span> <span class="pre">-&gt;</span> <span class="pre">None</span></code></p>
+<blockquote>
+<div>Context management protocol.  Same as <code class="docutils literal notranslate"><span class="pre">.close()</span></code>.</div></blockquote>
+</div></blockquote>
+<p>If and only if a <code class="docutils literal notranslate"><span class="pre">RawIOBase</span></code> implementation operates on an
+underlying file descriptor, it must additionally provide a
+<code class="docutils literal notranslate"><span class="pre">.fileno()</span></code> member function.  This could be defined specifically by
+the implementation, or a mix-in class could be used (need to decide
+about this).</p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">.fileno()</span> <span class="pre">-&gt;</span> <span class="pre">int</span></code></p>
+<blockquote>
+<div>Returns the underlying file descriptor (an integer)</div></blockquote>
+</div></blockquote>
+<p>Initially, three implementations will be provided that implement the
+<code class="docutils literal notranslate"><span class="pre">RawIOBase</span></code> interface: <code class="docutils literal notranslate"><span class="pre">FileIO</span></code>, <code class="docutils literal notranslate"><span class="pre">SocketIO</span></code> (in the socket
+module), and <code class="docutils literal notranslate"><span class="pre">ByteIO</span></code>.  Each implementation must determine whether
+the object supports random access as the information provided by the
+user may not be sufficient (consider <code class="docutils literal notranslate"><span class="pre">open(&quot;/dev/tty&quot;,</span> <span class="pre">&quot;rw&quot;)</span></code> or
+<code class="docutils literal notranslate"><span class="pre">open(&quot;/tmp/named-pipe&quot;,</span> <span class="pre">&quot;rw&quot;)</span></code>).  As an example, <code class="docutils literal notranslate"><span class="pre">FileIO</span></code> can
+determine this by calling the <code class="docutils literal notranslate"><span class="pre">seek()</span></code> system call; if it returns an
+error, the object does not support random access.  Each implementation
+may provided additional methods appropriate to its type.  The
+<code class="docutils literal notranslate"><span class="pre">ByteIO</span></code> object is analogous to Python 2’s <code class="docutils literal notranslate"><span class="pre">cStringIO</span></code> library,
+but operating on the new bytes type instead of strings.</p>
+</div>
+<div class="section" id="buffered-i-o">
+<h2><a class="toc-backref" href="#id5">Buffered I/O</a><a class="headerlink" href="#buffered-i-o" title="Permalink to this headline">¶</a></h2>
+<p>The next layer is the Buffered I/O layer which provides more efficient
+access to file-like objects.  The abstract base class for all Buffered
+I/O implementations is <code class="docutils literal notranslate"><span class="pre">BufferedIOBase</span></code>, which provides similar methods
+to RawIOBase:</p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">.read(n:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">-1)</span> <span class="pre">-&gt;</span> <span class="pre">bytes</span></code></p>
+<blockquote>
+<div>Returns the next <code class="docutils literal notranslate"><span class="pre">n</span></code> bytes from the object.  It may return
+fewer than <code class="docutils literal notranslate"><span class="pre">n</span></code> bytes if end-of-file is reached or the object is
+non-blocking.  0 bytes indicates end-of-file.  This method may
+make multiple calls to <code class="docutils literal notranslate"><span class="pre">RawIOBase.read()</span></code> to gather the bytes,
+or may make no calls to <code class="docutils literal notranslate"><span class="pre">RawIOBase.read()</span></code> if all of the needed
+bytes are already buffered.</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">.readinto(b:</span> <span class="pre">bytes)</span> <span class="pre">-&gt;</span> <span class="pre">int</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">.write(b:</span> <span class="pre">bytes)</span> <span class="pre">-&gt;</span> <span class="pre">int</span></code></p>
+<blockquote>
+<div>Write <code class="docutils literal notranslate"><span class="pre">b</span></code> bytes to the buffer.  The bytes are not guaranteed to
+be written to the Raw I/O object immediately; they may be
+buffered.  Returns <code class="docutils literal notranslate"><span class="pre">len(b)</span></code>.</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">.seek(pos:</span> <span class="pre">int,</span> <span class="pre">whence:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">0)</span> <span class="pre">-&gt;</span> <span class="pre">int</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">.tell()</span> <span class="pre">-&gt;</span> <span class="pre">int</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">.truncate(pos:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">None)</span> <span class="pre">-&gt;</span> <span class="pre">int</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">.flush()</span> <span class="pre">-&gt;</span> <span class="pre">None</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">.close()</span> <span class="pre">-&gt;</span> <span class="pre">None</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">.readable()</span> <span class="pre">-&gt;</span> <span class="pre">bool</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">.writable()</span> <span class="pre">-&gt;</span> <span class="pre">bool</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">.seekable()</span> <span class="pre">-&gt;</span> <span class="pre">bool</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">.__enter__()</span> <span class="pre">-&gt;</span> <span class="pre">ContextManager</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">.__exit__(...)</span> <span class="pre">-&gt;</span> <span class="pre">None</span></code></p>
+</div></blockquote>
+<p>Additionally, the abstract base class provides one member variable:</p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">.raw</span></code></p>
+<blockquote>
+<div>A reference to the underlying <code class="docutils literal notranslate"><span class="pre">RawIOBase</span></code> object.</div></blockquote>
+</div></blockquote>
+<p>The <code class="docutils literal notranslate"><span class="pre">BufferedIOBase</span></code> methods signatures are mostly identical to that
+of <code class="docutils literal notranslate"><span class="pre">RawIOBase</span></code> (exceptions: <code class="docutils literal notranslate"><span class="pre">write()</span></code> returns <code class="docutils literal notranslate"><span class="pre">None</span></code>,
+<code class="docutils literal notranslate"><span class="pre">read()</span></code>’s argument is optional), but may have different semantics.
+In particular, <code class="docutils literal notranslate"><span class="pre">BufferedIOBase</span></code> implementations may read more data
+than requested or delay writing data using buffers.  For the most
+part, this will be transparent to the user (unless, for example, they
+open the same file through a different descriptor).  Also, raw reads
+may return a short read without any particular reason; buffered reads
+will only return a short read if EOF is reached; and raw writes may
+return a short count (even when non-blocking I/O is not enabled!),
+while buffered writes will raise <code class="docutils literal notranslate"><span class="pre">IOError</span></code> when not all bytes could
+be written or buffered.</p>
+<p>There are four implementations of the <code class="docutils literal notranslate"><span class="pre">BufferedIOBase</span></code> abstract base
+class, described below.</p>
+<div class="section" id="bufferedreader">
+<h3><a class="toc-backref" href="#id6"><code class="docutils literal notranslate"><span class="pre">BufferedReader</span></code></a><a class="headerlink" href="#bufferedreader" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">BufferedReader</span></code> implementation is for sequential-access
+read-only objects.  Its <code class="docutils literal notranslate"><span class="pre">.flush()</span></code> method is a no-op.</p>
+</div>
+<div class="section" id="bufferedwriter">
+<h3><a class="toc-backref" href="#id7"><code class="docutils literal notranslate"><span class="pre">BufferedWriter</span></code></a><a class="headerlink" href="#bufferedwriter" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">BufferedWriter</span></code> implementation is for sequential-access
+write-only objects.  Its <code class="docutils literal notranslate"><span class="pre">.flush()</span></code> method forces all cached data to
+be written to the underlying RawIOBase object.</p>
+</div>
+<div class="section" id="bufferedrwpair">
+<h3><a class="toc-backref" href="#id8"><code class="docutils literal notranslate"><span class="pre">BufferedRWPair</span></code></a><a class="headerlink" href="#bufferedrwpair" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">BufferedRWPair</span></code> implementation is for sequential-access
+read-write objects such as sockets and ttys.  As the read and write
+streams of these objects are completely independent, it could be
+implemented by simply incorporating a <code class="docutils literal notranslate"><span class="pre">BufferedReader</span></code> and
+<code class="docutils literal notranslate"><span class="pre">BufferedWriter</span></code> instance.  It provides a <code class="docutils literal notranslate"><span class="pre">.flush()</span></code> method that
+has the same semantics as a <code class="docutils literal notranslate"><span class="pre">BufferedWriter</span></code>’s <code class="docutils literal notranslate"><span class="pre">.flush()</span></code> method.</p>
+</div>
+<div class="section" id="bufferedrandom">
+<h3><a class="toc-backref" href="#id9"><code class="docutils literal notranslate"><span class="pre">BufferedRandom</span></code></a><a class="headerlink" href="#bufferedrandom" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">BufferedRandom</span></code> implementation is for all random-access
+objects, whether they are read-only, write-only, or read-write.
+Compared to the previous classes that operate on sequential-access
+objects, the <code class="docutils literal notranslate"><span class="pre">BufferedRandom</span></code> class must contend with the user
+calling <code class="docutils literal notranslate"><span class="pre">.seek()</span></code> to reposition the stream.  Therefore, an instance
+of <code class="docutils literal notranslate"><span class="pre">BufferedRandom</span></code> must keep track of both the logical and true
+position within the object.  It provides a <code class="docutils literal notranslate"><span class="pre">.flush()</span></code> method that
+forces all cached write data to be written to the underlying
+<code class="docutils literal notranslate"><span class="pre">RawIOBase</span></code> object and all cached read data to be forgotten (so that
+future reads are forced to go back to the disk).</p>
+<p><em>Q: Do we want to mandate in the specification that switching between
+reading and writing on a read-write object implies a .flush()?  Or is
+that an implementation convenience that users should not rely on?</em></p>
+<p>For a read-only <code class="docutils literal notranslate"><span class="pre">BufferedRandom</span></code> object, <code class="docutils literal notranslate"><span class="pre">.writable()</span></code> returns
+<code class="docutils literal notranslate"><span class="pre">False</span></code> and the <code class="docutils literal notranslate"><span class="pre">.write()</span></code> and <code class="docutils literal notranslate"><span class="pre">.truncate()</span></code> methods throw
+<code class="docutils literal notranslate"><span class="pre">IOError</span></code>.</p>
+<p>For a write-only <code class="docutils literal notranslate"><span class="pre">BufferedRandom</span></code> object, <code class="docutils literal notranslate"><span class="pre">.readable()</span></code> returns
+<code class="docutils literal notranslate"><span class="pre">False</span></code> and the <code class="docutils literal notranslate"><span class="pre">.read()</span></code> method throws <code class="docutils literal notranslate"><span class="pre">IOError</span></code>.</p>
+</div>
+</div>
+<div class="section" id="text-i-o">
+<h2><a class="toc-backref" href="#id10">Text I/O</a><a class="headerlink" href="#text-i-o" title="Permalink to this headline">¶</a></h2>
+<p>The text I/O layer provides functions to read and write strings from
+streams.  Some new features include universal newlines and character
+set encoding and decoding.  The Text I/O layer is defined by a
+<code class="docutils literal notranslate"><span class="pre">TextIOBase</span></code> abstract base class.  It provides several methods that
+are similar to the <code class="docutils literal notranslate"><span class="pre">BufferedIOBase</span></code> methods, but operate on a
+per-character basis instead of a per-byte basis.  These methods are:</p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">.read(n:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">-1)</span> <span class="pre">-&gt;</span> <span class="pre">str</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">.write(s:</span> <span class="pre">str)</span> <span class="pre">-&gt;</span> <span class="pre">int</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">.tell()</span> <span class="pre">-&gt;</span> <span class="pre">object</span></code></p>
+<blockquote>
+<div>Return a cookie describing the current file position.
+The only supported use for the cookie is with .seek()
+with whence set to 0 (i.e. absolute seek).</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">.seek(pos:</span> <span class="pre">object,</span> <span class="pre">whence:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">0)</span> <span class="pre">-&gt;</span> <span class="pre">int</span></code></p>
+<blockquote>
+<div>Seek to position <code class="docutils literal notranslate"><span class="pre">pos</span></code>.  If <code class="docutils literal notranslate"><span class="pre">pos</span></code> is non-zero, it must
+be a cookie returned from <code class="docutils literal notranslate"><span class="pre">.tell()</span></code> and <code class="docutils literal notranslate"><span class="pre">whence</span></code> must be zero.</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">.truncate(pos:</span> <span class="pre">object</span> <span class="pre">=</span> <span class="pre">None)</span> <span class="pre">-&gt;</span> <span class="pre">int</span></code></p>
+<blockquote>
+<div>Like <code class="docutils literal notranslate"><span class="pre">BufferedIOBase.truncate()</span></code>, except that <code class="docutils literal notranslate"><span class="pre">pos</span></code> (if
+not <code class="docutils literal notranslate"><span class="pre">None</span></code>) must be a cookie previously returned by <code class="docutils literal notranslate"><span class="pre">.tell()</span></code>.</div></blockquote>
+</div></blockquote>
+<p>Unlike with raw I/O, the units for .seek() are not specified - some
+implementations (e.g. <code class="docutils literal notranslate"><span class="pre">StringIO</span></code>) use characters and others
+(e.g. <code class="docutils literal notranslate"><span class="pre">TextIOWrapper</span></code>) use bytes.  The special case for zero is to
+allow going to the start or end of a stream without a prior
+<code class="docutils literal notranslate"><span class="pre">.tell()</span></code>.  An implementation could include stream encoder state in
+the cookie returned from <code class="docutils literal notranslate"><span class="pre">.tell()</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">TextIOBase</span></code> implementations also provide several methods that are
+pass-throughs to the underlaying <code class="docutils literal notranslate"><span class="pre">BufferedIOBase</span></code> objects:</p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">.flush()</span> <span class="pre">-&gt;</span> <span class="pre">None</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">.close()</span> <span class="pre">-&gt;</span> <span class="pre">None</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">.readable()</span> <span class="pre">-&gt;</span> <span class="pre">bool</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">.writable()</span> <span class="pre">-&gt;</span> <span class="pre">bool</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">.seekable()</span> <span class="pre">-&gt;</span> <span class="pre">bool</span></code></p>
+</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">TextIOBase</span></code> class implementations additionally provide the
+following methods:</p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">.readline()</span> <span class="pre">-&gt;</span> <span class="pre">str</span></code></p>
+<blockquote>
+<div>Read until newline or EOF and return the line, or <code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code> if
+EOF hit immediately.</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">.__iter__()</span> <span class="pre">-&gt;</span> <span class="pre">Iterator</span></code></p>
+<blockquote>
+<div>Returns an iterator that returns lines from the file (which
+happens to be <code class="docutils literal notranslate"><span class="pre">self</span></code>).</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">.next()</span> <span class="pre">-&gt;</span> <span class="pre">str</span></code></p>
+<blockquote>
+<div>Same as <code class="docutils literal notranslate"><span class="pre">readline()</span></code> except raises <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> if EOF
+hit immediately.</div></blockquote>
+</div></blockquote>
+<p>Two implementations will be provided by the Python library.  The
+primary implementation, <code class="docutils literal notranslate"><span class="pre">TextIOWrapper</span></code>, wraps a Buffered I/O
+object.  Each <code class="docutils literal notranslate"><span class="pre">TextIOWrapper</span></code> object has a property named
+“<code class="docutils literal notranslate"><span class="pre">.buffer</span></code>” that provides a reference to the underlying
+<code class="docutils literal notranslate"><span class="pre">BufferedIOBase</span></code> object.  Its initializer has the following
+signature:</p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">.__init__(self,</span> <span class="pre">buffer,</span> <span class="pre">encoding=None,</span> <span class="pre">errors=None,</span> <span class="pre">newline=None,</span> <span class="pre">line_buffering=False)</span></code></p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">buffer</span></code> is a reference to the <code class="docutils literal notranslate"><span class="pre">BufferedIOBase</span></code> object to
+be wrapped with the <code class="docutils literal notranslate"><span class="pre">TextIOWrapper</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">encoding</span></code> refers to an encoding to be used for translating
+between the byte-representation and character-representation.
+If it is <code class="docutils literal notranslate"><span class="pre">None</span></code>, then the system’s locale setting will be
+used as the default.</p>
+<p><code class="docutils literal notranslate"><span class="pre">errors</span></code> is an optional string indicating error handling.
+It may be set whenever <code class="docutils literal notranslate"><span class="pre">encoding</span></code> may be set.  It defaults
+to <code class="docutils literal notranslate"><span class="pre">'strict'</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">newline</span></code> can be <code class="docutils literal notranslate"><span class="pre">None</span></code>, <code class="docutils literal notranslate"><span class="pre">''</span></code>, <code class="docutils literal notranslate"><span class="pre">'\n'</span></code>, <code class="docutils literal notranslate"><span class="pre">'\r'</span></code>, or
+<code class="docutils literal notranslate"><span class="pre">'\r\n'</span></code>; all other values are illegal.  It controls the
+handling of line endings.  It works as follows:</p>
+<ul class="simple">
+<li>On input, if <code class="docutils literal notranslate"><span class="pre">newline</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code>, universal newlines
+mode is enabled.  Lines in the input can end in <code class="docutils literal notranslate"><span class="pre">'\n'</span></code>,
+<code class="docutils literal notranslate"><span class="pre">'\r'</span></code>, or <code class="docutils literal notranslate"><span class="pre">'\r\n'</span></code>, and these are translated into
+<code class="docutils literal notranslate"><span class="pre">'\n'</span></code> before being returned to the caller.  If it is
+<code class="docutils literal notranslate"><span class="pre">''</span></code>, universal newline mode is enabled, but line endings
+are returned to the caller untranslated.  If it has any of
+the other legal values, input lines are only terminated by
+the given string, and the line ending is returned to the
+caller untranslated.  (In other words, translation to
+<code class="docutils literal notranslate"><span class="pre">'\n'</span></code> only occurs if <code class="docutils literal notranslate"><span class="pre">newline</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code>.)</li>
+<li>On output, if <code class="docutils literal notranslate"><span class="pre">newline</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code>, any <code class="docutils literal notranslate"><span class="pre">'\n'</span></code>
+characters written are translated to the system default
+line separator, <code class="docutils literal notranslate"><span class="pre">os.linesep</span></code>.  If <code class="docutils literal notranslate"><span class="pre">newline</span></code> is <code class="docutils literal notranslate"><span class="pre">''</span></code>,
+no translation takes place.  If <code class="docutils literal notranslate"><span class="pre">newline</span></code> is any of the
+other legal values, any <code class="docutils literal notranslate"><span class="pre">'\n'</span></code> characters written are
+translated to the given string.  (Note that the rules
+guiding translation are different for output than for
+input.)</li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">line_buffering</span></code>, if True, causes <code class="docutils literal notranslate"><span class="pre">write()</span></code> calls to imply
+a <code class="docutils literal notranslate"><span class="pre">flush()</span></code> if the string written contains at least one
+<code class="docutils literal notranslate"><span class="pre">'\n'</span></code> or <code class="docutils literal notranslate"><span class="pre">'\r'</span></code> character.  This is set by <code class="docutils literal notranslate"><span class="pre">open()</span></code>
+when it detects that the underlying stream is a TTY device,
+or when a <code class="docutils literal notranslate"><span class="pre">buffering</span></code> argument of <code class="docutils literal notranslate"><span class="pre">1</span></code> is passed.</p>
+<p>Further notes on the <code class="docutils literal notranslate"><span class="pre">newline</span></code> parameter:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">'\r'</span></code> support is still needed for some OSX applications
+that produce files using <code class="docutils literal notranslate"><span class="pre">'\r'</span></code> line endings; Excel (when
+exporting to text) and Adobe Illustrator EPS files are the
+most common examples.</li>
+<li>If translation is enabled, it happens regardless of which
+method is called for reading or writing.  For example,
+<code class="docutils literal notranslate"><span class="pre">f.read()</span></code> will always produce the same result as
+<code class="docutils literal notranslate"><span class="pre">''.join(f.readlines())</span></code>.</li>
+<li>If universal newlines without translation are requested on
+input (i.e. <code class="docutils literal notranslate"><span class="pre">newline=''</span></code>), if a system read operation
+returns a buffer ending in <code class="docutils literal notranslate"><span class="pre">'\r'</span></code>, another system read
+operation is done to determine whether it is followed by
+<code class="docutils literal notranslate"><span class="pre">'\n'</span></code> or not.  In universal newlines mode with
+translation, the second system read operation may be
+postponed until the next read request, and if the following
+system read operation returns a buffer starting with
+<code class="docutils literal notranslate"><span class="pre">'\n'</span></code>, that character is simply discarded.</li>
+</ul>
+</div></blockquote>
+</div></blockquote>
+<p>Another implementation, <code class="docutils literal notranslate"><span class="pre">StringIO</span></code>, creates a file-like <code class="docutils literal notranslate"><span class="pre">TextIO</span></code>
+implementation without an underlying Buffered I/O object.  While
+similar functionality could be provided by wrapping a <code class="docutils literal notranslate"><span class="pre">BytesIO</span></code>
+object in a <code class="docutils literal notranslate"><span class="pre">TextIOWrapper</span></code>, the <code class="docutils literal notranslate"><span class="pre">StringIO</span></code> object allows for much
+greater efficiency as it does not need to actually performing encoding
+and decoding.  A String I/O object can just store the encoded string
+as-is.  The <code class="docutils literal notranslate"><span class="pre">StringIO</span></code> object’s <code class="docutils literal notranslate"><span class="pre">__init__</span></code> signature takes an
+optional string specifying the initial value; the initial position is
+always 0.  It does not support encodings or newline translations; you
+always read back exactly the characters you wrote.</p>
+<div class="section" id="unicode-encoding-decoding-issues">
+<h3><a class="toc-backref" href="#id11">Unicode encoding/decoding Issues</a><a class="headerlink" href="#unicode-encoding-decoding-issues" title="Permalink to this headline">¶</a></h3>
+<p>We should allow changing the encoding and error-handling
+setting later.  The behavior of Text I/O operations in the face of
+Unicode problems and ambiguities (e.g. diacritics, surrogates, invalid
+bytes in an encoding) should be the same as that of the unicode
+<code class="docutils literal notranslate"><span class="pre">encode()</span></code>/<code class="docutils literal notranslate"><span class="pre">decode()</span></code> methods.  <code class="docutils literal notranslate"><span class="pre">UnicodeError</span></code> may be raised.</p>
+<p>Implementation note: we should be able to reuse much of the
+infrastructure provided by the <code class="docutils literal notranslate"><span class="pre">codecs</span></code> module.  If it doesn’t
+provide the exact APIs we need, we should refactor it to avoid
+reinventing the wheel.</p>
+</div>
+</div>
+<div class="section" id="non-blocking-i-o">
+<h2><a class="toc-backref" href="#id12">Non-blocking I/O</a><a class="headerlink" href="#non-blocking-i-o" title="Permalink to this headline">¶</a></h2>
+<p>Non-blocking I/O is fully supported on the Raw I/O level only.  If a
+raw object is in non-blocking mode and an operation would block, then
+<code class="docutils literal notranslate"><span class="pre">.read()</span></code> and <code class="docutils literal notranslate"><span class="pre">.readinto()</span></code> return <code class="docutils literal notranslate"><span class="pre">None</span></code>, while <code class="docutils literal notranslate"><span class="pre">.write()</span></code>
+returns 0.  In order to put an object in non-blocking mode,
+the user must extract the fileno and do it by hand.</p>
+<p>At the Buffered I/O and Text I/O layers, if a read or write fails due
+a non-blocking condition, they raise an <code class="docutils literal notranslate"><span class="pre">IOError</span></code> with <code class="docutils literal notranslate"><span class="pre">errno</span></code> set
+to <code class="docutils literal notranslate"><span class="pre">EAGAIN</span></code>.</p>
+<p>Originally, we considered propagating up the Raw I/O behavior, but
+many corner cases and problems were raised.  To address these issues,
+significant changes would need to have been made to the Buffered I/O
+and Text I/O layers.  For example, what should <code class="docutils literal notranslate"><span class="pre">.flush()</span></code> do on a
+Buffered non-blocking object?  How would the user instruct the object
+to “Write as much as you can from your buffer, but don’t block”?  A
+non-blocking <code class="docutils literal notranslate"><span class="pre">.flush()</span></code> that doesn’t necessarily flush all available
+data is counter-intuitive.  Since non-blocking and blocking objects
+would have such different semantics at these layers, it was agreed to
+abandon efforts to combine them into a single type.</p>
+</div>
+<div class="section" id="the-open-built-in-function">
+<h2><a class="toc-backref" href="#id13">The <code class="docutils literal notranslate"><span class="pre">open()</span></code> Built-in Function</a><a class="headerlink" href="#the-open-built-in-function" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">open()</span></code> built-in function is specified by the following
+pseudo-code:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">buffering</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span>
+         <span class="n">encoding</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">newline</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">))</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">buffering</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">buffering</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">encoding</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">encoding</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">newline</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\r\n</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">modes</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">mode</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">modes</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="s2">&quot;arwb+t&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">mode</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">modes</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;invalid mode: </span><span class="si">%r</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">mode</span><span class="p">)</span>
+    <span class="n">reading</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span> <span class="ow">in</span> <span class="n">modes</span>
+    <span class="n">writing</span> <span class="o">=</span> <span class="s2">&quot;w&quot;</span> <span class="ow">in</span> <span class="n">modes</span>
+    <span class="n">binary</span> <span class="o">=</span> <span class="s2">&quot;b&quot;</span> <span class="ow">in</span> <span class="n">modes</span>
+    <span class="n">appending</span> <span class="o">=</span> <span class="s2">&quot;a&quot;</span> <span class="ow">in</span> <span class="n">modes</span>
+    <span class="n">updating</span> <span class="o">=</span> <span class="s2">&quot;+&quot;</span> <span class="ow">in</span> <span class="n">modes</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;t&quot;</span> <span class="ow">in</span> <span class="n">modes</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">binary</span>
+    <span class="k">if</span> <span class="n">text</span> <span class="ow">and</span> <span class="n">binary</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;can&#39;t have text and binary mode at once&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">reading</span> <span class="o">+</span> <span class="n">writing</span> <span class="o">+</span> <span class="n">appending</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;can&#39;t have read/write/append mode at once&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">reading</span> <span class="ow">or</span> <span class="n">writing</span> <span class="ow">or</span> <span class="n">appending</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;must have exactly one of read/write/append mode&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">binary</span> <span class="ow">and</span> <span class="n">encoding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;binary modes doesn&#39;t take an encoding arg&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">binary</span> <span class="ow">and</span> <span class="n">errors</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;binary modes doesn&#39;t take an errors arg&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">binary</span> <span class="ow">and</span> <span class="n">newline</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;binary modes doesn&#39;t take a newline arg&quot;</span><span class="p">)</span>
+    <span class="c1"># XXX Need to spec the signature for FileIO()</span>
+    <span class="n">raw</span> <span class="o">=</span> <span class="n">FileIO</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="p">)</span>
+    <span class="n">line_buffering</span> <span class="o">=</span> <span class="p">(</span><span class="n">buffering</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">buffering</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">raw</span><span class="o">.</span><span class="n">isatty</span><span class="p">())</span>
+    <span class="k">if</span> <span class="n">line_buffering</span> <span class="ow">or</span> <span class="n">buffering</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">buffering</span> <span class="o">=</span> <span class="mi">8</span><span class="o">*</span><span class="mi">1024</span>  <span class="c1"># International standard buffer size</span>
+        <span class="c1"># XXX Try setting it to fstat().st_blksize</span>
+    <span class="k">if</span> <span class="n">buffering</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;invalid buffering size&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">buffering</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">binary</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">raw</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;can&#39;t have unbuffered text I/O&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">updating</span><span class="p">:</span>
+        <span class="n">buffer</span> <span class="o">=</span> <span class="n">BufferedRandom</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">buffering</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">writing</span> <span class="ow">or</span> <span class="n">appending</span><span class="p">:</span>
+        <span class="n">buffer</span> <span class="o">=</span> <span class="n">BufferedWriter</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">buffering</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">reading</span>
+        <span class="n">buffer</span> <span class="o">=</span> <span class="n">BufferedReader</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">buffering</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">binary</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">buffer</span>
+    <span class="k">assert</span> <span class="n">text</span>
+    <span class="k">return</span> <span class="n">TextIOWrapper</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span> <span class="n">encoding</span><span class="p">,</span> <span class="n">errors</span><span class="p">,</span> <span class="n">newline</span><span class="p">,</span> <span class="n">line_buffering</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id14">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-3116.txt">https://github.com/python/peps/blob/master/pep-3116.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-3116.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-3115.html">PEP 3115</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-3117.html">PEP 3117</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 3116 – New I/O</a><ul>
+<li><a class="reference internal" href="#rationale-and-goals">Rationale and Goals</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#raw-i-o">Raw I/O</a></li>
+<li><a class="reference internal" href="#buffered-i-o">Buffered I/O</a><ul>
+<li><a class="reference internal" href="#bufferedreader"><code class="docutils literal notranslate"><span class="pre">BufferedReader</span></code></a></li>
+<li><a class="reference internal" href="#bufferedwriter"><code class="docutils literal notranslate"><span class="pre">BufferedWriter</span></code></a></li>
+<li><a class="reference internal" href="#bufferedrwpair"><code class="docutils literal notranslate"><span class="pre">BufferedRWPair</span></code></a></li>
+<li><a class="reference internal" href="#bufferedrandom"><code class="docutils literal notranslate"><span class="pre">BufferedRandom</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#text-i-o">Text I/O</a><ul>
+<li><a class="reference internal" href="#unicode-encoding-decoding-issues">Unicode encoding/decoding Issues</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#non-blocking-i-o">Non-blocking I/O</a></li>
+<li><a class="reference internal" href="#the-open-built-in-function">The <code class="docutils literal notranslate"><span class="pre">open()</span></code> Built-in Function</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

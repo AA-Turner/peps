@@ -1,0 +1,418 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 3149 – ABI version tagged .so files &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 3150 – Statement local namespaces (aka “given” clause)" href="pep-3150.html" />
+    <link rel="prev" title="PEP 3148 – futures - execute computations asynchronously" href="pep-3148.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 3149 – ABI version tagged .so files</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-3149-abi-version-tagged-so-files">
+<h1 class="page-title">PEP 3149 – ABI version tagged .so files<a class="headerlink" href="#pep-3149-abi-version-tagged-so-files" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">3149</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">ABI version tagged .so files</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Barry Warsaw &lt;barry&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">2010-07-09</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.2</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">2010-07-14, 2010-07-22</dd>
+<dt class="field-odd">Resolution</dt>
+<dd class="field-odd"><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2010-September/103408.html">https://mail.python.org/pipermail/python-dev/2010-September/103408.html</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id21">Abstract</a></li>
+<li><a class="reference internal" href="#background" id="id22">Background</a></li>
+<li><a class="reference internal" href="#rationale" id="id23">Rationale</a></li>
+<li><a class="reference internal" href="#proposal" id="id24">Proposal</a></li>
+<li><a class="reference internal" href="#proven-approach" id="id25">Proven approach</a></li>
+<li><a class="reference internal" href="#windows" id="id26">Windows</a></li>
+<li><a class="reference internal" href="#pep-384" id="id27">PEP 384</a></li>
+<li><a class="reference internal" href="#alternatives" id="id28">Alternatives</a><ul>
+<li><a class="reference internal" href="#independent-directories-or-symlinks" id="id29">Independent directories or symlinks</a></li>
+<li><a class="reference internal" href="#don-t-share-packages-with-extension-modules" id="id30">Don’t share packages with extension modules</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#reference-implementation" id="id31">Reference implementation</a></li>
+<li><a class="reference internal" href="#references" id="id32">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id33">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id21">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>PEP 3147 <a class="footnote-reference brackets" href="#id11" id="id1">1</a> described an extension to Python’s import machinery that
+improved the sharing of Python source code, by allowing more than one
+byte compilation file (.pyc) to be co-located with each source file.</p>
+<p>This PEP defines an adjunct feature which allows the co-location of
+extension module files (.so) in a similar manner.  This optional,
+build-time feature will enable downstream distributions of Python to
+more easily provide more than one Python major version at a time.</p>
+</div>
+<div class="section" id="background">
+<h2><a class="toc-backref" href="#id22">Background</a><a class="headerlink" href="#background" title="Permalink to this headline">¶</a></h2>
+<p>PEP 3147 defined the file system layout for a pure-Python package,
+where multiple versions of Python are available on the system.  For
+example, where the <cite>alpha</cite> package containing source modules <cite>one.py</cite>
+and <cite>two.py</cite> exist on a system with Python 3.2 and 3.3, the post-byte
+compilation file system layout would be:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">alpha</span><span class="o">/</span>
+    <span class="n">__pycache__</span><span class="o">/</span>
+        <span class="fm">__init__</span><span class="o">.</span><span class="n">cpython</span><span class="o">-</span><span class="mf">32.</span><span class="n">pyc</span>
+        <span class="fm">__init__</span><span class="o">.</span><span class="n">cpython</span><span class="o">-</span><span class="mf">33.</span><span class="n">pyc</span>
+        <span class="n">one</span><span class="o">.</span><span class="n">cpython</span><span class="o">-</span><span class="mf">32.</span><span class="n">pyc</span>
+        <span class="n">one</span><span class="o">.</span><span class="n">cpython</span><span class="o">-</span><span class="mf">33.</span><span class="n">pyc</span>
+        <span class="n">two</span><span class="o">.</span><span class="n">cpython</span><span class="o">-</span><span class="mf">32.</span><span class="n">pyc</span>
+        <span class="n">two</span><span class="o">.</span><span class="n">cpython</span><span class="o">-</span><span class="mf">33.</span><span class="n">pyc</span>
+    <span class="fm">__init__</span><span class="o">.</span><span class="n">py</span>
+    <span class="n">one</span><span class="o">.</span><span class="n">py</span>
+    <span class="n">two</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+<p>For packages with extension modules, a similar differentiation is
+needed for the module’s .so files.  Extension modules compiled for
+different Python major versions are incompatible with each other due
+to changes in the ABI.  Different configuration/compilation options
+for the same Python version can result in different ABIs
+(e.g. –with-wide-unicode).</p>
+<p>While PEP 384 <a class="footnote-reference brackets" href="#id12" id="id2">2</a> defines a stable ABI, it will minimize, but not
+eliminate extension module incompatibilities between Python builds or
+major versions.  Thus a mechanism for discriminating extension module
+file names is proposed.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id23">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Linux distributions such as Ubuntu <a class="footnote-reference brackets" href="#id13" id="id3">3</a> and Debian <a class="footnote-reference brackets" href="#id14" id="id4">4</a> provide more
+than one Python version at the same time to their users.  For example,
+Ubuntu 9.10 Karmic Koala users can install Python 2.5, 2.6, and 3.1,
+with Python 2.6 being the default.</p>
+<p>In order to share as much as possible between the available Python
+versions, these distributions install third party package modules
+(<code class="docutils literal notranslate"><span class="pre">.pyc</span></code> and <code class="docutils literal notranslate"><span class="pre">.so</span></code> files) into <cite>/usr/share/pyshared</cite> and symlink to
+them from <cite>/usr/lib/pythonX.Y/dist-packages</cite>.  The symlinks exist
+because in a pre-PEP 3147 world (i.e &lt; Python 3.2), the <cite>.pyc</cite> files
+resulting from byte compilation by the various installed Pythons will
+name collide with each other.  For Python versions &gt;= 3.2, all
+pure-Python packages can be shared, because the <cite>.pyc</cite> files will no
+longer cause file system naming conflicts.  Eliminating these symlinks
+makes for a simpler, more robust Python distribution.</p>
+<p>A similar situation arises with shared library extensions.  Because
+extension modules are typically named <cite>foo.so</cite> for a <cite>foo</cite> extension
+module, these would also name collide if <cite>foo</cite> was provided for more
+than one Python version.</p>
+<p>In addition, because different configuration/compilation options for
+the same Python version can cause different ABIs to be presented to
+extension modules.  On POSIX systems for example, the configure
+options <code class="docutils literal notranslate"><span class="pre">--with-pydebug</span></code>, <code class="docutils literal notranslate"><span class="pre">--with-pymalloc</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">--with-wide-unicode</span></code> all change the ABI.  This PEP proposes to
+encode build-time options in the file name of the <code class="docutils literal notranslate"><span class="pre">.so</span></code> extension
+module files.</p>
+<p>PyPy <a class="footnote-reference brackets" href="#id15" id="id5">5</a> can also benefit from this PEP, allowing it to avoid name
+collisions in extension modules built for its API, but with a
+different <cite>.so</cite> tag.</p>
+</div>
+<div class="section" id="proposal">
+<h2><a class="toc-backref" href="#id24">Proposal</a><a class="headerlink" href="#proposal" title="Permalink to this headline">¶</a></h2>
+<p>The configure/compilation options chosen at Python interpreter
+build-time will be encoded in the shared library file name for
+extension modules.  This “tag” will appear between the module base
+name and the operation file system extension for shared libraries.</p>
+<p>The following information <em>MUST</em> be included in the shared library
+file name:</p>
+<ul class="simple">
+<li>The Python implementation (e.g. cpython, pypy, jython, etc.)</li>
+<li>The interpreter’s major and minor version numbers</li>
+</ul>
+<p>These two fields are separated by a hyphen and no dots are to appear
+between the major and minor version numbers.  E.g. <code class="docutils literal notranslate"><span class="pre">cpython-32</span></code>.</p>
+<p>Python implementations <em>MAY</em> include additional flags in the file name
+tag as appropriate.  For example, on POSIX systems these flags will
+also contribute to the file name:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">--with-pydebug</span></code> (flag: <code class="docutils literal notranslate"><span class="pre">d</span></code>)</li>
+<li><code class="docutils literal notranslate"><span class="pre">--with-pymalloc</span></code> (flag: <code class="docutils literal notranslate"><span class="pre">m</span></code>)</li>
+<li><code class="docutils literal notranslate"><span class="pre">--with-wide-unicode</span></code> (flag: <code class="docutils literal notranslate"><span class="pre">u</span></code>)</li>
+</ul>
+<p>By default in Python 3.2, <code class="docutils literal notranslate"><span class="pre">configure</span></code> enables <code class="docutils literal notranslate"><span class="pre">--with-pymalloc</span></code> so
+shared library file names would appear as <code class="docutils literal notranslate"><span class="pre">foo.cpython-32m.so</span></code>.
+When the other two flags are also enabled, the file names would be
+<code class="docutils literal notranslate"><span class="pre">foo.cpython-32dmu.so</span></code>.</p>
+<p>The shared library file name tag is used unconditionally; it cannot be
+changed.  The tag and extension module suffix are available through
+the <code class="docutils literal notranslate"><span class="pre">sysconfig</span></code> modules via the following variables:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sysconfig</span><span class="o">.</span><span class="n">get_config_var</span><span class="p">(</span><span class="s1">&#39;EXT_SUFFIX&#39;</span><span class="p">)</span>
+<span class="go">&#39;.cpython-32mu.so&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sysconfig</span><span class="o">.</span><span class="n">get_config_var</span><span class="p">(</span><span class="s1">&#39;SOABI&#39;</span><span class="p">)</span>
+<span class="go">&#39;cpython-32mu&#39;</span>
+</pre></div>
+</div>
+<p>Note that <code class="docutils literal notranslate"><span class="pre">$SOABI</span></code> contains just the tag, while <code class="docutils literal notranslate"><span class="pre">$EXT_SUFFIX</span></code> includes the
+platform extension for shared library files, and is the exact suffix
+added to the extension module name.</p>
+<p>For an arbitrary package <cite>foo</cite>, you might see these files when the
+distribution package was installed:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">python</span><span class="o">/</span><span class="n">foo</span><span class="o">.</span><span class="n">cpython</span><span class="o">-</span><span class="mi">32</span><span class="n">m</span><span class="o">.</span><span class="n">so</span>
+<span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">python</span><span class="o">/</span><span class="n">foo</span><span class="o">.</span><span class="n">cpython</span><span class="o">-</span><span class="mi">33</span><span class="n">m</span><span class="o">.</span><span class="n">so</span>
+</pre></div>
+</div>
+<p>(These paths are for example purposes only.  Distributions are free to
+use whatever filesystem layout they choose, and nothing in this PEP
+changes the locations where from-source builds of Python are
+installed.)</p>
+<p>Python’s dynamic module loader will recognize and import shared
+library extension modules with a tag that matches its build-time
+options.  For backward compatibility, Python will also continue to
+import untagged extension modules, e.g. <code class="docutils literal notranslate"><span class="pre">foo.so</span></code>.</p>
+<p>This shared library tag would be used globally for all distutils-based
+extension modules, regardless of where on the file system they are
+built.  Extension modules built by means other than distutils would
+either have to calculate the tag manually, or fallback to the
+non-tagged <cite>.so</cite> file name.</p>
+</div>
+<div class="section" id="proven-approach">
+<h2><a class="toc-backref" href="#id25">Proven approach</a><a class="headerlink" href="#proven-approach" title="Permalink to this headline">¶</a></h2>
+<p>The approach described here is already proven, in a sense, on Debian
+and Ubuntu system where different extensions are used for debug builds
+of Python and extension modules.  Debug builds on Windows also already
+use a different file extension for dynamic libraries, and in fact
+encoded (in a different way than proposed in this PEP) the Python
+major and minor version in the <cite>.dll</cite> file name.</p>
+</div>
+<div class="section" id="windows">
+<h2><a class="toc-backref" href="#id26">Windows</a><a class="headerlink" href="#windows" title="Permalink to this headline">¶</a></h2>
+<p>This PEP only addresses build issues on POSIX systems that use the
+<code class="docutils literal notranslate"><span class="pre">configure</span></code> script.  While Windows or other platform support is not
+explicitly disallowed under this PEP, platform expertise is needed in
+order to evaluate, describe, and implement support on such platforms.
+It is not currently clear that the facilities in this PEP are even
+useful for Windows.</p>
+</div>
+<div class="section" id="pep-384">
+<h2><a class="toc-backref" href="#id27">PEP 384</a><a class="headerlink" href="#pep-384" title="Permalink to this headline">¶</a></h2>
+<p>PEP 384 defines a stable ABI for extension modules.  In theory,
+universal adoption of PEP 384 would eliminate the need for this PEP
+because all extension modules could be compatible with any Python
+version.  In practice of course, it will be impossible to achieve
+universal adoption, and as described above, different built-time flags
+still affect the ABI.  Thus even with a stable ABI, this PEP may still
+be necessary.  While a complete specification is reserved for PEP 384,
+here is a discussion of the relevant issues.</p>
+<p>PEP 384 describes a change to <code class="docutils literal notranslate"><span class="pre">PyModule_Create()</span></code> where <code class="docutils literal notranslate"><span class="pre">3</span></code> is
+passed as the API version if the extension was complied with
+<code class="docutils literal notranslate"><span class="pre">Py_LIMITED_API</span></code>.  This should be formalized into an official macro
+called <code class="docutils literal notranslate"><span class="pre">PYTHON_ABI_VERSION</span></code> to mirror <code class="docutils literal notranslate"><span class="pre">PYTHON_API_VERSION</span></code>.  If
+and when the ABI changes in an incompatible way, this version number
+would be bumped.  To facilitate sharing, Python would be extended to
+search for extension modules with the <code class="docutils literal notranslate"><span class="pre">PYTHON_ABI_VERSION</span></code> number in
+its name.  The prefix <code class="docutils literal notranslate"><span class="pre">abi</span></code> is reserved for Python’s use.</p>
+<p>Thus, an initial implementation of PEP 384, when Python is configured
+with the default set of flags, would search for the following file
+names when extension module <cite>foo</cite> is imported (in this order):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">foo</span><span class="o">.</span><span class="n">cpython</span><span class="o">-</span><span class="n">XYm</span><span class="o">.</span><span class="n">so</span>
+<span class="n">foo</span><span class="o">.</span><span class="n">abi3</span><span class="o">.</span><span class="n">so</span>
+<span class="n">foo</span><span class="o">.</span><span class="n">so</span>
+</pre></div>
+</div>
+<p>The distutils <a class="footnote-reference brackets" href="#id16" id="id6">6</a> <code class="docutils literal notranslate"><span class="pre">build_ext</span></code> command would also have to be
+extended to compile to shared library files with the <code class="docutils literal notranslate"><span class="pre">abi3</span></code> tag,
+when the module author indicates that their extension supports that
+version of the ABI.  This could be done in a backward compatible way
+by adding a keyword argument to the <code class="docutils literal notranslate"><span class="pre">Extension</span></code> class, such as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Extension</span><span class="p">(</span><span class="s1">&#39;foo&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;foo.c&#39;</span><span class="p">],</span> <span class="n">abi</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Martin v. Löwis describes his thoughts <a class="footnote-reference brackets" href="#id17" id="id7">7</a> about the applicability of this
+PEP to PEP 384.  In summary:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">--with-pydebug</span></code> would not be supported by the stable ABI because
+this changes the layout of <code class="docutils literal notranslate"><span class="pre">PyObject</span></code>, which is an exposed
+structure.</li>
+<li><code class="docutils literal notranslate"><span class="pre">--with-pymalloc</span></code> has no bearing on the issue.</li>
+<li><code class="docutils literal notranslate"><span class="pre">--with-wide-unicode</span></code> is trickier, though Martin’s inclination is
+to force the stable ABI to use a <code class="docutils literal notranslate"><span class="pre">Py_UNICODE</span></code> that matches the
+platform’s <code class="docutils literal notranslate"><span class="pre">wchar_t</span></code>.</li>
+</ul>
+</div>
+<div class="section" id="alternatives">
+<h2><a class="toc-backref" href="#id28">Alternatives</a><a class="headerlink" href="#alternatives" title="Permalink to this headline">¶</a></h2>
+<p>In the initial python-dev thread <a class="footnote-reference brackets" href="#id18" id="id8">8</a> where this idea was first
+introduced, several alternatives were suggested.  For completeness
+they are listed here, along with the reasons for not adopting them.</p>
+<div class="section" id="independent-directories-or-symlinks">
+<h3><a class="toc-backref" href="#id29">Independent directories or symlinks</a><a class="headerlink" href="#independent-directories-or-symlinks" title="Permalink to this headline">¶</a></h3>
+<p>Debian and Ubuntu could simply add a version-specific directory to
+<code class="docutils literal notranslate"><span class="pre">sys.path</span></code> that would contain just the extension modules for that
+version of Python.  Or the symlink trick eliminated in PEP 3147 could
+be retained for just shared libraries.  This approach is rejected
+because it propagates the essential complexity that PEP 3147 tries to
+avoid, and adds potentially several additional directories to search
+for all modules, even when the number of extension modules is much
+fewer than the total number of Python packages.  For example, builds
+were made available both with and without wide unicode, with and
+without pydebug, and with and without pymalloc, the total number of
+directories search increases substantially.</p>
+</div>
+<div class="section" id="don-t-share-packages-with-extension-modules">
+<h3><a class="toc-backref" href="#id30">Don’t share packages with extension modules</a><a class="headerlink" href="#don-t-share-packages-with-extension-modules" title="Permalink to this headline">¶</a></h3>
+<p>It has been suggested that Python packages with extension modules not
+be shared among all supported Python versions on a distribution.  Even
+with adoption of PEP 3149, extension modules will have to be compiled
+for every supported Python version, so perhaps sharing of such
+packages isn’t useful anyway.  Not sharing packages with extensions
+though is infeasible for several reasons.</p>
+<p>If a pure-Python package is shared in one version, should it suddenly
+be not-shared if the next release adds an extension module for speed?
+Also, even though all extension shared libraries will be compiled and
+distributed once for every supported Python, there’s a big difference
+between duplicating the <cite>.so</cite> files and duplicating all <cite>.py</cite> files.
+The extra size increases the download time for such packages, and more
+immediately, increases the space pressures on already constrained
+distribution CD-ROMs.</p>
+</div>
+</div>
+<div class="section" id="reference-implementation">
+<h2><a class="toc-backref" href="#id31">Reference implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>Work on this code is tracked in a Bazaar branch on Launchpad <a class="footnote-reference brackets" href="#id19" id="id9">9</a>
+until it’s ready for merge into Python 3.2.  The work-in-progress diff
+can also be viewed <a class="footnote-reference brackets" href="#id20" id="id10">10</a> and is updated automatically as new changes
+are uploaded.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id32">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id11"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>PEP 3147</dd>
+<dt class="label" id="id12"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>PEP 384</dd>
+<dt class="label" id="id13"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd>Ubuntu: &lt;<a class="reference external" href="http://www.ubuntu.com">http://www.ubuntu.com</a>&gt;</dd>
+<dt class="label" id="id14"><span class="brackets"><a class="fn-backref" href="#id4">4</a></span></dt>
+<dd>Debian: &lt;<a class="reference external" href="http://www.debian.org">http://www.debian.org</a>&gt;</dd>
+<dt class="label" id="id15"><span class="brackets"><a class="fn-backref" href="#id5">5</a></span></dt>
+<dd><a class="reference external" href="http://codespeak.net/pypy/dist/pypy/doc/">http://codespeak.net/pypy/dist/pypy/doc/</a></dd>
+<dt class="label" id="id16"><span class="brackets"><a class="fn-backref" href="#id6">6</a></span></dt>
+<dd><a class="reference external" href="http://docs.python.org/py3k/distutils/index.html">http://docs.python.org/py3k/distutils/index.html</a></dd>
+<dt class="label" id="id17"><span class="brackets"><a class="fn-backref" href="#id7">7</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2010-August/103330.html">https://mail.python.org/pipermail/python-dev/2010-August/103330.html</a></dd>
+<dt class="label" id="id18"><span class="brackets"><a class="fn-backref" href="#id8">8</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2010-June/100998.html">https://mail.python.org/pipermail/python-dev/2010-June/100998.html</a></dd>
+<dt class="label" id="id19"><span class="brackets"><a class="fn-backref" href="#id9">9</a></span></dt>
+<dd><a class="reference external" href="https://code.edge.launchpad.net/~barry/python/sovers">https://code.edge.launchpad.net/~barry/python/sovers</a></dd>
+<dt class="label" id="id20"><span class="brackets"><a class="fn-backref" href="#id10">10</a></span></dt>
+<dd><a class="reference external" href="https://code.edge.launchpad.net/~barry/python/sovers/+merge/29411">https://code.edge.launchpad.net/~barry/python/sovers/+merge/29411</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id33">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-3149.txt">https://github.com/python/peps/blob/master/pep-3149.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-3149.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-3148.html">PEP 3148</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-3150.html">PEP 3150</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 3149 – ABI version tagged .so files</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#background">Background</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#proposal">Proposal</a></li>
+<li><a class="reference internal" href="#proven-approach">Proven approach</a></li>
+<li><a class="reference internal" href="#windows">Windows</a></li>
+<li><a class="reference internal" href="#pep-384">PEP 384</a></li>
+<li><a class="reference internal" href="#alternatives">Alternatives</a><ul>
+<li><a class="reference internal" href="#independent-directories-or-symlinks">Independent directories or symlinks</a></li>
+<li><a class="reference internal" href="#don-t-share-packages-with-extension-modules">Don’t share packages with extension modules</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#reference-implementation">Reference implementation</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

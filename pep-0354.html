@@ -1,0 +1,356 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 354 – Enumerations in Python &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 355 – Path - Object oriented filesystem paths" href="pep-0355.html" />
+    <link rel="prev" title="PEP 353 – Using ssize_t as the index type" href="pep-0353.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 354 – Enumerations in Python</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-354-enumerations-in-python">
+<h1 class="page-title">PEP 354 – Enumerations in Python<a class="headerlink" href="#pep-354-enumerations-in-python" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">354</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Enumerations in Python</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Ben Finney &lt;ben+python&#32;&#97;t&#32;benfinney.id.au&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Superseded</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">20-Dec-2005</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.6</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">20-Dec-2005</dd>
+<dt class="field-odd">Superseded-By</dt>
+<dd class="field-odd"><a class="reference external" href="./pep-0435.html">435</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#rejection-notice" id="id4">Rejection Notice</a></li>
+<li><a class="reference internal" href="#abstract" id="id5">Abstract</a></li>
+<li><a class="reference internal" href="#motivation" id="id6">Motivation</a></li>
+<li><a class="reference internal" href="#specification" id="id7">Specification</a></li>
+<li><a class="reference internal" href="#rationale-other-designs-considered" id="id8">Rationale – Other designs considered</a><ul>
+<li><a class="reference internal" href="#all-in-one-class" id="id9">All in one class</a></li>
+<li><a class="reference internal" href="#metaclass-for-creating-enumeration-classes" id="id10">Metaclass for creating enumeration classes</a></li>
+<li><a class="reference internal" href="#values-related-to-other-types" id="id11">Values related to other types</a></li>
+<li><a class="reference internal" href="#hiding-attributes-of-enumerated-values" id="id12">Hiding attributes of enumerated values</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation" id="id13">Implementation</a></li>
+<li><a class="reference internal" href="#references-and-footnotes" id="id14">References and Footnotes</a></li>
+<li><a class="reference internal" href="#copyright" id="id15">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="rejection-notice">
+<h2><a class="toc-backref" href="#id4">Rejection Notice</a><a class="headerlink" href="#rejection-notice" title="Permalink to this headline">¶</a></h2>
+<p>This PEP has been rejected.  This doesn’t slot nicely into any of the
+existing modules (like collections), and the Python standard library
+eschews having lots of individual data structures in their own
+modules.  Also, the PEP has generated no widespread interest.  For
+those who need enumerations, there are cookbook recipes and PyPI
+packages that meet these needs.</p>
+<p><em>Note: this PEP was superseded by PEP 435, which has been accepted in
+May 2013.</em></p>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id5">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP specifies an enumeration data type for Python.</p>
+<p>An enumeration is an exclusive set of symbolic names bound to
+arbitrary unique values.  Values within an enumeration can be iterated
+and compared, but the values have no inherent relationship to values
+outside the enumeration.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id6">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>The properties of an enumeration are useful for defining an immutable,
+related set of constant values that have a defined sequence but no
+inherent semantic meaning.  Classic examples are days of the week
+(Sunday through Saturday) and school assessment grades (‘A’ through
+‘D’, and ‘F’).  Other examples include error status values and states
+within a defined process.</p>
+<p>It is possible to simply define a sequence of values of some other
+basic type, such as <code class="docutils literal notranslate"><span class="pre">int</span></code> or <code class="docutils literal notranslate"><span class="pre">str</span></code>, to represent discrete
+arbitrary values.  However, an enumeration ensures that such values
+are distinct from any others, and that operations without meaning
+(“Wednesday times two”) are not defined for these values.</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id7">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>An enumerated type is created from a sequence of arguments to the
+type’s constructor:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Weekdays</span> <span class="o">=</span> <span class="n">enum</span><span class="p">(</span><span class="s1">&#39;sun&#39;</span><span class="p">,</span> <span class="s1">&#39;mon&#39;</span><span class="p">,</span> <span class="s1">&#39;tue&#39;</span><span class="p">,</span> <span class="s1">&#39;wed&#39;</span><span class="p">,</span> <span class="s1">&#39;thu&#39;</span><span class="p">,</span> <span class="s1">&#39;fri&#39;</span><span class="p">,</span> <span class="s1">&#39;sat&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Grades</span> <span class="o">=</span> <span class="n">enum</span><span class="p">(</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="s1">&#39;D&#39;</span><span class="p">,</span> <span class="s1">&#39;F&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Enumerations with no values are meaningless.  The exception
+<code class="docutils literal notranslate"><span class="pre">EnumEmptyError</span></code> is raised if the constructor is called with no
+value arguments.</p>
+<p>The values are bound to attributes of the new enumeration object:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">today</span> <span class="o">=</span> <span class="n">Weekdays</span><span class="o">.</span><span class="n">mon</span>
+</pre></div>
+</div>
+<p>The values can be compared:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">if</span> <span class="n">today</span> <span class="o">==</span> <span class="n">Weekdays</span><span class="o">.</span><span class="n">fri</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="nb">print</span> <span class="s2">&quot;Get ready for the weekend&quot;</span>
+</pre></div>
+</div>
+<p>Values within an enumeration cannot be meaningfully compared except
+with values from the same enumeration.  The comparison operation
+functions return <code class="docutils literal notranslate"><span class="pre">NotImplemented</span></code> <a class="footnote-reference brackets" href="#cmp-notimplemented" id="id1">1</a> when a
+value from an enumeration is compared against any value not from the
+same enumeration or of a different type:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">gym_night</span> <span class="o">=</span> <span class="n">Weekdays</span><span class="o">.</span><span class="n">wed</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gym_night</span><span class="o">.</span><span class="n">__cmp__</span><span class="p">(</span><span class="n">Weekdays</span><span class="o">.</span><span class="n">mon</span><span class="p">)</span>
+<span class="go">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gym_night</span><span class="o">.</span><span class="n">__cmp__</span><span class="p">(</span><span class="n">Weekdays</span><span class="o">.</span><span class="n">wed</span><span class="p">)</span>
+<span class="go">0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gym_night</span><span class="o">.</span><span class="n">__cmp__</span><span class="p">(</span><span class="n">Weekdays</span><span class="o">.</span><span class="n">fri</span><span class="p">)</span>
+<span class="go">-1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gym_night</span><span class="o">.</span><span class="n">__cmp__</span><span class="p">(</span><span class="mi">23</span><span class="p">)</span>
+<span class="go">NotImplemented</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gym_night</span><span class="o">.</span><span class="n">__cmp__</span><span class="p">(</span><span class="s2">&quot;wed&quot;</span><span class="p">)</span>
+<span class="go">NotImplemented</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gym_night</span><span class="o">.</span><span class="n">__cmp__</span><span class="p">(</span><span class="n">Grades</span><span class="o">.</span><span class="n">B</span><span class="p">)</span>
+<span class="go">NotImplemented</span>
+</pre></div>
+</div>
+<p>This allows the operation to succeed, evaluating to a boolean value:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">gym_night</span> <span class="o">=</span> <span class="n">Weekdays</span><span class="o">.</span><span class="n">wed</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gym_night</span> <span class="o">&lt;</span> <span class="n">Weekdays</span><span class="o">.</span><span class="n">mon</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gym_night</span> <span class="o">&lt;</span> <span class="n">Weekdays</span><span class="o">.</span><span class="n">wed</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gym_night</span> <span class="o">&lt;</span> <span class="n">Weekdays</span><span class="o">.</span><span class="n">fri</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gym_night</span> <span class="o">&lt;</span> <span class="mi">23</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gym_night</span> <span class="o">&gt;</span> <span class="mi">23</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gym_night</span> <span class="o">&gt;</span> <span class="s2">&quot;wed&quot;</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gym_night</span> <span class="o">&gt;</span> <span class="n">Grades</span><span class="o">.</span><span class="n">B</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>Coercing a value from an enumeration to a <code class="docutils literal notranslate"><span class="pre">str</span></code> results in the
+string that was specified for that value when constructing the
+enumeration:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">gym_night</span> <span class="o">=</span> <span class="n">Weekdays</span><span class="o">.</span><span class="n">wed</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">str</span><span class="p">(</span><span class="n">gym_night</span><span class="p">)</span>
+<span class="go">&#39;wed&#39;</span>
+</pre></div>
+</div>
+<p>The sequence index of each value from an enumeration is exported as an
+integer via that value’s <code class="docutils literal notranslate"><span class="pre">index</span></code> attribute:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">gym_night</span> <span class="o">=</span> <span class="n">Weekdays</span><span class="o">.</span><span class="n">wed</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gym_night</span><span class="o">.</span><span class="n">index</span>
+<span class="go">3</span>
+</pre></div>
+</div>
+<p>An enumeration can be iterated, returning its values in the sequence
+they were specified when the enumeration was created:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="p">)</span> <span class="k">for</span> <span class="n">day</span> <span class="ow">in</span> <span class="n">Weekdays</span><span class="p">]</span>
+<span class="go">[&#39;sun&#39;, &#39;mon&#39;, &#39;tue&#39;, &#39;wed&#39;, &#39;thu&#39;, &#39;fri&#39;, &#39;sat&#39;]</span>
+</pre></div>
+</div>
+<p>Values from an enumeration are hashable, and can be used as dict
+keys:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">plans</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">plans</span><span class="p">[</span><span class="n">Weekdays</span><span class="o">.</span><span class="n">sat</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Feed the horse&quot;</span>
+</pre></div>
+</div>
+<p>The normal usage of enumerations is to provide a set of possible
+values for a data type, which can then be used to map to other
+information about the values:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">report_grade</span> <span class="ow">in</span> <span class="n">Grades</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">report_students</span><span class="p">[</span><span class="n">report_grade</span><span class="p">]</span> <span class="o">=</span> \
+<span class="gp">... </span>        <span class="p">[</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">students</span> <span class="k">if</span> <span class="n">students</span><span class="o">.</span><span class="n">grade</span> <span class="o">==</span> <span class="n">report_grade</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="rationale-other-designs-considered">
+<h2><a class="toc-backref" href="#id8">Rationale – Other designs considered</a><a class="headerlink" href="#rationale-other-designs-considered" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="all-in-one-class">
+<h3><a class="toc-backref" href="#id9">All in one class</a><a class="headerlink" href="#all-in-one-class" title="Permalink to this headline">¶</a></h3>
+<p>Some implementations have the enumeration and its values all as
+attributes of a single object or class.</p>
+<p>This PEP specifies a design where the enumeration is a container, and
+the values are simple comparables.  It was felt that attempting to
+place all the properties of enumeration within a single class
+complicates the design without apparent benefit.</p>
+</div>
+<div class="section" id="metaclass-for-creating-enumeration-classes">
+<h3><a class="toc-backref" href="#id10">Metaclass for creating enumeration classes</a><a class="headerlink" href="#metaclass-for-creating-enumeration-classes" title="Permalink to this headline">¶</a></h3>
+<p>The enumerations specified in this PEP are instances of an <code class="docutils literal notranslate"><span class="pre">enum</span></code>
+type.  Some alternative designs implement each enumeration as its own
+class, and a metaclass to define common properties of all
+enumerations.</p>
+<p>One motivation for having a class (rather than an instance) for each
+enumeration is to allow subclasses of enumerations, extending and
+altering an existing enumeration.  A class, though, implies that
+instances of that class will be created; it is difficult to imagine
+what it means to have separate instances of a “days of the week”
+class, where each instance contains all days.  This usually leads to
+having each class follow the Singleton pattern, further complicating
+the design.</p>
+<p>In contrast, this PEP specifies enumerations that are not expected to
+be extended or modified.  It is, of course, possible to create a new
+enumeration from the string values of an existing one, or even
+subclass the <code class="docutils literal notranslate"><span class="pre">enum</span></code> type if desired.</p>
+</div>
+<div class="section" id="values-related-to-other-types">
+<h3><a class="toc-backref" href="#id11">Values related to other types</a><a class="headerlink" href="#values-related-to-other-types" title="Permalink to this headline">¶</a></h3>
+<p>Some designs express a strong relationship to some other value, such
+as a particular integer or string, for each enumerated value.</p>
+<p>This results in using such values in contexts where the enumeration
+has no meaning, and unnecessarily complicates the design.  The
+enumerated values specified in this PEP export the values used to
+create them, and can be compared for equality with any other value,
+but sequence comparison with values outside the enumeration is
+explicitly not implemented.</p>
+</div>
+<div class="section" id="hiding-attributes-of-enumerated-values">
+<h3><a class="toc-backref" href="#id12">Hiding attributes of enumerated values</a><a class="headerlink" href="#hiding-attributes-of-enumerated-values" title="Permalink to this headline">¶</a></h3>
+<p>A previous design had the enumerated values hiding as much as possible
+about their implementation, to the point of not exporting the string
+key and sequence index.</p>
+<p>The design in this PEP acknowledges that programs will often find it
+convenient to know the enumerated value’s enumeration type, sequence
+index, and string key specified for the value.  These are exported by
+the enumerated value as attributes.</p>
+</div>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id13">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>This design is based partly on a recipe <a class="footnote-reference brackets" href="#enum-recipe" id="id2">2</a> from the
+Python Cookbook.</p>
+<p>The PyPI package <code class="docutils literal notranslate"><span class="pre">enum</span></code> <a class="footnote-reference brackets" href="#enum-package" id="id3">3</a> provides a Python
+implementation of the data types described in this PEP.</p>
+</div>
+<div class="section" id="references-and-footnotes">
+<h2><a class="toc-backref" href="#id14">References and Footnotes</a><a class="headerlink" href="#references-and-footnotes" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="cmp-notimplemented"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>The <code class="docutils literal notranslate"><span class="pre">NotImplemented</span></code> return value from comparison operations
+signals the Python interpreter to attempt alternative comparisons
+or other fallbacks.
+&lt;<a class="reference external" href="http://docs.python.org/reference/datamodel.html#the-standard-type-hierarchy">http://docs.python.org/reference/datamodel.html#the-standard-type-hierarchy</a>&gt;</dd>
+<dt class="label" id="enum-recipe"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>“First Class Enums in Python”, Zoran Isailovski,
+Python Cookbook recipe 413486
+&lt;<a class="reference external" href="http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/413486">http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/413486</a>&gt;</dd>
+<dt class="label" id="enum-package"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd>Python Package Index, package <code class="docutils literal notranslate"><span class="pre">enum</span></code>
+&lt;<a class="reference external" href="http://cheeseshop.python.org/pypi/enum/">http://cheeseshop.python.org/pypi/enum/</a>&gt;</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id15">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0354.txt">https://github.com/python/peps/blob/master/pep-0354.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0354.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0353.html">PEP 0353</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0355.html">PEP 0355</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 354 – Enumerations in Python</a><ul>
+<li><a class="reference internal" href="#rejection-notice">Rejection Notice</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#rationale-other-designs-considered">Rationale – Other designs considered</a><ul>
+<li><a class="reference internal" href="#all-in-one-class">All in one class</a></li>
+<li><a class="reference internal" href="#metaclass-for-creating-enumeration-classes">Metaclass for creating enumeration classes</a></li>
+<li><a class="reference internal" href="#values-related-to-other-types">Values related to other types</a></li>
+<li><a class="reference internal" href="#hiding-attributes-of-enumerated-values">Hiding attributes of enumerated values</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#references-and-footnotes">References and Footnotes</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

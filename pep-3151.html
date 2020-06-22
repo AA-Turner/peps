@@ -1,0 +1,1106 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 3151 – Reworking the OS and IO exception hierarchy &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 3152 – Cofunctions" href="pep-3152.html" />
+    <link rel="prev" title="PEP 3150 – Statement local namespaces (aka “given” clause)" href="pep-3150.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 3151 – Reworking the OS and IO exception hierarchy</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-3151-reworking-the-os-and-io-exception-hierarchy">
+<h1 class="page-title">PEP 3151 – Reworking the OS and IO exception hierarchy<a class="headerlink" href="#pep-3151-reworking-the-os-and-io-exception-hierarchy" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">3151</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Reworking the OS and IO exception hierarchy</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Antoine Pitrou &lt;solipsis&#32;&#97;t&#32;pitrou.net&gt;</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even">Barry Warsaw</dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd">Final</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even">Standards Track</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">2010-07-21</dd>
+<dt class="field-even">Python-Version</dt>
+<dd class="field-even">3.3</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd"><p></p></dd>
+<dt class="field-even">Resolution</dt>
+<dd class="field-even"><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2011-October/114033.html">https://mail.python.org/pipermail/python-dev/2011-October/114033.html</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id11">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id12">Rationale</a><ul>
+<li><a class="reference internal" href="#confusing-set-of-os-related-exceptions" id="id13">Confusing set of OS-related exceptions</a></li>
+<li><a class="reference internal" href="#lack-of-fine-grained-exceptions" id="id14">Lack of fine-grained exceptions</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#compatibility-strategy" id="id15">Compatibility strategy</a></li>
+<li><a class="reference internal" href="#step-1-coalesce-exception-types" id="id16">Step 1: coalesce exception types</a><ul>
+<li><a class="reference internal" href="#justification" id="id17">Justification</a></li>
+<li><a class="reference internal" href="#exception-attributes" id="id18">Exception attributes</a></li>
+<li><a class="reference internal" href="#deprecation-of-names" id="id19">Deprecation of names</a><ul>
+<li><a class="reference internal" href="#built-in-exceptions" id="id20">built-in exceptions</a></li>
+<li><a class="reference internal" href="#module-level-exceptions" id="id21">module-level exceptions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#step-2-define-additional-subclasses" id="id22">Step 2: define additional subclasses</a><ul>
+<li><a class="reference internal" href="#prerequisite" id="id23">Prerequisite</a></li>
+<li><a class="reference internal" href="#new-exception-classes" id="id24">New exception classes</a></li>
+<li><a class="reference internal" href="#naming" id="id25">Naming</a></li>
+<li><a class="reference internal" href="#id2" id="id26">Exception attributes</a></li>
+<li><a class="reference internal" href="#implementation" id="id27">Implementation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#possible-objections" id="id28">Possible objections</a><ul>
+<li><a class="reference internal" href="#namespace-pollution" id="id29">Namespace pollution</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#earlier-discussion" id="id30">Earlier discussion</a></li>
+<li><a class="reference internal" href="#id5" id="id31">Implementation</a></li>
+<li><a class="reference internal" href="#possible-alternative" id="id32">Possible alternative</a><ul>
+<li><a class="reference internal" href="#pattern-matching" id="id33">Pattern matching</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#exceptions-ignored-by-this-pep" id="id34">Exceptions ignored by this PEP</a></li>
+<li><a class="reference internal" href="#appendix-a-survey-of-common-errnos" id="id35">Appendix A: Survey of common errnos</a><ul>
+<li><a class="reference internal" href="#common-errnos-with-oserror" id="id36">Common errnos with OSError</a></li>
+<li><a class="reference internal" href="#common-errnos-with-ioerror" id="id37">Common errnos with IOError</a></li>
+<li><a class="reference internal" href="#common-errnos-with-socket-error" id="id38">Common errnos with socket.error</a></li>
+<li><a class="reference internal" href="#common-errnos-with-select-error" id="id39">Common errnos with select.error</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#appendix-b-survey-of-raised-os-and-io-errors" id="id40">Appendix B: Survey of raised OS and IO errors</a><ul>
+<li><a class="reference internal" href="#about-vmserror" id="id41">About VMSError</a></li>
+<li><a class="reference internal" href="#interpreter-core" id="id42">Interpreter core</a></li>
+<li><a class="reference internal" href="#standard-library" id="id43">Standard library</a><ul>
+<li><a class="reference internal" href="#bz2" id="id44">bz2</a></li>
+<li><a class="reference internal" href="#curses" id="id45">curses</a></li>
+<li><a class="reference internal" href="#dbm-gnu-dbm-ndbm" id="id46">dbm.gnu, dbm.ndbm</a></li>
+<li><a class="reference internal" href="#fcntl" id="id47">fcntl</a></li>
+<li><a class="reference internal" href="#imp-module" id="id48">imp module</a></li>
+<li><a class="reference internal" href="#io-module" id="id49">io module</a></li>
+<li><a class="reference internal" href="#mmap" id="id50">mmap</a></li>
+<li><a class="reference internal" href="#multiprocessing" id="id51">multiprocessing</a></li>
+<li><a class="reference internal" href="#os-posix" id="id52">os / posix</a></li>
+<li><a class="reference internal" href="#ossaudiodev" id="id53">ossaudiodev</a></li>
+<li><a class="reference internal" href="#readline" id="id54">readline</a></li>
+<li><a class="reference internal" href="#select" id="id55">select</a></li>
+<li><a class="reference internal" href="#signal" id="id56">signal</a></li>
+<li><a class="reference internal" href="#socket" id="id57">socket</a></li>
+<li><a class="reference internal" href="#sys" id="id58">sys</a></li>
+<li><a class="reference internal" href="#time" id="id59">time</a></li>
+<li><a class="reference internal" href="#zipimport" id="id60">zipimport</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#acknowledgments" id="id61">Acknowledgments</a></li>
+<li><a class="reference internal" href="#references" id="id62">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id63">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id11">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>The standard exception hierarchy is an important part of the Python
+language.  It has two defining qualities: it is both generic and
+selective.  Generic in that the same exception type can be raised
+- and handled - regardless of the context (for example, whether you are
+trying to add something to an integer, to call a string method, or to write
+an object on a socket, a TypeError will be raised for bad argument types).
+Selective in that it allows the user to easily handle (silence, examine,
+process, store or encapsulate…) specific kinds of error conditions
+while letting other errors bubble up to higher calling contexts.  For
+example, you can choose to catch ZeroDivisionErrors without affecting
+the default handling of other ArithmeticErrors (such as OverflowErrors).</p>
+<p>This PEP proposes changes to a part of the exception hierarchy in
+order to better embody the qualities mentioned above: the errors
+related to operating system calls (OSError, IOError, mmap.error,
+select.error, and all their subclasses).</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id12">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="confusing-set-of-os-related-exceptions">
+<h3><a class="toc-backref" href="#id13">Confusing set of OS-related exceptions</a><a class="headerlink" href="#confusing-set-of-os-related-exceptions" title="Permalink to this headline">¶</a></h3>
+<p>OS-related (or system call-related) exceptions are currently a diversity
+of classes, arranged in the following sub-hierarchies:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">+--</span> <span class="ne">EnvironmentError</span>
+    <span class="o">+--</span> <span class="ne">IOError</span>
+        <span class="o">+--</span> <span class="n">io</span><span class="o">.</span><span class="n">BlockingIOError</span>
+        <span class="o">+--</span> <span class="n">io</span><span class="o">.</span><span class="n">UnsupportedOperation</span> <span class="p">(</span><span class="n">also</span> <span class="n">inherits</span> <span class="kn">from</span> <span class="nn">ValueError</span><span class="p">)</span>
+        <span class="o">+--</span> <span class="n">socket</span><span class="o">.</span><span class="n">error</span>
+            <span class="o">+--</span> <span class="n">socket</span><span class="o">.</span><span class="n">gaierror</span>
+            <span class="o">+--</span> <span class="n">socket</span><span class="o">.</span><span class="n">herror</span>
+            <span class="o">+--</span> <span class="n">socket</span><span class="o">.</span><span class="n">timeout</span>
+    <span class="o">+--</span> <span class="ne">OSError</span>
+        <span class="o">+--</span> <span class="ne">VMSError</span>
+        <span class="o">+--</span> <span class="ne">WindowsError</span>
+    <span class="o">+--</span> <span class="n">mmap</span><span class="o">.</span><span class="n">error</span>
+<span class="o">+--</span> <span class="n">select</span><span class="o">.</span><span class="n">error</span>
+</pre></div>
+</div>
+<p>While some of these distinctions can be explained by implementation
+considerations, they are often not very logical at a higher level.  The
+line separating OSError and IOError, for example, is often blurry.  Consider
+the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s2">&quot;fff&quot;</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">OSError</span>: <span class="n">[Errno 2] No such file or directory: &#39;fff&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">open</span><span class="p">(</span><span class="s2">&quot;fff&quot;</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">IOError</span>: <span class="n">[Errno 2] No such file or directory: &#39;fff&#39;</span>
+</pre></div>
+</div>
+<p>The same error condition (a non-existing file) gets cast as two different
+exceptions depending on which library function was called.  The reason
+for this is that the <code class="docutils literal notranslate"><span class="pre">os</span></code> module exclusively raises OSError (or its
+subclass WindowsError) while the <code class="docutils literal notranslate"><span class="pre">io</span></code> module mostly raises IOError.
+However, the user is interested in the nature of the error, not in which
+part of the interpreter it comes from (since the latter is obvious from
+reading the traceback message or application source code).</p>
+<p>In fact, it is hard to think of any situation where OSError should be
+caught but not IOError, or the reverse.</p>
+<p>A further proof of the ambiguity of this segmentation is that the standard
+library itself sometimes has problems deciding.  For example, in the
+<code class="docutils literal notranslate"><span class="pre">select</span></code> module, similar failures will raise <code class="docutils literal notranslate"><span class="pre">select.error</span></code>, <code class="docutils literal notranslate"><span class="pre">OSError</span></code>
+or <code class="docutils literal notranslate"><span class="pre">IOError</span></code> depending on whether you are using select(), a poll object,
+a kqueue object, or an epoll object.  This makes user code uselessly
+complicated since it has to be prepared to catch various exception types,
+depending on which exact implementation of a single primitive it chooses
+to use at runtime.</p>
+<p>As for WindowsError, it seems to be a pointless distinction.  First, it
+only exists on Windows systems, which requires tedious compatibility code
+in cross-platform applications (such code can be found in <code class="docutils literal notranslate"><span class="pre">Lib/shutil.py</span></code>).
+Second, it inherits from OSError and is raised for similar errors as OSError
+is raised for on other systems. Third, the user wanting access to low-level
+exception specifics has to examine the <code class="docutils literal notranslate"><span class="pre">errno</span></code> or <code class="docutils literal notranslate"><span class="pre">winerror</span></code> attribute
+anyway.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#appendix-b">Appendix B</a> surveys the use of the various exception types across
+the interpreter and the standard library.</p>
+</div>
+</div>
+<div class="section" id="lack-of-fine-grained-exceptions">
+<h3><a class="toc-backref" href="#id14">Lack of fine-grained exceptions</a><a class="headerlink" href="#lack-of-fine-grained-exceptions" title="Permalink to this headline">¶</a></h3>
+<p>The current variety of OS-related exceptions doesn’t allow the user to filter
+easily for the desired kinds of failures.  As an example, consider the task
+of deleting a file if it exists.  The Look Before You Leap (LBYL) idiom
+suffers from an obvious race condition:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If a file named as <code class="docutils literal notranslate"><span class="pre">filename</span></code> is created by another thread or process
+between the calls to <code class="docutils literal notranslate"><span class="pre">os.path.exists</span></code> and <code class="docutils literal notranslate"><span class="pre">os.remove</span></code>, it won’t be
+deleted.  This can produce bugs in the application, or even security issues.</p>
+<p>Therefore, the solution is to try to remove the file, and ignore the error
+if the file doesn’t exist (an idiom known as Easier to Ask Forgiveness
+than to get Permission, or EAFP).  Careful code will read like the following
+(which works under both POSIX and Windows systems):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">errno</span> <span class="o">!=</span> <span class="n">errno</span><span class="o">.</span><span class="n">ENOENT</span><span class="p">:</span>
+        <span class="k">raise</span>
+</pre></div>
+</div>
+<p>or even:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">EnvironmentError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">errno</span> <span class="o">!=</span> <span class="n">errno</span><span class="o">.</span><span class="n">ENOENT</span><span class="p">:</span>
+        <span class="k">raise</span>
+</pre></div>
+</div>
+<p>This is a lot more to type, and also forces the user to remember the various
+cryptic mnemonics from the <code class="docutils literal notranslate"><span class="pre">errno</span></code> module.  It imposes an additional
+cognitive burden and gets tiresome rather quickly.  Consequently, many
+programmers will instead write the following code, which silences exceptions
+too broadly:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+    <span class="k">pass</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">os.remove</span></code> can raise an OSError not only when the file doesn’t exist,
+but in other possible situations (for example, the filename points to a
+directory, or the current process doesn’t have permission to remove
+the file), which all indicate bugs in the application logic and therefore
+shouldn’t be silenced.  What the programmer would like to write instead is
+something such as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+    <span class="k">pass</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="compatibility-strategy">
+<h2><a class="toc-backref" href="#id15">Compatibility strategy</a><a class="headerlink" href="#compatibility-strategy" title="Permalink to this headline">¶</a></h2>
+<p>Reworking the exception hierarchy will obviously change the exact semantics
+of at least some existing code.  While it is not possible to improve on the
+current situation without changing exact semantics, it is possible to define
+a narrower type of compatibility, which we will call <em>useful compatibility</em>.</p>
+<p>For this we first must explain what we will call <em>careful</em> and <em>careless</em>
+exception handling.  <em>Careless</em> (or “naïve”) code is defined as code which
+blindly catches any of <code class="docutils literal notranslate"><span class="pre">OSError</span></code>, <code class="docutils literal notranslate"><span class="pre">IOError</span></code>, <code class="docutils literal notranslate"><span class="pre">socket.error</span></code>,
+<code class="docutils literal notranslate"><span class="pre">mmap.error</span></code>, <code class="docutils literal notranslate"><span class="pre">WindowsError</span></code>, <code class="docutils literal notranslate"><span class="pre">select.error</span></code> without checking the <code class="docutils literal notranslate"><span class="pre">errno</span></code>
+attribute.  This is because such exception types are much too broad to signify
+anything.  Any of them can be raised for error conditions as diverse as: a
+bad file descriptor (which will usually indicate a programming error), an
+unconnected socket (ditto), a socket timeout, a file type mismatch, an invalid
+argument, a transmission failure, insufficient permissions, a non-existent
+directory, a full filesystem, etc.</p>
+<p>(moreover, the use of certain of these exceptions is irregular; <a class="reference internal" href="#appendix-b">Appendix B</a>
+exposes the case of the <a class="reference internal" href="#select">select</a> module, which raises different exceptions
+depending on the implementation)</p>
+<p><em>Careful</em> code is defined as code which, when catching any of the above
+exceptions, examines the <code class="docutils literal notranslate"><span class="pre">errno</span></code> attribute to determine the actual error
+condition and takes action depending on it.</p>
+<p>Then we can define <em>useful compatibility</em> as follows:</p>
+<ul>
+<li><p>useful compatibility doesn’t make exception catching any narrower, but
+it can be broader for <em>careless</em> exception-catching code.  Given the following
+kind of snippet, all exceptions caught before this PEP will also be
+caught after this PEP, but the reverse may be false (because the coalescing
+of <code class="docutils literal notranslate"><span class="pre">OSError</span></code>, <code class="docutils literal notranslate"><span class="pre">IOError</span></code> and others means the <code class="docutils literal notranslate"><span class="pre">except</span></code> clause throws
+a slightly broader net):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="o">...</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+    <span class="o">...</span>
+<span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+    <span class="k">pass</span>
+</pre></div>
+</div>
+</li>
+<li><p>useful compatibility doesn’t alter the behaviour of <em>careful</em>
+exception-catching code.  Given the following kind of snippet, the same
+errors should be silenced or re-raised, regardless of whether this PEP
+has been implemented or not:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">errno</span> <span class="o">!=</span> <span class="n">errno</span><span class="o">.</span><span class="n">ENOENT</span><span class="p">:</span>
+        <span class="k">raise</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<p>The rationale for this compromise is that careless code can’t really be
+helped, but at least code which “works” won’t suddenly raise errors and
+crash.  This is important since such code is likely to be present in
+scripts used as cron tasks or automated system administration programs.</p>
+<p>Careful code, on the other hand, should not be penalized.  Actually, one
+purpose of this PEP is to ease writing careful code.</p>
+</div>
+<div class="section" id="step-1-coalesce-exception-types">
+<span id="step-1"></span><h2><a class="toc-backref" href="#id16">Step 1: coalesce exception types</a><a class="headerlink" href="#step-1-coalesce-exception-types" title="Permalink to this headline">¶</a></h2>
+<p>The first step of the resolution is to coalesce existing exception types.
+The following changes are proposed:</p>
+<ul class="simple">
+<li>alias both socket.error and select.error to OSError</li>
+<li>alias mmap.error to OSError</li>
+<li>alias both WindowsError and VMSError to OSError</li>
+<li>alias IOError to OSError</li>
+<li>coalesce EnvironmentError into OSError</li>
+</ul>
+<p>Each of these changes doesn’t preserve exact compatibility, but it does
+preserve <em>useful compatibility</em> (see “compatibility” section above).</p>
+<p>Each of these changes can be accepted or refused individually, but of course
+it is considered that the greatest impact can be achieved if this first step
+is accepted in full.  In this case, the IO exception sub-hierarchy would
+become:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">+--</span> <span class="ne">OSError</span>   <span class="p">(</span><span class="n">replacing</span> <span class="ne">IOError</span><span class="p">,</span> <span class="ne">WindowsError</span><span class="p">,</span> <span class="ne">EnvironmentError</span><span class="p">,</span> <span class="n">etc</span><span class="o">.</span><span class="p">)</span>
+    <span class="o">+--</span> <span class="n">io</span><span class="o">.</span><span class="n">BlockingIOError</span>
+    <span class="o">+--</span> <span class="n">io</span><span class="o">.</span><span class="n">UnsupportedOperation</span> <span class="p">(</span><span class="n">also</span> <span class="n">inherits</span> <span class="kn">from</span> <span class="nn">ValueError</span><span class="p">)</span>
+    <span class="o">+--</span> <span class="n">socket</span><span class="o">.</span><span class="n">gaierror</span>
+    <span class="o">+--</span> <span class="n">socket</span><span class="o">.</span><span class="n">herror</span>
+    <span class="o">+--</span> <span class="n">socket</span><span class="o">.</span><span class="n">timeout</span>
+</pre></div>
+</div>
+<div class="section" id="justification">
+<h3><a class="toc-backref" href="#id17">Justification</a><a class="headerlink" href="#justification" title="Permalink to this headline">¶</a></h3>
+<p>Not only does this first step present the user a simpler landscape as
+explained in the <a class="reference internal" href="#rationale">rationale</a> section, but it also allows for a better
+and more complete resolution of <a class="reference internal" href="#step-2">Step 2</a> (see <a class="reference internal" href="#prerequisite">Prerequisite</a>).</p>
+<p>The rationale for keeping <code class="docutils literal notranslate"><span class="pre">OSError</span></code> as the official name for generic
+OS-related exceptions is that it, precisely, is more generic than <code class="docutils literal notranslate"><span class="pre">IOError</span></code>.
+<code class="docutils literal notranslate"><span class="pre">EnvironmentError</span></code> is more tedious to type and also much lesser-known.</p>
+<p>The survey in <a class="reference internal" href="#appendix-b">Appendix B</a> shows that IOError is the dominant
+error today in the standard library.  As for third-party Python code,
+Google Code Search shows IOError being ten times more popular than
+EnvironmentError in user code, and three times more popular than OSError
+<a class="footnote-reference brackets" href="#id9" id="id1">3</a>.  However, with no intention to deprecate IOError in the middle
+term, the lesser popularity of OSError is not a problem.</p>
+</div>
+<div class="section" id="exception-attributes">
+<h3><a class="toc-backref" href="#id18">Exception attributes</a><a class="headerlink" href="#exception-attributes" title="Permalink to this headline">¶</a></h3>
+<p>Since WindowsError is coalesced into OSError, the latter gains a <code class="docutils literal notranslate"><span class="pre">winerror</span></code>
+attribute under Windows.  It is set to None under situations where it is not
+meaningful, as is already the case with the <code class="docutils literal notranslate"><span class="pre">errno</span></code>, <code class="docutils literal notranslate"><span class="pre">filename</span></code> and
+<code class="docutils literal notranslate"><span class="pre">strerror</span></code> attributes (for example when OSError is raised directly by
+Python code).</p>
+</div>
+<div class="section" id="deprecation-of-names">
+<h3><a class="toc-backref" href="#id19">Deprecation of names</a><a class="headerlink" href="#deprecation-of-names" title="Permalink to this headline">¶</a></h3>
+<p>The following paragraphs outline a possible deprecation strategy for
+old exception names.  However, it has been decided to keep them as aliases
+for the time being.  This decision could be revised in time for Python 4.0.</p>
+<div class="section" id="built-in-exceptions">
+<h4><a class="toc-backref" href="#id20">built-in exceptions</a><a class="headerlink" href="#built-in-exceptions" title="Permalink to this headline">¶</a></h4>
+<p>Deprecating the old built-in exceptions cannot be done in a straightforward
+fashion by intercepting all lookups in the builtins namespace, since these
+are performance-critical.  We also cannot work at the object level, since
+the deprecated names will be aliased to non-deprecated objects.</p>
+<p>A solution is to recognize these names at compilation time, and
+then emit a separate <code class="docutils literal notranslate"><span class="pre">LOAD_OLD_GLOBAL</span></code> opcode instead of the regular
+<code class="docutils literal notranslate"><span class="pre">LOAD_GLOBAL</span></code>.  This specialized opcode will handle the output of a
+DeprecationWarning (or PendingDeprecationWarning, depending on the policy
+decided upon) when the name doesn’t exist in the globals namespace, but
+only in the builtins one.  This will be enough to avoid false positives
+(for example if someone defines their own <code class="docutils literal notranslate"><span class="pre">OSError</span></code> in a module), and
+false negatives will be rare (for example when someone accesses <code class="docutils literal notranslate"><span class="pre">OSError</span></code>
+through the <code class="docutils literal notranslate"><span class="pre">builtins</span></code> module rather than directly).</p>
+</div>
+<div class="section" id="module-level-exceptions">
+<h4><a class="toc-backref" href="#id21">module-level exceptions</a><a class="headerlink" href="#module-level-exceptions" title="Permalink to this headline">¶</a></h4>
+<p>The above approach cannot be used easily, since it would require
+special-casing some modules when compiling code objects.  However, these
+names are by construction much less visible (they don’t appear in the
+builtins namespace), and lesser-known too, so we might decide to let them
+live in their own namespaces.</p>
+</div>
+</div>
+</div>
+<div class="section" id="step-2-define-additional-subclasses">
+<span id="step-2"></span><h2><a class="toc-backref" href="#id22">Step 2: define additional subclasses</a><a class="headerlink" href="#step-2-define-additional-subclasses" title="Permalink to this headline">¶</a></h2>
+<p>The second step of the resolution is to extend the hierarchy by defining
+subclasses which will be raised, rather than their parent, for specific
+errno values.  Which errno values is subject to discussion, but a survey
+of existing exception matching practices (see <a class="reference internal" href="#appendix-a">Appendix A</a>) helps us
+propose a reasonable subset of all values.  Trying to map all errno
+mnemonics, indeed, seems foolish, pointless, and would pollute the root
+namespace.</p>
+<p>Furthermore, in a couple of cases, different errno values could raise
+the same exception subclass.  For example, EAGAIN, EALREADY, EWOULDBLOCK
+and EINPROGRESS are all used to signal that an operation on a non-blocking
+socket would block (and therefore needs trying again later).  They could
+therefore all raise an identical subclass and let the user examine the
+<code class="docutils literal notranslate"><span class="pre">errno</span></code> attribute if (s)he so desires (see below “exception
+attributes”).</p>
+<div class="section" id="prerequisite">
+<h3><a class="toc-backref" href="#id23">Prerequisite</a><a class="headerlink" href="#prerequisite" title="Permalink to this headline">¶</a></h3>
+<p><a class="reference internal" href="#step-1">Step 1</a> is a loose prerequisite for this.</p>
+<p>Prerequisite, because some errnos can currently be attached to different
+exception classes: for example, ENOENT can be attached to both OSError and
+IOError, depending on the context.  If we don’t want to break <em>useful
+compatibility</em>, we can’t make an <code class="docutils literal notranslate"><span class="pre">except</span> <span class="pre">OSError</span></code> (or IOError) fail to
+match an exception where it would succeed today.</p>
+<p>Loose, because we could decide for a partial resolution of step 2
+if existing exception classes are not coalesced: for example, ENOENT could
+raise a hypothetical FileNotFoundError where an IOError was previously
+raised, but continue to raise OSError otherwise.</p>
+<p>The dependency on step 1 could be totally removed if the new subclasses
+used multiple inheritance to match with all of the existing superclasses
+(or, at least, OSError and IOError, which are arguable the most prevalent
+ones).  It would, however, make the hierarchy more complicated and
+therefore harder to grasp for the user.</p>
+</div>
+<div class="section" id="new-exception-classes">
+<h3><a class="toc-backref" href="#id24">New exception classes</a><a class="headerlink" href="#new-exception-classes" title="Permalink to this headline">¶</a></h3>
+<p>The following tentative list of subclasses, along with a description and
+the list of errnos mapped to them, is submitted to discussion:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">FileExistsError</span></code>: trying to create a file or directory which already
+exists (EEXIST)</li>
+<li><code class="docutils literal notranslate"><span class="pre">FileNotFoundError</span></code>: for all circumstances where a file and directory is
+requested but doesn’t exist (ENOENT)</li>
+<li><code class="docutils literal notranslate"><span class="pre">IsADirectoryError</span></code>: file-level operation (open(), os.remove()…)
+requested on a directory (EISDIR)</li>
+<li><code class="docutils literal notranslate"><span class="pre">NotADirectoryError</span></code>: directory-level operation requested on something
+else (ENOTDIR)</li>
+<li><code class="docutils literal notranslate"><span class="pre">PermissionError</span></code>: trying to run an operation without the adequate access
+rights - for example filesystem permissions (EACCES, EPERM)</li>
+<li><code class="docutils literal notranslate"><span class="pre">BlockingIOError</span></code>: an operation would block on an object (e.g. socket) set
+for non-blocking operation (EAGAIN, EALREADY, EWOULDBLOCK, EINPROGRESS);
+this is the existing <code class="docutils literal notranslate"><span class="pre">io.BlockingIOError</span></code> with an extended role</li>
+<li><code class="docutils literal notranslate"><span class="pre">BrokenPipeError</span></code>: trying to write on a pipe while the other end has been
+closed, or trying to write on a socket which has been shutdown for writing
+(EPIPE, ESHUTDOWN)</li>
+<li><code class="docutils literal notranslate"><span class="pre">InterruptedError</span></code>: a system call was interrupted by an incoming signal
+(EINTR)</li>
+<li><code class="docutils literal notranslate"><span class="pre">ConnectionAbortedError</span></code>: connection attempt aborted by peer (ECONNABORTED)</li>
+<li><code class="docutils literal notranslate"><span class="pre">ConnectionRefusedError</span></code>: connection reset by peer (ECONNREFUSED)</li>
+<li><code class="docutils literal notranslate"><span class="pre">ConnectionResetError</span></code>: connection reset by peer (ECONNRESET)</li>
+<li><code class="docutils literal notranslate"><span class="pre">TimeoutError</span></code>: connection timed out (ETIMEDOUT); this can be re-cast
+as a generic timeout exception, replacing <code class="docutils literal notranslate"><span class="pre">socket.timeout</span></code> and also useful
+for other types of timeout (for example in Lock.acquire())</li>
+<li><code class="docutils literal notranslate"><span class="pre">ChildProcessError</span></code>: operation on a child process failed (ECHILD);
+this is raised mainly by the wait() family of functions.</li>
+<li><code class="docutils literal notranslate"><span class="pre">ProcessLookupError</span></code>: the given process (as identified by, e.g., its
+process id) doesn’t exist (ESRCH).</li>
+</ul>
+<p>In addition, the following exception class is proposed for inclusion:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">ConnectionError</span></code>: a base class for <code class="docutils literal notranslate"><span class="pre">ConnectionAbortedError</span></code>,
+<code class="docutils literal notranslate"><span class="pre">ConnectionRefusedError</span></code> and <code class="docutils literal notranslate"><span class="pre">ConnectionResetError</span></code></li>
+</ul>
+<p>The following drawing tries to sum up the proposed additions, along with
+the corresponding errno values (where applicable).  The root of the
+sub-hierarchy (OSError, assuming <a class="reference internal" href="#step-1">Step 1</a> is accepted in full) is not
+shown:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">+--</span> <span class="ne">BlockingIOError</span>        <span class="n">EAGAIN</span><span class="p">,</span> <span class="n">EALREADY</span><span class="p">,</span> <span class="n">EWOULDBLOCK</span><span class="p">,</span> <span class="n">EINPROGRESS</span>
+<span class="o">+--</span> <span class="ne">ChildProcessError</span>                                          <span class="n">ECHILD</span>
+<span class="o">+--</span> <span class="ne">ConnectionError</span>
+    <span class="o">+--</span> <span class="ne">BrokenPipeError</span>                              <span class="n">EPIPE</span><span class="p">,</span> <span class="n">ESHUTDOWN</span>
+    <span class="o">+--</span> <span class="ne">ConnectionAbortedError</span>                           <span class="n">ECONNABORTED</span>
+    <span class="o">+--</span> <span class="ne">ConnectionRefusedError</span>                           <span class="n">ECONNREFUSED</span>
+    <span class="o">+--</span> <span class="ne">ConnectionResetError</span>                               <span class="n">ECONNRESET</span>
+<span class="o">+--</span> <span class="ne">FileExistsError</span>                                            <span class="n">EEXIST</span>
+<span class="o">+--</span> <span class="ne">FileNotFoundError</span>                                          <span class="n">ENOENT</span>
+<span class="o">+--</span> <span class="ne">InterruptedError</span>                                            <span class="n">EINTR</span>
+<span class="o">+--</span> <span class="ne">IsADirectoryError</span>                                          <span class="n">EISDIR</span>
+<span class="o">+--</span> <span class="ne">NotADirectoryError</span>                                        <span class="n">ENOTDIR</span>
+<span class="o">+--</span> <span class="ne">PermissionError</span>                                     <span class="n">EACCES</span><span class="p">,</span> <span class="n">EPERM</span>
+<span class="o">+--</span> <span class="ne">ProcessLookupError</span>                                          <span class="n">ESRCH</span>
+<span class="o">+--</span> <span class="ne">TimeoutError</span>                                            <span class="n">ETIMEDOUT</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="naming">
+<h3><a class="toc-backref" href="#id25">Naming</a><a class="headerlink" href="#naming" title="Permalink to this headline">¶</a></h3>
+<p>Various naming controversies can arise.  One of them is whether all
+exception class names should end in “<code class="docutils literal notranslate"><span class="pre">Error</span></code>”.  In favour is consistency
+with the rest of the exception hierarchy, against is concision (especially
+with long names such as <code class="docutils literal notranslate"><span class="pre">ConnectionAbortedError</span></code>).</p>
+</div>
+<div class="section" id="id2">
+<h3><a class="toc-backref" href="#id26">Exception attributes</a><a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<p>In order to preserve <em>useful compatibility</em>, these subclasses should still
+set adequate values for the various exception attributes defined on the
+superclass (for example <code class="docutils literal notranslate"><span class="pre">errno</span></code>, <code class="docutils literal notranslate"><span class="pre">filename</span></code>, and optionally
+<code class="docutils literal notranslate"><span class="pre">winerror</span></code>).</p>
+</div>
+<div class="section" id="implementation">
+<h3><a class="toc-backref" href="#id27">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h3>
+<p>Since it is proposed that the subclasses are raised based purely on the
+value of <code class="docutils literal notranslate"><span class="pre">errno</span></code>, little or no changes should be required in extension
+modules (either standard or third-party).</p>
+<p>The first possibility is to adapt the <code class="docutils literal notranslate"><span class="pre">PyErr_SetFromErrno()</span></code> family
+of functions (<code class="docutils literal notranslate"><span class="pre">PyErr_SetFromWindowsErr()</span></code> under Windows) to raise the
+appropriate OSError subclass.  This wouldn’t cover, however, Python
+code raising OSError directly, using the following idiom (seen in
+<code class="docutils literal notranslate"><span class="pre">Lib/tempfile.py</span></code>):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="n">_errno</span><span class="o">.</span><span class="n">EEXIST</span><span class="p">,</span> <span class="s2">&quot;No usable temporary file name found&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>A second possibility, suggested by Marc-Andre Lemburg, is to adapt
+<code class="docutils literal notranslate"><span class="pre">OSError.__new__</span></code> to instantiate the appropriate subclass.  This has
+the benefit of also covering Python code such as the above.</p>
+</div>
+</div>
+<div class="section" id="possible-objections">
+<h2><a class="toc-backref" href="#id28">Possible objections</a><a class="headerlink" href="#possible-objections" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="namespace-pollution">
+<h3><a class="toc-backref" href="#id29">Namespace pollution</a><a class="headerlink" href="#namespace-pollution" title="Permalink to this headline">¶</a></h3>
+<p>Making the exception hierarchy finer-grained makes the root (or builtins)
+namespace larger.  This is to be moderated, however, as:</p>
+<ul class="simple">
+<li>only a handful of additional classes are proposed;</li>
+<li>while standard exception types live in the root namespace, they are
+visually distinguished by the fact that they use the CamelCase convention,
+while almost all other builtins use lowercase naming (except True, False,
+None, Ellipsis and NotImplemented)</li>
+</ul>
+<p>An alternative would be to provide a separate module containing the
+finer-grained exceptions, but that would defeat the purpose of
+encouraging careful code over careless code, since the user would first
+have to import the new module instead of using names already accessible.</p>
+</div>
+</div>
+<div class="section" id="earlier-discussion">
+<h2><a class="toc-backref" href="#id30">Earlier discussion</a><a class="headerlink" href="#earlier-discussion" title="Permalink to this headline">¶</a></h2>
+<p>While this is the first time such as formal proposal is made, the idea
+has received informal support in the past <a class="footnote-reference brackets" href="#id7" id="id3">1</a>; both the introduction
+of finer-grained exception classes and the coalescing of OSError and
+IOError.</p>
+<p>The removal of WindowsError alone has been discussed and rejected
+as part of another PEP <a class="footnote-reference brackets" href="#id8" id="id4">2</a>, but there seemed to be a consensus that the
+distinction with OSError wasn’t meaningful.  This supports at least its
+aliasing with OSError.</p>
+</div>
+<div class="section" id="id5">
+<h2><a class="toc-backref" href="#id31">Implementation</a><a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h2>
+<p>The reference implementation has been integrated into Python 3.3.
+It was formerly developed in <a class="reference external" href="http://hg.python.org/features/pep-3151/">http://hg.python.org/features/pep-3151/</a> in
+branch <code class="docutils literal notranslate"><span class="pre">pep-3151</span></code>, and also tracked on the bug tracker at
+<a class="reference external" href="http://bugs.python.org/issue12555">http://bugs.python.org/issue12555</a>.
+It has been successfully tested on a variety of systems: Linux, Windows,
+OpenIndiana and FreeBSD buildbots.</p>
+<p>One source of trouble has been with the respective constructors of <code class="docutils literal notranslate"><span class="pre">OSError</span></code>
+and <code class="docutils literal notranslate"><span class="pre">WindowsError</span></code>, which were incompatible.  The way it is solved is by
+keeping the <code class="docutils literal notranslate"><span class="pre">OSError</span></code> signature and adding a fourth optional argument
+to allow passing the Windows error code (which is different from the POSIX
+errno).  The fourth argument is stored as <code class="docutils literal notranslate"><span class="pre">winerror</span></code> and its POSIX
+translation as <code class="docutils literal notranslate"><span class="pre">errno</span></code>.  The <code class="docutils literal notranslate"><span class="pre">PyErr_SetFromWindowsErr*</span></code> functions have
+been adapted to use the right constructor call.</p>
+<p>A slight complication is when the <code class="docutils literal notranslate"><span class="pre">PyErr_SetExcFromWindowsErr*</span></code> functions
+are called with <code class="docutils literal notranslate"><span class="pre">OSError</span></code> rather than <code class="docutils literal notranslate"><span class="pre">WindowsError</span></code>: the <code class="docutils literal notranslate"><span class="pre">errno</span></code>
+attribute of the exception object would store the Windows error code (such
+as 109 for ERROR_BROKEN_PIPE) rather than its POSIX translation (such as 32
+for EPIPE), which it does now.  For non-socket error codes, this only occurs
+in the private <code class="docutils literal notranslate"><span class="pre">_multiprocessing</span></code> module for which there is no compatibility
+concern.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For socket errors, the “POSIX errno” as reflected by the <code class="docutils literal notranslate"><span class="pre">errno</span></code> module
+is numerically equal to the <a class="reference external" href="http://msdn.microsoft.com/en-us/library/ms740668%28v=vs.85%29.aspx">Windows Socket error code</a>
+returned by the <code class="docutils literal notranslate"><span class="pre">WSAGetLastError</span></code> system call:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">errno</span><span class="o">.</span><span class="n">EWOULDBLOCK</span>
+<span class="go">10035</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">errno</span><span class="o">.</span><span class="n">WSAEWOULDBLOCK</span>
+<span class="go">10035</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="possible-alternative">
+<h2><a class="toc-backref" href="#id32">Possible alternative</a><a class="headerlink" href="#possible-alternative" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="pattern-matching">
+<h3><a class="toc-backref" href="#id33">Pattern matching</a><a class="headerlink" href="#pattern-matching" title="Permalink to this headline">¶</a></h3>
+<p>Another possibility would be to introduce an advanced pattern matching
+syntax when catching exceptions.  For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">e</span> <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">errno</span> <span class="o">==</span> <span class="n">errno</span><span class="o">.</span><span class="n">ENOENT</span><span class="p">:</span>
+    <span class="k">pass</span>
+</pre></div>
+</div>
+<p>Several problems with this proposal:</p>
+<ul class="simple">
+<li>it introduces new syntax, which is perceived by the author to be a heavier
+change compared to reworking the exception hierarchy</li>
+<li>it doesn’t decrease typing effort significantly</li>
+<li>it doesn’t relieve the programmer from the burden of having to remember
+errno mnemonics</li>
+</ul>
+</div>
+</div>
+<div class="section" id="exceptions-ignored-by-this-pep">
+<h2><a class="toc-backref" href="#id34">Exceptions ignored by this PEP</a><a class="headerlink" href="#exceptions-ignored-by-this-pep" title="Permalink to this headline">¶</a></h2>
+<p>This PEP ignores <code class="docutils literal notranslate"><span class="pre">EOFError</span></code>, which signals a truncated input stream in
+various protocol and file format implementations (for example <code class="docutils literal notranslate"><span class="pre">GzipFile</span></code>).
+<code class="docutils literal notranslate"><span class="pre">EOFError</span></code> is not OS- or IO-related, it is a logical error raised at
+a higher level.</p>
+<p>This PEP also ignores <code class="docutils literal notranslate"><span class="pre">SSLError</span></code>, which is raised by the <code class="docutils literal notranslate"><span class="pre">ssl</span></code> module
+in order to propagate errors signalled by the <code class="docutils literal notranslate"><span class="pre">OpenSSL</span></code> library.  Ideally,
+<code class="docutils literal notranslate"><span class="pre">SSLError</span></code> would benefit from a similar but separate treatment since it
+defines its own constants for error types (<code class="docutils literal notranslate"><span class="pre">ssl.SSL_ERROR_WANT_READ</span></code>,
+etc.).  In Python 3.2, <code class="docutils literal notranslate"><span class="pre">SSLError</span></code> is already replaced with <code class="docutils literal notranslate"><span class="pre">socket.timeout</span></code>
+when it signals a socket timeout (see <a class="reference external" href="http://bugs.python.org/issue10272">issue 10272</a>).</p>
+<p>Endly, the fate of <code class="docutils literal notranslate"><span class="pre">socket.gaierror</span></code> and <code class="docutils literal notranslate"><span class="pre">socket.herror</span></code> is not settled.
+While they would deserve less cryptic names, this can be handled separately
+from the exception hierarchy reorganization effort.</p>
+</div>
+<div class="section" id="appendix-a-survey-of-common-errnos">
+<span id="appendix-a"></span><h2><a class="toc-backref" href="#id35">Appendix A: Survey of common errnos</a><a class="headerlink" href="#appendix-a-survey-of-common-errnos" title="Permalink to this headline">¶</a></h2>
+<p>This is a quick inventory of the various errno mnemonics checked for in
+the standard library and its tests, as part of <code class="docutils literal notranslate"><span class="pre">except</span></code> clauses.</p>
+<div class="section" id="common-errnos-with-oserror">
+<h3><a class="toc-backref" href="#id36">Common errnos with OSError</a><a class="headerlink" href="#common-errnos-with-oserror" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">EBADF</span></code>: bad file descriptor (usually means the file descriptor was
+closed)</li>
+<li><code class="docutils literal notranslate"><span class="pre">EEXIST</span></code>: file or directory exists</li>
+<li><code class="docutils literal notranslate"><span class="pre">EINTR</span></code>: interrupted function call</li>
+<li><code class="docutils literal notranslate"><span class="pre">EISDIR</span></code>: is a directory</li>
+<li><code class="docutils literal notranslate"><span class="pre">ENOTDIR</span></code>: not a directory</li>
+<li><code class="docutils literal notranslate"><span class="pre">ENOENT</span></code>: no such file or directory</li>
+<li><code class="docutils literal notranslate"><span class="pre">EOPNOTSUPP</span></code>: operation not supported on socket
+(possible confusion with the existing io.UnsupportedOperation)</li>
+<li><code class="docutils literal notranslate"><span class="pre">EPERM</span></code>: operation not permitted (when using e.g. os.setuid())</li>
+</ul>
+</div>
+<div class="section" id="common-errnos-with-ioerror">
+<h3><a class="toc-backref" href="#id37">Common errnos with IOError</a><a class="headerlink" href="#common-errnos-with-ioerror" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">EACCES</span></code>: permission denied (for filesystem operations)</li>
+<li><code class="docutils literal notranslate"><span class="pre">EBADF</span></code>: bad file descriptor (with select.epoll); read operation on a
+write-only GzipFile, or vice-versa</li>
+<li><code class="docutils literal notranslate"><span class="pre">EBUSY</span></code>: device or resource busy</li>
+<li><code class="docutils literal notranslate"><span class="pre">EISDIR</span></code>: is a directory (when trying to open())</li>
+<li><code class="docutils literal notranslate"><span class="pre">ENODEV</span></code>: no such device</li>
+<li><code class="docutils literal notranslate"><span class="pre">ENOENT</span></code>: no such file or directory (when trying to open())</li>
+<li><code class="docutils literal notranslate"><span class="pre">ETIMEDOUT</span></code>: connection timed out</li>
+</ul>
+</div>
+<div class="section" id="common-errnos-with-socket-error">
+<h3><a class="toc-backref" href="#id38">Common errnos with socket.error</a><a class="headerlink" href="#common-errnos-with-socket-error" title="Permalink to this headline">¶</a></h3>
+<p>All these errors may also be associated with a plain IOError, for example
+when calling read() on a socket’s file descriptor.</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">EAGAIN</span></code>: resource temporarily unavailable (during a non-blocking socket
+call except connect())</li>
+<li><code class="docutils literal notranslate"><span class="pre">EALREADY</span></code>: connection already in progress (during a non-blocking
+connect())</li>
+<li><code class="docutils literal notranslate"><span class="pre">EINPROGRESS</span></code>: operation in progress (during a non-blocking connect())</li>
+<li><code class="docutils literal notranslate"><span class="pre">EINTR</span></code>: interrupted function call</li>
+<li><code class="docutils literal notranslate"><span class="pre">EISCONN</span></code>: the socket is connected</li>
+<li><code class="docutils literal notranslate"><span class="pre">ECONNABORTED</span></code>: connection aborted by peer (during an accept() call)</li>
+<li><code class="docutils literal notranslate"><span class="pre">ECONNREFUSED</span></code>: connection refused by peer</li>
+<li><code class="docutils literal notranslate"><span class="pre">ECONNRESET</span></code>: connection reset by peer</li>
+<li><code class="docutils literal notranslate"><span class="pre">ENOTCONN</span></code>: socket not connected</li>
+<li><code class="docutils literal notranslate"><span class="pre">ESHUTDOWN</span></code>: cannot send after transport endpoint shutdown</li>
+<li><code class="docutils literal notranslate"><span class="pre">EWOULDBLOCK</span></code>: same reasons as <code class="docutils literal notranslate"><span class="pre">EAGAIN</span></code></li>
+</ul>
+</div>
+<div class="section" id="common-errnos-with-select-error">
+<h3><a class="toc-backref" href="#id39">Common errnos with select.error</a><a class="headerlink" href="#common-errnos-with-select-error" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">EINTR</span></code>: interrupted function call</li>
+</ul>
+</div>
+</div>
+<div class="section" id="appendix-b-survey-of-raised-os-and-io-errors">
+<span id="appendix-b"></span><h2><a class="toc-backref" href="#id40">Appendix B: Survey of raised OS and IO errors</a><a class="headerlink" href="#appendix-b-survey-of-raised-os-and-io-errors" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="about-vmserror">
+<h3><a class="toc-backref" href="#id41">About VMSError</a><a class="headerlink" href="#about-vmserror" title="Permalink to this headline">¶</a></h3>
+<p>VMSError is completely unused by the interpreter core and the standard
+library.  It was added as part of the OpenVMS patches submitted in 2002
+by Jean-François Piéronne <a class="footnote-reference brackets" href="#id10" id="id6">4</a>; the motivation for including VMSError was that
+it could be raised by third-party packages.</p>
+</div>
+<div class="section" id="interpreter-core">
+<h3><a class="toc-backref" href="#id42">Interpreter core</a><a class="headerlink" href="#interpreter-core" title="Permalink to this headline">¶</a></h3>
+<p>Handling of PYTHONSTARTUP raises IOError (but the error gets discarded):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ PYTHONSTARTUP=foox ./python
+Python 3.2a0 (py3k:82920M, Jul 16 2010, 22:53:23)
+[GCC 4.4.3] on linux2
+Type &quot;help&quot;, &quot;copyright&quot;, &quot;credits&quot; or &quot;license&quot; for more information.
+Could not open PYTHONSTARTUP
+IOError: [Errno 2] No such file or directory: &#39;foox&#39;
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">PyObject_Print()</span></code> raises IOError when ferror() signals an error on the
+<cite>FILE *</cite> parameter (which, in the source tree, is always either stdout or
+stderr).</p>
+<p>Unicode encoding and decoding using the <code class="docutils literal notranslate"><span class="pre">mbcs</span></code> encoding can raise
+WindowsError for some error conditions.</p>
+</div>
+<div class="section" id="standard-library">
+<h3><a class="toc-backref" href="#id43">Standard library</a><a class="headerlink" href="#standard-library" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="bz2">
+<h4><a class="toc-backref" href="#id44">bz2</a><a class="headerlink" href="#bz2" title="Permalink to this headline">¶</a></h4>
+<p>Raises IOError throughout (OSError is unused):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bz2</span><span class="o">.</span><span class="n">BZ2File</span><span class="p">(</span><span class="s2">&quot;foox&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">IOError</span>: <span class="n">[Errno 2] No such file or directory</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bz2</span><span class="o">.</span><span class="n">BZ2File</span><span class="p">(</span><span class="s2">&quot;LICENSE&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">IOError</span>: <span class="n">invalid data stream</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bz2</span><span class="o">.</span><span class="n">BZ2File</span><span class="p">(</span><span class="s2">&quot;/tmp/zzz.bz2&quot;</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">IOError</span>: <span class="n">file is not ready for reading</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="curses">
+<h4><a class="toc-backref" href="#id45">curses</a><a class="headerlink" href="#curses" title="Permalink to this headline">¶</a></h4>
+<p>Not examined.</p>
+</div>
+<div class="section" id="dbm-gnu-dbm-ndbm">
+<h4><a class="toc-backref" href="#id46">dbm.gnu, dbm.ndbm</a><a class="headerlink" href="#dbm-gnu-dbm-ndbm" title="Permalink to this headline">¶</a></h4>
+<p>_dbm.error and _gdbm.error inherit from IOError:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">dbm</span><span class="o">.</span><span class="n">gnu</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;foox&quot;</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">_gdbm.error</span>: <span class="n">[Errno 2] No such file or directory</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="fcntl">
+<h4><a class="toc-backref" href="#id47">fcntl</a><a class="headerlink" href="#fcntl" title="Permalink to this headline">¶</a></h4>
+<p>Raises IOError throughout (OSError is unused).</p>
+</div>
+<div class="section" id="imp-module">
+<h4><a class="toc-backref" href="#id48">imp module</a><a class="headerlink" href="#imp-module" title="Permalink to this headline">¶</a></h4>
+<p>Raises IOError for bad file descriptors:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">imp</span><span class="o">.</span><span class="n">load_source</span><span class="p">(</span><span class="s2">&quot;foo&quot;</span><span class="p">,</span> <span class="s2">&quot;foo&quot;</span><span class="p">,</span> <span class="mi">123</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">IOError</span>: <span class="n">[Errno 9] Bad file descriptor</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="io-module">
+<h4><a class="toc-backref" href="#id49">io module</a><a class="headerlink" href="#io-module" title="Permalink to this headline">¶</a></h4>
+<p>Raises IOError when trying to open a directory under Unix:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">open</span><span class="p">(</span><span class="s2">&quot;Python/&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">IOError</span>: <span class="n">[Errno 21] Is a directory: &#39;Python/&#39;</span>
+</pre></div>
+</div>
+<p>Raises IOError or io.UnsupportedOperation (which inherits from the former)
+for unsupported operations:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">open</span><span class="p">(</span><span class="s2">&quot;LICENSE&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;bar&quot;</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">IOError</span>: <span class="n">not writable</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">io</span><span class="o">.</span><span class="n">StringIO</span><span class="p">()</span><span class="o">.</span><span class="n">fileno</span><span class="p">()</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">io.UnsupportedOperation</span>: <span class="n">fileno</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">open</span><span class="p">(</span><span class="s2">&quot;LICENSE&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">IOError</span>: <span class="n">can&#39;t do nonzero cur-relative seeks</span>
+</pre></div>
+</div>
+<p>Raises either IOError or TypeError when the inferior I/O layer misbehaves
+(i.e. violates the API it is expected to implement).</p>
+<p>Raises IOError when the underlying OS resource becomes invalid:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;LICENSE&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">fileno</span><span class="p">())</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">IOError</span>: <span class="n">[Errno 9] Bad file descriptor</span>
+</pre></div>
+</div>
+<p>…or for implementation-specific optimizations:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;LICENSE&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">next</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+<span class="go">&#39;A. HISTORY OF THE SOFTWARE\n&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">f</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">IOError</span>: <span class="n">telling position disabled by next() call</span>
+</pre></div>
+</div>
+<p>Raises BlockingIOError (inheriting from IOError) when a call on a non-blocking
+object would block.</p>
+</div>
+<div class="section" id="mmap">
+<h4><a class="toc-backref" href="#id50">mmap</a><a class="headerlink" href="#mmap" title="Permalink to this headline">¶</a></h4>
+<p>Under Unix, raises its own <code class="docutils literal notranslate"><span class="pre">mmap.error</span></code> (inheriting from EnvironmentError)
+throughout:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">mmap</span><span class="o">.</span><span class="n">mmap</span><span class="p">(</span><span class="mi">123</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">mmap.error</span>: <span class="n">[Errno 9] Bad file descriptor</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mmap</span><span class="o">.</span><span class="n">mmap</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;/tmp&quot;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">O_RDONLY</span><span class="p">),</span> <span class="mi">10</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">mmap.error</span>: <span class="n">[Errno 13] Permission denied</span>
+</pre></div>
+</div>
+<p>Under Windows, however, it mostly raises WindowsError (the source code
+also shows a few occurrences of <code class="docutils literal notranslate"><span class="pre">mmap.error</span></code>):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">fd</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;LICENSE&quot;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">O_RDONLY</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span> <span class="o">=</span> <span class="n">mmap</span><span class="o">.</span><span class="n">mmap</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="mi">16384</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">WindowsError</span>: <span class="n">[Error 5] Accès refusé</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sys</span><span class="o">.</span><span class="n">last_value</span><span class="o">.</span><span class="n">errno</span>
+<span class="go">13</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">errno</span><span class="o">.</span><span class="n">errorcode</span><span class="p">[</span><span class="mi">13</span><span class="p">]</span>
+<span class="go">&#39;EACCES&#39;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span> <span class="o">=</span> <span class="n">mmap</span><span class="o">.</span><span class="n">mmap</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4096</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="mi">16384</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">WindowsError</span>: <span class="n">[Error 87] Paramètre incorrect</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sys</span><span class="o">.</span><span class="n">last_value</span><span class="o">.</span><span class="n">errno</span>
+<span class="go">22</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">errno</span><span class="o">.</span><span class="n">errorcode</span><span class="p">[</span><span class="mi">22</span><span class="p">]</span>
+<span class="go">&#39;EINVAL&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="multiprocessing">
+<h4><a class="toc-backref" href="#id51">multiprocessing</a><a class="headerlink" href="#multiprocessing" title="Permalink to this headline">¶</a></h4>
+<p>Not examined.</p>
+</div>
+<div class="section" id="os-posix">
+<h4><a class="toc-backref" href="#id52">os / posix</a><a class="headerlink" href="#os-posix" title="Permalink to this headline">¶</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">os</span></code> (or <code class="docutils literal notranslate"><span class="pre">posix</span></code>) module raises OSError throughout, except under
+Windows where WindowsError can be raised instead.</p>
+</div>
+<div class="section" id="ossaudiodev">
+<h4><a class="toc-backref" href="#id53">ossaudiodev</a><a class="headerlink" href="#ossaudiodev" title="Permalink to this headline">¶</a></h4>
+<p>Raises IOError throughout (OSError is unused):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">ossaudiodev</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;foo&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">IOError</span>: <span class="n">[Errno 2] No such file or directory: &#39;foo&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="readline">
+<h4><a class="toc-backref" href="#id54">readline</a><a class="headerlink" href="#readline" title="Permalink to this headline">¶</a></h4>
+<p>Raises IOError in various file-handling functions:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">readline</span><span class="o">.</span><span class="n">read_history_file</span><span class="p">(</span><span class="s2">&quot;foo&quot;</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">IOError</span>: <span class="n">[Errno 2] No such file or directory</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">readline</span><span class="o">.</span><span class="n">read_init_file</span><span class="p">(</span><span class="s2">&quot;foo&quot;</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">IOError</span>: <span class="n">[Errno 2] No such file or directory</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">readline</span><span class="o">.</span><span class="n">write_history_file</span><span class="p">(</span><span class="s2">&quot;/dev/nonexistent&quot;</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">IOError</span>: <span class="n">[Errno 13] Permission denied</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="select">
+<h4><a class="toc-backref" href="#id55">select</a><a class="headerlink" href="#select" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>select() and poll objects raise <code class="docutils literal notranslate"><span class="pre">select.error</span></code>, which doesn’t inherit from
+anything (but poll.modify() raises IOError);</li>
+<li>epoll objects raise IOError;</li>
+<li>kqueue objects raise both OSError and IOError.</li>
+</ul>
+<p>As a side-note, not deriving from <code class="docutils literal notranslate"><span class="pre">EnvironmentError</span></code> means <code class="docutils literal notranslate"><span class="pre">select.error</span></code>
+does not get the useful <code class="docutils literal notranslate"><span class="pre">errno</span></code> attribute.  User code must check <code class="docutils literal notranslate"><span class="pre">args[0]</span></code>
+instead:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">signal</span><span class="o">.</span><span class="n">alarm</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span> <span class="n">select</span><span class="o">.</span><span class="n">select</span><span class="p">([],</span> <span class="p">[],</span> <span class="p">[])</span>
+<span class="go">0</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">select.error</span>: <span class="n">(4, &#39;Interrupted system call&#39;)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">e</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">last_value</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">e</span>
+<span class="go">error(4, &#39;Interrupted system call&#39;)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">e</span><span class="o">.</span><span class="n">errno</span> <span class="o">==</span> <span class="n">errno</span><span class="o">.</span><span class="n">EINTR</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">AttributeError</span>: <span class="n">&#39;error&#39; object has no attribute &#39;errno&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">errno</span><span class="o">.</span><span class="n">EINTR</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="signal">
+<h4><a class="toc-backref" href="#id56">signal</a><a class="headerlink" href="#signal" title="Permalink to this headline">¶</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">signal.ItimerError</span></code> inherits from IOError.</p>
+</div>
+<div class="section" id="socket">
+<h4><a class="toc-backref" href="#id57">socket</a><a class="headerlink" href="#socket" title="Permalink to this headline">¶</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">socket.error</span></code> inherits from IOError.</p>
+</div>
+<div class="section" id="sys">
+<h4><a class="toc-backref" href="#id58">sys</a><a class="headerlink" href="#sys" title="Permalink to this headline">¶</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">sys.getwindowsversion()</span></code> raises WindowsError with a bogus error number
+if the <code class="docutils literal notranslate"><span class="pre">GetVersionEx()</span></code> call fails.</p>
+</div>
+<div class="section" id="time">
+<h4><a class="toc-backref" href="#id59">time</a><a class="headerlink" href="#time" title="Permalink to this headline">¶</a></h4>
+<p>Raises IOError for internal errors in time.time() and time.sleep().</p>
+</div>
+<div class="section" id="zipimport">
+<h4><a class="toc-backref" href="#id60">zipimport</a><a class="headerlink" href="#zipimport" title="Permalink to this headline">¶</a></h4>
+<p>zipimporter.get_data() can raise IOError.</p>
+</div>
+</div>
+</div>
+<div class="section" id="acknowledgments">
+<h2><a class="toc-backref" href="#id61">Acknowledgments</a><a class="headerlink" href="#acknowledgments" title="Permalink to this headline">¶</a></h2>
+<p>Significant input has been received from Nick Coghlan.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id62">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id7"><span class="brackets"><a class="fn-backref" href="#id3">1</a></span></dt>
+<dd>“IO module precisions and exception hierarchy”:
+<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2009-September/092130.html">https://mail.python.org/pipermail/python-dev/2009-September/092130.html</a></dd>
+<dt class="label" id="id8"><span class="brackets"><a class="fn-backref" href="#id4">2</a></span></dt>
+<dd>Discussion of “Removing WindowsError” in PEP 348:
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0348/#removing-windowserror">http://www.python.org/dev/peps/pep-0348/#removing-windowserror</a></dd>
+<dt class="label" id="id9"><span class="brackets"><a class="fn-backref" href="#id1">3</a></span></dt>
+<dd>Google Code Search of <code class="docutils literal notranslate"><span class="pre">IOError</span></code> in Python code: <a class="reference external" href="http://www.google.com/codesearch?q=lang%3Apython%20IOError">around 40000 results</a>;
+<code class="docutils literal notranslate"><span class="pre">OSError</span></code>: <a class="reference external" href="http://www.google.com/codesearch?q=lang%3Apython%20OSError">around 15200 results</a>;
+<code class="docutils literal notranslate"><span class="pre">EnvironmentError</span></code>: <a class="reference external" href="http://www.google.com/codesearch?q=lang%3Apython%20EnvironmentError">around 3000 results</a></dd>
+<dt class="label" id="id10"><span class="brackets"><a class="fn-backref" href="#id6">4</a></span></dt>
+<dd><a class="reference external" href="http://bugs.python.org/issue614055">http://bugs.python.org/issue614055</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id63">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-3151.txt">https://github.com/python/peps/blob/master/pep-3151.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-3151.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-3150.html">PEP 3150</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-3152.html">PEP 3152</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 3151 – Reworking the OS and IO exception hierarchy</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a><ul>
+<li><a class="reference internal" href="#confusing-set-of-os-related-exceptions">Confusing set of OS-related exceptions</a></li>
+<li><a class="reference internal" href="#lack-of-fine-grained-exceptions">Lack of fine-grained exceptions</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#compatibility-strategy">Compatibility strategy</a></li>
+<li><a class="reference internal" href="#step-1-coalesce-exception-types">Step 1: coalesce exception types</a><ul>
+<li><a class="reference internal" href="#justification">Justification</a></li>
+<li><a class="reference internal" href="#exception-attributes">Exception attributes</a></li>
+<li><a class="reference internal" href="#deprecation-of-names">Deprecation of names</a><ul>
+<li><a class="reference internal" href="#built-in-exceptions">built-in exceptions</a></li>
+<li><a class="reference internal" href="#module-level-exceptions">module-level exceptions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#step-2-define-additional-subclasses">Step 2: define additional subclasses</a><ul>
+<li><a class="reference internal" href="#prerequisite">Prerequisite</a></li>
+<li><a class="reference internal" href="#new-exception-classes">New exception classes</a></li>
+<li><a class="reference internal" href="#naming">Naming</a></li>
+<li><a class="reference internal" href="#id2">Exception attributes</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#possible-objections">Possible objections</a><ul>
+<li><a class="reference internal" href="#namespace-pollution">Namespace pollution</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#earlier-discussion">Earlier discussion</a></li>
+<li><a class="reference internal" href="#id5">Implementation</a></li>
+<li><a class="reference internal" href="#possible-alternative">Possible alternative</a><ul>
+<li><a class="reference internal" href="#pattern-matching">Pattern matching</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#exceptions-ignored-by-this-pep">Exceptions ignored by this PEP</a></li>
+<li><a class="reference internal" href="#appendix-a-survey-of-common-errnos">Appendix A: Survey of common errnos</a><ul>
+<li><a class="reference internal" href="#common-errnos-with-oserror">Common errnos with OSError</a></li>
+<li><a class="reference internal" href="#common-errnos-with-ioerror">Common errnos with IOError</a></li>
+<li><a class="reference internal" href="#common-errnos-with-socket-error">Common errnos with socket.error</a></li>
+<li><a class="reference internal" href="#common-errnos-with-select-error">Common errnos with select.error</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#appendix-b-survey-of-raised-os-and-io-errors">Appendix B: Survey of raised OS and IO errors</a><ul>
+<li><a class="reference internal" href="#about-vmserror">About VMSError</a></li>
+<li><a class="reference internal" href="#interpreter-core">Interpreter core</a></li>
+<li><a class="reference internal" href="#standard-library">Standard library</a><ul>
+<li><a class="reference internal" href="#bz2">bz2</a></li>
+<li><a class="reference internal" href="#curses">curses</a></li>
+<li><a class="reference internal" href="#dbm-gnu-dbm-ndbm">dbm.gnu, dbm.ndbm</a></li>
+<li><a class="reference internal" href="#fcntl">fcntl</a></li>
+<li><a class="reference internal" href="#imp-module">imp module</a></li>
+<li><a class="reference internal" href="#io-module">io module</a></li>
+<li><a class="reference internal" href="#mmap">mmap</a></li>
+<li><a class="reference internal" href="#multiprocessing">multiprocessing</a></li>
+<li><a class="reference internal" href="#os-posix">os / posix</a></li>
+<li><a class="reference internal" href="#ossaudiodev">ossaudiodev</a></li>
+<li><a class="reference internal" href="#readline">readline</a></li>
+<li><a class="reference internal" href="#select">select</a></li>
+<li><a class="reference internal" href="#signal">signal</a></li>
+<li><a class="reference internal" href="#socket">socket</a></li>
+<li><a class="reference internal" href="#sys">sys</a></li>
+<li><a class="reference internal" href="#time">time</a></li>
+<li><a class="reference internal" href="#zipimport">zipimport</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#acknowledgments">Acknowledgments</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

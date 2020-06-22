@@ -1,0 +1,621 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 290 – Code Migration and Modernization &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 291 – Backward Compatibility for the Python 2 Standard Library" href="pep-0291.html" />
+    <link rel="prev" title="PEP 289 – Generator Expressions" href="pep-0289.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 290 – Code Migration and Modernization</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-290-code-migration-and-modernization">
+<h1 class="page-title">PEP 290 – Code Migration and Modernization<a class="headerlink" href="#pep-290-code-migration-and-modernization" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">290</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Code Migration and Modernization</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Raymond Hettinger &lt;python&#32;&#97;t&#32;rcn.com&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Active</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Informational</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">6-Jun-2002</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id5">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id6">Rationale</a></li>
+<li><a class="reference internal" href="#guidelines-for-new-entries" id="id7">Guidelines for New Entries</a></li>
+<li><a class="reference internal" href="#migration-issues" id="id8">Migration Issues</a><ul>
+<li><a class="reference internal" href="#comparison-operators-not-a-shortcut-for-producing-0-or-1" id="id9">Comparison Operators Not a Shortcut for Producing 0 or 1</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#modernization-procedures" id="id10">Modernization Procedures</a><ul>
+<li><a class="reference internal" href="#python-2-4-or-later" id="id11">Python 2.4 or Later</a><ul>
+<li><a class="reference internal" href="#inserting-and-popping-at-the-beginning-of-lists" id="id12">Inserting and Popping at the Beginning of Lists</a></li>
+<li><a class="reference internal" href="#simplifying-custom-sorts" id="id13">Simplifying Custom Sorts</a></li>
+<li><a class="reference internal" href="#replacing-common-uses-of-lambda" id="id14">Replacing Common Uses of Lambda</a></li>
+<li><a class="reference internal" href="#simplified-reverse-iteration" id="id15">Simplified Reverse Iteration</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#python-2-3-or-later" id="id16">Python 2.3 or Later</a><ul>
+<li><a class="reference internal" href="#testing-string-membership" id="id17">Testing String Membership</a></li>
+<li><a class="reference internal" href="#replace-apply-with-a-direct-function-call" id="id18">Replace apply() with a Direct Function Call</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#python-2-2-or-later" id="id19">Python 2.2 or Later</a><ul>
+<li><a class="reference internal" href="#testing-dictionary-membership" id="id20">Testing Dictionary Membership</a></li>
+<li><a class="reference internal" href="#looping-over-dictionaries" id="id21">Looping Over Dictionaries</a></li>
+<li><a class="reference internal" href="#stat-methods" id="id22"><code class="docutils literal notranslate"><span class="pre">stat</span></code> Methods</a></li>
+<li><a class="reference internal" href="#reduce-dependency-on-types-module" id="id23">Reduce Dependency on <code class="docutils literal notranslate"><span class="pre">types</span></code> Module</a></li>
+<li><a class="reference internal" href="#avoid-variable-names-that-clash-with-the-builtins-module" id="id24">Avoid Variable Names that Clash with the <code class="docutils literal notranslate"><span class="pre">__builtins__</span></code> Module</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#python-2-1-or-later" id="id25">Python 2.1 or Later</a><ul>
+<li><a class="reference internal" href="#whrandom-module-deprecated" id="id26"><code class="docutils literal notranslate"><span class="pre">whrandom</span></code> Module Deprecated</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#python-2-0-or-later" id="id27">Python 2.0 or Later</a><ul>
+<li><a class="reference internal" href="#string-methods" id="id28">String Methods</a></li>
+<li><a class="reference internal" href="#startswith-and-endswith-string-methods" id="id29"><code class="docutils literal notranslate"><span class="pre">startswith</span></code> and <code class="docutils literal notranslate"><span class="pre">endswith</span></code> String Methods</a></li>
+<li><a class="reference internal" href="#the-atexit-module" id="id30">The <code class="docutils literal notranslate"><span class="pre">atexit</span></code> Module</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#python-1-5-or-later" id="id31">Python 1.5 or Later</a><ul>
+<li><a class="reference internal" href="#class-based-exceptions" id="id32">Class-Based Exceptions</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#all-python-versions" id="id33">All Python Versions</a><ul>
+<li><a class="reference internal" href="#testing-for-none" id="id34">Testing for <code class="docutils literal notranslate"><span class="pre">None</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references" id="id35">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id36">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id5">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP is a collection of procedures and ideas for updating Python
+applications when newer versions of Python are installed.</p>
+<p>The migration tips highlight possible areas of incompatibility and
+make suggestions on how to find and resolve those differences.  The
+modernization procedures show how older code can be updated to take
+advantage of new language features.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id6">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>This repository of procedures serves as a catalog or checklist of
+known migration issues and procedures for addressing those issues.</p>
+<p>Migration issues can arise for several reasons.  Some obsolete
+features are slowly deprecated according to the guidelines in PEP 4
+<a class="footnote-reference brackets" href="#id2" id="id1">1</a>.  Also, some code relies on undocumented behaviors which are
+subject to change between versions.  Some code may rely on behavior
+which was subsequently shown to be a bug and that behavior changes
+when the bug is fixed.</p>
+<p>Modernization options arise when new versions of Python add features
+that allow improved clarity or higher performance than previously
+available.</p>
+</div>
+<div class="section" id="guidelines-for-new-entries">
+<h2><a class="toc-backref" href="#id7">Guidelines for New Entries</a><a class="headerlink" href="#guidelines-for-new-entries" title="Permalink to this headline">¶</a></h2>
+<p>Developers with commit access may update this PEP directly.  Others
+can send their ideas to a developer for possible inclusion.</p>
+<p>While a consistent format makes the repository easier to use, feel
+free to add or subtract sections to improve clarity.</p>
+<p>Grep patterns may be supplied as tool to help maintainers locate code
+for possible updates.  However, fully automated search/replace style
+regular expressions are not recommended.  Instead, each code fragment
+should be evaluated individually.</p>
+<p>The contra-indications section is the most important part of a new
+entry.  It lists known situations where the update SHOULD NOT be
+applied.</p>
+</div>
+<div class="section" id="migration-issues">
+<h2><a class="toc-backref" href="#id8">Migration Issues</a><a class="headerlink" href="#migration-issues" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="comparison-operators-not-a-shortcut-for-producing-0-or-1">
+<h3><a class="toc-backref" href="#id9">Comparison Operators Not a Shortcut for Producing 0 or 1</a><a class="headerlink" href="#comparison-operators-not-a-shortcut-for-producing-0-or-1" title="Permalink to this headline">¶</a></h3>
+<p>Prior to Python 2.3, comparison operations returned 0 or 1 rather
+than True or False.  Some code may have used this as a shortcut for
+producing zero or one in places where their boolean counterparts are
+not appropriate.  For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">identity</span><span class="p">(</span><span class="n">m</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create and m-by-m identity matrix&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[[</span><span class="n">i</span><span class="o">==</span><span class="n">j</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">m</span><span class="p">)]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">m</span><span class="p">)]</span>
+</pre></div>
+</div>
+<p>In Python 2.2, a call to identity(2) would produce:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]</span>
+</pre></div>
+</div>
+<p>In Python 2.3, the same call would produce:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">],</span> <span class="p">[</span><span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">]]</span>
+</pre></div>
+</div>
+<p>Since booleans are a subclass of integers, the matrix would continue
+to calculate normally, but it will not print as expected.  The list
+comprehension should be changed to read:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">return</span> <span class="p">[[</span><span class="nb">int</span><span class="p">(</span><span class="n">i</span><span class="o">==</span><span class="n">j</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">m</span><span class="p">)]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">m</span><span class="p">)]</span>
+</pre></div>
+</div>
+<p>There are similar concerns when storing data to be used by other
+applications which may expect a number instead of True or False.</p>
+</div>
+</div>
+<div class="section" id="modernization-procedures">
+<h2><a class="toc-backref" href="#id10">Modernization Procedures</a><a class="headerlink" href="#modernization-procedures" title="Permalink to this headline">¶</a></h2>
+<p>Procedures are grouped by the Python version required to be able to
+take advantage of the modernization.</p>
+<div class="section" id="python-2-4-or-later">
+<h3><a class="toc-backref" href="#id11">Python 2.4 or Later</a><a class="headerlink" href="#python-2-4-or-later" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="inserting-and-popping-at-the-beginning-of-lists">
+<h4><a class="toc-backref" href="#id12">Inserting and Popping at the Beginning of Lists</a><a class="headerlink" href="#inserting-and-popping-at-the-beginning-of-lists" title="Permalink to this headline">¶</a></h4>
+<p>Python’s lists are implemented to perform best with appends and pops on
+the right.  Use of <code class="docutils literal notranslate"><span class="pre">pop(0)</span></code> or <code class="docutils literal notranslate"><span class="pre">insert(0,</span> <span class="pre">x)</span></code> triggers O(n) data
+movement for the entire list.  To help address this need, Python 2.4
+introduces a new container, <code class="docutils literal notranslate"><span class="pre">collections.deque()</span></code> which has efficient
+append and pop operations on the both the left and right (the trade-off
+is much slower getitem/setitem access).  The new container is especially
+helpful for implementing data queues:</p>
+<p>Pattern:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">c</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>   <span class="o">--&gt;</span>   <span class="n">c</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">deque</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<span class="n">c</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>         <span class="o">--&gt;</span>   <span class="n">c</span><span class="o">.</span><span class="n">popleft</span><span class="p">()</span>
+<span class="n">c</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>   <span class="o">--&gt;</span>   <span class="n">c</span><span class="o">.</span><span class="n">appendleft</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Locating:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">grep</span> <span class="n">pop</span><span class="p">(</span><span class="mi">0</span> <span class="ow">or</span>
+<span class="n">grep</span> <span class="n">insert</span><span class="p">(</span><span class="mi">0</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="simplifying-custom-sorts">
+<h4><a class="toc-backref" href="#id13">Simplifying Custom Sorts</a><a class="headerlink" href="#simplifying-custom-sorts" title="Permalink to this headline">¶</a></h4>
+<p>In Python 2.4, the <code class="docutils literal notranslate"><span class="pre">sort</span></code> method for lists and the new <code class="docutils literal notranslate"><span class="pre">sorted</span></code>
+built-in function both accept a <code class="docutils literal notranslate"><span class="pre">key</span></code> function for computing sort
+keys.  Unlike the <code class="docutils literal notranslate"><span class="pre">cmp</span></code> function which gets applied to every
+comparison, the key function gets applied only once to each record.
+It is much faster than cmp and typically more readable while using
+less code.  The key function also maintains the stability of the
+sort (records with the same key are left in their original order.</p>
+<p>Original code using a comparison function:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">names</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">:</span> <span class="nb">cmp</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="n">y</span><span class="o">.</span><span class="n">lower</span><span class="p">()))</span>
+</pre></div>
+</div>
+<p>Alternative original code with explicit decoration:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tempnames</span> <span class="o">=</span> <span class="p">[(</span><span class="n">n</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="n">n</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">names</span><span class="p">]</span>
+<span class="n">tempnames</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+<span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="n">original</span> <span class="k">for</span> <span class="n">decorated</span><span class="p">,</span> <span class="n">original</span> <span class="ow">in</span> <span class="n">tempnames</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Revised code using a key function:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">names</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="nb">str</span><span class="o">.</span><span class="n">lower</span><span class="p">)</span>       <span class="c1"># case-insensitive sort</span>
+</pre></div>
+</div>
+<p>Locating: <code class="docutils literal notranslate"><span class="pre">grep</span> <span class="pre">sort</span> <span class="pre">*.py</span></code></p>
+</div>
+<div class="section" id="replacing-common-uses-of-lambda">
+<h4><a class="toc-backref" href="#id14">Replacing Common Uses of Lambda</a><a class="headerlink" href="#replacing-common-uses-of-lambda" title="Permalink to this headline">¶</a></h4>
+<p>In Python 2.4, the <code class="docutils literal notranslate"><span class="pre">operator</span></code> module gained two new functions,
+itemgetter() and attrgetter() that can replace common uses of
+the <code class="docutils literal notranslate"><span class="pre">lambda</span></code> keyword.  The new functions run faster and
+are considered by some to improve readability.</p>
+<p>Pattern:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">r</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>      <span class="o">--&gt;</span>  <span class="n">itemgetter</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">myattr</span>  <span class="o">--&gt;</span>  <span class="n">attrgetter</span><span class="p">(</span><span class="s1">&#39;myattr&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Typical contexts:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sort</span><span class="p">(</span><span class="n">studentrecords</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">attrgetter</span><span class="p">(</span><span class="s1">&#39;gpa&#39;</span><span class="p">))</span>   <span class="c1"># set a sort field</span>
+<span class="nb">map</span><span class="p">(</span><span class="n">attrgetter</span><span class="p">(</span><span class="s1">&#39;lastname&#39;</span><span class="p">),</span> <span class="n">studentrecords</span><span class="p">)</span>   <span class="c1"># extract a field</span>
+</pre></div>
+</div>
+<p>Locating: <code class="docutils literal notranslate"><span class="pre">grep</span> <span class="pre">lambda</span> <span class="pre">*.py</span></code></p>
+</div>
+<div class="section" id="simplified-reverse-iteration">
+<h4><a class="toc-backref" href="#id15">Simplified Reverse Iteration</a><a class="headerlink" href="#simplified-reverse-iteration" title="Permalink to this headline">¶</a></h4>
+<p>Python 2.4 introduced the <code class="docutils literal notranslate"><span class="pre">reversed</span></code> builtin function for reverse
+iteration.  The existing approaches to reverse iteration suffered
+from wordiness, performance issues (speed and memory consumption),
+and/or lack of clarity.  A preferred style is to express the
+sequence in a forwards direction, apply <code class="docutils literal notranslate"><span class="pre">reversed</span></code> to the result,
+and then loop over the resulting fast, memory friendly iterator.</p>
+<p>Original code expressed with half-open intervals:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+    <span class="nb">print</span> <span class="n">seqn</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Alternative original code reversed in multiple steps:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rseqn</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">seqn</span><span class="p">)</span>
+<span class="n">rseqn</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">rseqn</span><span class="p">:</span>
+    <span class="nb">print</span> <span class="n">value</span>
+</pre></div>
+</div>
+<p>Alternative original code expressed with extending slicing:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">seqn</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+    <span class="nb">print</span> <span class="n">value</span>
+</pre></div>
+</div>
+<p>Revised code using the <code class="docutils literal notranslate"><span class="pre">reversed</span></code> function:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">seqn</span><span class="p">):</span>
+    <span class="nb">print</span> <span class="n">value</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="python-2-3-or-later">
+<h3><a class="toc-backref" href="#id16">Python 2.3 or Later</a><a class="headerlink" href="#python-2-3-or-later" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="testing-string-membership">
+<h4><a class="toc-backref" href="#id17">Testing String Membership</a><a class="headerlink" href="#testing-string-membership" title="Permalink to this headline">¶</a></h4>
+<p>In Python 2.3, for <code class="docutils literal notranslate"><span class="pre">string2</span> <span class="pre">in</span> <span class="pre">string1</span></code>, the length restriction on
+<code class="docutils literal notranslate"><span class="pre">string2</span></code> is lifted; it can now be a string of any length.  When
+searching for a substring, where you don’t care about the position of
+the substring in the original string, using the <code class="docutils literal notranslate"><span class="pre">in</span></code> operator makes
+the meaning clear.</p>
+<p>Pattern:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">string1</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">string2</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">0</span>   <span class="o">--&gt;</span>  <span class="n">string2</span> <span class="ow">in</span> <span class="n">string1</span>
+<span class="n">string1</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">string2</span><span class="p">)</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span>  <span class="o">--&gt;</span>  <span class="n">string2</span> <span class="ow">in</span> <span class="n">string1</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="replace-apply-with-a-direct-function-call">
+<h4><a class="toc-backref" href="#id18">Replace apply() with a Direct Function Call</a><a class="headerlink" href="#replace-apply-with-a-direct-function-call" title="Permalink to this headline">¶</a></h4>
+<p>In Python 2.3, apply() was marked for Pending Deprecation because it
+was made obsolete by Python 1.6’s introduction of * and ** in
+function calls.  Using a direct function call was always a little
+faster than apply() because it saved the lookup for the builtin.
+Now, apply() is even slower due to its use of the warnings module.</p>
+<p>Pattern:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">apply</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwds</span><span class="p">)</span>  <span class="o">--&gt;</span>  <span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Note: The Pending Deprecation was removed from apply() in Python 2.3.3
+since it creates pain for people who need to maintain code that works
+with Python versions as far back as 1.5.2, where there was no
+alternative to apply().  The function remains deprecated, however.</p>
+</div>
+</div>
+<div class="section" id="python-2-2-or-later">
+<h3><a class="toc-backref" href="#id19">Python 2.2 or Later</a><a class="headerlink" href="#python-2-2-or-later" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="testing-dictionary-membership">
+<h4><a class="toc-backref" href="#id20">Testing Dictionary Membership</a><a class="headerlink" href="#testing-dictionary-membership" title="Permalink to this headline">¶</a></h4>
+<p>For testing dictionary membership, use the ‘in’ keyword instead of the
+‘has_key()’ method.  The result is shorter and more readable.  The
+style becomes consistent with tests for membership in lists.  The
+result is slightly faster because <code class="docutils literal notranslate"><span class="pre">has_key</span></code> requires an attribute
+search and uses a relatively expensive function call.</p>
+<p>Pattern:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">d</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="n">k</span><span class="p">):</span>  <span class="o">--&gt;</span>  <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">d</span><span class="p">:</span>
+</pre></div>
+</div>
+<p>Contra-indications:</p>
+<ol class="arabic">
+<li><p>Some dictionary-like objects may not define a
+<code class="docutils literal notranslate"><span class="pre">__contains__()</span></code> method:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">dictlike</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p>Locating: <code class="docutils literal notranslate"><span class="pre">grep</span> <span class="pre">has_key</span></code></p>
+</div>
+<div class="section" id="looping-over-dictionaries">
+<h4><a class="toc-backref" href="#id21">Looping Over Dictionaries</a><a class="headerlink" href="#looping-over-dictionaries" title="Permalink to this headline">¶</a></h4>
+<p>Use the new <code class="docutils literal notranslate"><span class="pre">iter</span></code> methods for looping over dictionaries.  The
+<code class="docutils literal notranslate"><span class="pre">iter</span></code> methods are faster because they do not have to create a new
+list object with a complete copy of all of the keys, values, or items.
+Selecting only keys, values, or items (key/value pairs) as needed
+saves the time for creating throwaway object references and, in the
+case of items, saves a second hash look-up of the key.</p>
+<p>Pattern:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>      <span class="o">--&gt;</span>  <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">d</span><span class="p">:</span>
+<span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>  <span class="o">--&gt;</span>  <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">itervalues</span><span class="p">():</span>
+<span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                          <span class="o">--&gt;</span>  <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+</pre></div>
+</div>
+<p>Contra-indications:</p>
+<ol class="arabic">
+<li><p>If you need a list, do not change the return type:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">getids</span><span class="p">():</span>  <span class="k">return</span> <span class="n">d</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+</pre></div>
+</div>
+</li>
+<li><p>Some dictionary-like objects may not define
+<code class="docutils literal notranslate"><span class="pre">iter</span></code> methods:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">dictlike</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+</pre></div>
+</div>
+</li>
+<li><p>Iterators do not support slicing, sorting or other operations:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">k</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">keys</span><span class="p">();</span> <span class="n">j</span> <span class="o">=</span> <span class="n">k</span><span class="p">[:]</span>
+</pre></div>
+</div>
+</li>
+<li><p>Dictionary iterators prohibit modifying the dictionary:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span> <span class="k">del</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</div>
+<div class="section" id="stat-methods">
+<h4><a class="toc-backref" href="#id22"><code class="docutils literal notranslate"><span class="pre">stat</span></code> Methods</a><a class="headerlink" href="#stat-methods" title="Permalink to this headline">¶</a></h4>
+<p>Replace <code class="docutils literal notranslate"><span class="pre">stat</span></code> constants or indices with new <code class="docutils literal notranslate"><span class="pre">os.stat</span></code> attributes
+and methods.  The <code class="docutils literal notranslate"><span class="pre">os.stat</span></code> attributes and methods are not
+order-dependent and do not require an import of the <code class="docutils literal notranslate"><span class="pre">stat</span></code> module.</p>
+<p>Pattern:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="s2">&quot;foo&quot;</span><span class="p">)[</span><span class="n">stat</span><span class="o">.</span><span class="n">ST_MTIME</span><span class="p">]</span>  <span class="o">--&gt;</span>  <span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="s2">&quot;foo&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">st_mtime</span>
+<span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="s2">&quot;foo&quot;</span><span class="p">)[</span><span class="n">stat</span><span class="o">.</span><span class="n">ST_MTIME</span><span class="p">]</span>  <span class="o">--&gt;</span>  <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="s2">&quot;foo&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Locating: <code class="docutils literal notranslate"><span class="pre">grep</span> <span class="pre">os.stat</span></code> or <code class="docutils literal notranslate"><span class="pre">grep</span> <span class="pre">stat.S</span></code></p>
+</div>
+<div class="section" id="reduce-dependency-on-types-module">
+<h4><a class="toc-backref" href="#id23">Reduce Dependency on <code class="docutils literal notranslate"><span class="pre">types</span></code> Module</a><a class="headerlink" href="#reduce-dependency-on-types-module" title="Permalink to this headline">¶</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">types</span></code> module is likely to be deprecated in the future.  Use
+built-in constructor functions instead.  They may be slightly faster.</p>
+<p>Pattern:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">types</span><span class="o">.</span><span class="n">IntType</span><span class="p">)</span>      <span class="o">--&gt;</span>  <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+<span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">types</span><span class="o">.</span><span class="n">StringTypes</span><span class="p">)</span>  <span class="o">--&gt;</span>  <span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">basestring</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Full use of this technique requires Python 2.3 or later
+(<code class="docutils literal notranslate"><span class="pre">basestring</span></code> was introduced in Python 2.3), but Python 2.2 is
+sufficient for most uses.</p>
+<p>Locating: <code class="docutils literal notranslate"><span class="pre">grep</span> <span class="pre">types</span> <span class="pre">*.py</span> <span class="pre">|</span> <span class="pre">grep</span> <span class="pre">import</span></code></p>
+</div>
+<div class="section" id="avoid-variable-names-that-clash-with-the-builtins-module">
+<h4><a class="toc-backref" href="#id24">Avoid Variable Names that Clash with the <code class="docutils literal notranslate"><span class="pre">__builtins__</span></code> Module</a><a class="headerlink" href="#avoid-variable-names-that-clash-with-the-builtins-module" title="Permalink to this headline">¶</a></h4>
+<p>In Python 2.2, new built-in types were added for <code class="docutils literal notranslate"><span class="pre">dict</span></code> and <code class="docutils literal notranslate"><span class="pre">file</span></code>.
+Scripts should avoid assigning variable names that mask those types.
+The same advice also applies to existing builtins like <code class="docutils literal notranslate"><span class="pre">list</span></code>.</p>
+<p>Pattern:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;myfile.txt&#39;</span><span class="p">)</span> <span class="o">--&gt;</span> <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;myfile.txt&#39;</span><span class="p">)</span>
+<span class="nb">dict</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="vm">__dict__</span> <span class="o">--&gt;</span> <span class="n">d</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="vm">__dict__</span>
+</pre></div>
+</div>
+<p>Locating:  <code class="docutils literal notranslate"><span class="pre">grep</span> <span class="pre">'file</span> <span class="pre">'</span> <span class="pre">*.py</span></code></p>
+</div>
+</div>
+<div class="section" id="python-2-1-or-later">
+<h3><a class="toc-backref" href="#id25">Python 2.1 or Later</a><a class="headerlink" href="#python-2-1-or-later" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="whrandom-module-deprecated">
+<h4><a class="toc-backref" href="#id26"><code class="docutils literal notranslate"><span class="pre">whrandom</span></code> Module Deprecated</a><a class="headerlink" href="#whrandom-module-deprecated" title="Permalink to this headline">¶</a></h4>
+<p>All random-related methods have been collected in one place, the
+<code class="docutils literal notranslate"><span class="pre">random</span></code> module.</p>
+<p>Pattern:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">whrandom</span> <span class="o">--&gt;</span> <span class="kn">import</span> <span class="nn">random</span>
+</pre></div>
+</div>
+<p>Locating: <code class="docutils literal notranslate"><span class="pre">grep</span> <span class="pre">whrandom</span></code></p>
+</div>
+</div>
+<div class="section" id="python-2-0-or-later">
+<h3><a class="toc-backref" href="#id27">Python 2.0 or Later</a><a class="headerlink" href="#python-2-0-or-later" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="string-methods">
+<h4><a class="toc-backref" href="#id28">String Methods</a><a class="headerlink" href="#string-methods" title="Permalink to this headline">¶</a></h4>
+<p>The string module is likely to be deprecated in the future.  Use
+string methods instead.  They’re faster too.</p>
+<p>Pattern:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">string</span> <span class="p">;</span> <span class="n">string</span><span class="o">.</span><span class="n">method</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>  <span class="o">--&gt;</span>  <span class="n">s</span><span class="o">.</span><span class="n">method</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">c</span> <span class="ow">in</span> <span class="n">string</span><span class="o">.</span><span class="n">whitespace</span>                 <span class="o">--&gt;</span>  <span class="n">c</span><span class="o">.</span><span class="n">isspace</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Locating: <code class="docutils literal notranslate"><span class="pre">grep</span> <span class="pre">string</span> <span class="pre">*.py</span> <span class="pre">|</span> <span class="pre">grep</span> <span class="pre">import</span></code></p>
+</div>
+<div class="section" id="startswith-and-endswith-string-methods">
+<h4><a class="toc-backref" href="#id29"><code class="docutils literal notranslate"><span class="pre">startswith</span></code> and <code class="docutils literal notranslate"><span class="pre">endswith</span></code> String Methods</a><a class="headerlink" href="#startswith-and-endswith-string-methods" title="Permalink to this headline">¶</a></h4>
+<p>Use these string methods instead of slicing.  No slice has to be
+created and there’s no risk of miscounting.</p>
+<p>Pattern:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;foobar&quot;</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;foo&quot;</span>   <span class="o">--&gt;</span>  <span class="s2">&quot;foobar&quot;</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;foo&quot;</span><span class="p">)</span>
+<span class="s2">&quot;foobar&quot;</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">:]</span> <span class="o">==</span> <span class="s2">&quot;bar&quot;</span>  <span class="o">--&gt;</span>  <span class="s2">&quot;foobar&quot;</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;bar&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="the-atexit-module">
+<h4><a class="toc-backref" href="#id30">The <code class="docutils literal notranslate"><span class="pre">atexit</span></code> Module</a><a class="headerlink" href="#the-atexit-module" title="Permalink to this headline">¶</a></h4>
+<p>The atexit module supports multiple functions to be executed upon
+program termination.  Also, it supports parameterized functions.
+Unfortunately, its implementation conflicts with the sys.exitfunc
+attribute which only supports a single exit function.  Code relying
+on sys.exitfunc may interfere with other modules (including library
+modules) that elect to use the newer and more versatile atexit module.</p>
+<p>Pattern:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sys</span><span class="o">.</span><span class="n">exitfunc</span> <span class="o">=</span> <span class="n">myfunc</span>  <span class="o">--&gt;</span>  <span class="n">atexit</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">myfunc</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="python-1-5-or-later">
+<h3><a class="toc-backref" href="#id31">Python 1.5 or Later</a><a class="headerlink" href="#python-1-5-or-later" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="class-based-exceptions">
+<h4><a class="toc-backref" href="#id32">Class-Based Exceptions</a><a class="headerlink" href="#class-based-exceptions" title="Permalink to this headline">¶</a></h4>
+<p>String exceptions are deprecated, so derive from the <code class="docutils literal notranslate"><span class="pre">Exception</span></code>
+base class.  Unlike the obsolete string exceptions, class exceptions
+all derive from another exception or the <code class="docutils literal notranslate"><span class="pre">Exception</span></code> base class.
+This allows meaningful groupings of exceptions.  It also allows an
+“<code class="docutils literal notranslate"><span class="pre">except</span> <span class="pre">Exception</span></code>” clause to catch all exceptions.</p>
+<p>Pattern:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">NewError</span> <span class="o">=</span> <span class="s1">&#39;NewError&#39;</span>  <span class="o">--&gt;</span>  <span class="k">class</span> <span class="nc">NewError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span> <span class="k">pass</span>
+</pre></div>
+</div>
+<p>Locating: Use <a class="reference external" href="http://pychecker.sourceforge.net/">PyChecker</a> <a class="footnote-reference brackets" href="#id3" id="id4">2</a>.</p>
+</div>
+</div>
+<div class="section" id="all-python-versions">
+<h3><a class="toc-backref" href="#id33">All Python Versions</a><a class="headerlink" href="#all-python-versions" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="testing-for-none">
+<h4><a class="toc-backref" href="#id34">Testing for <code class="docutils literal notranslate"><span class="pre">None</span></code></a><a class="headerlink" href="#testing-for-none" title="Permalink to this headline">¶</a></h4>
+<p>Since there is only one <code class="docutils literal notranslate"><span class="pre">None</span></code> object, equality can be tested with
+identity.  Identity tests are slightly faster than equality tests.
+Also, some object types may overload comparison, so equality testing
+may be much slower.</p>
+<p>Pattern:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">v</span> <span class="o">==</span> <span class="kc">None</span>  <span class="o">--&gt;</span>  <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">if</span> <span class="n">v</span> <span class="o">!=</span> <span class="kc">None</span>  <span class="o">--&gt;</span>  <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</pre></div>
+</div>
+<p>Locating: <code class="docutils literal notranslate"><span class="pre">grep</span> <span class="pre">'==</span> <span class="pre">None'</span></code> or <code class="docutils literal notranslate"><span class="pre">grep</span> <span class="pre">'!=</span> <span class="pre">None'</span></code></p>
+</div>
+</div>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id35">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>PEP 4, Deprecation of Standard Modules, von Loewis
+(<a class="reference external" href="http://www.python.org/dev/peps/pep-0004/">http://www.python.org/dev/peps/pep-0004/</a>)</dd>
+</dl>
+<dl class="footnote brackets">
+<dt class="label" id="id3"><span class="brackets"><a class="fn-backref" href="#id4">2</a></span></dt>
+<dd><a class="reference external" href="http://pychecker.sourceforge.net/">http://pychecker.sourceforge.net/</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id36">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0290.txt">https://github.com/python/peps/blob/master/pep-0290.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0290.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0289.html">PEP 0289</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0291.html">PEP 0291</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 290 – Code Migration and Modernization</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#guidelines-for-new-entries">Guidelines for New Entries</a></li>
+<li><a class="reference internal" href="#migration-issues">Migration Issues</a><ul>
+<li><a class="reference internal" href="#comparison-operators-not-a-shortcut-for-producing-0-or-1">Comparison Operators Not a Shortcut for Producing 0 or 1</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#modernization-procedures">Modernization Procedures</a><ul>
+<li><a class="reference internal" href="#python-2-4-or-later">Python 2.4 or Later</a><ul>
+<li><a class="reference internal" href="#inserting-and-popping-at-the-beginning-of-lists">Inserting and Popping at the Beginning of Lists</a></li>
+<li><a class="reference internal" href="#simplifying-custom-sorts">Simplifying Custom Sorts</a></li>
+<li><a class="reference internal" href="#replacing-common-uses-of-lambda">Replacing Common Uses of Lambda</a></li>
+<li><a class="reference internal" href="#simplified-reverse-iteration">Simplified Reverse Iteration</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#python-2-3-or-later">Python 2.3 or Later</a><ul>
+<li><a class="reference internal" href="#testing-string-membership">Testing String Membership</a></li>
+<li><a class="reference internal" href="#replace-apply-with-a-direct-function-call">Replace apply() with a Direct Function Call</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#python-2-2-or-later">Python 2.2 or Later</a><ul>
+<li><a class="reference internal" href="#testing-dictionary-membership">Testing Dictionary Membership</a></li>
+<li><a class="reference internal" href="#looping-over-dictionaries">Looping Over Dictionaries</a></li>
+<li><a class="reference internal" href="#stat-methods"><code class="docutils literal notranslate"><span class="pre">stat</span></code> Methods</a></li>
+<li><a class="reference internal" href="#reduce-dependency-on-types-module">Reduce Dependency on <code class="docutils literal notranslate"><span class="pre">types</span></code> Module</a></li>
+<li><a class="reference internal" href="#avoid-variable-names-that-clash-with-the-builtins-module">Avoid Variable Names that Clash with the <code class="docutils literal notranslate"><span class="pre">__builtins__</span></code> Module</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#python-2-1-or-later">Python 2.1 or Later</a><ul>
+<li><a class="reference internal" href="#whrandom-module-deprecated"><code class="docutils literal notranslate"><span class="pre">whrandom</span></code> Module Deprecated</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#python-2-0-or-later">Python 2.0 or Later</a><ul>
+<li><a class="reference internal" href="#string-methods">String Methods</a></li>
+<li><a class="reference internal" href="#startswith-and-endswith-string-methods"><code class="docutils literal notranslate"><span class="pre">startswith</span></code> and <code class="docutils literal notranslate"><span class="pre">endswith</span></code> String Methods</a></li>
+<li><a class="reference internal" href="#the-atexit-module">The <code class="docutils literal notranslate"><span class="pre">atexit</span></code> Module</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#python-1-5-or-later">Python 1.5 or Later</a><ul>
+<li><a class="reference internal" href="#class-based-exceptions">Class-Based Exceptions</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#all-python-versions">All Python Versions</a><ul>
+<li><a class="reference internal" href="#testing-for-none">Testing for <code class="docutils literal notranslate"><span class="pre">None</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

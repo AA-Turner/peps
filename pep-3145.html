@@ -1,0 +1,260 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 3145 – Asynchronous I/O For subprocess.Popen &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 3146 – Merging Unladen Swallow into CPython" href="pep-3146.html" />
+    <link rel="prev" title="PEP 3144 – IP Address Manipulation Library for the Python Standard Library" href="pep-3144.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 3145 – Asynchronous I/O For subprocess.Popen</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-3145-asynchronous-i-o-for-subprocess-popen">
+<h1 class="page-title">PEP 3145 – Asynchronous I/O For subprocess.Popen<a class="headerlink" href="#pep-3145-asynchronous-i-o-for-subprocess-popen" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">3145</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Asynchronous I/O For subprocess.Popen</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">(James) Eric Pruitt, Charles R. McCreary, Josiah Carlson</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Withdrawn</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">04-Aug-2009</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.2</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id24">Abstract</a></li>
+<li><a class="reference internal" href="#pep-deferral" id="id25">PEP Deferral</a></li>
+<li><a class="reference internal" href="#pep-withdrawal" id="id26">PEP Withdrawal</a></li>
+<li><a class="reference internal" href="#motivation" id="id27">Motivation</a></li>
+<li><a class="reference internal" href="#rationale" id="id28">Rationale</a></li>
+<li><a class="reference internal" href="#reference-implementation" id="id29">Reference Implementation</a></li>
+<li><a class="reference internal" href="#references" id="id30">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id31">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id24">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>In its present form, the <code class="docutils literal notranslate"><span class="pre">subprocess.Popen</span></code> implementation is prone to
+dead-locking and blocking of the parent Python script while waiting on data
+from the child process. This PEP proposes to make
+<code class="docutils literal notranslate"><span class="pre">subprocess.Popen</span></code> more asynchronous to help alleviate these
+problems.</p>
+</div>
+<div class="section" id="pep-deferral">
+<h2><a class="toc-backref" href="#id25">PEP Deferral</a><a class="headerlink" href="#pep-deferral" title="Permalink to this headline">¶</a></h2>
+<p>Further exploration of the concepts covered in this PEP has been deferred
+at least until after PEP 3156 has been resolved.</p>
+</div>
+<div class="section" id="pep-withdrawal">
+<h2><a class="toc-backref" href="#id26">PEP Withdrawal</a><a class="headerlink" href="#pep-withdrawal" title="Permalink to this headline">¶</a></h2>
+<p>This can be dealt with in the bug tracker.  A specific proposal is
+attached to <a class="footnote-reference brackets" href="#id23" id="id1">11</a>.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id27">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>A search for “python asynchronous subprocess” will turn up numerous
+accounts of people wanting to execute a child process and communicate with
+it from time to time reading only the data that is available instead of
+blocking to wait for the program to produce data <a class="footnote-reference brackets" href="#id13" id="id2">1</a> <a class="footnote-reference brackets" href="#id14" id="id3">2</a> <a class="footnote-reference brackets" href="#id15" id="id4">3</a>.  The current
+behavior of the <code class="docutils literal notranslate"><span class="pre">subprocess</span></code> module is that when a user sends or receives
+data via the stdin, stderr and stdout file objects, dead locks are common
+and documented <a class="footnote-reference brackets" href="#id16" id="id5">4</a> <a class="footnote-reference brackets" href="#id17" id="id6">5</a>.  While communicate can be used to alleviate some of
+the buffering issues, it will still cause the parent process to block while
+attempting to read data when none is available to be read from the child
+process.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id28">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>There is a documented need for asynchronous, non-blocking functionality in
+<code class="docutils literal notranslate"><span class="pre">subprocess.Popen</span></code> <a class="footnote-reference brackets" href="#id18" id="id7">6</a> <a class="footnote-reference brackets" href="#id19" id="id8">7</a> <a class="footnote-reference brackets" href="#id14" id="id9">2</a> <a class="footnote-reference brackets" href="#id15" id="id10">3</a>.  Inclusion of the code would improve the
+utility of the Python standard library that can be used on Unix based and
+Windows builds of Python.  Practically every I/O object in Python has a
+file-like wrapper of some sort.  Sockets already act as such and for
+strings there is <code class="docutils literal notranslate"><span class="pre">StringIO</span></code>.  Popen can be made to act like a file by simply
+using the methods attached to the <code class="docutils literal notranslate"><span class="pre">subprocess.Popen.stderr</span></code>, stdout and
+stdin file-like objects.  But when using the read and write methods of
+those options, you do not have the benefit of asynchronous I/O.  In the
+proposed solution the wrapper wraps the asynchronous methods to mimic a
+file object.</p>
+</div>
+<div class="section" id="reference-implementation">
+<h2><a class="toc-backref" href="#id29">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>I have been maintaining a Google Code repository that contains all of my
+changes including tests and documentation <a class="footnote-reference brackets" href="#id21" id="id11">9</a> as well as blog detailing
+the problems I have come across in the development process <a class="footnote-reference brackets" href="#id22" id="id12">10</a>.</p>
+<p>I have been working on implementing non-blocking asynchronous I/O in the
+<code class="docutils literal notranslate"><span class="pre">subprocess</span></code> module as well as a wrapper class for <code class="docutils literal notranslate"><span class="pre">subprocess.Popen</span></code>
+that makes it so that an executed process can take the place of a file by
+duplicating all of the methods and attributes that file objects have.</p>
+<p>There are two base functions that have been added to the <code class="docutils literal notranslate"><span class="pre">subprocess.Popen</span></code>
+class: <code class="docutils literal notranslate"><span class="pre">Popen.send</span></code> and <code class="docutils literal notranslate"><span class="pre">Popen._recv</span></code>, each with two separate implementations,
+one for Windows and one for Unix-based systems.  The Windows
+implementation uses ctypes to access the functions needed to control pipes
+in the kernel 32 DLL in an asynchronous manner.  On Unix based systems,
+the Python interface for file control serves the same purpose.  The
+different implementations of <code class="docutils literal notranslate"><span class="pre">Popen.send</span></code> and <code class="docutils literal notranslate"><span class="pre">Popen._recv</span></code> have identical
+arguments to make code that uses these functions work across multiple
+platforms.</p>
+<p>When calling the <code class="docutils literal notranslate"><span class="pre">Popen._recv</span></code> function, it requires the pipe name be
+passed as an argument so there exists the <code class="docutils literal notranslate"><span class="pre">Popen.recv</span></code> function that passes
+selects stdout as the pipe for <code class="docutils literal notranslate"><span class="pre">Popen._recv</span></code> by default. <code class="docutils literal notranslate"><span class="pre">Popen.recv_err</span></code>
+selects stderr as the pipe by default. <code class="docutils literal notranslate"><span class="pre">Popen.recv</span></code> and <code class="docutils literal notranslate"><span class="pre">Popen.recv_err</span></code>
+are much easier to read and understand than <code class="docutils literal notranslate"><span class="pre">Popen._recv('stdout'</span> <span class="pre">...)</span></code> and
+<code class="docutils literal notranslate"><span class="pre">Popen._recv('stderr'</span> <span class="pre">...)</span></code> respectively.</p>
+<p>Since the <code class="docutils literal notranslate"><span class="pre">Popen._recv</span></code> function does not wait on data to be produced
+before returning a value, it may return empty bytes. <code class="docutils literal notranslate"><span class="pre">Popen.asyncread</span></code>
+handles this issue by returning all data read over a given time
+interval.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">ProcessIOWrapper</span></code> class uses the <code class="docutils literal notranslate"><span class="pre">asyncread</span></code> and <code class="docutils literal notranslate"><span class="pre">asyncwrite</span></code> functions to
+allow a process to act like a file so that there are no blocking issues
+that can arise from using the stdout and stdin file objects produced from
+a <code class="docutils literal notranslate"><span class="pre">subprocess.Popen</span></code> call.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id30">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id13"><span class="brackets"><a class="fn-backref" href="#id2">1</a></span></dt>
+<dd>[ python-Feature Requests-1191964 ] asynchronous Subprocess
+<a class="reference external" href="https://mail.python.org/pipermail/python-bugs-list/2006-December/">https://mail.python.org/pipermail/python-bugs-list/2006-December/</a>
+036524.html</dd>
+<dt class="label" id="id14"><span class="brackets">2</span><span class='fn-backref'><em> (<a href="#id3">1</a>, <a href="#id9">2</a>) </em></span></dt>
+<dd>Daily Life in an Ivory Basement : /feb-07/problems-with-subprocess
+<a class="reference external" href="http://ivory.idyll.org/blog/feb-07/problems-with-subprocess">http://ivory.idyll.org/blog/feb-07/problems-with-subprocess</a></dd>
+<dt class="label" id="id15"><span class="brackets">3</span><span class='fn-backref'><em> (<a href="#id4">1</a>, <a href="#id10">2</a>) </em></span></dt>
+<dd>How can I run an external command asynchronously from Python? - Stack
+Overflow
+<a class="reference external" href="http://stackoverflow.com/questions/636561/how-can-i-run-an-external">http://stackoverflow.com/questions/636561/how-can-i-run-an-external</a>-
+command-asynchronously-from-python</dd>
+<dt class="label" id="id16"><span class="brackets"><a class="fn-backref" href="#id5">4</a></span></dt>
+<dd>18.1. subprocess - Subprocess management - Python v2.6.2 documentation
+<a class="reference external" href="http://docs.python.org/library/subprocess.html#subprocess.Popen.wait">http://docs.python.org/library/subprocess.html#subprocess.Popen.wait</a></dd>
+<dt class="label" id="id17"><span class="brackets"><a class="fn-backref" href="#id6">5</a></span></dt>
+<dd>18.1. subprocess - Subprocess management - Python v2.6.2 documentation
+<a class="reference external" href="http://docs.python.org/library/subprocess.html#subprocess.Popen.kill">http://docs.python.org/library/subprocess.html#subprocess.Popen.kill</a></dd>
+<dt class="label" id="id18"><span class="brackets"><a class="fn-backref" href="#id7">6</a></span></dt>
+<dd>Issue 1191964: asynchronous Subprocess - Python tracker
+<a class="reference external" href="http://bugs.python.org/issue1191964">http://bugs.python.org/issue1191964</a></dd>
+<dt class="label" id="id19"><span class="brackets"><a class="fn-backref" href="#id8">7</a></span></dt>
+<dd>Module to allow Asynchronous subprocess use on Windows and Posix
+platforms - ActiveState Code
+<a class="reference external" href="http://code.activestate.com/recipes/440554/">http://code.activestate.com/recipes/440554/</a></dd>
+<dt class="label" id="id20"><span class="brackets">8</span></dt>
+<dd>subprocess.rst - subprocdev - Project Hosting on Google Code
+<a class="reference external" href="http://code.google.com/p/subprocdev/source/browse/doc/subprocess.rst?spec=svn2c925e935cad0166d5da85e37c742d8e7f609de5&amp;r=2c925e935cad0166d5da85e37c742d8e7f609de5#437">http://code.google.com/p/subprocdev/source/browse/doc/subprocess.rst?spec=svn2c925e935cad0166d5da85e37c742d8e7f609de5&amp;r=2c925e935cad0166d5da85e37c742d8e7f609de5#437</a></dd>
+<dt class="label" id="id21"><span class="brackets"><a class="fn-backref" href="#id11">9</a></span></dt>
+<dd>subprocdev - Project Hosting on Google Code
+<a class="reference external" href="http://code.google.com/p/subprocdev">http://code.google.com/p/subprocdev</a></dd>
+<dt class="label" id="id22"><span class="brackets"><a class="fn-backref" href="#id12">10</a></span></dt>
+<dd>Python Subprocess Dev
+<a class="reference external" href="http://subdev.blogspot.com/">http://subdev.blogspot.com/</a></dd>
+<dt class="label" id="id23"><span class="brackets"><a class="fn-backref" href="#id1">11</a></span></dt>
+<dd><a class="reference external" href="https://bugs.python.org/issue18823">https://bugs.python.org/issue18823</a> – Idle: use pipes instead of
+sockets to talk with user subprocess</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id31">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This P.E.P. is licensed under the Open Publication License;
+<a class="reference external" href="http://www.opencontent.org/openpub/">http://www.opencontent.org/openpub/</a>.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-3145.txt">https://github.com/python/peps/blob/master/pep-3145.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-3145.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-3144.html">PEP 3144</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-3146.html">PEP 3146</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 3145 – Asynchronous I/O For subprocess.Popen</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#pep-deferral">PEP Deferral</a></li>
+<li><a class="reference internal" href="#pep-withdrawal">PEP Withdrawal</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

@@ -1,0 +1,588 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 573 – Module State Access from C Extension Methods &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 574 – Pickle protocol 5 with out-of-band data" href="pep-0574.html" />
+    <link rel="prev" title="PEP 572 – Assignment Expressions" href="pep-0572.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 573 – Module State Access from C Extension Methods</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-573-module-state-access-from-c-extension-methods">
+<h1 class="page-title">PEP 573 – Module State Access from C Extension Methods<a class="headerlink" href="#pep-573-module-state-access-from-c-extension-methods" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">573</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Module State Access from C Extension Methods</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Petr Viktorin &lt;encukou&#32;&#97;t&#32;gmail.com&gt;,
+Nick Coghlan &lt;ncoghlan&#32;&#97;t&#32;gmail.com&gt;,
+Eric Snow &lt;ericsnowcurrently&#32;&#97;t&#32;gmail.com&gt;
+Marcel Plch &lt;gmarcel.plch&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even">Stefan Behnel</dd>
+<dt class="field-odd">Discussions-To</dt>
+<dd class="field-odd"><a class="reference external" href="mailto:import-sig&#37;&#52;&#48;python&#46;org?subject=PEP%20573">import-sig&#32;&#97;t&#32;python.org</a></dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Accepted</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">02-Jun-2016</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.9</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id11">Abstract</a></li>
+<li><a class="reference internal" href="#terminology" id="id12">Terminology</a><ul>
+<li><a class="reference internal" href="#process-global-state" id="id13">Process-Global State</a></li>
+<li><a class="reference internal" href="#per-module-state" id="id14">Per-module State</a></li>
+<li><a class="reference internal" href="#static-type" id="id15">Static Type</a></li>
+<li><a class="reference internal" href="#heap-type" id="id16">Heap Type</a></li>
+<li><a class="reference internal" href="#defining-class" id="id17">Defining Class</a></li>
+<li><a class="reference internal" href="#c-api" id="id18">C-API</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rationale" id="id19">Rationale</a></li>
+<li><a class="reference internal" href="#background" id="id20">Background</a></li>
+<li><a class="reference internal" href="#proposal" id="id21">Proposal</a><ul>
+<li><a class="reference internal" href="#slot-methods" id="id22">Slot methods</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#specification" id="id23">Specification</a><ul>
+<li><a class="reference internal" href="#adding-module-references-to-heap-types" id="id24">Adding module references to heap types</a></li>
+<li><a class="reference internal" href="#passing-the-defining-class-to-extension-methods" id="id25">Passing the defining class to extension methods</a></li>
+<li><a class="reference internal" href="#argument-clinic" id="id26">Argument Clinic</a></li>
+<li><a class="reference internal" href="#helpers" id="id27">Helpers</a></li>
+<li><a class="reference internal" href="#modules-converted-in-the-initial-implementation" id="id28">Modules Converted in the Initial Implementation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#summary-of-api-changes-and-additions" id="id29">Summary of API Changes and Additions</a></li>
+<li><a class="reference internal" href="#backwards-compatibility" id="id30">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#implementation" id="id31">Implementation</a></li>
+<li><a class="reference internal" href="#possible-future-extensions" id="id32">Possible Future Extensions</a><ul>
+<li><a class="reference internal" href="#id6" id="id33">Slot methods</a></li>
+<li><a class="reference internal" href="#easy-creation-of-types-with-module-references" id="id34">Easy creation of types with module references</a></li>
+<li><a class="reference internal" href="#optimization" id="id35">Optimization</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references" id="id36">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id37">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id11">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes to add a way for CPython extension methods to access context,
+such as the state of the modules they are defined in.</p>
+<p>This will allow extension methods to use direct pointer dereferences
+rather than PyState_FindModule for looking up module state, reducing or
+eliminating the performance cost of using module-scoped state over process
+global state.</p>
+<p>This fixes one of the remaining roadblocks for adoption of PEP 3121 (Extension
+module initialization and finalization) and PEP 489
+(Multi-phase extension module initialization).</p>
+<p>While this PEP takes an additional step towards fully solving the problems that
+PEP 3121 and PEP 489 started tackling, it does not attempt to resolve <em>all</em>
+remaining concerns. In particular, access to the module state
+from slot methods (<code class="docutils literal notranslate"><span class="pre">nb_add</span></code>, etc) is not solved.</p>
+</div>
+<div class="section" id="terminology">
+<h2><a class="toc-backref" href="#id12">Terminology</a><a class="headerlink" href="#terminology" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="process-global-state">
+<h3><a class="toc-backref" href="#id13">Process-Global State</a><a class="headerlink" href="#process-global-state" title="Permalink to this headline">¶</a></h3>
+<p>C-level static variables. Since this is very low-level
+memory storage, it must be managed carefully.</p>
+</div>
+<div class="section" id="per-module-state">
+<span id="id1"></span><h3><a class="toc-backref" href="#id14">Per-module State</a><a class="headerlink" href="#per-module-state" title="Permalink to this headline">¶</a></h3>
+<p>State local to a module object, allocated dynamically as part of a
+module object’s initialization. This isolates the state from other
+instances of the module (including those in other subinterpreters).</p>
+<p>Accessed by <code class="docutils literal notranslate"><span class="pre">PyModule_GetState()</span></code>.</p>
+</div>
+<div class="section" id="static-type">
+<h3><a class="toc-backref" href="#id15">Static Type</a><a class="headerlink" href="#static-type" title="Permalink to this headline">¶</a></h3>
+<p>A type object defined as a C-level static variable, i.e. a compiled-in type
+object.</p>
+<p>A static type needs to be shared between module instances and has no
+information of what module it belongs to.
+Static types do not have <code class="docutils literal notranslate"><span class="pre">__dict__</span></code> (although their instances might).</p>
+</div>
+<div class="section" id="heap-type">
+<h3><a class="toc-backref" href="#id16">Heap Type</a><a class="headerlink" href="#heap-type" title="Permalink to this headline">¶</a></h3>
+<p>A type object created at run time.</p>
+</div>
+<div class="section" id="defining-class">
+<h3><a class="toc-backref" href="#id17">Defining Class</a><a class="headerlink" href="#defining-class" title="Permalink to this headline">¶</a></h3>
+<p>The defining class of a method (either bound or unbound) is the class on which
+the method was defined.
+A class that merely inherits the method from its base is not the defining class.</p>
+<p>For example, <code class="docutils literal notranslate"><span class="pre">int</span></code> is the defining class of <code class="docutils literal notranslate"><span class="pre">True.to_bytes</span></code>,
+<code class="docutils literal notranslate"><span class="pre">True.__floor__</span></code> and <code class="docutils literal notranslate"><span class="pre">int.__repr__</span></code>.</p>
+<p>In C, the defining class is the one defined with the corresponding
+<code class="docutils literal notranslate"><span class="pre">tp_methods</span></code> or “tp slots” <a class="footnote-reference brackets" href="#tp-slots" id="id2">1</a> entry.
+For methods defined in Python, the defining class is saved in the
+<cite>__class__</cite> closure cell.</p>
+</div>
+<div class="section" id="c-api">
+<h3><a class="toc-backref" href="#id18">C-API</a><a class="headerlink" href="#c-api" title="Permalink to this headline">¶</a></h3>
+<p>The “Python/C API” as described in Python documentation.
+CPython implements the C-API, but other implementations exist.</p>
+</div>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id19">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>PEP 489 introduced a new way to initialize extension modules, which brings
+several advantages to extensions that implement it:</p>
+<ul class="simple">
+<li>The extension modules behave more like their Python counterparts.</li>
+<li>The extension modules can easily support loading into pre-existing
+module objects, which paves the way for extension module support for
+<code class="docutils literal notranslate"><span class="pre">runpy</span></code> or for systems that enable extension module reloading.</li>
+<li>Loading multiple modules from the same extension is possible, which
+makes it possible to test module isolation (a key feature for proper
+sub-interpreter support) from a single interpreter.</li>
+</ul>
+<p>The biggest hurdle for adoption of PEP 489 is allowing access to module state
+from methods of extension types.
+Currently, the way to access this state from extension methods is by looking up
+the module via <code class="docutils literal notranslate"><span class="pre">PyState_FindModule</span></code> (in contrast to module level functions in
+extension modules, which receive a module reference as an argument).
+However, <code class="docutils literal notranslate"><span class="pre">PyState_FindModule</span></code> queries the thread-local state, making it
+relatively costly compared to C level process global access and consequently
+deterring module authors from using it.</p>
+<p>Also, <code class="docutils literal notranslate"><span class="pre">PyState_FindModule</span></code> relies on the assumption that in each
+subinterpreter, there is at most one module corresponding to
+a given <code class="docutils literal notranslate"><span class="pre">PyModuleDef</span></code>.  This assumption does not hold for modules that use
+PEP 489’s multi-phase initialization, so <code class="docutils literal notranslate"><span class="pre">PyState_FindModule</span></code> is unavailable
+for these modules.</p>
+<p>A faster, safer way of accessing module-level state from extension methods
+is needed.</p>
+</div>
+<div class="section" id="background">
+<h2><a class="toc-backref" href="#id20">Background</a><a class="headerlink" href="#background" title="Permalink to this headline">¶</a></h2>
+<p>The implementation of a Python method may need access to one or more of
+the following pieces of information:</p>
+<ul class="simple">
+<li>The instance it is called on (<code class="docutils literal notranslate"><span class="pre">self</span></code>)</li>
+<li>The underlying function</li>
+<li>The <em>defining class</em>, i. e. the class the method was defined in</li>
+<li>The corresponding module</li>
+<li>The module state</li>
+</ul>
+<p>In Python code, the Python-level equivalents may be retrieved as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="k">class</span> <span class="nc">Foo</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">meth</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">instance</span> <span class="o">=</span> <span class="bp">self</span>
+        <span class="n">module_globals</span> <span class="o">=</span> <span class="nb">globals</span><span class="p">()</span>
+        <span class="n">module_object</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="vm">__name__</span><span class="p">]</span>  <span class="c1"># (1)</span>
+        <span class="n">underlying_function</span> <span class="o">=</span> <span class="n">Foo</span><span class="o">.</span><span class="n">meth</span>         <span class="c1"># (1)</span>
+        <span class="n">defining_class</span> <span class="o">=</span> <span class="n">Foo</span>                   <span class="c1"># (1)</span>
+        <span class="n">defining_class</span> <span class="o">=</span> <span class="vm">__class__</span>             <span class="c1"># (2)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The defining class is not <code class="docutils literal notranslate"><span class="pre">type(self)</span></code>, since <code class="docutils literal notranslate"><span class="pre">type(self)</span></code> might
+be a subclass of <code class="docutils literal notranslate"><span class="pre">Foo</span></code>.</p>
+</div>
+<p>The statements marked (1) implicitly rely on name-based lookup via the
+function’s <code class="docutils literal notranslate"><span class="pre">__globals__</span></code>: either the <code class="docutils literal notranslate"><span class="pre">Foo</span></code> attribute to access the defining
+class and Python function object, or <code class="docutils literal notranslate"><span class="pre">__name__</span></code> to find the module object in
+<code class="docutils literal notranslate"><span class="pre">sys.modules</span></code>.</p>
+<p>In Python code, this is feasible, as <code class="docutils literal notranslate"><span class="pre">__globals__</span></code> is set appropriately when
+the function definition is executed, and even if the namespace has been
+manipulated to return a different object, at worst an exception will be raised.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">__class__</span></code> closure, (2), is a safer way to get the defining class, but it
+still relies on <code class="docutils literal notranslate"><span class="pre">__closure__</span></code> being set appropriately.</p>
+<p>By contrast, extension methods are typically implemented as normal C functions.
+This means that they only have access to their arguments and C level thread-local
+and process-global states. Traditionally, many extension modules have stored
+their shared state in C-level process globals, causing problems when:</p>
+<ul class="simple">
+<li>running multiple initialize/finalize cycles in the same process</li>
+<li>reloading modules (e.g. to test conditional imports)</li>
+<li>loading extension modules in subinterpreters</li>
+</ul>
+<p>PEP 3121 attempted to resolve this by offering the <code class="docutils literal notranslate"><span class="pre">PyState_FindModule</span></code> API,
+but this still has significant problems when it comes to extension methods
+(rather than module level functions):</p>
+<ul class="simple">
+<li>it is markedly slower than directly accessing C-level process-global state</li>
+<li>there is still some inherent reliance on process global state that means it
+still doesn’t reliably handle module reloading</li>
+</ul>
+<p>It’s also the case that when looking up a C-level struct such as module state,
+supplying an unexpected object layout can crash the interpreter, so it’s
+significantly more important to ensure that extension methods receive the kind
+of object they expect.</p>
+</div>
+<div class="section" id="proposal">
+<h2><a class="toc-backref" href="#id21">Proposal</a><a class="headerlink" href="#proposal" title="Permalink to this headline">¶</a></h2>
+<p>Currently, a bound extension method (<code class="docutils literal notranslate"><span class="pre">PyCFunction</span></code> or
+<code class="docutils literal notranslate"><span class="pre">PyCFunctionWithKeywords</span></code>) receives only <code class="docutils literal notranslate"><span class="pre">self</span></code>, and (if applicable) the
+supplied positional and keyword arguments.</p>
+<p>While module-level extension functions already receive access to the defining
+module object via their <code class="docutils literal notranslate"><span class="pre">self</span></code> argument, methods of extension types don’t have
+that luxury: they receive the bound instance via <code class="docutils literal notranslate"><span class="pre">self</span></code>, and hence have no
+direct access to the defining class or the module level state.</p>
+<p>The additional module level context described above can be made available with
+two changes.
+Both additions are optional; extension authors need to opt in to start
+using them:</p>
+<ul>
+<li><p>Add a pointer to the module to heap type objects.</p>
+</li>
+<li><p>Pass the defining class to the underlying C function.</p>
+<p>In CPython, the defining class is readily available at the time the built-in
+method object (<code class="docutils literal notranslate"><span class="pre">PyCFunctionObject</span></code>) is created, so it can be stored
+in a new struct that extends <code class="docutils literal notranslate"><span class="pre">PyCFunctionObject</span></code>.</p>
+</li>
+</ul>
+<p>The module state can then be retrieved from the module object via
+<code class="docutils literal notranslate"><span class="pre">PyModule_GetState</span></code>.</p>
+<p>Note that this proposal implies that any type whose methods need to access
+<a class="reference internal" href="#per-module-state">per-module state</a> must be a heap type, rather than a static type. This is
+necessary to support loading multiple module objects from a single
+extension: a static type, as a C-level global, has no information about
+which module object it belongs to.</p>
+<div class="section" id="slot-methods">
+<h3><a class="toc-backref" href="#id22">Slot methods</a><a class="headerlink" href="#slot-methods" title="Permalink to this headline">¶</a></h3>
+<p>The above changes don’t cover slot methods, such as <code class="docutils literal notranslate"><span class="pre">tp_iter</span></code> or <code class="docutils literal notranslate"><span class="pre">nb_add</span></code>.</p>
+<p>The problem with slot methods is that their C API is fixed, so we can’t
+simply add a new argument to pass in the defining class.
+Two possible solutions have been proposed to this problem:</p>
+<ul class="simple">
+<li>Look up the class through walking the MRO.
+This is potentially expensive, but will be usable if performance is not
+a problem (such as when raising a module-level exception).</li>
+<li>Storing a pointer to the defining class of each slot in a separate table,
+<code class="docutils literal notranslate"><span class="pre">__typeslots__</span></code> <a class="footnote-reference brackets" href="#typeslots-mail" id="id3">2</a>.  This is technically feasible and fast,
+but quite invasive.</li>
+</ul>
+<p>Modules affected by this concern also have the option of using
+<a class="reference external" href="https://docs.python.org/3/c-api/init.html#thread-local-storage-support">thread-local state</a> <a class="footnote-reference brackets" href="#id7" id="id8">6</a> or <a class="reference external" href="https://docs.python.org/3/c-api/contextvars.html">PEP 567 context variables</a> <a class="footnote-reference brackets" href="#id9" id="id10">7</a> as a caching mechanism, or
+else defining their own reload-friendly lookup caching scheme.</p>
+<p>Solving the issue generally is deferred to a future PEP.</p>
+</div>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id23">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="adding-module-references-to-heap-types">
+<h3><a class="toc-backref" href="#id24">Adding module references to heap types</a><a class="headerlink" href="#adding-module-references-to-heap-types" title="Permalink to this headline">¶</a></h3>
+<p>A new factory method will be added to the C-API for creating modules:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyObject</span><span class="o">*</span> <span class="n">PyType_FromModuleAndSpec</span><span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="n">module</span><span class="p">,</span>
+                                   <span class="n">PyType_Spec</span> <span class="o">*</span><span class="n">spec</span><span class="p">,</span>
+                                   <span class="n">PyObject</span> <span class="o">*</span><span class="n">bases</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This acts the same as <code class="docutils literal notranslate"><span class="pre">PyType_FromSpecWithBases</span></code>, and additionally associates
+the provided module object with the new type. (In CPython, this will set
+<code class="docutils literal notranslate"><span class="pre">ht_module</span></code> described below.)</p>
+<p>Additionally, an accessor, <code class="docutils literal notranslate"><span class="pre">PyObject</span> <span class="pre">*</span> <span class="pre">PyType_GetModule(PyTypeObject</span> <span class="pre">*)</span></code>
+will be provided.
+It will return the type’s associated module if one is set,
+otherwise it will set <code class="docutils literal notranslate"><span class="pre">TypeError</span></code> and return NULL.
+When given a static type, it will always set <code class="docutils literal notranslate"><span class="pre">TypeError</span></code> and return NULL.</p>
+<p>To implement this in CPython, the <code class="docutils literal notranslate"><span class="pre">PyHeapTypeObject</span></code> struct will get a
+new member, <code class="docutils literal notranslate"><span class="pre">PyObject</span> <span class="pre">*ht_module</span></code>, that will store a pointer to the
+associated module.
+It will be <code class="docutils literal notranslate"><span class="pre">NULL</span></code> by default and should not be modified after the type
+object is created.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">ht_module</span></code> member will not be inherited by subclasses; it needs to be
+set using <code class="docutils literal notranslate"><span class="pre">PyType_FromSpecWithBases</span></code> for each individual type that needs it.</p>
+<p>Usually, creating a class with <code class="docutils literal notranslate"><span class="pre">ht_module</span></code> set will create a reference
+cycle involving the class and the module.
+This is not a problem, as tearing down modules is not a performance-sensitive
+operation, and module-level functions typically also create reference cycles.
+The existing “set all module globals to None” code that breaks function cycles
+through <code class="docutils literal notranslate"><span class="pre">f_globals</span></code> will also break the new cycles through <code class="docutils literal notranslate"><span class="pre">ht_module</span></code>.</p>
+</div>
+<div class="section" id="passing-the-defining-class-to-extension-methods">
+<h3><a class="toc-backref" href="#id25">Passing the defining class to extension methods</a><a class="headerlink" href="#passing-the-defining-class-to-extension-methods" title="Permalink to this headline">¶</a></h3>
+<p>A new signature flag, <code class="docutils literal notranslate"><span class="pre">METH_METHOD</span></code>, will be added for use in
+<code class="docutils literal notranslate"><span class="pre">PyMethodDef.ml_flags</span></code>. Conceptually, it adds <code class="docutils literal notranslate"><span class="pre">defining_class</span></code>
+to the function signature.
+To make the initial implementation easier, the flag can only be used as
+<code class="docutils literal notranslate"><span class="pre">(METH_FASTCALL</span> <span class="pre">|</span> <span class="pre">METH_KEYWORDS</span> <span class="pre">|</span> <span class="pre">METH_METHOD)</span></code>.
+(It can’t be used with other flags like <code class="docutils literal notranslate"><span class="pre">METH_O</span></code> or bare <code class="docutils literal notranslate"><span class="pre">METH_FASTCALL</span></code>,
+though it may be combined with <code class="docutils literal notranslate"><span class="pre">METH_CLASS</span></code> or <code class="docutils literal notranslate"><span class="pre">METH_STATIC</span></code>).</p>
+<p>C functions for methods defined using this flag combination will be called
+using a new C signature called <code class="docutils literal notranslate"><span class="pre">PyCMethod</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyObject</span> <span class="o">*</span><span class="n">PyCMethod</span><span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="bp">self</span><span class="p">,</span>
+                    <span class="n">PyTypeObject</span> <span class="o">*</span><span class="n">defining_class</span><span class="p">,</span>
+                    <span class="n">PyObject</span> <span class="o">*</span><span class="n">const</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+                    <span class="n">size_t</span> <span class="n">nargsf</span><span class="p">,</span>
+                    <span class="n">PyObject</span> <span class="o">*</span><span class="n">kwnames</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Additional combinations like <code class="docutils literal notranslate"><span class="pre">(METH_VARARGS</span> <span class="pre">|</span> <span class="pre">METH_METHOD)</span></code> may be added
+in the future (or even in the initial implementation of this PEP).
+However, <code class="docutils literal notranslate"><span class="pre">METH_METHOD</span></code> should always be an <em>additional</em> flag, i.e., the
+defining class should only be passed in if needed.</p>
+<p>In CPython, a new structure extending <code class="docutils literal notranslate"><span class="pre">PyCFunctionObject</span></code> will be added
+to hold the extra information:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">typedef</span> <span class="n">struct</span> <span class="p">{</span>
+    <span class="n">PyCFunctionObject</span> <span class="n">func</span><span class="p">;</span>
+    <span class="n">PyTypeObject</span> <span class="o">*</span><span class="n">mm_class</span><span class="p">;</span> <span class="o">/*</span> <span class="n">Passed</span> <span class="k">as</span> <span class="s1">&#39;defining_class&#39;</span> <span class="n">arg</span> <span class="n">to</span> <span class="n">the</span> <span class="n">C</span> <span class="n">func</span> <span class="o">*/</span>
+<span class="p">}</span> <span class="n">PyCMethodObject</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">PyCFunction</span></code> implementation will pass <code class="docutils literal notranslate"><span class="pre">mm_class</span></code> into a
+<code class="docutils literal notranslate"><span class="pre">PyCMethod</span></code> C function when it finds the <code class="docutils literal notranslate"><span class="pre">METH_METHOD</span></code> flag being set.
+A new macro <code class="docutils literal notranslate"><span class="pre">PyCFunction_GET_CLASS(cls)</span></code> will be added for easier access
+to <code class="docutils literal notranslate"><span class="pre">mm_class</span></code>.</p>
+<p>C methods may continue to use the other <code class="docutils literal notranslate"><span class="pre">METH_*</span></code> signatures if they do
+not require access to their defining class/module.
+If <code class="docutils literal notranslate"><span class="pre">METH_METHOD</span></code> is not set, casting to <code class="docutils literal notranslate"><span class="pre">PyCMethodObject</span></code> is invalid.</p>
+</div>
+<div class="section" id="argument-clinic">
+<h3><a class="toc-backref" href="#id26">Argument Clinic</a><a class="headerlink" href="#argument-clinic" title="Permalink to this headline">¶</a></h3>
+<p>To support passing the defining class to methods using Argument Clinic,
+a new converter called <code class="docutils literal notranslate"><span class="pre">defining_class</span></code> will be added to CPython’s Argument
+Clinic tool.</p>
+<p>Each method may only have one argument using this converter, and it must
+appear after <code class="docutils literal notranslate"><span class="pre">self</span></code>, or, if <code class="docutils literal notranslate"><span class="pre">self</span></code> is not used, as the first argument.
+The argument will be of type <code class="docutils literal notranslate"><span class="pre">PyTypeObject</span> <span class="pre">*</span></code>.</p>
+<p>When used, Argument Clinic will select
+<code class="docutils literal notranslate"><span class="pre">METH_FASTCALL</span> <span class="pre">|</span> <span class="pre">METH_KEYWORDS</span> <span class="pre">|</span> <span class="pre">METH_METHOD</span></code> as the calling convention.
+The argument will not appear in <code class="docutils literal notranslate"><span class="pre">__text_signature__</span></code>.</p>
+<p>The new converter will initially not be compatible with <code class="docutils literal notranslate"><span class="pre">__init__</span></code> and
+<code class="docutils literal notranslate"><span class="pre">__new__</span></code> methods, which cannot use the <code class="docutils literal notranslate"><span class="pre">METH_METHOD</span></code> convention.</p>
+</div>
+<div class="section" id="helpers">
+<h3><a class="toc-backref" href="#id27">Helpers</a><a class="headerlink" href="#helpers" title="Permalink to this headline">¶</a></h3>
+<p>Getting to <a class="reference internal" href="#per-module-state">per-module state</a> from a heap type is a very common task. To make
+this easier, a helper will be added:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">void</span> <span class="o">*</span><span class="n">PyType_GetModuleState</span><span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="nb">type</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This function takes a heap type and on success, it returns pointer to the state
+of the module that the heap type belongs to.</p>
+<p>On failure, two scenarios may occur. When a non-type object, or a type without a
+module is passed in, <code class="docutils literal notranslate"><span class="pre">TypeError</span></code> is set and <code class="docutils literal notranslate"><span class="pre">NULL</span></code> returned. If the module
+is found, the pointer to the state, which may be <code class="docutils literal notranslate"><span class="pre">NULL</span></code>, is returned without
+setting any exception.</p>
+</div>
+<div class="section" id="modules-converted-in-the-initial-implementation">
+<h3><a class="toc-backref" href="#id28">Modules Converted in the Initial Implementation</a><a class="headerlink" href="#modules-converted-in-the-initial-implementation" title="Permalink to this headline">¶</a></h3>
+<p>To validate the approach, the <code class="docutils literal notranslate"><span class="pre">_elementtree</span></code> module will be modified during
+the initial implementation.</p>
+</div>
+</div>
+<div class="section" id="summary-of-api-changes-and-additions">
+<h2><a class="toc-backref" href="#id29">Summary of API Changes and Additions</a><a class="headerlink" href="#summary-of-api-changes-and-additions" title="Permalink to this headline">¶</a></h2>
+<p>The following will be added to Python C-API:</p>
+<blockquote>
+<div><ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">PyType_FromModuleAndSpec</span></code> function</li>
+<li><code class="docutils literal notranslate"><span class="pre">PyType_GetModule</span></code> function</li>
+<li><code class="docutils literal notranslate"><span class="pre">PyType_GetModuleState</span></code> function</li>
+<li><code class="docutils literal notranslate"><span class="pre">METH_METHOD</span></code> call flag</li>
+<li><code class="docutils literal notranslate"><span class="pre">PyCMethod</span></code> function signature</li>
+</ul>
+</div></blockquote>
+<p>The following additions will be added as CPython implementation details,
+and won’t be documented:</p>
+<blockquote>
+<div><ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">PyCFunction_GET_CLASS</span></code> macro</li>
+<li><code class="docutils literal notranslate"><span class="pre">PyCMethodObject</span></code> struct</li>
+<li><code class="docutils literal notranslate"><span class="pre">ht_module</span></code> member of <code class="docutils literal notranslate"><span class="pre">_heaptypeobject</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">defining_class</span></code> converter in Argument Clinic</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="backwards-compatibility">
+<h2><a class="toc-backref" href="#id30">Backwards Compatibility</a><a class="headerlink" href="#backwards-compatibility" title="Permalink to this headline">¶</a></h2>
+<p>One new pointer is added to all heap types.
+All other changes are adding new functions and structures,
+or changes to private implementation details.</p>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id31">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>An initial implementation is available in a Github repository <a class="footnote-reference brackets" href="#gh-repo" id="id4">3</a>;
+a patchset is at <a class="footnote-reference brackets" href="#gh-patch" id="id5">4</a>.</p>
+</div>
+<div class="section" id="possible-future-extensions">
+<h2><a class="toc-backref" href="#id32">Possible Future Extensions</a><a class="headerlink" href="#possible-future-extensions" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id6">
+<h3><a class="toc-backref" href="#id33">Slot methods</a><a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
+<p>A way of passing defining class (or module state) to slot methods may be
+added in the future.</p>
+<p>A previous version of this PEP proposed a helper function that would determine
+a defining class by searching the MRO for a class that defines a slot to a
+particular function. However, this approach would fail if a class is mutated
+(which is, for heap types, possible from Python code).
+Solving this problem is left to future discussions.</p>
+</div>
+<div class="section" id="easy-creation-of-types-with-module-references">
+<h3><a class="toc-backref" href="#id34">Easy creation of types with module references</a><a class="headerlink" href="#easy-creation-of-types-with-module-references" title="Permalink to this headline">¶</a></h3>
+<p>It would be possible to add a PEP 489 execution slot type to make
+creating heap types significantly easier than calling
+<code class="docutils literal notranslate"><span class="pre">PyType_FromModuleAndSpec</span></code>.
+This is left to a future PEP.</p>
+<p>It may be good to add a good way to create static exception types from the
+limited API. Such exception types could be shared between subinterpreters,
+but instantiated without needing specific module state.
+This is also left to possible future discussions.</p>
+</div>
+<div class="section" id="optimization">
+<h3><a class="toc-backref" href="#id35">Optimization</a><a class="headerlink" href="#optimization" title="Permalink to this headline">¶</a></h3>
+<p>As proposed here, methods defined with the <code class="docutils literal notranslate"><span class="pre">METH_METHOD</span></code> flag only support
+one specific signature.</p>
+<p>If it turns out that other signatures are needed for performance reasons,
+they may be added.</p>
+</div>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id36">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="tp-slots"><span class="brackets"><a class="fn-backref" href="#id2">1</a></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/c-api/typeobj.html#tp-slots">https://docs.python.org/3/c-api/typeobj.html#tp-slots</a></dd>
+<dt class="label" id="typeslots-mail"><span class="brackets"><a class="fn-backref" href="#id3">2</a></span></dt>
+<dd>[Import-SIG] On singleton modules, heap types, and subinterpreters
+(<a class="reference external" href="https://mail.python.org/pipermail/import-sig/2015-July/001035.html">https://mail.python.org/pipermail/import-sig/2015-July/001035.html</a>)</dd>
+<dt class="label" id="gh-repo"><span class="brackets"><a class="fn-backref" href="#id4">3</a></span></dt>
+<dd><a class="reference external" href="https://github.com/Dormouse759/cpython/tree/pep-c-rebase_newer">https://github.com/Dormouse759/cpython/tree/pep-c-rebase_newer</a></dd>
+<dt class="label" id="gh-patch"><span class="brackets"><a class="fn-backref" href="#id5">4</a></span></dt>
+<dd><a class="reference external" href="https://github.com/Dormouse759/cpython/compare/master...Dormouse759:pep-c-rebase_newer">https://github.com/Dormouse759/cpython/compare/master…Dormouse759:pep-c-rebase_newer</a></dd>
+<dt class="label" id="pep-590"><span class="brackets">5</span></dt>
+<dd><a class="reference external" href="https://www.python.org/dev/peps/pep-0590/">https://www.python.org/dev/peps/pep-0590/</a></dd>
+<dt class="label" id="id7"><span class="brackets"><a class="fn-backref" href="#id8">6</a></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/c-api/init.html#thread-local-storage-support">https://docs.python.org/3/c-api/init.html#thread-local-storage-support</a></dd>
+<dt class="label" id="id9"><span class="brackets"><a class="fn-backref" href="#id10">7</a></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/c-api/contextvars.html">https://docs.python.org/3/c-api/contextvars.html</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id37">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document is placed in the public domain or under the
+CC0-1.0-Universal license, whichever is more permissive.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0573.rst">https://github.com/python/peps/blob/master/pep-0573.rst</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0573.rst.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0572.html">PEP 0572</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0574.html">PEP 0574</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 573 – Module State Access from C Extension Methods</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#terminology">Terminology</a><ul>
+<li><a class="reference internal" href="#process-global-state">Process-Global State</a></li>
+<li><a class="reference internal" href="#per-module-state">Per-module State</a></li>
+<li><a class="reference internal" href="#static-type">Static Type</a></li>
+<li><a class="reference internal" href="#heap-type">Heap Type</a></li>
+<li><a class="reference internal" href="#defining-class">Defining Class</a></li>
+<li><a class="reference internal" href="#c-api">C-API</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#background">Background</a></li>
+<li><a class="reference internal" href="#proposal">Proposal</a><ul>
+<li><a class="reference internal" href="#slot-methods">Slot methods</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#adding-module-references-to-heap-types">Adding module references to heap types</a></li>
+<li><a class="reference internal" href="#passing-the-defining-class-to-extension-methods">Passing the defining class to extension methods</a></li>
+<li><a class="reference internal" href="#argument-clinic">Argument Clinic</a></li>
+<li><a class="reference internal" href="#helpers">Helpers</a></li>
+<li><a class="reference internal" href="#modules-converted-in-the-initial-implementation">Modules Converted in the Initial Implementation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#summary-of-api-changes-and-additions">Summary of API Changes and Additions</a></li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#possible-future-extensions">Possible Future Extensions</a><ul>
+<li><a class="reference internal" href="#id6">Slot methods</a></li>
+<li><a class="reference internal" href="#easy-creation-of-types-with-module-references">Easy creation of types with module references</a></li>
+<li><a class="reference internal" href="#optimization">Optimization</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

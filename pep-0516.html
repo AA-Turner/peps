@@ -1,0 +1,588 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 516 – Build system abstraction for pip/conda etc &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 517 – A build-system independent format for source trees" href="pep-0517.html" />
+    <link rel="prev" title="PEP 515 – Underscores in Numeric Literals" href="pep-0515.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 516 – Build system abstraction for pip/conda etc</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-516-build-system-abstraction-for-pip-conda-etc">
+<h1 class="page-title">PEP 516 – Build system abstraction for pip/conda etc<a class="headerlink" href="#pep-516-build-system-abstraction-for-pip-conda-etc" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">516</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Build system abstraction for pip/conda etc</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Robert Collins &lt;rbtcollins&#32;&#97;t&#32;hp.com&gt;,
+Nathaniel Smith &lt;njs&#32;&#97;t&#32;pobox.com&gt;</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even">Nick Coghlan &lt;ncoghlan&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-odd">Discussions-To</dt>
+<dd class="field-odd">distutils-sig &lt;<a class="reference external" href="mailto:distutils-sig&#37;&#52;&#48;python&#46;org?subject=PEP%20516">distutils-sig&#32;&#97;t&#32;python.org</a>&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Rejected</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">26-Oct-2015</dd>
+<dt class="field-odd">Resolution</dt>
+<dd class="field-odd"><a class="reference external" href="https://mail.python.org/pipermail/distutils-sig/2017-May/030517.html">https://mail.python.org/pipermail/distutils-sig/2017-May/030517.html</a></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id11">Abstract</a></li>
+<li><a class="reference internal" href="#pep-rejection" id="id12">PEP Rejection</a></li>
+<li><a class="reference internal" href="#motivation" id="id13">Motivation</a></li>
+<li><a class="reference internal" href="#specification" id="id14">Specification</a><ul>
+<li><a class="reference internal" href="#overview" id="id15">Overview</a></li>
+<li><a class="reference internal" href="#pypa-json" id="id16">pypa.json</a></li>
+<li><a class="reference internal" href="#process-interface" id="id17">Process interface</a></li>
+<li><a class="reference internal" href="#available-format-variables" id="id18">Available format variables</a></li>
+<li><a class="reference internal" href="#available-environment-variables" id="id19">Available environment variables</a></li>
+<li><a class="reference internal" href="#subcommands" id="id20">Subcommands</a></li>
+<li><a class="reference internal" href="#the-build-environment" id="id21">The build environment</a></li>
+<li><a class="reference internal" href="#hermetic-builds" id="id22">Hermetic builds</a></li>
+<li><a class="reference internal" href="#upgrades" id="id23">Upgrades</a></li>
+<li><a class="reference internal" href="#static-metadata-in-sdists" id="id24">Static metadata in sdists</a></li>
+<li><a class="reference internal" href="#handling-of-compiler-options" id="id25">Handling of compiler options</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#examples" id="id26">Examples</a></li>
+<li><a class="reference internal" href="#backwards-compatibility" id="id27">Backwards Compatibility</a><ul>
+<li><a class="reference internal" href="#network-effects" id="id28">Network effects</a></li>
+<li><a class="reference internal" href="#setuptools-shim" id="id29">setuptools shim</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rationale" id="id30">Rationale</a></li>
+<li><a class="reference internal" href="#references" id="id31">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id32">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id11">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP specifies a programmatic interface for pip <a class="footnote-reference brackets" href="#pip" id="id1">1</a> and other
+distribution or installation tools to use when working with Python
+source trees (both the developer tree - e.g. the git tree - and source
+distributions).</p>
+<p>The programmatic interface allows decoupling of pip from its current
+hard dependency on setuptools <a class="footnote-reference brackets" href="#setuptools" id="id2">2</a> able for two
+key reasons:</p>
+<ol class="arabic simple">
+<li>It enables new build systems that may be much easier to use without
+requiring them to even appear to be setuptools.</li>
+<li>It facilitates setuptools itself changing its user interface without
+breaking pip, giving looser coupling.</li>
+</ol>
+<p>The interface needed to permit pip to install build systems also enables pip to
+install build time requirements for packages which is an important step in
+getting pip to full feature parity with the installation components of
+easy-install.</p>
+<p>As PEP-426 <a class="footnote-reference brackets" href="#pep426" id="id3">6</a> is draft, we cannot utilise the metadata format it
+defined. However PEP-427 wheels are in wide use and fairly well specified, so
+we have adopted the METADATA format from that for specifying distribution
+dependencies and general project metadata. PEP-0508 [#pep508] provides a
+self-contained language for describing a dependency, which we encapsulate in a
+thin JSON schema to describe bootstrap dependencies.</p>
+<p>Since Python sdists specified in PEP-0314 [#pep314] are also source trees, this
+PEP is updating the definition of sdists.</p>
+</div>
+<div class="section" id="pep-rejection">
+<h2><a class="toc-backref" href="#id12">PEP Rejection</a><a class="headerlink" href="#pep-rejection" title="Permalink to this headline">¶</a></h2>
+<p>The CLI based approach proposed in this PEP has been rejected in favour of the
+Python API based approach proposed in PEP 517. The specific CLI used to
+communicate with build backends running as isolated subprocesses will be
+considered an implementation detail of front-end developer tool implementations.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id13">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>There is significant pent-up frustration in the Python packaging ecosystem
+around the current lock-in between build system and pip. Breaking that lock-in
+is better for pip, for setuptools, and for other build systems like flit
+<a class="footnote-reference brackets" href="#flit" id="id4">3</a>.</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id14">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="overview">
+<h3><a class="toc-backref" href="#id15">Overview</a><a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h3>
+<p>Build tools will be located by reading a file <code class="docutils literal notranslate"><span class="pre">pypa.json</span></code> from the root
+directory of the source tree. That file describes how to get the build tool
+and the name of the command to run to invoke the tool.</p>
+<p>All tools will be expected to conform to a single command line interface
+modelled on pip’s existing use of the setuptools setup.py interface.</p>
+</div>
+<div class="section" id="pypa-json">
+<h3><a class="toc-backref" href="#id16">pypa.json</a><a class="headerlink" href="#pypa-json" title="Permalink to this headline">¶</a></h3>
+<p>The file <code class="docutils literal notranslate"><span class="pre">pypa.json</span></code> acts as a neutral configuration file for pip and other
+tools that want to build source trees to consult for configuration. The
+absence of a <code class="docutils literal notranslate"><span class="pre">pypa.json</span></code> file in a Python source tree implies a setuptools
+or setuptools compatible build system.</p>
+<p>The JSON has the following schema. Extra keys are ignored, which permits the
+use of <code class="docutils literal notranslate"><span class="pre">pypa.json</span></code> as a configuration file for other related tools. If doing
+that the chosen keys must be namespaced under <code class="docutils literal notranslate"><span class="pre">tools</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s2">&quot;tools&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;flit&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;Flits content here&quot;</span><span class="p">]}}</span>
+</pre></div>
+</div>
+<dl>
+<dt>schema</dt><dd>The version of the schema. This PEP defines version “1”.  Defaults to “1”
+when absent. All tools reading the file must error on an unrecognised
+schema version.</dd>
+<dt>bootstrap_requires</dt><dd><p>Optional list of dependency specifications [#pep508] that must be
+installed before running the build tool. For instance, if using flit, then
+the requirements might be:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bootstrap_requires</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;flit&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+</dd>
+<dt>build_command</dt><dd><p>A mandatory key, this is a list of Python format strings <a class="footnote-reference brackets" href="#strformat" id="id5">10</a>
+describing the command to run. For instance, if using flit then the build
+command might be:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">build_command</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;flit&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>If using a command which is a runnable module fred:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">build_command</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;</span><span class="si">{PYTHON}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;-m&quot;</span><span class="p">,</span> <span class="s2">&quot;fred&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</div>
+<div class="section" id="process-interface">
+<h3><a class="toc-backref" href="#id17">Process interface</a><a class="headerlink" href="#process-interface" title="Permalink to this headline">¶</a></h3>
+<p>The command to run is defined by a simple Python format string <a class="footnote-reference brackets" href="#strformat" id="id6">10</a>.</p>
+<p>This permits build systems with dedicated scripts and those that are invoked
+using “python -m somemodule”.</p>
+<p>Processes will be run with the current working directory set to the root of
+the source tree.</p>
+<p>When run, processes should not read from stdin - while pip currently runs
+build systems with stdin connected to its own stdin, stdout and stderr are
+redirected and no communication with the user is possible.</p>
+<p>As usual with processes, a non-zero exit status indicates an error.</p>
+</div>
+<div class="section" id="available-format-variables">
+<h3><a class="toc-backref" href="#id18">Available format variables</a><a class="headerlink" href="#available-format-variables" title="Permalink to this headline">¶</a></h3>
+<dl>
+<dt>PYTHON</dt><dd><p>The Python interpreter in use. This is important to enable calling things
+which are just Python entry points.</p>
+<blockquote>
+<div>{PYTHON} -m foo</div></blockquote>
+</dd>
+</dl>
+</div>
+<div class="section" id="available-environment-variables">
+<h3><a class="toc-backref" href="#id19">Available environment variables</a><a class="headerlink" href="#available-environment-variables" title="Permalink to this headline">¶</a></h3>
+<p>These variables are set by the caller of the build system and will always be
+available.</p>
+<dl class="simple">
+<dt>PATH</dt><dd>The standard system path.</dd>
+<dt>PYTHON</dt><dd>As for format variables.</dd>
+<dt>PYTHONPATH</dt><dd>Used to control sys.path per the normal Python mechanisms.</dd>
+</dl>
+</div>
+<div class="section" id="subcommands">
+<h3><a class="toc-backref" href="#id20">Subcommands</a><a class="headerlink" href="#subcommands" title="Permalink to this headline">¶</a></h3>
+<p>There are a number of separate subcommands that build systems must support.
+The examples below use a build_command of <code class="docutils literal notranslate"><span class="pre">flit</span></code> for illustrative purposes.</p>
+<dl>
+<dt>build_requires</dt><dd><p>Query build requirements. Build requirements are returned as a UTF-8
+encoded JSON document with one key <code class="docutils literal notranslate"><span class="pre">build_requires</span></code> consisting of a list
+of dependency specifications <a class="footnote-reference brackets" href="#pep508" id="id7">12</a>. Additional keys must be
+ignored. The build_requires command is the only command run without
+setting up a build environment.</p>
+<p>Example command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">flit</span> <span class="n">build_requires</span>
+</pre></div>
+</div>
+</dd>
+<dt>metadata</dt><dd><p>Query project metadata.  The metadata and only the metadata should
+be output on stdout in UTF-8 encoding. pip would run metadata just once to
+determine what other packages need to be downloaded and installed. The
+metadata is output as a wheel METADATA file per PEP-427 <a class="footnote-reference brackets" href="#pep427" id="id8">7</a>.</p>
+<p>Note that the metadata generated by the metadata command, and the metadata
+present in a generated wheel must be identical.</p>
+<p>Example command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">flit</span> <span class="n">metadata</span>
+</pre></div>
+</div>
+</dd>
+<dt>wheel -d OUTPUT_DIR</dt><dd><p>Command to run to build a wheel of the project. OUTPUT_DIR will point to
+an existing directory where the wheel should be output. Stdout and stderr
+have no semantic meaning. Only one file should be output - if more are
+output then pip would pick an arbitrary one to consume.</p>
+<p>Example command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">flit</span> <span class="n">wheel</span> <span class="o">-</span><span class="n">d</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">pip</span><span class="o">-</span><span class="n">build_1234</span>
+</pre></div>
+</div>
+</dd>
+<dt>develop [–prefix PREFIX]</dt><dd><p>Command to do an in-place ‘development’ installation of the project.
+Stdout and stderr have no semantic meaning.</p>
+<p>Not all build systems will be able to perform develop installs. If a build
+system cannot do develop installs, then it should error when run. Note
+that doing so will cause use operations like <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-e</span> <span class="pre">foo</span></code> to
+fail.</p>
+<p>The prefix option is used for defining an alternative prefix for the
+installation. While setuptools has <code class="docutils literal notranslate"><span class="pre">--root</span></code> and <code class="docutils literal notranslate"><span class="pre">--user</span></code> options,
+they can be done equivalently using <code class="docutils literal notranslate"><span class="pre">--prefix</span></code>, and pip or other
+tools that accept <code class="docutils literal notranslate"><span class="pre">--root</span></code> or <code class="docutils literal notranslate"><span class="pre">--user</span></code> options should translate
+appropriately.</p>
+<p>The root option is used to define an alternative root within which the
+command should operate.</p>
+<p>For instance:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">flit</span> <span class="n">develop</span> <span class="o">--</span><span class="n">root</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span> <span class="o">--</span><span class="n">prefix</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span>
+</pre></div>
+</div>
+<p>Should install scripts within <cite>/tmp/usr/local/bin</cite>, even if the Python
+environment in use reports that the sys.prefix is <cite>/usr/</cite> which would lead
+to using <cite>/tmp/usr/bin/</cite>. Similar logic applies for package files etc.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="the-build-environment">
+<h3><a class="toc-backref" href="#id21">The build environment</a><a class="headerlink" href="#the-build-environment" title="Permalink to this headline">¶</a></h3>
+<p>Except for the build_requires command, all commands are run within a build
+environment. No specific implementation is required, but a build environment
+must achieve the following requirements.</p>
+<ol class="arabic simple">
+<li>All dependencies specified by the project’s build_requires must be
+available for import from within <code class="docutils literal notranslate"><span class="pre">$PYTHON</span></code>.</li>
+</ol>
+<ol class="arabic simple">
+<li>All command-line scripts provided by the build-required packages must be
+present in <code class="docutils literal notranslate"><span class="pre">$PATH</span></code>.</li>
+</ol>
+<p>A corollary of this is that build systems cannot assume access to any Python
+package that is not declared as a build_requires or in the Python standard
+library.</p>
+</div>
+<div class="section" id="hermetic-builds">
+<h3><a class="toc-backref" href="#id22">Hermetic builds</a><a class="headerlink" href="#hermetic-builds" title="Permalink to this headline">¶</a></h3>
+<p>This specification does not prescribe whether builds should be hermetic or not.
+Existing build tools like setuptools will use installed versions of build time
+requirements (e.g. setuptools_scm) and only install other versions on version
+conflicts or missing dependencies. However its likely that better consistency
+can be created by always isolation builds and using only the specified dependencies.</p>
+<p>However, there are nuanced problems there - such as how can users force the
+avoidance of a bad version of a build requirement which meets some packages
+dependencies. Future PEPs may tackle this problem, but it is not currently in
+scope - it does not affect the metadata required to coordinate between build
+systems and things that need to do builds, and thus is not PEP material.</p>
+</div>
+<div class="section" id="upgrades">
+<h3><a class="toc-backref" href="#id23">Upgrades</a><a class="headerlink" href="#upgrades" title="Permalink to this headline">¶</a></h3>
+<p>‘pypa.json’ is versioned to permit future changes without requiring
+compatibility.</p>
+<p>The sequence for upgrading either of schemas in a new PEP will be:</p>
+<ol class="arabic simple">
+<li>Issue new PEP defining an updated schema. If the schema is not entirely
+backward compatible then a new version number must be defined.</li>
+<li>Consumers (e.g. pip) implement support for the new schema version.</li>
+<li>Package authors opt into the new schema when they are happy to introduce a
+dependency on the version of ‘pip’ (and potentially other consumers) that
+introduced support for the new schema version.</li>
+</ol>
+<p>The <em>same</em> process will take place for the initial deployment of this PEP:-
+the propagation of the capability to use this PEP without a <a class="reference internal" href="#setuptools-shim">setuptools shim</a>
+will be largely gated by the adoption rate of the first version of pip that
+supports it.</p>
+</div>
+<div class="section" id="static-metadata-in-sdists">
+<h3><a class="toc-backref" href="#id24">Static metadata in sdists</a><a class="headerlink" href="#static-metadata-in-sdists" title="Permalink to this headline">¶</a></h3>
+<p>This PEP does not tackle the current inability to trust static metadata in
+sdists. That is a separate problem to identifying and consuming the build
+system that is in use in a source tree, whether it came from an sdist or not.</p>
+</div>
+<div class="section" id="handling-of-compiler-options">
+<h3><a class="toc-backref" href="#id25">Handling of compiler options</a><a class="headerlink" href="#handling-of-compiler-options" title="Permalink to this headline">¶</a></h3>
+<p>Handling of different compiler options is out of scope for this specification.</p>
+<p>pip currently handles compiler options by appending user supplied strings to
+the command line it runs when running setuptools. This approach is sufficient
+to work with the build system interface defined in this PEP, with the
+exception that globally specified options will stop working globally as
+different build systems evolve. That problem can be solved in pip (or conda or
+other installers) without affecting interoperability.</p>
+<p>In the long term, wheels should be able to express the difference between
+wheels built with one compiler or options vs another, and that is PEP
+material.</p>
+</div>
+</div>
+<div class="section" id="examples">
+<h2><a class="toc-backref" href="#id26">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<p>An example ‘pypa.json’ for using flit:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s2">&quot;bootstrap_requires&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;flit&quot;</span><span class="p">],</span>
+ <span class="s2">&quot;build_command&quot;</span><span class="p">:</span> <span class="s2">&quot;flit&quot;</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>When ‘pip’ reads this it would prepare an environment with flit in it before
+trying to use flit.</p>
+<p>Because flit doesn’t have setup-requires support today,
+<cite>flit build_requires</cite> would just output a constant string:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s2">&quot;build_requires&quot;</span><span class="p">:</span> <span class="p">[]}</span>
+</pre></div>
+</div>
+<p><cite>flit metadata</cite> would interrogate <cite>flit.ini</cite> and marshal the metadata into
+a wheel METADATA file and output that on stdout.</p>
+<p><cite>flit wheel</cite> would need to accept a <cite>-d</cite> parameter that tells it where to output the
+wheel (pip needs this).</p>
+</div>
+<div class="section" id="backwards-compatibility">
+<h2><a class="toc-backref" href="#id27">Backwards Compatibility</a><a class="headerlink" href="#backwards-compatibility" title="Permalink to this headline">¶</a></h2>
+<p>Older pips will remain unable to handle alternative build systems.
+This is no worse than the status quo - and individual build system
+projects can decide whether to include a shim <code class="docutils literal notranslate"><span class="pre">setup.py</span></code> or not.</p>
+<p>All existing build systems that can product wheels and do develop installs
+should be able to run under this abstraction and will only need a specific
+adapter for them constructed and published on PyPI.</p>
+<p>In the absence of a <code class="docutils literal notranslate"><span class="pre">pypa.json</span></code> file, tools like pip should assume a
+setuptools build system and use setuptools commands directly.</p>
+<div class="section" id="network-effects">
+<h3><a class="toc-backref" href="#id28">Network effects</a><a class="headerlink" href="#network-effects" title="Permalink to this headline">¶</a></h3>
+<p>Projects that adopt build systems that are not setuptools compatible - that
+is that they have no setup.py, or the setup.py doesn’t accept commands that
+existing tools try to use - will not be installable by those existing tools.</p>
+<p>Where those projects are used by other projects, this effect will cascade.</p>
+<p>In particular, because pip does not handle setup-requires today, any project
+(A) that adopts a setuptools-incompatible build system and is consumed as a
+setup-requirement by a second project (B) which has not itself transitioned to
+having a pypa.json will make B uninstallable by any version of pip. This is
+because setup.py in B will trigger easy-install when ‘setup.py egg_info’ is
+run by pip, and that will try and fail to install A.</p>
+<p>As such we recommend that tools which are currently used as setup-requires
+either ensure that they keep a <a class="reference internal" href="#setuptools-shim">setuptools shim</a> or find their consumers and
+get them all to upgrade to the use of a <cite>pypa.json</cite> in advance of moving
+themselves. Pragmatically that is impossible, so the advice is to keep a
+setuptools shim indefinitely - both for projects like pbr, setuptools_scm and
+also projects like numpy.</p>
+</div>
+<div class="section" id="setuptools-shim">
+<h3><a class="toc-backref" href="#id29">setuptools shim</a><a class="headerlink" href="#setuptools-shim" title="Permalink to this headline">¶</a></h3>
+<p>It would be possible to write a generic setuptools shim that looks like
+<code class="docutils literal notranslate"><span class="pre">setup.py</span></code> and under the hood uses <code class="docutils literal notranslate"><span class="pre">pypa.json</span></code> to drive the builds. This
+is not needed for pip to use the system, but would allow package authors to
+use the new features while still retaining compatibility with older pip
+versions.</p>
+</div>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id30">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>This PEP started with a long mailing list thread on distutils-sig <a class="footnote-reference brackets" href="#thread" id="id9">8</a>.
+Subsequent to that an online meeting was held to debug all the positions folk
+had.  Minutes from that were posted to the list <a class="footnote-reference brackets" href="#minutes" id="id10">9</a>.</p>
+<p>This specification is a translation of the consensus reached there into PEP
+form, along with some arbitrary choices on the minor remaining questions.</p>
+<p>The basic heuristic for the design has been to focus on introducing an
+abstraction without requiring development not strictly tied to the
+abstraction. Where the gap is small to improvements, or the cost of using the
+existing interface is very high, then we’ve taken on having the improvement as
+a dependency, but otherwise deferred such to future iterations.</p>
+<p>We chose wheel METADATA files rather than defining a new specification,
+because pip can already handle wheel .dist-info directories which encode all
+the necessary data in a METADATA file. PEP-426 can’t be used as it’s still
+draft, and defining a new metadata format, while we should do that, is a
+separate problem. Using a directory on disk would not add any value to the
+interface (pip has to do that today due to limitations in the setuptools
+CLI).</p>
+<p>The use of ‘develop’ as a command is because there is no PEP specifying the
+interoperability of things that do what ‘setuptools develop’ does - so we’ll
+need to define that before pip can take on the responsibility for doing the
+‘develop’ step. Once that’s done we can issue a successor PEP to this one.</p>
+<p>The use of a command line API rather than a Python API is a little
+contentious. Fundamentally anything can be made to work, and the pip
+maintainers have spoken strongly in favour of retaining a process based
+interface - something that is mature and robust in pip today.</p>
+<p>The choice of JSON as a file format is a compromise between several
+constraints. Firstly there is no stdlib YAML interpreter, nor one for any of
+the other low-friction structured file formats. Secondly, INIParser is a poor
+format for a number of reasons, primarily that it has very minimal structure -
+but pip’s maintainers are not fond of it. JSON is in the stdlib, has
+sufficient structure to permit embedding anything we want in future without
+requiring embedded DSL’s.</p>
+<p>Donald suggested using <code class="docutils literal notranslate"><span class="pre">setup.cfg</span></code> and the existing setuptools command line
+rather than inventing something new. While that would permit interoperability
+with less visible changes, it requires nearly as much engineering on the pip
+side - looking for the new key in setup.cfg, implementing the non-installed
+environments to run the build in. And the desire from other build system
+authors not to confuse their users by delivering something that looks like but
+behaves quite differently to setuptools seems like a bigger issue than pip
+learning how to invoke a custom build tool.</p>
+<p>The metadata and wheel commands are required to have consistent metadata to
+avoid a race condition that could otherwise happen where pip reads the
+metadata, acts on it, and then the resulting wheel has incompatible
+requirements. That race is exploited today by packages using PEP-426
+environment markers, to work with older pip versions that do not support
+environment markers. That exploit is not needed with this PEP, because either
+the setuptools shim is in use (with older pip versions), or an environment
+marker ready pip is in use. The setuptools shim can take care of exploiting
+the difference older pip versions require.</p>
+<p>We discussed having an sdist verb. The main driver for this was to make sure
+that build systems were able to produce sdists that pip can build - but this is
+circular: the whole point of this PEP is to let pip consume such sdists or VCS
+source trees reliably and without requiring an implementation of setuptools.
+Being able to create new sdists from existing source trees isn’t a thing pip
+does today, and while there is a PR to do that as part of building from
+source, it is contentious and lacks consensus. Rather than impose a
+requirement on all build systems, we are treating it as a YAGNI, and will add
+such a verb in a future version of the interface if required. The existing
+PEP-314 [#pep314] requirements for sdists still apply, and distutils or setuptools
+users can use <code class="docutils literal notranslate"><span class="pre">setup.py</span> <span class="pre">sdist</span></code> to create an sdist. Other tools should create
+sdists compatible with PEP-314 [#pep314]. Note that pip itself does not require
+PEP-314 compatibility - it does not use any of the metadata from sdists - they
+are treated like source trees from disk or version control.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id31">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="pip"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>pip, the recommended installer for Python packages
+(<a class="reference external" href="http://pip.readthedocs.org/en/stable/">http://pip.readthedocs.org/en/stable/</a>)</dd>
+<dt class="label" id="setuptools"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>setuptools, the de facto Python package build system
+(<a class="reference external" href="https://pythonhosted.org/setuptools/">https://pythonhosted.org/setuptools/</a>)</dd>
+<dt class="label" id="flit"><span class="brackets"><a class="fn-backref" href="#id4">3</a></span></dt>
+<dd>flit, a simple way to put packages in PyPI
+(<a class="reference external" href="http://flit.readthedocs.org/en/latest/">http://flit.readthedocs.org/en/latest/</a>)</dd>
+<dt class="label" id="pypi"><span class="brackets">4</span></dt>
+<dd>PyPI, the Python Package Index
+(<a class="reference external" href="https://pypi.python.org/">https://pypi.python.org/</a>)</dd>
+<dt class="label" id="shellvars"><span class="brackets">5</span></dt>
+<dd>Shellvars, an implementation of shell variable rules for Python.
+(<a class="reference external" href="https://github.com/testing-cabal/shellvars">https://github.com/testing-cabal/shellvars</a>)</dd>
+<dt class="label" id="pep426"><span class="brackets"><a class="fn-backref" href="#id3">6</a></span></dt>
+<dd>PEP-426, Python distribution metadata.
+(<a class="reference external" href="https://www.python.org/dev/peps/pep-0426/">https://www.python.org/dev/peps/pep-0426/</a>)</dd>
+<dt class="label" id="pep427"><span class="brackets"><a class="fn-backref" href="#id8">7</a></span></dt>
+<dd>PEP-427, Python distribution metadata.
+(<a class="reference external" href="https://www.python.org/dev/peps/pep-0427/">https://www.python.org/dev/peps/pep-0427/</a>)</dd>
+<dt class="label" id="thread"><span class="brackets"><a class="fn-backref" href="#id9">8</a></span></dt>
+<dd>The kick-off thread.
+(<a class="reference external" href="https://mail.python.org/pipermail/distutils-sig/2015-October/026925.html">https://mail.python.org/pipermail/distutils-sig/2015-October/026925.html</a>)</dd>
+<dt class="label" id="minutes"><span class="brackets"><a class="fn-backref" href="#id10">9</a></span></dt>
+<dd>The minutes.
+(<a class="reference external" href="https://mail.python.org/pipermail/distutils-sig/2015-October/027214.html">https://mail.python.org/pipermail/distutils-sig/2015-October/027214.html</a>)</dd>
+<dt class="label" id="strformat"><span class="brackets">10</span><span class='fn-backref'><em> (<a href="#id5">1</a>, <a href="#id6">2</a>) </em></span></dt>
+<dd>The Python string formatting syntax.
+(<a class="reference external" href="https://docs.python.org/3.1/library/string.html#format-string-syntax">https://docs.python.org/3.1/library/string.html#format-string-syntax</a>)</dd>
+<dt class="label" id="pep314"><span class="brackets">11</span></dt>
+<dd>Metadata for Python Software Packages v1.1
+(<a class="reference external" href="https://www.python.org/dev/peps/pep-0314/">https://www.python.org/dev/peps/pep-0314/</a>)</dd>
+<dt class="label" id="pep508"><span class="brackets"><a class="fn-backref" href="#id7">12</a></span></dt>
+<dd>Dependency specification language PEP.
+(<a class="reference external" href="https://www.python.org/dev/peps/pep-0508/">https://www.python.org/dev/peps/pep-0508/</a>)</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id32">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0516.txt">https://github.com/python/peps/blob/master/pep-0516.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0516.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0515.html">PEP 0515</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0517.html">PEP 0517</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 516 – Build system abstraction for pip/conda etc</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#pep-rejection">PEP Rejection</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#overview">Overview</a></li>
+<li><a class="reference internal" href="#pypa-json">pypa.json</a></li>
+<li><a class="reference internal" href="#process-interface">Process interface</a></li>
+<li><a class="reference internal" href="#available-format-variables">Available format variables</a></li>
+<li><a class="reference internal" href="#available-environment-variables">Available environment variables</a></li>
+<li><a class="reference internal" href="#subcommands">Subcommands</a></li>
+<li><a class="reference internal" href="#the-build-environment">The build environment</a></li>
+<li><a class="reference internal" href="#hermetic-builds">Hermetic builds</a></li>
+<li><a class="reference internal" href="#upgrades">Upgrades</a></li>
+<li><a class="reference internal" href="#static-metadata-in-sdists">Static metadata in sdists</a></li>
+<li><a class="reference internal" href="#handling-of-compiler-options">Handling of compiler options</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#examples">Examples</a></li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a><ul>
+<li><a class="reference internal" href="#network-effects">Network effects</a></li>
+<li><a class="reference internal" href="#setuptools-shim">setuptools shim</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

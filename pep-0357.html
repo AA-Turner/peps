@@ -1,0 +1,351 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 357 – Allowing Any Object to be Used for Slicing &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 358 – The “bytes” Object" href="pep-0358.html" />
+    <link rel="prev" title="PEP 356 – Python 2.5 Release Schedule" href="pep-0356.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 357 – Allowing Any Object to be Used for Slicing</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-357-allowing-any-object-to-be-used-for-slicing">
+<h1 class="page-title">PEP 357 – Allowing Any Object to be Used for Slicing<a class="headerlink" href="#pep-357-allowing-any-object-to-be-used-for-slicing" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">357</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Allowing Any Object to be Used for Slicing</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Travis Oliphant &lt;oliphant&#32;&#97;t&#32;ee.byu.edu&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">09-Feb-2006</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.5</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id3">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id4">Rationale</a></li>
+<li><a class="reference internal" href="#proposal" id="id5">Proposal</a></li>
+<li><a class="reference internal" href="#specification" id="id6">Specification</a></li>
+<li><a class="reference internal" href="#implementation-plan" id="id7">Implementation Plan</a></li>
+<li><a class="reference internal" href="#discussion-questions" id="id8">Discussion Questions</a><ul>
+<li><a class="reference internal" href="#speed" id="id9">Speed</a></li>
+<li><a class="reference internal" href="#why-not-use-nb-int-which-is-already-there" id="id10">Why not use <code class="docutils literal notranslate"><span class="pre">nb_int</span></code> which is already there?</a></li>
+<li><a class="reference internal" href="#why-the-name-index" id="id11">Why the name <code class="docutils literal notranslate"><span class="pre">__index__</span></code>?</a></li>
+<li><a class="reference internal" href="#why-return-pyobject-from-nb-index" id="id12">Why return <code class="docutils literal notranslate"><span class="pre">PyObject</span> <span class="pre">*</span></code> from <code class="docutils literal notranslate"><span class="pre">nb_index</span></code>?</a></li>
+<li><a class="reference internal" href="#why-can-t-index-return-any-object-with-the-nb-index-method" id="id13">Why can’t <code class="docutils literal notranslate"><span class="pre">__index__</span></code> return any object with the <code class="docutils literal notranslate"><span class="pre">nb_index</span></code> method?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#reference-implementation" id="id14">Reference Implementation</a></li>
+<li><a class="reference internal" href="#references" id="id15">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id16">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id3">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes adding an <code class="docutils literal notranslate"><span class="pre">nb_index</span></code> slot in <code class="docutils literal notranslate"><span class="pre">PyNumberMethods</span></code> and an
+<code class="docutils literal notranslate"><span class="pre">__index__</span></code> special method so that arbitrary objects can be used
+whenever integers are explicitly needed in Python, such as in slice
+syntax (from which the slot gets its name).</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id4">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>Currently integers and long integers play a special role in
+slicing in that they are the only objects allowed in slice
+syntax. In other words, if X is an object implementing the
+sequence protocol, then <code class="docutils literal notranslate"><span class="pre">X[obj1:obj2]</span></code> is only valid if <code class="docutils literal notranslate"><span class="pre">obj1</span></code> and
+<code class="docutils literal notranslate"><span class="pre">obj2</span></code> are both integers or long integers.  There is no way for <code class="docutils literal notranslate"><span class="pre">obj1</span></code>
+and <code class="docutils literal notranslate"><span class="pre">obj2</span></code> to tell Python that they could be reasonably used as
+indexes into a sequence.  This is an unnecessary limitation.</p>
+<p>In NumPy, for example, there are 8 different integer scalars
+corresponding to unsigned and signed integers of 8, 16, 32, and 64
+bits.  These type-objects could reasonably be used as integers in
+many places where Python expects true integers but cannot inherit from
+the Python integer type because of incompatible memory layouts.
+There should be some way to be able to tell Python that an object can
+behave like an integer.</p>
+<p>It is not possible to use the <code class="docutils literal notranslate"><span class="pre">nb_int</span></code> (and <code class="docutils literal notranslate"><span class="pre">__int__</span></code> special method)
+for this purpose because that method is used to <em>coerce</em> objects
+to integers.  It would be inappropriate to allow every object that
+can be coerced to an integer to be used as an integer everywhere
+Python expects a true integer.  For example, if <code class="docutils literal notranslate"><span class="pre">__int__</span></code> were used
+to convert an object to an integer in slicing, then float objects
+would be allowed in slicing and <code class="docutils literal notranslate"><span class="pre">x[3.2:5.8]</span></code> would not raise an error
+as it should.</p>
+</div>
+<div class="section" id="proposal">
+<h2><a class="toc-backref" href="#id5">Proposal</a><a class="headerlink" href="#proposal" title="Permalink to this headline">¶</a></h2>
+<p>Add an <code class="docutils literal notranslate"><span class="pre">nb_index</span></code> slot to <code class="docutils literal notranslate"><span class="pre">PyNumberMethods</span></code>, and a corresponding
+<code class="docutils literal notranslate"><span class="pre">__index__</span></code> special method.  Objects could define a function to
+place in the <code class="docutils literal notranslate"><span class="pre">nb_index</span></code> slot that returns a Python integer
+(either an int or a long). This integer can
+then be appropriately converted to a <code class="docutils literal notranslate"><span class="pre">Py_ssize_t</span></code> value whenever
+Python needs one such as in <code class="docutils literal notranslate"><span class="pre">PySequence_GetSlice</span></code>,
+<code class="docutils literal notranslate"><span class="pre">PySequence_SetSlice</span></code>, and <code class="docutils literal notranslate"><span class="pre">PySequence_DelSlice</span></code>.</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id6">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">nb_index</span></code> slot will have the following signature:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyObject</span> <span class="o">*</span><span class="n">index_func</span> <span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="bp">self</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The returned object must be a Python <code class="docutils literal notranslate"><span class="pre">IntType</span></code> or
+Python <code class="docutils literal notranslate"><span class="pre">LongType</span></code>. NULL should be returned on
+error with an appropriate error set.</p>
+</li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">__index__</span></code> special method will have the signature:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="fm">__index__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">obj</span>
+</pre></div>
+</div>
+<p>where obj must be either an int or a long.</p>
+</li>
+<li><p>3 new abstract C-API functions will be added</p>
+<ol class="loweralpha">
+<li><p>The first checks to see if the object supports the index
+slot and if it is filled in.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">int</span> <span class="n">PyIndex_Check</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This will return true if the object defines the <code class="docutils literal notranslate"><span class="pre">nb_index</span></code>
+slot.</p>
+</li>
+<li><p>The second is a simple wrapper around the <code class="docutils literal notranslate"><span class="pre">nb_index</span></code> call that
+raises <code class="docutils literal notranslate"><span class="pre">PyExc_TypeError</span></code> if the call is not available or if it
+doesn’t return an int or long.  Because the
+<code class="docutils literal notranslate"><span class="pre">PyIndex_Check</span></code> is performed inside the <code class="docutils literal notranslate"><span class="pre">PyNumber_Index</span></code> call
+you can call it directly and manage any error rather than
+check for compatibility first.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyObject</span> <span class="o">*</span><span class="n">PyNumber_Index</span> <span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="n">obj</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p>The third call helps deal with the common situation of
+actually needing a <code class="docutils literal notranslate"><span class="pre">Py_ssize_t</span></code> value from the object to use for
+indexing or other needs.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Py_ssize_t</span> <span class="n">PyNumber_AsSsize_t</span><span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="n">obj</span><span class="p">,</span> <span class="n">PyObject</span> <span class="o">*</span><span class="n">exc</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The function calls the <code class="docutils literal notranslate"><span class="pre">nb_index</span></code> slot of obj if it is
+available and then converts the returned Python integer into
+a <code class="docutils literal notranslate"><span class="pre">Py_ssize_t</span></code> value.  If this goes well, then the value is
+returned.  The second argument allows control over what
+happens if the integer returned from <code class="docutils literal notranslate"><span class="pre">nb_index</span></code> cannot fit
+into a <code class="docutils literal notranslate"><span class="pre">Py_ssize_t</span></code> value.</p>
+<p>If exc is NULL, then the returned value will be clipped to
+<code class="docutils literal notranslate"><span class="pre">PY_SSIZE_T_MAX</span></code> or <code class="docutils literal notranslate"><span class="pre">PY_SSIZE_T_MIN</span></code> depending on whether the
+<code class="docutils literal notranslate"><span class="pre">nb_index</span></code> slot of obj returned a positive or negative
+integer.  If exc is non-NULL, then it is the error object
+that will be set to replace the <code class="docutils literal notranslate"><span class="pre">PyExc_OverflowError</span></code> that was
+raised when the Python integer or long was converted to <code class="docutils literal notranslate"><span class="pre">Py_ssize_t</span></code>.</p>
+</li>
+</ol>
+</li>
+<li>A new <code class="docutils literal notranslate"><span class="pre">operator.index(obj)</span></code> function will be added that calls
+equivalent of <code class="docutils literal notranslate"><span class="pre">obj.__index__()</span></code> and raises an error if obj does not implement
+the special method.</li>
+</ol>
+</div>
+<div class="section" id="implementation-plan">
+<h2><a class="toc-backref" href="#id7">Implementation Plan</a><a class="headerlink" href="#implementation-plan" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li>Add the <code class="docutils literal notranslate"><span class="pre">nb_index</span></code> slot in <code class="docutils literal notranslate"><span class="pre">object.h</span></code> and modify <code class="docutils literal notranslate"><span class="pre">typeobject.c</span></code> to
+create the <code class="docutils literal notranslate"><span class="pre">__index__</span></code> method</li>
+<li>Change the <code class="docutils literal notranslate"><span class="pre">ISINT</span></code> macro in <code class="docutils literal notranslate"><span class="pre">ceval.c</span></code> to <code class="docutils literal notranslate"><span class="pre">ISINDEX</span></code> and alter it to
+accommodate objects with the index slot defined.</li>
+<li>Change the <code class="docutils literal notranslate"><span class="pre">_PyEval_SliceIndex</span></code> function to accommodate objects
+with the index slot defined.</li>
+<li>Change all builtin objects (e.g. lists) that use the <code class="docutils literal notranslate"><span class="pre">as_mapping</span></code>
+slots for subscript access and use a special-check for integers to
+check for the slot as well.</li>
+<li>Add the <code class="docutils literal notranslate"><span class="pre">nb_index</span></code> slot to integers and long_integers
+(which just return themselves)</li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">PyNumber_Index</span></code> C-API to return an integer from any
+Python Object that has the <code class="docutils literal notranslate"><span class="pre">nb_index</span></code> slot.</li>
+<li>Add the <code class="docutils literal notranslate"><span class="pre">operator.index(x)</span></code> function.</li>
+<li>Alter <code class="docutils literal notranslate"><span class="pre">arrayobject.c</span></code> and <code class="docutils literal notranslate"><span class="pre">mmapmodule.c</span></code> to use the new C-API for their
+sub-scripting and other needs.</li>
+<li>Add unit-tests</li>
+</ol>
+</div>
+<div class="section" id="discussion-questions">
+<h2><a class="toc-backref" href="#id8">Discussion Questions</a><a class="headerlink" href="#discussion-questions" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="speed">
+<h3><a class="toc-backref" href="#id9">Speed</a><a class="headerlink" href="#speed" title="Permalink to this headline">¶</a></h3>
+<p>Implementation should not slow down Python because integers and long
+integers used as indexes will complete in the same number of
+instructions.  The only change will be that what used to generate
+an error will now be acceptable.</p>
+</div>
+<div class="section" id="why-not-use-nb-int-which-is-already-there">
+<h3><a class="toc-backref" href="#id10">Why not use <code class="docutils literal notranslate"><span class="pre">nb_int</span></code> which is already there?</a><a class="headerlink" href="#why-not-use-nb-int-which-is-already-there" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">nb_int</span></code> method is used for coercion and so means something
+fundamentally different than what is requested here.  This PEP
+proposes a method for something that <em>can</em> already be thought of as
+an integer communicate that information to Python when it needs an
+integer.  The biggest example of why using <code class="docutils literal notranslate"><span class="pre">nb_int</span></code> would be a bad
+thing is that float objects already define the <code class="docutils literal notranslate"><span class="pre">nb_int</span></code> method, but
+float objects <em>should not</em> be used as indexes in a sequence.</p>
+</div>
+<div class="section" id="why-the-name-index">
+<h3><a class="toc-backref" href="#id11">Why the name <code class="docutils literal notranslate"><span class="pre">__index__</span></code>?</a><a class="headerlink" href="#why-the-name-index" title="Permalink to this headline">¶</a></h3>
+<p>Some questions were raised regarding the name <code class="docutils literal notranslate"><span class="pre">__index__</span></code> when other
+interpretations of the slot are possible.  For example, the slot
+can be used any time Python requires an integer internally (such
+as in <code class="docutils literal notranslate"><span class="pre">&quot;mystring&quot;</span> <span class="pre">*</span> <span class="pre">3</span></code>).  The name was suggested by Guido because
+slicing syntax is the biggest reason for having such a slot and
+in the end no better name emerged. See the discussion thread <a class="footnote-reference brackets" href="#id2" id="id1">1</a>
+for examples of names that were suggested such as “<code class="docutils literal notranslate"><span class="pre">__discrete__</span></code>” and
+“<code class="docutils literal notranslate"><span class="pre">__ordinal__</span></code>”.</p>
+</div>
+<div class="section" id="why-return-pyobject-from-nb-index">
+<h3><a class="toc-backref" href="#id12">Why return <code class="docutils literal notranslate"><span class="pre">PyObject</span> <span class="pre">*</span></code> from <code class="docutils literal notranslate"><span class="pre">nb_index</span></code>?</a><a class="headerlink" href="#why-return-pyobject-from-nb-index" title="Permalink to this headline">¶</a></h3>
+<p>Initially <code class="docutils literal notranslate"><span class="pre">Py_ssize_t</span></code> was selected as the return type for the
+<code class="docutils literal notranslate"><span class="pre">nb_index</span></code> slot.  However, this led to an inability to track and
+distinguish overflow and underflow errors without ugly and brittle
+hacks. As the <code class="docutils literal notranslate"><span class="pre">nb_index</span></code> slot is used in at least 3 different ways
+in the Python core (to get an integer, to get a slice end-point,
+and to get a sequence index), there is quite a bit of flexibility
+needed to handle all these cases.  The importance of having the
+necessary flexibility to handle all the use cases is critical.
+For example, the initial implementation that returned <code class="docutils literal notranslate"><span class="pre">Py_ssize_t</span></code> for
+<code class="docutils literal notranslate"><span class="pre">nb_index</span></code> led to the discovery that on a 32-bit machine with &gt;=2GB of RAM
+<code class="docutils literal notranslate"><span class="pre">s</span> <span class="pre">=</span> <span class="pre">'x'</span> <span class="pre">*</span> <span class="pre">(2**100)</span></code> works but <code class="docutils literal notranslate"><span class="pre">len(s)</span></code> was clipped at 2147483647.
+Several fixes were suggested but eventually it was decided that
+<code class="docutils literal notranslate"><span class="pre">nb_index</span></code> needed to return a Python Object similar to the <code class="docutils literal notranslate"><span class="pre">nb_int</span></code>
+and <code class="docutils literal notranslate"><span class="pre">nb_long</span></code> slots in order to handle overflow correctly.</p>
+</div>
+<div class="section" id="why-can-t-index-return-any-object-with-the-nb-index-method">
+<h3><a class="toc-backref" href="#id13">Why can’t <code class="docutils literal notranslate"><span class="pre">__index__</span></code> return any object with the <code class="docutils literal notranslate"><span class="pre">nb_index</span></code> method?</a><a class="headerlink" href="#why-can-t-index-return-any-object-with-the-nb-index-method" title="Permalink to this headline">¶</a></h3>
+<p>This would allow infinite recursion in many different ways that are not
+easy to check for.  This restriction is similar to the requirement that
+<code class="docutils literal notranslate"><span class="pre">__nonzero__</span></code> return an int or a bool.</p>
+</div>
+</div>
+<div class="section" id="reference-implementation">
+<h2><a class="toc-backref" href="#id14">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>Submitted as patch 1436368 to SourceForge.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id15">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p>Travis Oliphant, PEP for adding an sq_index slot so that any object, a
+or b, can be used in X[a:b] notation,</p>
+<p><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2006-February/thread.html#60594">https://mail.python.org/pipermail/python-dev/2006-February/thread.html#60594</a></p>
+</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id16">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document is placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0357.txt">https://github.com/python/peps/blob/master/pep-0357.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0357.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0356.html">PEP 0356</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0358.html">PEP 0358</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 357 – Allowing Any Object to be Used for Slicing</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#proposal">Proposal</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#implementation-plan">Implementation Plan</a></li>
+<li><a class="reference internal" href="#discussion-questions">Discussion Questions</a><ul>
+<li><a class="reference internal" href="#speed">Speed</a></li>
+<li><a class="reference internal" href="#why-not-use-nb-int-which-is-already-there">Why not use <code class="docutils literal notranslate"><span class="pre">nb_int</span></code> which is already there?</a></li>
+<li><a class="reference internal" href="#why-the-name-index">Why the name <code class="docutils literal notranslate"><span class="pre">__index__</span></code>?</a></li>
+<li><a class="reference internal" href="#why-return-pyobject-from-nb-index">Why return <code class="docutils literal notranslate"><span class="pre">PyObject</span> <span class="pre">*</span></code> from <code class="docutils literal notranslate"><span class="pre">nb_index</span></code>?</a></li>
+<li><a class="reference internal" href="#why-can-t-index-return-any-object-with-the-nb-index-method">Why can’t <code class="docutils literal notranslate"><span class="pre">__index__</span></code> return any object with the <code class="docutils literal notranslate"><span class="pre">nb_index</span></code> method?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

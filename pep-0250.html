@@ -1,0 +1,241 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 250 – Using site-packages on Windows &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 251 – Python 2.2 Release Schedule" href="pep-0251.html" />
+    <link rel="prev" title="PEP 249 – Python Database API Specification v2.0" href="pep-0249.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 250 – Using site-packages on Windows</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-250-using-site-packages-on-windows">
+<h1 class="page-title">PEP 250 – Using site-packages on Windows<a class="headerlink" href="#pep-250-using-site-packages-on-windows" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">250</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Using site-packages on Windows</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">p.f.moore&#32;&#97;t&#32;gmail.com (Paul Moore)</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">30-Mar-2001</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.2</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">30-Mar-2001</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id2">Abstract</a></li>
+<li><a class="reference internal" href="#motivation" id="id3">Motivation</a></li>
+<li><a class="reference internal" href="#implementation" id="id4">Implementation</a></li>
+<li><a class="reference internal" href="#notes" id="id5">Notes</a></li>
+<li><a class="reference internal" href="#open-issues" id="id6">Open Issues</a></li>
+<li><a class="reference internal" href="#copyright" id="id7">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id2">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>The standard Python distribution includes a directory
+<code class="docutils literal notranslate"><span class="pre">Lib/site-packages</span></code>, which is used on Unix platforms to hold
+locally-installed modules and packages.  The <code class="docutils literal notranslate"><span class="pre">site.py</span></code> module
+distributed with Python includes support for locating other
+modules in the site-packages directory.</p>
+<p>This PEP proposes that the site-packages directory should be used
+on the Windows platform in a similar manner.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id3">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>On Windows platforms, the default setting for <code class="docutils literal notranslate"><span class="pre">sys.path</span></code> does not
+include a directory suitable for users to install locally
+developed modules.  The “expected” location appears to be the
+directory containing the Python executable itself.  This is also
+the location where distutils (and distutils-generated installers)
+installs packages.  Including locally developed code in the same
+directory as installed executables is not good practice.</p>
+<p>Clearly, users can manipulate <code class="docutils literal notranslate"><span class="pre">sys.path</span></code>, either in a locally
+modified <code class="docutils literal notranslate"><span class="pre">site.py</span></code>, or in a suitable <code class="docutils literal notranslate"><span class="pre">sitecustomize.py</span></code>, or even via
+<code class="docutils literal notranslate"><span class="pre">.pth</span></code> files.  However, there should be a standard location for such
+files, rather than relying on every individual site having to set
+their own policy.</p>
+<p>In addition, with distutils becoming more prevalent as a means of
+distributing modules, the need for a standard install location for
+distributed modules will become more common.  It would be better
+to define such a standard now, rather than later when more
+distutils-based packages exist which will need rebuilding.</p>
+<p>It is relevant to note that prior to Python 2.1, the site-packages
+directory was not included in <code class="docutils literal notranslate"><span class="pre">sys.path</span></code> for Macintosh platforms.
+This has been changed in 2.1, and Macintosh includes <code class="docutils literal notranslate"><span class="pre">sys.path</span></code> now,
+leaving Windows as the only major platform with no site-specific
+modules directory.</p>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id4">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>The implementation of this feature is fairly trivial.  All that
+would be required is a change to <code class="docutils literal notranslate"><span class="pre">site.py</span></code>, to change the section
+setting sitedirs.  The Python 2.1 version has:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">sep</span> <span class="o">==</span> <span class="s1">&#39;/&#39;</span><span class="p">:</span>
+    <span class="n">sitedirs</span> <span class="o">=</span> <span class="p">[</span><span class="n">makepath</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span>
+                        <span class="s2">&quot;lib&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;python&quot;</span> <span class="o">+</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span><span class="p">[:</span><span class="mi">3</span><span class="p">],</span>
+                        <span class="s2">&quot;site-packages&quot;</span><span class="p">),</span>
+                <span class="n">makepath</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="s2">&quot;lib&quot;</span><span class="p">,</span> <span class="s2">&quot;site-python&quot;</span><span class="p">)]</span>
+<span class="k">elif</span> <span class="n">os</span><span class="o">.</span><span class="n">sep</span> <span class="o">==</span> <span class="s1">&#39;:&#39;</span><span class="p">:</span>
+    <span class="n">sitedirs</span> <span class="o">=</span> <span class="p">[</span><span class="n">makepath</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="s2">&quot;lib&quot;</span><span class="p">,</span> <span class="s2">&quot;site-packages&quot;</span><span class="p">)]</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">sitedirs</span> <span class="o">=</span> <span class="p">[</span><span class="n">prefix</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>A suitable change would be to simply replace the last 4 lines with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">else</span><span class="p">:</span>
+    <span class="n">sitedirs</span> <span class="o">==</span> <span class="p">[</span><span class="n">prefix</span><span class="p">,</span> <span class="n">makepath</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="s2">&quot;lib&quot;</span><span class="p">,</span> <span class="s2">&quot;site-packages&quot;</span><span class="p">)]</span>
+</pre></div>
+</div>
+<p>Changes would also be required to distutils, to reflect this change
+in policy. A patch is available on Sourceforge, patch ID 445744,
+which implements this change.  Note that the patch checks the Python
+version and only invokes the new behaviour for Python versions from
+2.2 onwards. This is to ensure that distutils remains compatible
+with earlier versions of Python.</p>
+<p>Finally, the executable code which implements the Windows installer
+used by the <code class="docutils literal notranslate"><span class="pre">bdist_wininst</span></code> command will need changing to use the new
+location.  A separate patch is available for this, currently
+maintained by Thomas Heller.</p>
+</div>
+<div class="section" id="notes">
+<h2><a class="toc-backref" href="#id5">Notes</a><a class="headerlink" href="#notes" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>This change does not preclude packages using the current
+location – the change only adds a directory to <code class="docutils literal notranslate"><span class="pre">sys.path</span></code>, it
+does not remove anything.</li>
+<li>Both the current location (<code class="docutils literal notranslate"><span class="pre">sys.prefix</span></code>) and the new directory
+(site-packages) are included in sitedirs, so that <code class="docutils literal notranslate"><span class="pre">.pth</span></code> files
+will be recognised in either location.</li>
+<li>This proposal adds a single additional site-packages directory
+to sitedirs. On Unix platforms, two directories are added, one
+for version-independent files (Python code) and one for
+version-dependent code (C extensions). This is necessary on
+Unix, as the sitedirs include a common (across Python versions)
+package location, in <code class="docutils literal notranslate"><span class="pre">/usr/local</span></code> by default. As there is no such
+common location available on Windows, there is also no need for
+having two separate package directories.</li>
+<li>If users want to keep DLLs in a single location on Windows, rather
+than keeping them in the package directory, the DLLs subdirectory
+of the Python install directory is already available for that
+purpose. Adding an extra directory solely for DLLs should not be
+necessary.</li>
+</ul>
+</div>
+<div class="section" id="open-issues">
+<h2><a class="toc-backref" href="#id6">Open Issues</a><a class="headerlink" href="#open-issues" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Comments from Unix users indicate that there may be issues with
+the current setup on the Unix platform.  Rather than become
+involved in cross-platform issues, this PEP specifically limits
+itself to the Windows platform, leaving changes for other platforms
+to be covered in other PEPs.</li>
+<li>There could be issues with applications which embed Python. To the
+author’s knowledge, there should be no problem as a result of this
+change. There have been no comments (supportive or otherwise) from
+users who embed Python.</li>
+</ul>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id7">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0250.txt">https://github.com/python/peps/blob/master/pep-0250.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0250.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0249.html">PEP 0249</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0251.html">PEP 0251</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 250 – Using site-packages on Windows</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#notes">Notes</a></li>
+<li><a class="reference internal" href="#open-issues">Open Issues</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

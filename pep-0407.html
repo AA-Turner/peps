@@ -1,0 +1,276 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 407 – New release cycle and introducing long-term support versions &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 408 – Standard library __preview__ package" href="pep-0408.html" />
+    <link rel="prev" title="PEP 406 – Improved Encapsulation of Import State" href="pep-0406.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 407 – New release cycle and introducing long-term support versions</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-407-new-release-cycle-and-introducing-long-term-support-versions">
+<h1 class="page-title">PEP 407 – New release cycle and introducing long-term support versions<a class="headerlink" href="#pep-407-new-release-cycle-and-introducing-long-term-support-versions" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">407</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">New release cycle and introducing long-term support versions</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Antoine Pitrou &lt;solipsis&#32;&#97;t&#32;pitrou.net&gt;,
+Georg Brandl &lt;georg&#32;&#97;t&#32;python.org&gt;,
+Barry Warsaw &lt;barry&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Deferred</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Process</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">2012-01-12</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd">17-Jan-2012</dd>
+<dt class="field-even">Resolution</dt>
+<dd class="field-even">TBD</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id2">Abstract</a></li>
+<li><a class="reference internal" href="#scope" id="id3">Scope</a></li>
+<li><a class="reference internal" href="#proposal" id="id4">Proposal</a><ul>
+<li><a class="reference internal" href="#periodicity" id="id5">Periodicity</a></li>
+<li><a class="reference internal" href="#pre-release-versions" id="id6">Pre-release versions</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#effects" id="id7">Effects</a><ul>
+<li><a class="reference internal" href="#effect-on-development-cycle" id="id8">Effect on development cycle</a></li>
+<li><a class="reference internal" href="#effect-on-bugfix-cycle" id="id9">Effect on bugfix cycle</a></li>
+<li><a class="reference internal" href="#effect-on-workflow" id="id10">Effect on workflow</a></li>
+<li><a class="reference internal" href="#effect-on-the-community" id="id11">Effect on the community</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#discussion" id="id12">Discussion</a></li>
+<li><a class="reference internal" href="#copyright" id="id13">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id2">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Finding a release cycle for an open-source project is a delicate
+exercise in managing mutually contradicting constraints: developer
+manpower, availability of release management volunteers, ease of
+maintenance for users and third-party packagers, quick availability of
+new features (and behavioural changes), availability of bug fixes
+without pulling in new features or behavioural changes.</p>
+<p>The current release cycle errs on the conservative side.  It is
+adequate for people who value stability over reactivity.  This PEP is
+an attempt to keep the stability that has become a Python trademark,
+while offering a more fluid release of features, by introducing the
+notion of long-term support versions.</p>
+</div>
+<div class="section" id="scope">
+<h2><a class="toc-backref" href="#id3">Scope</a><a class="headerlink" href="#scope" title="Permalink to this headline">¶</a></h2>
+<p>This PEP doesn’t try to change the maintenance period or release
+scheme for the 2.7 branch.  Only 3.x versions are considered.</p>
+</div>
+<div class="section" id="proposal">
+<h2><a class="toc-backref" href="#id4">Proposal</a><a class="headerlink" href="#proposal" title="Permalink to this headline">¶</a></h2>
+<p>Under the proposed scheme, there would be two kinds of feature
+versions (sometimes dubbed “minor versions”, for example 3.2 or 3.3):
+normal feature versions and long-term support (LTS) versions.</p>
+<p>Normal feature versions would get either zero or at most one bugfix
+release; the latter only if needed to fix critical issues.  Security
+fix handling for these branches needs to be decided.</p>
+<p>LTS versions would get regular bugfix releases until the next LTS
+version is out.  They then would go into security fixes mode, up to a
+termination date at the release manager’s discretion.</p>
+<div class="section" id="periodicity">
+<h3><a class="toc-backref" href="#id5">Periodicity</a><a class="headerlink" href="#periodicity" title="Permalink to this headline">¶</a></h3>
+<p>A new feature version would be released every X months.  We
+tentatively propose X = 6 months.</p>
+<p>LTS versions would be one out of N feature versions.  We tentatively
+propose N = 4.</p>
+<p>With these figures, a new LTS version would be out every 24 months,
+and remain supported until the next LTS version 24 months later.  This
+is mildly similar to today’s 18 months bugfix cycle for every feature
+version.</p>
+</div>
+<div class="section" id="pre-release-versions">
+<h3><a class="toc-backref" href="#id6">Pre-release versions</a><a class="headerlink" href="#pre-release-versions" title="Permalink to this headline">¶</a></h3>
+<p>More frequent feature releases imply a smaller number of disruptive
+changes per release.  Therefore, the number of pre-release builds
+(alphas and betas) can be brought down considerably.  Two alpha builds
+and a single beta build would probably be enough in the regular case.
+The number of release candidates depends, as usual, on the number of
+last-minute fixes before final release.</p>
+</div>
+</div>
+<div class="section" id="effects">
+<h2><a class="toc-backref" href="#id7">Effects</a><a class="headerlink" href="#effects" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="effect-on-development-cycle">
+<h3><a class="toc-backref" href="#id8">Effect on development cycle</a><a class="headerlink" href="#effect-on-development-cycle" title="Permalink to this headline">¶</a></h3>
+<p>More feature releases might mean more stress on the development and
+release management teams.  This is quantitatively alleviated by the
+smaller number of pre-release versions; and qualitatively by the
+lesser amount of disruptive changes (meaning less potential for
+breakage).  The shorter feature freeze period (after the first beta
+build until the final release) is easier to accept.  The rush for
+adding features just before feature freeze should also be much
+smaller.</p>
+</div>
+<div class="section" id="effect-on-bugfix-cycle">
+<h3><a class="toc-backref" href="#id9">Effect on bugfix cycle</a><a class="headerlink" href="#effect-on-bugfix-cycle" title="Permalink to this headline">¶</a></h3>
+<p>The effect on fixing bugs should be minimal with the proposed figures.
+The same number of branches would be simultaneously open for bugfix
+maintenance (two until 2.x is terminated, then one).</p>
+</div>
+<div class="section" id="effect-on-workflow">
+<h3><a class="toc-backref" href="#id10">Effect on workflow</a><a class="headerlink" href="#effect-on-workflow" title="Permalink to this headline">¶</a></h3>
+<p>The workflow for new features would be the same: developers would only
+commit them on the <code class="docutils literal notranslate"><span class="pre">default</span></code> branch.</p>
+<p>The workflow for bug fixes would be slightly updated: developers would
+commit bug fixes to the current LTS branch (for example <code class="docutils literal notranslate"><span class="pre">3.3</span></code>) and
+then merge them into <code class="docutils literal notranslate"><span class="pre">default</span></code>.</p>
+<p>If some critical fixes are needed to a non-LTS version, they can be
+grafted from the current LTS branch to the non-LTS branch, just like
+fixes are ported from 3.x to 2.7 today.</p>
+</div>
+<div class="section" id="effect-on-the-community">
+<h3><a class="toc-backref" href="#id11">Effect on the community</a><a class="headerlink" href="#effect-on-the-community" title="Permalink to this headline">¶</a></h3>
+<p>People who value stability can just synchronize on the LTS releases
+which, with the proposed figures, would give a similar support cycle
+(both in duration and in stability).</p>
+<p>People who value reactivity and access to new features (without taking
+the risk to install alpha versions or Mercurial snapshots) would get
+much more value from the new release cycle than currently.</p>
+<p>People who want to contribute new features or improvements would be
+more motivated to do so, knowing that their contributions will be more
+quickly available to normal users.  Also, a smaller feature freeze
+period makes it less cumbersome to interact with contributors of
+features.</p>
+</div>
+</div>
+<div class="section" id="discussion">
+<h2><a class="toc-backref" href="#id12">Discussion</a><a class="headerlink" href="#discussion" title="Permalink to this headline">¶</a></h2>
+<p>These are open issues that should be worked out during discussion:</p>
+<ul class="simple">
+<li>Decide on X (months between feature releases) and N (feature releases
+per LTS release) as defined above.</li>
+<li>For given values of X and N, is the no-bugfix-releases policy for
+non-LTS versions feasible?</li>
+<li>What is the policy for security fixes?</li>
+<li>Restrict new syntax and similar changes (i.e. everything that was
+prohibited by PEP 3003) to LTS versions?</li>
+<li>What is the effect on packagers such as Linux distributions?</li>
+<li>How will release version numbers or other identifying and marketing
+material make it clear to users which versions are normal feature
+releases and which are LTS releases?  How do we manage user
+expectations?</li>
+<li>Does the faster release cycle mean we could some day reach 3.10 and
+above?  Some people expressed a tacit expectation that version numbers
+always fit in one decimal digit.</li>
+</ul>
+<p>A community poll or survey to collect opinions from the greater Python
+community would be valuable before making a final decision.</p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id13">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0407.txt">https://github.com/python/peps/blob/master/pep-0407.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0407.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0406.html">PEP 0406</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0408.html">PEP 0408</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 407 – New release cycle and introducing long-term support versions</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#scope">Scope</a></li>
+<li><a class="reference internal" href="#proposal">Proposal</a><ul>
+<li><a class="reference internal" href="#periodicity">Periodicity</a></li>
+<li><a class="reference internal" href="#pre-release-versions">Pre-release versions</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#effects">Effects</a><ul>
+<li><a class="reference internal" href="#effect-on-development-cycle">Effect on development cycle</a></li>
+<li><a class="reference internal" href="#effect-on-bugfix-cycle">Effect on bugfix cycle</a></li>
+<li><a class="reference internal" href="#effect-on-workflow">Effect on workflow</a></li>
+<li><a class="reference internal" href="#effect-on-the-community">Effect on the community</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#discussion">Discussion</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

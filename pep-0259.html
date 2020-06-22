@@ -1,0 +1,241 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 259 – Omit printing newline after newline &#8212; PEPs.Python.org</title>
+    <link href="_static/style.css" rel="stylesheet">
+    <link href="_static/mq.css" rel="stylesheet">
+    <link href="_static/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script ></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 260 – Simplify xrange()" href="pep-0260.html" />
+    <link rel="prev" title="PEP 258 – Docutils Design Specification" href="pep-0258.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 259 – Omit printing newline after newline</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-259-omit-printing-newline-after-newline">
+<h1 class="page-title">PEP 259 – Omit printing newline after newline<a class="headerlink" href="#pep-259-omit-printing-newline-after-newline" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">259</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Omit printing newline after newline</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">guido&#32;&#97;t&#32;python.org (Guido van Rossum)</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Rejected</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">11-Jun-2001</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.2</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">11-Jun-2001</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id2">Abstract</a></li>
+<li><a class="reference internal" href="#problem" id="id3">Problem</a></li>
+<li><a class="reference internal" href="#proposed-solution" id="id4">Proposed Solution</a></li>
+<li><a class="reference internal" href="#scope" id="id5">Scope</a></li>
+<li><a class="reference internal" href="#risks" id="id6">Risks</a></li>
+<li><a class="reference internal" href="#implementation" id="id7">Implementation</a></li>
+<li><a class="reference internal" href="#rejected" id="id8">Rejected</a></li>
+<li><a class="reference internal" href="#copyright" id="id9">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id2">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Currently, the <code class="docutils literal notranslate"><span class="pre">print</span></code> statement always appends a newline, unless a
+trailing comma is used.  This means that if we want to print data
+that already ends in a newline, we get two newlines, unless
+special precautions are taken.</p>
+<p>I propose to skip printing the newline when it follows a newline
+that came from data.</p>
+<p>In order to avoid having to add yet another magic variable to file
+objects, I propose to give the existing ‘softspace’ variable an
+extra meaning: a negative value will mean “the last data written
+ended in a newline so no space <em>or</em> newline is required.”</p>
+</div>
+<div class="section" id="problem">
+<h2><a class="toc-backref" href="#id3">Problem</a><a class="headerlink" href="#problem" title="Permalink to this headline">¶</a></h2>
+<p>When printing data that resembles the lines read from a file using
+a simple loop, double-spacing occurs unless special care is taken:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;/etc/passwd&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">readlines</span><span class="p">():</span>
+<span class="gp">... </span><span class="nb">print</span> <span class="n">line</span>
+<span class="gp">...</span>
+<span class="go">root:x:0:0:root:/root:/bin/bash</span>
+
+<span class="go">bin:x:1:1:bin:/bin:</span>
+
+<span class="go">daemon:x:2:2:daemon:/sbin:</span>
+
+<span class="go">(etc.)</span>
+
+<span class="go">&gt;&gt;&gt;</span>
+</pre></div>
+</div>
+<p>While there are easy work-arounds, this is often noticed only
+during testing and requires an extra edit-test roundtrip; the
+fixed code is uglier and harder to maintain.</p>
+</div>
+<div class="section" id="proposed-solution">
+<h2><a class="toc-backref" href="#id4">Proposed Solution</a><a class="headerlink" href="#proposed-solution" title="Permalink to this headline">¶</a></h2>
+<p>In the <code class="docutils literal notranslate"><span class="pre">PRINT_ITEM</span></code> opcode in <code class="docutils literal notranslate"><span class="pre">ceval.c</span></code>, when a string object is
+printed, a check is already made that looks at the last character
+of that string.  Currently, if that last character is a whitespace
+character other than space, the softspace flag is reset to zero;
+this suppresses the space between two items if the first item is a
+string ending in newline, tab, etc. (but not when it ends in a
+space).  Otherwise the softspace flag is set to one.</p>
+<p>The proposal changes this test slightly so that softspace is set
+to:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">-1</span></code> – if the last object written is a string ending in a
+newline</li>
+<li><code class="docutils literal notranslate"><span class="pre">0</span></code> – if the last object written is a string ending in a
+whitespace character that’s neither space nor newline</li>
+<li><code class="docutils literal notranslate"><span class="pre">1</span></code> – in all other cases (including the case when the last
+object written is an empty string or not a string)</li>
+</ul>
+<p>Then, the <code class="docutils literal notranslate"><span class="pre">PRINT_NEWLINE</span></code> opcode, printing of the newline is
+suppressed if the value of softspace is negative; in any case the
+softspace flag is reset to zero.</p>
+</div>
+<div class="section" id="scope">
+<h2><a class="toc-backref" href="#id5">Scope</a><a class="headerlink" href="#scope" title="Permalink to this headline">¶</a></h2>
+<p>This only affects printing of 8-bit strings.  It doesn’t affect
+Unicode, although that could be considered a bug in the Unicode
+implementation.  It doesn’t affect other objects whose string
+representation happens to end in a newline character.</p>
+</div>
+<div class="section" id="risks">
+<h2><a class="toc-backref" href="#id6">Risks</a><a class="headerlink" href="#risks" title="Permalink to this headline">¶</a></h2>
+<p>This change breaks some existing code.  For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span> <span class="s2">&quot;Subject: PEP 259</span><span class="se">\n</span><span class="s2">&quot;</span>
+<span class="nb">print</span> <span class="n">message_body</span>
+</pre></div>
+</div>
+<p>In current Python, this produces a blank line separating the
+subject from the message body; with the proposed change, the body
+begins immediately below the subject.  This is not very robust
+code anyway; it is better written as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span> <span class="s2">&quot;Subject: PEP 259&quot;</span>
+<span class="nb">print</span>
+<span class="nb">print</span> <span class="n">message_body</span>
+</pre></div>
+</div>
+<p>In the test suite, only <code class="docutils literal notranslate"><span class="pre">test_StringIO</span></code> (which explicitly tests for
+this feature) breaks.</p>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id7">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>A patch relative to current CVS is here:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>http://sourceforge.net/tracker/index.php?func=detail&amp;aid=432183&amp;group_id=5470&amp;atid=305470
+</pre></div>
+</div>
+</div>
+<div class="section" id="rejected">
+<h2><a class="toc-backref" href="#id8">Rejected</a><a class="headerlink" href="#rejected" title="Permalink to this headline">¶</a></h2>
+<p>The user community unanimously rejected this, so I won’t pursue
+this idea any further.  Frequently heard arguments against
+included:</p>
+<ul class="simple">
+<li>It is likely to break thousands of CGI scripts.</li>
+<li>Enough magic already (also: no more tinkering with ‘print’
+please).</li>
+</ul>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id9">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0259.txt">https://github.com/python/peps/blob/master/pep-0259.txt</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0259.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0258.html">PEP 0258</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0260.html">PEP 0260</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 259 – Omit printing newline after newline</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#problem">Problem</a></li>
+<li><a class="reference internal" href="#proposed-solution">Proposed Solution</a></li>
+<li><a class="reference internal" href="#scope">Scope</a></li>
+<li><a class="reference internal" href="#risks">Risks</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#rejected">Rejected</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>
