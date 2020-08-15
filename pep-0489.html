@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 489 – Multi-phase extension module initialization &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -107,12 +106,12 @@ Nick Coghlan &lt;ncoghlan&#32;&#97;t&#32;gmail.com&gt;</dd>
 <div class="section" id="abstract">
 <h2><a class="toc-backref" href="#id11">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
 <p>This PEP proposes a redesign of the way in which built-in and extension modules
-interact with the import machinery. This was last revised for Python 3.0 in PEP
-3121, but did not solve all problems at the time. The goal is to solve
+interact with the import machinery. This was last revised for Python 3.0 in <a class="reference external" href="pep-3121.html">PEP
+3121</a>, but did not solve all problems at the time. The goal is to solve
 import-related problems by bringing extension modules closer to the way Python
 modules behave; specifically to hook into the ModuleSpec-based loading
-mechanism introduced in PEP 451.</p>
-<p>This proposal draws inspiration from PyType_Spec of PEP 384 to allow extension
+mechanism introduced in <a class="reference external" href="pep-0451.html">PEP 451</a>.</p>
+<p>This proposal draws inspiration from PyType_Spec of <a class="reference external" href="pep-0384.html">PEP 384</a> to allow extension
 authors to only define features they need, and to allow future additions
 to extension module declarations.</p>
 <p>Extensions modules are created in a two-step process, fitting better into
@@ -123,7 +122,7 @@ reloading and sub-interpreters.
 Extension authors are encouraged to take these issues into account
 when using the new API.</p>
 <p>The proposal also allows extension modules with non-ASCII names.</p>
-<p>Not all problems tackled in PEP 3121 are solved in this proposal.
+<p>Not all problems tackled in <a class="reference external" href="pep-3121.html">PEP 3121</a> are solved in this proposal.
 In particular, problems with run-time module lookup (PyState_FindModule)
 are left to a future PEP.</p>
 </div>
@@ -131,8 +130,8 @@ are left to a future PEP.</p>
 <h2><a class="toc-backref" href="#id12">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
 <p>Python modules and extension modules are not being set up in the same way.
 For Python modules, the module object is created and set up first, then the
-module code is being executed (PEP 302).
-A ModuleSpec object (PEP 451) is used to hold information about the module,
+module code is being executed (<a class="reference external" href="pep-0302.html">PEP 302</a>).
+A ModuleSpec object (<a class="reference external" href="pep-0451.html">PEP 451</a>) is used to hold information about the module,
 and passed to the relevant hooks.</p>
 <p>For extensions (i.e. shared libraries) and built-in modules, the module
 init function is executed straight away and does both the creation and
@@ -153,7 +152,7 @@ especially when relative imports are being used at module init time.</p>
 problems with sub-interpreter support and/or interpreter reloading, and, while
 it is possible with the current infrastructure to support these
 features, it is neither easy nor efficient.
-Addressing these issues was the goal of PEP 3121, but many extensions,
+Addressing these issues was the goal of <a class="reference external" href="pep-3121.html">PEP 3121</a>, but many extensions,
 including some in the standard library, took the least-effort approach
 to porting to Python 3, leaving these issues unresolved.
 This PEP keeps backwards compatibility, which should reduce pressure and give
@@ -188,7 +187,7 @@ initialization, the current practice of returning a fully initialized module
 object, will still be accepted, so existing code will work unchanged,
 including binary compatibility.</p>
 <p>The PyModuleDef structure will be changed to contain a list of slots,
-similarly to PEP 384’s PyType_Spec for types.
+similarly to <a class="reference external" href="pep-0384.html">PEP 384</a>’s PyType_Spec for types.
 To keep binary compatibility, and avoid needing to introduce a new structure
 (which would introduce additional supporting functions and per-module storage),
 the currently unused m_reload pointer of PyModuleDef will be changed to
@@ -249,7 +248,7 @@ from it – usually, it will be declared statically.</p>
 <p>Here is an overview of how the modified importers will operate.
 Details such as logging or handling of errors and invalid states
 are left out, and C code is presented with a concise Python-like syntax.</p>
-<p>The framework that calls the importers is explained in PEP 451
+<p>The framework that calls the importers is explained in <a class="reference external" href="pep-0451.html">PEP 451</a>
 <a class="footnote-reference brackets" href="#pep-0451-loading" id="id1">8</a>.</p>
 <p>importlib/_bootstrap.py:</p>
 <blockquote>
@@ -404,12 +403,12 @@ The value pointer must point to a function with the following signature:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyObject</span><span class="o">*</span> <span class="p">(</span><span class="o">*</span><span class="n">PyModuleCreateFunction</span><span class="p">)(</span><span class="n">PyObject</span> <span class="o">*</span><span class="n">spec</span><span class="p">,</span> <span class="n">PyModuleDef</span> <span class="o">*</span><span class="n">def</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The function receives a ModuleSpec instance, as defined in PEP 451,
+<p>The function receives a ModuleSpec instance, as defined in <a class="reference external" href="pep-0451.html">PEP 451</a>,
 and the PyModuleDef structure.
 It should return a new module object, or set an error
 and return NULL.</p>
 <p>This function is not responsible for setting import-related attributes
-specified in PEP 451 <a class="footnote-reference brackets" href="#pep-0451-attributes" id="id2">1</a> (such as <code class="docutils literal notranslate"><span class="pre">__name__</span></code> or
+specified in <a class="reference external" href="pep-0451.html">PEP 451</a> <a class="footnote-reference brackets" href="#pep-0451-attributes" id="id2">1</a> (such as <code class="docutils literal notranslate"><span class="pre">__name__</span></code> or
 <code class="docutils literal notranslate"><span class="pre">__loader__</span></code>) on the new module.</p>
 <p>There is no requirement for the returned object to be an instance of
 types.ModuleType. Any type can be used, as long as it supports setting and
@@ -458,7 +457,7 @@ PyModule_GetDef would fail), the execution phase is skipped.</p>
 <p>Execution slots may be specified multiple times, and are processed in the order
 they appear in the slots array.
 When using the default import machinery, they are processed after
-import-related attributes specified in PEP 451 <a class="footnote-reference brackets" href="#pep-0451-attributes" id="id3">1</a>
+import-related attributes specified in <a class="reference external" href="pep-0451.html">PEP 451</a> <a class="footnote-reference brackets" href="#pep-0451-attributes" id="id3">1</a>
 (such as <code class="docutils literal notranslate"><span class="pre">__name__</span></code> or <code class="docutils literal notranslate"><span class="pre">__loader__</span></code>) are set and the module is added
 to sys.modules.</p>
 <div class="section" id="pre-execution-steps">
@@ -777,7 +776,7 @@ a shim.</p>
 </div>
 <div class="section" id="possible-future-extensions">
 <h2><a class="toc-backref" href="#id34">Possible Future Extensions</a><a class="headerlink" href="#possible-future-extensions" title="Permalink to this headline">¶</a></h2>
-<p>The slots mechanism, inspired by PyType_Slot from PEP 384,
+<p>The slots mechanism, inspired by PyType_Slot from <a class="reference external" href="pep-0384.html">PEP 384</a>,
 allows later extensions.</p>
 <p>Some extension modules exports many constants; for example _ssl has
 a long list of calls in the form:</p>
@@ -796,7 +795,7 @@ beneficial, though.)</p>
 <p>Another possibility is providing a “main” function that would be run
 when the module is given to Python’s -m switch.
 For this to work, the runpy module will need to be modified to take
-advantage of ModuleSpec-based loading introduced in PEP 451.
+advantage of ModuleSpec-based loading introduced in <a class="reference external" href="pep-0451.html">PEP 451</a>.
 Also, it will be necessary to add a mechanism for setting up a module
 according to slots it wasn’t originally defined with.</p>
 </div>
@@ -810,12 +809,12 @@ a patchset is at <a class="footnote-reference brackets" href="#gh-patch" id="id8
 <p>Stefan Behnel’s initial proto-PEP <a class="footnote-reference brackets" href="#stefans-protopep" id="id9">2</a>
 had a “PyInit_modulename” hook that would create a module class,
 whose <code class="docutils literal notranslate"><span class="pre">__init__</span></code> would be then called to create the module.
-This proposal did not correspond to the (then nonexistent) PEP 451,
+This proposal did not correspond to the (then nonexistent) <a class="reference external" href="pep-0451.html">PEP 451</a>,
 where module creation and initialization is broken into distinct steps.
 It also did not support loading an extension into pre-existing module objects.</p>
 <p>Nick Coghlan proposed “Create” and “Exec” hooks, and wrote a prototype
 implementation <a class="footnote-reference brackets" href="#nicks-prototype" id="id10">3</a>.
-At this time PEP 451 was still not implemented, so the prototype
+At this time <a class="reference external" href="pep-0451.html">PEP 451</a> was still not implemented, so the prototype
 does not use ModuleSpec.</p>
 <p>The original version of this PEP used Create and Exec hooks, and allowed
 loading into arbitrary pre-constructed objects with Exec hook.
@@ -857,7 +856,8 @@ exporting a definition, yielded a much simpler solution.</p>
 <p>This document has been placed in the public domain.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0489.txt">https://github.com/python/peps/blob/master/pep-0489.txt</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0489.txt">https://github.com/python/peps/blob/master/pep-0489.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0489.txt">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

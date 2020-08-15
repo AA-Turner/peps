@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 395 – Qualified Names for Modules &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -99,8 +98,8 @@
 <h2><a class="toc-backref" href="#id10">PEP Withdrawal</a><a class="headerlink" href="#pep-withdrawal" title="Permalink to this headline">¶</a></h2>
 <p>This PEP was withdrawn by the author in December 2013, as other significant
 changes in the time since it was written have rendered several aspects
-obsolete. Most notably <span class="target" id="index-0"></span><a class="pep reference external" href="./pep-0420.html"><strong>PEP 420</strong></a> namespace packages rendered some of the
-proposals related to package detection unworkable and <span class="target" id="index-1"></span><a class="pep reference external" href="./pep-0451.html"><strong>PEP 451</strong></a> module
+obsolete. Most notably <span class="target" id="index-0"></span><a class="pep reference external" href="pep-0420.html"><strong>PEP 420</strong></a> namespace packages rendered some of the
+proposals related to package detection unworkable and <span class="target" id="index-1"></span><a class="pep reference external" href="pep-0451.html"><strong>PEP 451</strong></a> module
 specifications resolved the multiprocessing issues and provide a possible
 means to tackle the pickle compatibility issues.</p>
 <p>A future PEP to resolve the remaining issues would still be appropriate,
@@ -113,20 +112,20 @@ this one directly.</p>
 <p>This PEP proposes new mechanisms that eliminate some longstanding traps for
 the unwary when dealing with Python’s import system, as well as serialisation
 and introspection of functions and classes.</p>
-<p>It builds on the “Qualified Name” concept defined in PEP 3155.</p>
+<p>It builds on the “Qualified Name” concept defined in <a class="reference external" href="pep-3155.html">PEP 3155</a>.</p>
 <div class="section" id="relationship-with-other-peps">
 <h3><a class="toc-backref" href="#id12">Relationship with Other PEPs</a><a class="headerlink" href="#relationship-with-other-peps" title="Permalink to this headline">¶</a></h3>
 <p>Most significantly, this PEP is currently deferred as it requires
 significant changes in order to be made compatible with the removal
-of mandatory __init__.py files in PEP 420 (which has been implemented
+of mandatory __init__.py files in <a class="reference external" href="pep-0420.html">PEP 420</a> (which has been implemented
 and released in Python 3.3).</p>
-<p>This PEP builds on the “qualified name” concept introduced by PEP 3155, and
+<p>This PEP builds on the “qualified name” concept introduced by <a class="reference external" href="pep-3155.html">PEP 3155</a>, and
 also shares in that PEP’s aim of fixing some ugly corner cases when dealing
 with serialisation of arbitrary functions and classes.</p>
-<p>It also builds on PEP 366, which took initial tentative steps towards making
+<p>It also builds on <a class="reference external" href="pep-0366.html">PEP 366</a>, which took initial tentative steps towards making
 explicit relative imports from the main module work correctly in at least
 <em>some</em> circumstances.</p>
-<p>Finally, PEP 328 eliminated implicit relative imports from imported modules.
+<p>Finally, <a class="reference external" href="pep-0328.html">PEP 328</a> eliminated implicit relative imports from imported modules.
 This PEP proposes that the de facto implicit relative imports from main
 modules that are provided by the current initialisation behaviour for
 <code class="docutils literal notranslate"><span class="pre">sys.path[0]</span></code> also be eliminated.</p>
@@ -236,7 +235,7 @@ executing it directly:</p>
 <span class="n">python</span> <span class="o">-</span><span class="n">c</span> <span class="s2">&quot;from package.tests.test_foo import main; main()&quot;</span>
 </pre></div>
 </div>
-<p>Since the implementation of PEP 366 (which defined a mechanism that allows
+<p>Since the implementation of <a class="reference external" href="pep-0366.html">PEP 366</a> (which defined a mechanism that allows
 relative imports to work correctly when a module inside a package is executed
 via the <code class="docutils literal notranslate"><span class="pre">-m</span></code> switch), the following also works properly:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># working directory: project</span>
@@ -332,11 +331,11 @@ multiprocessing module on other platforms.</p>
 <h2><a class="toc-backref" href="#id20">Qualified Names for Modules</a><a class="headerlink" href="#qualified-names-for-modules" title="Permalink to this headline">¶</a></h2>
 <p>To make it feasible to fix these problems once and for all, it is proposed
 to add a new module level attribute: <code class="docutils literal notranslate"><span class="pre">__qualname__</span></code>. This abbreviation of
-“qualified name” is taken from PEP 3155, where it is used to store the naming
+“qualified name” is taken from <a class="reference external" href="pep-3155.html">PEP 3155</a>, where it is used to store the naming
 path to a nested class or function definition relative to the top level
 module.</p>
 <p>For modules, <code class="docutils literal notranslate"><span class="pre">__qualname__</span></code> will normally be the same as <code class="docutils literal notranslate"><span class="pre">__name__</span></code>, just
-as it is for top-level functions and classes in PEP 3155. However, it will
+as it is for top-level functions and classes in <a class="reference external" href="pep-3155.html">PEP 3155</a>. However, it will
 differ in some situations so that the above problems can be addressed.</p>
 <p>Specifically, whenever <code class="docutils literal notranslate"><span class="pre">__name__</span></code> is modified for some other purpose (such
 as to denote the main module), then <code class="docutils literal notranslate"><span class="pre">__qualname__</span></code> will remain unchanged,
@@ -349,20 +348,20 @@ import system will add it automatically (setting it to the same value as
 <p>Two alternative names were also considered for the new attribute: “full name”
 (<code class="docutils literal notranslate"><span class="pre">__fullname__</span></code>) and “implementation name” (<code class="docutils literal notranslate"><span class="pre">__implname__</span></code>).</p>
 <p>Either of those would actually be valid for the use case in this PEP.
-However, as a meta-issue, PEP 3155 is <em>also</em> adding a new attribute (for
+However, as a meta-issue, <a class="reference external" href="pep-3155.html">PEP 3155</a> is <em>also</em> adding a new attribute (for
 functions and classes) that is “like <code class="docutils literal notranslate"><span class="pre">__name__</span></code>, but different in some cases
 where <code class="docutils literal notranslate"><span class="pre">__name__</span></code> is missing necessary information” and those terms aren’t
-accurate for the PEP 3155 function and class use case.</p>
-<p>PEP 3155 deliberately omits the module information, so the term “full name”
+accurate for the <a class="reference external" href="pep-3155.html">PEP 3155</a> function and class use case.</p>
+<p><a class="reference external" href="pep-3155.html">PEP 3155</a> deliberately omits the module information, so the term “full name”
 is simply untrue, and “implementation name” implies that it may specify an
 object other than that specified by <code class="docutils literal notranslate"><span class="pre">__name__</span></code>, and that is never the
-case for PEP 3155 (in that PEP, <code class="docutils literal notranslate"><span class="pre">__name__</span></code> and <code class="docutils literal notranslate"><span class="pre">__qualname__</span></code> always
+case for <a class="reference external" href="pep-3155.html">PEP 3155</a> (in that PEP, <code class="docutils literal notranslate"><span class="pre">__name__</span></code> and <code class="docutils literal notranslate"><span class="pre">__qualname__</span></code> always
 refer to the same function or class, it’s just that <code class="docutils literal notranslate"><span class="pre">__name__</span></code> is
 insufficient to accurately identify nested functions and classes).</p>
 <p>Since it seems needlessly inconsistent to add <em>two</em> new terms for attributes
 that only exist because backwards compatibility concerns keep us from
 changing the behaviour of <code class="docutils literal notranslate"><span class="pre">__name__</span></code> itself, this PEP instead chose to
-adopt the PEP 3155 terminology.</p>
+adopt the <a class="reference external" href="pep-3155.html">PEP 3155</a> terminology.</p>
 <p>If the relative inscrutability of “qualified name” and <code class="docutils literal notranslate"><span class="pre">__qualname__</span></code>
 encourages interested developers to look them up at least once rather than
 assuming they know what they mean just from the name and guessing wrong,
@@ -543,8 +542,8 @@ as follows:</p>
 </div>
 </div>
 <div class="section" id="compatibility-with-pep-382">
-<h4><a class="toc-backref" href="#id25">Compatibility with PEP 382</a><a class="headerlink" href="#compatibility-with-pep-382" title="Permalink to this headline">¶</a></h4>
-<p>Making this proposal compatible with the PEP 382 namespace packaging PEP is
+<h4>Compatibility with <a class="reference external" href="pep-0382.html">PEP 382</a><a class="headerlink" href="#compatibility-with-pep-382" title="Permalink to this headline">¶</a></h4>
+<p>Making this proposal compatible with the <a class="reference external" href="pep-0382.html">PEP 382</a> namespace packaging PEP is
 trivial. The semantics of <code class="docutils literal notranslate"><span class="pre">_is_package_dir()</span></code> are merely changed to be:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">_is_package_dir</span><span class="p">(</span><span class="n">fspath</span><span class="p">):</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">fspath</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.pyp&quot;</span><span class="p">)</span> <span class="ow">or</span>
@@ -554,15 +553,15 @@ trivial. The semantics of <code class="docutils literal notranslate"><span class
 </div>
 </div>
 <div class="section" id="incompatibility-with-pep-402">
-<h4><a class="toc-backref" href="#id26">Incompatibility with PEP 402</a><a class="headerlink" href="#incompatibility-with-pep-402" title="Permalink to this headline">¶</a></h4>
-<p>PEP 402 proposes the elimination of explicit markers in the file system for
+<h4>Incompatibility with <a class="reference external" href="pep-0402.html">PEP 402</a><a class="headerlink" href="#incompatibility-with-pep-402" title="Permalink to this headline">¶</a></h4>
+<p><a class="reference external" href="pep-0402.html">PEP 402</a> proposes the elimination of explicit markers in the file system for
 Python packages. This fundamentally breaks the proposed concept of being able
 to take a filesystem path and a Python module name and work out an unambiguous
 mapping to the Python module namespace. Instead, the appropriate mapping
 would depend on the current values in <code class="docutils literal notranslate"><span class="pre">sys.path</span></code>, rendering it impossible
 to ever fix the problems described above with the calculation of
 <code class="docutils literal notranslate"><span class="pre">sys.path[0]</span></code> when the interpreter is initialised.</p>
-<p>While some aspects of this PEP could probably be salvaged if PEP 402 were
+<p>While some aspects of this PEP could probably be salvaged if <a class="reference external" href="pep-0402.html">PEP 402</a> were
 adopted, the core concept of making import semantics from main and other
 modules more consistent would no longer be feasible.</p>
 <p>This incompatibility is discussed in more detail in the relevant import-sig
@@ -711,13 +710,13 @@ isn’t worth the hassle of deprecating it within the lifetime of Python 3.x.</p
 <dd>Module aliases and/or “real names”
 (<a class="reference external" href="https://mail.python.org/pipermail/python-ideas/2011-January/008983.html">https://mail.python.org/pipermail/python-ideas/2011-January/008983.html</a>)</dd>
 <dt class="label" id="id7"><span class="brackets">2</span><span class='fn-backref'><em> (<a href="#id2">1</a>, <a href="#id4">2</a>) </em></span></dt>
-<dd>PEP 395 (Module aliasing) and the namespace PEPs
+<dd><a class="reference external" href="pep-0395.html">PEP 395</a> (Module aliasing) and the namespace PEPs
 (<a class="reference external" href="https://mail.python.org/pipermail/import-sig/2011-November/000382.html">https://mail.python.org/pipermail/import-sig/2011-November/000382.html</a>)</dd>
 <dt class="label" id="id8"><span class="brackets">3</span><span class='fn-backref'><em> (<a href="#id3">1</a>, <a href="#id5">2</a>) </em></span></dt>
-<dd>Updated PEP 395 (aka “Implicit Relative Imports Must Die!”)
+<dd>Updated <a class="reference external" href="pep-0395.html">PEP 395</a> (aka “Implicit Relative Imports Must Die!”)
 (<a class="reference external" href="https://mail.python.org/pipermail/import-sig/2011-November/000397.html">https://mail.python.org/pipermail/import-sig/2011-November/000397.html</a>)</dd>
 <dt class="label" id="id9"><span class="brackets">4</span></dt>
-<dd>Elaboration of compatibility problems between this PEP and PEP 402
+<dd>Elaboration of compatibility problems between this PEP and <a class="reference external" href="pep-0402.html">PEP 402</a>
 (<a class="reference external" href="https://mail.python.org/pipermail/import-sig/2011-November/000403.html">https://mail.python.org/pipermail/import-sig/2011-November/000403.html</a>)</dd>
 </dl>
 </div>
@@ -726,7 +725,8 @@ isn’t worth the hassle of deprecating it within the lifetime of Python 3.x.</p
 <p>This document has been placed in the public domain.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0395.txt">https://github.com/python/peps/blob/master/pep-0395.txt</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0395.txt">https://github.com/python/peps/blob/master/pep-0395.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0395.txt">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

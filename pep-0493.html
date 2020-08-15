@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 493 – HTTPS verification migration tools for Python 2.7 &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -114,7 +113,7 @@ Marc-André Lemburg &lt;mal&#32;&#97;t&#32;lemburg.com&gt;</dd>
 </div>
 <div class="section" id="abstract">
 <h2><a class="toc-backref" href="#id15">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
-<p>PEP 476 updated Python’s default handling of HTTPS certificates in client
+<p><a class="reference external" href="pep-0476.html">PEP 476</a> updated Python’s default handling of HTTPS certificates in client
 modules to align with certificate handling in web browsers, by validating
 that the certificates received belonged to the server the client was attempting
 to contact. The Python 2.7 long term maintenance series was judged to be in
@@ -128,7 +127,7 @@ from the decision to update to newer Python 2.7 maintenance releases.</p>
 </div>
 <div class="section" id="rationale">
 <h2><a class="toc-backref" href="#id16">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
-<p>PEP 476 changed Python’s default behaviour to align with expectations
+<p><a class="reference external" href="pep-0476.html">PEP 476</a> changed Python’s default behaviour to align with expectations
 established by web browsers in regards to the semantics of HTTPS URLs:
 starting with Python 2.7.9 and 3.4.3, HTTPS clients in the standard library
 validate server certificates by default.</p>
@@ -146,7 +145,7 @@ offer options to switch off certificate checking entirely (by way of
 offer relatively straightforward mechanisms for turning them off.</p>
 <p>At the moment, no such convenient mechanisms exist to disable Python’s
 default certificate checking for a whole process.</p>
-<p>PEP 476 did attempt to address this question, by covering how to revert to the
+<p><a class="reference external" href="pep-0476.html">PEP 476</a> did attempt to address this question, by covering how to revert to the
 old settings process wide by monkeypatching the <code class="docutils literal notranslate"><span class="pre">ssl</span></code> module to restore the
 old behaviour. Unfortunately, the <code class="docutils literal notranslate"><span class="pre">sitecustomize.py</span></code> based technique proposed
 to allow system administrators to disable the feature by default in their
@@ -171,7 +170,7 @@ redistributors will still make their own design decisions in the interests of
 their customers. The main approaches available are:</p>
 <ul class="simple">
 <li>Continuing to rebase on new Python 2.7.x releases, while providing no
-additional assistance beyond the mechanisms defined in PEP 476 in migrating
+additional assistance beyond the mechanisms defined in <a class="reference external" href="pep-0476.html">PEP 476</a> in migrating
 from unchecked to checked hostnames in standard library HTTPS clients</li>
 <li>Gating availability of the changes in default handling of HTTPS connections
 on upgrading from Python 2 to Python 3</li>
@@ -209,7 +208,7 @@ relevant capability is not available.</p>
 <ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">ssl._https_verify_certificates</span></code>: runtime configuration API</li>
 <li><code class="docutils literal notranslate"><span class="pre">ssl._https_verify_envvar</span></code>: environment based configuration</li>
-<li><code class="docutils literal notranslate"><span class="pre">ssl._cert_verification_config</span></code>: file based configuration (PEP 476 opt-in)</li>
+<li><code class="docutils literal notranslate"><span class="pre">ssl._cert_verification_config</span></code>: file based configuration (<a class="reference external" href="pep-0476.html">PEP 476</a> opt-in)</li>
 </ul>
 <p>The marker attributes are prefixed with an underscore to indicate the
 implementation dependent and security sensitive nature of these capabilities.</p>
@@ -343,7 +342,7 @@ the <a class="reference external" href="http://bugs.python.org/issue23857">relev
 <h2><a class="toc-backref" href="#id31">Backporting this PEP to earlier Python versions</a><a class="headerlink" href="#backporting-this-pep-to-earlier-python-versions" title="Permalink to this headline">¶</a></h2>
 <p>If this PEP is accepted, then commercial Python redistributors may choose to
 backport the per-process configuration mechanisms defined in this PEP to base
-versions older than Python 2.7.9, <em>without</em> also backporting PEP 476’s change
+versions older than Python 2.7.9, <em>without</em> also backporting <a class="reference external" href="pep-0476.html">PEP 476</a>’s change
 to the default behaviour of the overall Python installation.</p>
 <p>Such a backport would differ from the mechanism proposed in this PEP solely in
 the default behaviour when <code class="docutils literal notranslate"><span class="pre">PYTHONHTTPSVERIFY</span></code> was not set at all: it would
@@ -360,7 +359,7 @@ is nominally older than Python 2.7.12.</p>
 </div>
 <div class="section" id="id5">
 <h3><a class="toc-backref" href="#id33">Specification</a><a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h3>
-<p>Implementing this backport involves backporting the changes in PEP 466, 476 and
+<p>Implementing this backport involves backporting the changes in <a class="reference external" href="pep-0466.html">PEP 466</a>, 476 and
 this PEP, with the following change to the handling of the
 <code class="docutils literal notranslate"><span class="pre">PYTHONHTTPSVERIFY</span></code> environment variable in the <code class="docutils literal notranslate"><span class="pre">ssl</span></code> module:</p>
 <ul class="simple">
@@ -398,7 +397,7 @@ alias for <code class="docutils literal notranslate"><span class="pre">ssl._crea
 <p>This change would be a strict security upgrade for any Python version that
 currently defaults to skipping certificate validation in standard library
 HTTPS clients. The technical trade-offs to be taken into account relate largely
-to the magnitude of the PEP 466 backport also required rather than to anything
+to the magnitude of the <a class="reference external" href="pep-0466.html">PEP 466</a> backport also required rather than to anything
 security related.</p>
 </div>
 <div class="section" id="id8">
@@ -409,7 +408,7 @@ inside an activated Python virtual environment.</p>
 </div>
 </div>
 <div class="section" id="backporting-pep-476-to-earlier-python-versions">
-<h2><a class="toc-backref" href="#id37">Backporting PEP 476 to earlier Python versions</a><a class="headerlink" href="#backporting-pep-476-to-earlier-python-versions" title="Permalink to this headline">¶</a></h2>
+<h2>Backporting <a class="reference external" href="pep-0476.html">PEP 476</a> to earlier Python versions<a class="headerlink" href="#backporting-pep-476-to-earlier-python-versions" title="Permalink to this headline">¶</a></h2>
 <p>The backporting approach described above leaves the default HTTPS certificate
 verification behaviour of a Python 2.7 installation unmodified: verifying
 certificates still needs to be opted into on a per-connection or per-process
@@ -454,9 +453,9 @@ relevant configuration file name.</p>
 </div>
 <div class="section" id="recommended-modifications-to-the-python-standard-library">
 <h3><a class="toc-backref" href="#id39">Recommended modifications to the Python standard library</a><a class="headerlink" href="#recommended-modifications-to-the-python-standard-library" title="Permalink to this headline">¶</a></h3>
-<p>The recommended approach to backporting the PEP 476 modifications to an earlier
+<p>The recommended approach to backporting the <a class="reference external" href="pep-0476.html">PEP 476</a> modifications to an earlier
 point release is to implement the following changes relative to the default
-PEP 476 behaviour implemented in Python 2.7.9+:</p>
+<a class="reference external" href="pep-0476.html">PEP 476</a> behaviour implemented in Python 2.7.9+:</p>
 <ul class="simple">
 <li>modify the <code class="docutils literal notranslate"><span class="pre">ssl</span></code> module to read a system wide configuration file when the
 module is first imported into a Python process</li>
@@ -574,7 +573,7 @@ this backport for Python 2.7.5 can be found in the <a class="reference external"
 <h2><a class="toc-backref" href="#id46">Recommendation for combined feature backports</a><a class="headerlink" href="#recommendation-for-combined-feature-backports" title="Permalink to this headline">¶</a></h2>
 <p>If a redistributor chooses to backport the environment variable based
 configuration setting from this PEP to a modified Python version that also
-implements the configuration file based PEP 476 backport, then the environment
+implements the configuration file based <a class="reference external" href="pep-0476.html">PEP 476</a> backport, then the environment
 variable should take precedence over the system-wide configuration setting.
 This allows the setting to be changed for a given user or application,
 regardless of the installation-wide default behaviour.</p>
@@ -618,7 +617,8 @@ regardless of the installation-wide default behaviour.</p>
 <p>This document has been placed into the public domain.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0493.txt">https://github.com/python/peps/blob/master/pep-0493.txt</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0493.txt">https://github.com/python/peps/blob/master/pep-0493.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0493.txt">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

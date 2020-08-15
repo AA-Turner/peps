@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 560 – Core support for typing module and generic types &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -81,10 +80,10 @@
 </div>
 <div class="section" id="abstract">
 <h2><a class="toc-backref" href="#id13">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
-<p>Initially PEP 484 was designed in such way that it would not introduce
+<p>Initially <a class="reference external" href="pep-0484.html">PEP 484</a> was designed in such way that it would not introduce
 <em>any</em> changes to the core CPython interpreter. Now type hints and
-the <code class="docutils literal notranslate"><span class="pre">typing</span></code> module are extensively used by the community, e.g. PEP 526
-and PEP 557 extend the usage of type hints, and the backport of <code class="docutils literal notranslate"><span class="pre">typing</span></code>
+the <code class="docutils literal notranslate"><span class="pre">typing</span></code> module are extensively used by the community, e.g. <a class="reference external" href="pep-0526.html">PEP 526</a>
+and <a class="reference external" href="pep-0557.html">PEP 557</a> extend the usage of type hints, and the backport of <code class="docutils literal notranslate"><span class="pre">typing</span></code>
 on PyPI has 1M downloads/month. Therefore, this restriction can be removed.
 It is proposed to add two special methods <code class="docutils literal notranslate"><span class="pre">__class_getitem__</span></code> and
 <code class="docutils literal notranslate"><span class="pre">__mro_entries__</span></code> to the core CPython for better support of
@@ -101,7 +100,7 @@ number of hacks currently used in <code class="docutils literal notranslate"><sp
 <h3><a class="toc-backref" href="#id15">Performance</a><a class="headerlink" href="#performance" title="Permalink to this headline">¶</a></h3>
 <p>The <code class="docutils literal notranslate"><span class="pre">typing</span></code> module is one of the heaviest and slowest modules in
 the standard library even with all the optimizations made. Mainly this is
-because subscripted generic types (see PEP 484 for definition of terms used
+because subscripted generic types (see <a class="reference external" href="pep-0484.html">PEP 484</a> for definition of terms used
 in this PEP) are class objects (see also <a class="footnote-reference brackets" href="#id7" id="id1">1</a>). There are three main ways how
 the performance can be improved with the help of the proposed special methods:</p>
 <ul class="simple">
@@ -133,7 +132,7 @@ proposed special attributes the <code class="docutils literal notranslate"><span
 <h3><a class="toc-backref" href="#id17">Hacks and bugs that will be removed by this proposal</a><a class="headerlink" href="#hacks-and-bugs-that-will-be-removed-by-this-proposal" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">_generic_new</span></code> hack that exists because <code class="docutils literal notranslate"><span class="pre">__init__</span></code> is not called on
-instances with a type differing form the type whose <code class="docutils literal notranslate"><span class="pre">__new__</span></code> was called,
+instances with a type differing from the type whose <code class="docutils literal notranslate"><span class="pre">__new__</span></code> was called,
 <code class="docutils literal notranslate"><span class="pre">C[int]().__class__</span> <span class="pre">is</span> <span class="pre">C</span></code>.</li>
 <li><code class="docutils literal notranslate"><span class="pre">_next_in_mro</span></code> speed hack will be not necessary since subscription will
 not create new classes.</li>
@@ -289,7 +288,7 @@ and deferring all check to static type checkers only:</p>
 </div>
 <p>Such class can be used as a normal generic in Python type annotations
 (a corresponding stub file should be provided for static type checkers,
-see PEP 484 for details):</p>
+see <a class="reference external" href="pep-0484.html">PEP 484</a> for details):</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">simple_extension</span> <span class="kn">import</span> <span class="n">SimpleGeneric</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">TypeVar</span>
 
@@ -363,7 +362,8 @@ already very efficient, so this aspect gives negligible overall impact.</li>
 <p>This document has been placed in the public domain.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0560.rst">https://github.com/python/peps/blob/master/pep-0560.rst</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0560.rst">https://github.com/python/peps/blob/master/pep-0560.rst</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0560.rst">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

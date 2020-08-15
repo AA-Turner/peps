@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 589 – TypedDict: Type Hints for Dictionaries with a Fixed Set of Keys &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -89,14 +88,14 @@
 </div>
 <div class="section" id="abstract">
 <h2><a class="toc-backref" href="#id12">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
-<p>PEP 484 <a class="footnote-reference brackets" href="#pep-484" id="id1">1</a> defines the type <code class="docutils literal notranslate"><span class="pre">Dict[K,</span> <span class="pre">V]</span></code> for uniform
+<p><a class="reference external" href="pep-0484.html">PEP 484</a> <a class="footnote-reference brackets" href="#pep-484" id="id1">1</a> defines the type <code class="docutils literal notranslate"><span class="pre">Dict[K,</span> <span class="pre">V]</span></code> for uniform
 dictionaries, where each value has the same type, and arbitrary key
 values are supported.  It doesn’t properly support the common pattern
 where the type of a dictionary value depends on the string value of
 the key.  This PEP proposes a type constructor <code class="docutils literal notranslate"><span class="pre">typing.TypedDict</span></code> to
 support the use case where a dictionary object has a specific set of
 string keys, each with a value of a specific type.</p>
-<p>Here is an example where PEP 484 doesn’t allow us to annotate
+<p>Here is an example where <a class="reference external" href="pep-0484.html">PEP 484</a> doesn’t allow us to annotate
 satisfactorily:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">movie</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;Blade Runner&#39;</span><span class="p">,</span>
          <span class="s1">&#39;year&#39;</span><span class="p">:</span> <span class="mi">1982</span><span class="p">}</span>
@@ -132,10 +131,10 @@ certain appeal.  They are are easy to serialize and deserialize even
 when not using JSON.  They trivially support various useful operations
 with no extra effort, including pretty-printing (through <code class="docutils literal notranslate"><span class="pre">str()</span></code> and
 the <code class="docutils literal notranslate"><span class="pre">pprint</span></code> module), iteration, and equality comparisons.</p>
-<p>PEP 484 doesn’t properly support the use cases mentioned above.  Let’s
+<p><a class="reference external" href="pep-0484.html">PEP 484</a> doesn’t properly support the use cases mentioned above.  Let’s
 consider a dictionary object that has exactly two valid string keys,
 <code class="docutils literal notranslate"><span class="pre">'name'</span></code> with value type <code class="docutils literal notranslate"><span class="pre">str</span></code>, and <code class="docutils literal notranslate"><span class="pre">'year'</span></code> with value type
-<code class="docutils literal notranslate"><span class="pre">int</span></code>.  The PEP 484 type <code class="docutils literal notranslate"><span class="pre">Dict[str,</span> <span class="pre">Any]</span></code> would be suitable, but
+<code class="docutils literal notranslate"><span class="pre">int</span></code>.  The <a class="reference external" href="pep-0484.html">PEP 484</a> type <code class="docutils literal notranslate"><span class="pre">Dict[str,</span> <span class="pre">Any]</span></code> would be suitable, but
 it is too lenient, as arbitrary string keys can be used, and arbitrary
 values are valid.  Similarly, <code class="docutils literal notranslate"><span class="pre">Dict[str,</span> <span class="pre">Union[str,</span> <span class="pre">int]]</span></code> is too
 general, as the value for key <code class="docutils literal notranslate"><span class="pre">'name'</span></code> could be an <code class="docutils literal notranslate"><span class="pre">int</span></code>, and
@@ -160,7 +159,7 @@ non-required (it doesn’t need to exist).</p>
 a class-based syntax.  The second is an alternative
 assignment-based syntax that is provided for backwards compatibility,
 to allow the feature to be backported to older Python versions.  The
-rationale is similar to why PEP 484 supports a comment-based
+rationale is similar to why <a class="reference external" href="pep-0484.html">PEP 484</a> supports a comment-based
 annotation syntax for Python 2.7: type hinting is particularly useful
 for large existing codebases, and these often need to run on older
 Python versions.  The two syntax options parallel the syntax variants
@@ -169,7 +168,7 @@ TypedDict inheritance and totality (specifying whether keys are
 required or not).</p>
 <p>This PEP also provides a sketch of how a type checker is expected
 to support type checking operations involving TypedDict objects.
-Similar to PEP 484, this discussion is left somewhat vague on purpose,
+Similar to <a class="reference external" href="pep-0484.html">PEP 484</a>, this discussion is left somewhat vague on purpose,
 to allow experimentation with a wide variety of different type
 checking approaches.  In particular, type compatibility should be
 based on structural compatibility: a more specific TypedDict type can
@@ -281,7 +280,7 @@ TypedDict.  This is discussed in more detail below.</p>
 <p>In particular, TypedDict type objects cannot be used in
 <code class="docutils literal notranslate"><span class="pre">isinstance()</span></code> tests such as <code class="docutils literal notranslate"><span class="pre">isinstance(d,</span> <span class="pre">Movie)</span></code>. The reason is
 that there is no existing support for checking types of dictionary
-item values, since <code class="docutils literal notranslate"><span class="pre">isinstance()</span></code> does not work with many PEP 484
+item values, since <code class="docutils literal notranslate"><span class="pre">isinstance()</span></code> does not work with many <a class="reference external" href="pep-0484.html">PEP 484</a>
 types, including common ones like <code class="docutils literal notranslate"><span class="pre">List[str]</span></code>.  This would be needed
 for cases like this:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Strings</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
@@ -387,7 +386,7 @@ a single TypedDict type.</p>
 <h3><a class="toc-backref" href="#id19">Alternative Syntax</a><a class="headerlink" href="#alternative-syntax" title="Permalink to this headline">¶</a></h3>
 <p>This PEP also proposes an alternative syntax that can be backported to
 older Python versions such as 3.5 and 2.7 that don’t support the
-variable definition syntax introduced in PEP 526 <a class="footnote-reference brackets" href="#pep-526" id="id3">3</a>.  It
+variable definition syntax introduced in <a class="reference external" href="pep-0526.html">PEP 526</a> <a class="footnote-reference brackets" href="#pep-526" id="id3">3</a>.  It
 resembles the traditional syntax for defining named tuples:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Movie</span> <span class="o">=</span> <span class="n">TypedDict</span><span class="p">(</span><span class="s1">&#39;Movie&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s1">&#39;year&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">})</span>
 </pre></div>
@@ -412,7 +411,7 @@ implementation.</p>
 <h3><a class="toc-backref" href="#id20">Type Consistency</a><a class="headerlink" href="#type-consistency" title="Permalink to this headline">¶</a></h3>
 <p>Informally speaking, <em>type consistency</em> is a generalization of the
 is-subtype-of relation to support the <code class="docutils literal notranslate"><span class="pre">Any</span></code> type.  It is defined
-more formally in PEP 483 <a class="footnote-reference brackets" href="#pep-483" id="id4">4</a>.  This section introduces the
+more formally in <a class="reference external" href="pep-0483.html">PEP 483</a> <a class="footnote-reference brackets" href="#pep-483" id="id4">4</a>.  This section introduces the
 new, non-trivial rules needed to support type consistency for
 TypedDict types.</p>
 <p>First, any TypedDict type is consistent with <code class="docutils literal notranslate"><span class="pre">Mapping[str,</span> <span class="pre">object]</span></code>.
@@ -608,7 +607,7 @@ alternative is to generate false positive errors for idiomatic code.</p>
 </div>
 <div class="section" id="use-of-final-values-and-literal-types">
 <h3><a class="toc-backref" href="#id22">Use of Final Values and Literal Types</a><a class="headerlink" href="#use-of-final-values-and-literal-types" title="Permalink to this headline">¶</a></h3>
-<p>Type checkers should allow final names (PEP 591 <a class="footnote-reference brackets" href="#pep-591" id="id5">5</a>) with
+<p>Type checkers should allow final names (<a class="reference external" href="pep-0591.html">PEP 591</a> <a class="footnote-reference brackets" href="#pep-591" id="id5">5</a>) with
 string values to be used instead of string literals in operations on
 TypedDict objects.  For example, this is valid:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">YEAR</span><span class="p">:</span> <span class="n">Final</span> <span class="o">=</span> <span class="s1">&#39;year&#39;</span>
@@ -618,7 +617,7 @@ TypedDict objects.  For example, this is valid:</p>
 </pre></div>
 </div>
 <p>Similarly, an expression with a suitable literal type
-(PEP 586 <a class="footnote-reference brackets" href="#pep-586" id="id6">6</a>) can be used instead of a literal value:</p>
+(<a class="reference external" href="pep-0586.html">PEP 586</a> <a class="footnote-reference brackets" href="#pep-586" id="id6">6</a>) can be used instead of a literal value:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">get_value</span><span class="p">(</span><span class="n">movie</span><span class="p">:</span> <span class="n">Movie</span><span class="p">,</span>
               <span class="n">key</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;year&#39;</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
     <span class="k">return</span> <span class="n">movie</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
@@ -690,7 +689,7 @@ or not.  No proposed syntax was clear enough, and we expect that
 there is limited need for this.</li>
 <li>TypedDict can’t be used for specifying the type of a <code class="docutils literal notranslate"><span class="pre">**kwargs</span></code>
 argument.  This would allow restricting the allowed keyword
-arguments and their types.  According to PEP 484, using a TypedDict
+arguments and their types.  According to <a class="reference external" href="pep-0484.html">PEP 484</a>, using a TypedDict
 type as the type of <code class="docutils literal notranslate"><span class="pre">**kwargs</span></code> means that the TypedDict is valid
 as the <em>value</em> of arbitrary keyword arguments, but it doesn’t
 restrict which keyword arguments should be allowed.  The syntax
@@ -708,23 +707,23 @@ Michael Lee, Dominik Miedzinski, Roy Williams and Max Moroz.</p>
 <h2><a class="toc-backref" href="#id27">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
 <dl class="footnote brackets">
 <dt class="label" id="pep-484"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
-<dd>PEP 484, Type Hints, van Rossum, Lehtosalo, Langa
+<dd><a class="reference external" href="pep-0484.html">PEP 484</a>, Type Hints, van Rossum, Lehtosalo, Langa
 (<a class="reference external" href="http://www.python.org/dev/peps/pep-0484">http://www.python.org/dev/peps/pep-0484</a>)</dd>
 <dt class="label" id="dataclasses-json"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
 <dd>Dataclasses JSON
 (<a class="reference external" href="https://github.com/lidatong/dataclasses-json">https://github.com/lidatong/dataclasses-json</a>)</dd>
 <dt class="label" id="pep-526"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
-<dd>PEP 526, Syntax for Variable Annotations, Gonzalez,
+<dd><a class="reference external" href="pep-0526.html">PEP 526</a>, Syntax for Variable Annotations, Gonzalez,
 House, Levkivskyi, Roach, van Rossum
 (<a class="reference external" href="http://www.python.org/dev/peps/pep-0484">http://www.python.org/dev/peps/pep-0484</a>)</dd>
 <dt class="label" id="pep-483"><span class="brackets"><a class="fn-backref" href="#id4">4</a></span></dt>
-<dd>PEP 483, The Theory of Type Hints, van Rossum, Levkivskyi
+<dd><a class="reference external" href="pep-0483.html">PEP 483</a>, The Theory of Type Hints, van Rossum, Levkivskyi
 (<a class="reference external" href="http://www.python.org/dev/peps/pep-0483">http://www.python.org/dev/peps/pep-0483</a>)</dd>
 <dt class="label" id="pep-591"><span class="brackets"><a class="fn-backref" href="#id5">5</a></span></dt>
-<dd>PEP 591, Adding a final qualifier to typing, Sullivan,
+<dd><a class="reference external" href="pep-0591.html">PEP 591</a>, Adding a final qualifier to typing, Sullivan,
 Levkivskyi (<a class="reference external" href="http://www.python.org/dev/peps/pep-0591">http://www.python.org/dev/peps/pep-0591</a>)</dd>
 <dt class="label" id="pep-586"><span class="brackets"><a class="fn-backref" href="#id6">6</a></span></dt>
-<dd>PEP 586, Literal Types, Lee, Levkivskyi, Lehtosalo
+<dd><a class="reference external" href="pep-0586.html">PEP 586</a>, Literal Types, Lee, Levkivskyi, Lehtosalo
 (<a class="reference external" href="http://www.python.org/dev/peps/pep-0586">http://www.python.org/dev/peps/pep-0586</a>)</dd>
 <dt class="label" id="mypy"><span class="brackets"><a class="fn-backref" href="#id7">7</a></span></dt>
 <dd><a class="reference external" href="http://www.mypy-lang.org/">http://www.mypy-lang.org/</a></dd>
@@ -743,7 +742,8 @@ Levkivskyi (<a class="reference external" href="http://www.python.org/dev/peps/p
 <p>This document has been placed in the public domain.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0589.rst">https://github.com/python/peps/blob/master/pep-0589.rst</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0589.rst">https://github.com/python/peps/blob/master/pep-0589.rst</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0589.rst">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

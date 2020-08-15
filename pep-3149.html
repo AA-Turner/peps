@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 3149 – ABI version tagged .so files &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -79,7 +78,7 @@
 </div>
 <div class="section" id="abstract">
 <h2><a class="toc-backref" href="#id21">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
-<p>PEP 3147 <a class="footnote-reference brackets" href="#id11" id="id1">1</a> described an extension to Python’s import machinery that
+<p><a class="reference external" href="pep-3147.html">PEP 3147</a> <a class="footnote-reference brackets" href="#id11" id="id1">1</a> described an extension to Python’s import machinery that
 improved the sharing of Python source code, by allowing more than one
 byte compilation file (.pyc) to be co-located with each source file.</p>
 <p>This PEP defines an adjunct feature which allows the co-location of
@@ -89,7 +88,7 @@ more easily provide more than one Python major version at a time.</p>
 </div>
 <div class="section" id="background">
 <h2><a class="toc-backref" href="#id22">Background</a><a class="headerlink" href="#background" title="Permalink to this headline">¶</a></h2>
-<p>PEP 3147 defined the file system layout for a pure-Python package,
+<p><a class="reference external" href="pep-3147.html">PEP 3147</a> defined the file system layout for a pure-Python package,
 where multiple versions of Python are available on the system.  For
 example, where the <cite>alpha</cite> package containing source modules <cite>one.py</cite>
 and <cite>two.py</cite> exist on a system with Python 3.2 and 3.3, the post-byte
@@ -113,7 +112,7 @@ different Python major versions are incompatible with each other due
 to changes in the ABI.  Different configuration/compilation options
 for the same Python version can result in different ABIs
 (e.g. –with-wide-unicode).</p>
-<p>While PEP 384 <a class="footnote-reference brackets" href="#id12" id="id2">2</a> defines a stable ABI, it will minimize, but not
+<p>While <a class="reference external" href="pep-0384.html">PEP 384</a> <a class="footnote-reference brackets" href="#id12" id="id2">2</a> defines a stable ABI, it will minimize, but not
 eliminate extension module incompatibilities between Python builds or
 major versions.  Thus a mechanism for discriminating extension module
 file names is proposed.</p>
@@ -128,7 +127,7 @@ with Python 2.6 being the default.</p>
 versions, these distributions install third party package modules
 (<code class="docutils literal notranslate"><span class="pre">.pyc</span></code> and <code class="docutils literal notranslate"><span class="pre">.so</span></code> files) into <cite>/usr/share/pyshared</cite> and symlink to
 them from <cite>/usr/lib/pythonX.Y/dist-packages</cite>.  The symlinks exist
-because in a pre-PEP 3147 world (i.e &lt; Python 3.2), the <cite>.pyc</cite> files
+because in a pre-<a class="reference external" href="pep-3147.html">PEP 3147</a> world (i.e &lt; Python 3.2), the <cite>.pyc</cite> files
 resulting from byte compilation by the various installed Pythons will
 name collide with each other.  For Python versions &gt;= 3.2, all
 pure-Python packages can be shared, because the <cite>.pyc</cite> files will no
@@ -226,16 +225,16 @@ It is not currently clear that the facilities in this PEP are even
 useful for Windows.</p>
 </div>
 <div class="section" id="pep-384">
-<h2><a class="toc-backref" href="#id27">PEP 384</a><a class="headerlink" href="#pep-384" title="Permalink to this headline">¶</a></h2>
-<p>PEP 384 defines a stable ABI for extension modules.  In theory,
-universal adoption of PEP 384 would eliminate the need for this PEP
+<h2><a class="reference external" href="pep-0384.html">PEP 384</a><a class="headerlink" href="#pep-384" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="pep-0384.html">PEP 384</a> defines a stable ABI for extension modules.  In theory,
+universal adoption of <a class="reference external" href="pep-0384.html">PEP 384</a> would eliminate the need for this PEP
 because all extension modules could be compatible with any Python
 version.  In practice of course, it will be impossible to achieve
 universal adoption, and as described above, different built-time flags
 still affect the ABI.  Thus even with a stable ABI, this PEP may still
-be necessary.  While a complete specification is reserved for PEP 384,
+be necessary.  While a complete specification is reserved for <a class="reference external" href="pep-0384.html">PEP 384</a>,
 here is a discussion of the relevant issues.</p>
-<p>PEP 384 describes a change to <code class="docutils literal notranslate"><span class="pre">PyModule_Create()</span></code> where <code class="docutils literal notranslate"><span class="pre">3</span></code> is
+<p><a class="reference external" href="pep-0384.html">PEP 384</a> describes a change to <code class="docutils literal notranslate"><span class="pre">PyModule_Create()</span></code> where <code class="docutils literal notranslate"><span class="pre">3</span></code> is
 passed as the API version if the extension was complied with
 <code class="docutils literal notranslate"><span class="pre">Py_LIMITED_API</span></code>.  This should be formalized into an official macro
 called <code class="docutils literal notranslate"><span class="pre">PYTHON_ABI_VERSION</span></code> to mirror <code class="docutils literal notranslate"><span class="pre">PYTHON_API_VERSION</span></code>.  If
@@ -243,7 +242,7 @@ and when the ABI changes in an incompatible way, this version number
 would be bumped.  To facilitate sharing, Python would be extended to
 search for extension modules with the <code class="docutils literal notranslate"><span class="pre">PYTHON_ABI_VERSION</span></code> number in
 its name.  The prefix <code class="docutils literal notranslate"><span class="pre">abi</span></code> is reserved for Python’s use.</p>
-<p>Thus, an initial implementation of PEP 384, when Python is configured
+<p>Thus, an initial implementation of <a class="reference external" href="pep-0384.html">PEP 384</a>, when Python is configured
 with the default set of flags, would search for the following file
 names when extension module <cite>foo</cite> is imported (in this order):</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">foo</span><span class="o">.</span><span class="n">cpython</span><span class="o">-</span><span class="n">XYm</span><span class="o">.</span><span class="n">so</span>
@@ -260,7 +259,7 @@ by adding a keyword argument to the <code class="docutils literal notranslate"><
 </pre></div>
 </div>
 <p>Martin v. Löwis describes his thoughts <a class="footnote-reference brackets" href="#id17" id="id7">7</a> about the applicability of this
-PEP to PEP 384.  In summary:</p>
+PEP to <a class="reference external" href="pep-0384.html">PEP 384</a>.  In summary:</p>
 <ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">--with-pydebug</span></code> would not be supported by the stable ABI because
 this changes the layout of <code class="docutils literal notranslate"><span class="pre">PyObject</span></code>, which is an exposed
@@ -280,9 +279,9 @@ they are listed here, along with the reasons for not adopting them.</p>
 <h3><a class="toc-backref" href="#id29">Independent directories or symlinks</a><a class="headerlink" href="#independent-directories-or-symlinks" title="Permalink to this headline">¶</a></h3>
 <p>Debian and Ubuntu could simply add a version-specific directory to
 <code class="docutils literal notranslate"><span class="pre">sys.path</span></code> that would contain just the extension modules for that
-version of Python.  Or the symlink trick eliminated in PEP 3147 could
+version of Python.  Or the symlink trick eliminated in <a class="reference external" href="pep-3147.html">PEP 3147</a> could
 be retained for just shared libraries.  This approach is rejected
-because it propagates the essential complexity that PEP 3147 tries to
+because it propagates the essential complexity that <a class="reference external" href="pep-3147.html">PEP 3147</a> tries to
 avoid, and adds potentially several additional directories to search
 for all modules, even when the number of extension modules is much
 fewer than the total number of Python packages.  For example, builds
@@ -294,7 +293,7 @@ directories search increases substantially.</p>
 <h3><a class="toc-backref" href="#id30">Don’t share packages with extension modules</a><a class="headerlink" href="#don-t-share-packages-with-extension-modules" title="Permalink to this headline">¶</a></h3>
 <p>It has been suggested that Python packages with extension modules not
 be shared among all supported Python versions on a distribution.  Even
-with adoption of PEP 3149, extension modules will have to be compiled
+with adoption of <a class="reference external" href="pep-3149.html">PEP 3149</a>, extension modules will have to be compiled
 for every supported Python version, so perhaps sharing of such
 packages isn’t useful anyway.  Not sharing packages with extensions
 though is infeasible for several reasons.</p>
@@ -319,9 +318,9 @@ are uploaded.</p>
 <h2><a class="toc-backref" href="#id32">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
 <dl class="footnote brackets">
 <dt class="label" id="id11"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
-<dd>PEP 3147</dd>
+<dd><a class="reference external" href="pep-3147.html">PEP 3147</a></dd>
 <dt class="label" id="id12"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
-<dd>PEP 384</dd>
+<dd><a class="reference external" href="pep-0384.html">PEP 384</a></dd>
 <dt class="label" id="id13"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
 <dd>Ubuntu: &lt;<a class="reference external" href="http://www.ubuntu.com">http://www.ubuntu.com</a>&gt;</dd>
 <dt class="label" id="id14"><span class="brackets"><a class="fn-backref" href="#id4">4</a></span></dt>
@@ -345,7 +344,8 @@ are uploaded.</p>
 <p>This document has been placed in the public domain.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-3149.txt">https://github.com/python/peps/blob/master/pep-3149.txt</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-3149.txt">https://github.com/python/peps/blob/master/pep-3149.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-3149.txt">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

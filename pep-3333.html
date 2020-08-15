@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 3333 – Python Web Server Gateway Interface v1.0.1 &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -54,7 +53,7 @@
 <dt class="field-even">Post-History</dt>
 <dd class="field-even">26-Sep-2010, 04-Oct-2010</dd>
 <dt class="field-odd">Replaces</dt>
-<dd class="field-odd"><a class="reference external" href="./pep-0333.html">333</a></dd>
+<dd class="field-odd"><a class="reference external" href="pep-0333.html">333</a></dd>
 </dl>
 <hr class="docutils" />
 <div class="contents topic" id="contents">
@@ -108,7 +107,7 @@
 </div>
 <div class="section" id="preface-for-readers-of-pep-333">
 <h2><a class="toc-backref" href="#id15">Preface for Readers of PEP 333</a><a class="headerlink" href="#preface-for-readers-of-pep-333" title="Permalink to this headline">¶</a></h2>
-<p>This is an updated version of PEP 333, modified slightly to improve
+<p>This is an updated version of <a class="reference external" href="pep-0333.html">PEP 333</a>, modified slightly to improve
 usability under Python 3, and to incorporate several long-standing
 de facto amendments to the WSGI protocol.  (Its code samples have
 also been ported to Python 3.)</p>
@@ -589,7 +588,7 @@ current request, whether the request was completed normally, or
 terminated early due to an application error during iteration or an early
 disconnect of the browser.  (The <code class="docutils literal notranslate"><span class="pre">close()</span></code> method requirement is to
 support resource release by the application.  This protocol is intended
-to complement PEP 342’s generator support, and other common iterables
+to complement <a class="reference external" href="pep-0342.html">PEP 342</a>’s generator support, and other common iterables
 with <code class="docutils literal notranslate"><span class="pre">close()</span></code> methods.)</p>
 <p>Applications returning a generator or other custom iterator <strong>should not</strong>
 assume the entire iterator will be consumed, as it <strong>may</strong> be closed early
@@ -605,7 +604,7 @@ attributes of the iterable returned by the application, unless it is an
 instance of a type specific to that server or gateway, such as a “file
 wrapper” returned by <code class="docutils literal notranslate"><span class="pre">wsgi.file_wrapper</span></code> (see <a class="reference internal" href="#optional-platform-specific-file-handling">Optional
 Platform-Specific File Handling</a>).  In the general case, only
-attributes specified here, or accessed via e.g. the PEP 234 iteration
+attributes specified here, or accessed via e.g. the <a class="reference external" href="pep-0234.html">PEP 234</a> iteration
 APIs are acceptable.</p>
 <div class="section" id="environ-variables">
 <h3><a class="toc-backref" href="#id24"><code class="docutils literal notranslate"><span class="pre">environ</span></code> Variables</a><a class="headerlink" href="#environ-variables" title="Permalink to this headline">¶</a></h3>
@@ -854,14 +853,14 @@ section, below).</p>
 or <code class="docutils literal notranslate"><span class="pre">&quot;404</span> <span class="pre">Not</span> <span class="pre">Found&quot;</span></code>.  That is, it is a string consisting of a
 Status-Code and a Reason-Phrase, in that order and separated by a
 single space, with no surrounding whitespace or other characters.
-(See RFC 2616, Section 6.1.1 for more information.)  The string
+(See <a class="reference external" href="https://tools.ietf.org/html/rfc2616.html">RFC 2616</a>, Section 6.1.1 for more information.)  The string
 <strong>must not</strong> contain control characters, and must not be terminated
 with a carriage return, linefeed, or combination thereof.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">response_headers</span></code> argument is a list of <code class="docutils literal notranslate"><span class="pre">(header_name,</span>
 <span class="pre">header_value)</span></code> tuples.  It must be a Python list; i.e.
 <code class="docutils literal notranslate"><span class="pre">type(response_headers)</span> <span class="pre">is</span> <span class="pre">ListType</span></code>, and the server <strong>may</strong> change
 its contents in any way it desires.  Each <code class="docutils literal notranslate"><span class="pre">header_name</span></code> must be a
-valid HTTP header field-name (as defined by RFC 2616, Section 4.2),
+valid HTTP header field-name (as defined by <a class="reference external" href="https://tools.ietf.org/html/rfc2616.html">RFC 2616</a>, Section 4.2),
 without a trailing colon or other punctuation.</p>
 <p>Each <code class="docutils literal notranslate"><span class="pre">header_value</span></code> <strong>must not</strong> include <em>any</em> control characters,
 including carriage returns or linefeeds, either embedded or at the end.
@@ -974,7 +973,7 @@ encoding” <a class="footnote-reference brackets" href="#id10" id="id6">3</a>, 
 a chunk for each <code class="docutils literal notranslate"><span class="pre">write()</span></code> call or bytestring yielded by the iterable,
 thus generating a <code class="docutils literal notranslate"><span class="pre">Content-Length</span></code> header for each chunk.  This
 allows the server to keep the client connection alive, if it wishes
-to do so.  Note that the server <strong>must</strong> comply fully with RFC 2616
+to do so.  Note that the server <strong>must</strong> comply fully with <a class="reference external" href="https://tools.ietf.org/html/rfc2616.html">RFC 2616</a>
 when doing this, or else fall back to one of the other strategies for
 dealing with the absence of <code class="docutils literal notranslate"><span class="pre">Content-Length</span></code>.</p>
 <p>(Note: applications and middleware <strong>must not</strong> apply any kind of
@@ -1098,8 +1097,8 @@ all strings passed to or from the server must be of type <code class="docutils l
 <code class="docutils literal notranslate"><span class="pre">bytes</span></code>, never <code class="docutils literal notranslate"><span class="pre">unicode</span></code>.  The result of using a <code class="docutils literal notranslate"><span class="pre">unicode</span></code>
 object where a string object is required, is undefined.</p>
 <p>Note also that strings passed to <code class="docutils literal notranslate"><span class="pre">start_response()</span></code> as a status or
-as response headers <strong>must</strong> follow RFC 2616 with respect to encoding.
-That is, they must either be ISO-8859-1 characters, or use RFC 2047
+as response headers <strong>must</strong> follow <a class="reference external" href="https://tools.ietf.org/html/rfc2616.html">RFC 2616</a> with respect to encoding.
+That is, they must either be ISO-8859-1 characters, or use <a class="reference external" href="https://tools.ietf.org/html/rfc2047.html">RFC 2047</a>
 MIME encoding.</p>
 <p>On Python platforms where the <code class="docutils literal notranslate"><span class="pre">str</span></code> or <code class="docutils literal notranslate"><span class="pre">StringType</span></code> type is in
 fact Unicode-based (e.g. Jython, IronPython, Python 3, etc.), all
@@ -1194,8 +1193,8 @@ is suboptimal, and is not recommended.)</li>
 </ol>
 <p>Note that these behavior restrictions do not apply for HTTP 1.0
 requests, or for requests that are not directed to an application
-object.  For more information on HTTP 1.1 Expect/Continue, see RFC
-2616, sections 8.2.3 and 10.1.1.</p>
+object.  For more information on HTTP 1.1 Expect/Continue, see <a class="reference external" href="https://tools.ietf.org/html/rfc2616.html">RFC
+2616</a>, sections 8.2.3 and 10.1.1.</p>
 </div>
 <div class="section" id="other-http-features">
 <h3><a class="toc-backref" href="#id34">Other HTTP Features</a><a class="headerlink" href="#other-http-features" title="Permalink to this headline">¶</a></h3>
@@ -1206,10 +1205,10 @@ response.  It is always possible for the application developer to add
 middleware components to supply additional features, so server/gateway
 developers should be conservative in their implementation.  In a sense,
 a server should consider itself to be like an HTTP “gateway server”,
-with the application being an HTTP “origin server”.  (See RFC 2616,
+with the application being an HTTP “origin server”.  (See <a class="reference external" href="https://tools.ietf.org/html/rfc2616.html">RFC 2616</a>,
 section 1.3, for the definition of these terms.)</p>
 <p>However, because WSGI servers and applications do not communicate via
-HTTP, what RFC 2616 calls “hop-by-hop” headers do not apply to WSGI
+HTTP, what <a class="reference external" href="https://tools.ietf.org/html/rfc2616.html">RFC 2616</a> calls “hop-by-hop” headers do not apply to WSGI
 internal communications.  WSGI applications <strong>must not</strong> generate any
 “hop-by-hop” headers <a class="footnote-reference brackets" href="#id11" id="id7">4</a>, attempt to use HTTP features that would
 require them to generate such headers, or rely on the content of
@@ -1382,7 +1381,7 @@ simply restrict themselves to using only a standard “for” loop to
 iterate over any iterable returned by an application.  This is the
 only way to ensure source-level compatibility with both the pre-2.2
 iterator protocol (discussed further below) and “today’s” iterator
-protocol (see PEP 234).</p>
+protocol (see <a class="reference external" href="pep-0234.html">PEP 234</a>).</p>
 <p>(Note that this technique necessarily applies only to servers,
 gateways, or middleware that are written in Python.  Discussion of
 how to use iterator protocol(s) correctly from other languages is
@@ -1548,7 +1547,7 @@ iterable, any resources used will not be released until the
 iterable is garbage collected.  The <code class="docutils literal notranslate"><span class="pre">close()</span></code> idiom allows an
 application to release critical resources at the end of a request,
 and it’s forward-compatible with the support for try/finally in
-generators that’s proposed by PEP 325.</p>
+generators that’s proposed by <a class="reference external" href="pep-0325.html">PEP 325</a>.</p>
 </li>
 <li><p>Why is this interface so low-level?  I want feature X!  (e.g.
 cookies, sessions, persistence, …)</p>
@@ -1710,7 +1709,7 @@ belongs to him.</li>
 <dd>Procedural issues regarding modifications to PEP 333
 (<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2010-September/104114.html">https://mail.python.org/pipermail/python-dev/2010-September/104114.html</a>)</dd>
 <dt class="label" id="id14"><span class="brackets"><a class="fn-backref" href="#id2">7</a></span></dt>
-<dd>SVN revision history for PEP 3333, showing differences from PEP 333
+<dd>SVN revision history for PEP 3333, showing differences from <a class="reference external" href="pep-0333.html">PEP 333</a>
 (<a class="reference external" href="http://svn.python.org/view/peps/trunk/pep-3333.txt?r1=84854&amp;r2=HEAD">http://svn.python.org/view/peps/trunk/pep-3333.txt?r1=84854&amp;r2=HEAD</a>)</dd>
 </dl>
 </div>
@@ -1719,7 +1718,8 @@ belongs to him.</li>
 <p>This document has been placed in the public domain.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-3333.txt">https://github.com/python/peps/blob/master/pep-3333.txt</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-3333.txt">https://github.com/python/peps/blob/master/pep-3333.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-3333.txt">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

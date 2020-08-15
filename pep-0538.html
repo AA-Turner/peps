@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 538 – Coercing the legacy C locale to a UTF-8 based locale &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -116,7 +115,7 @@ and the fact that the standard C locale (as defined in POSIX:2001) typically
 implies a default text encoding of ASCII, which is entirely inadequate for the
 development of networked services and client applications in a multilingual
 world.</p>
-<p>PEP 540 proposes a change to CPython’s handling of the legacy C locale such
+<p><a class="reference external" href="pep-0540.html">PEP 540</a> proposes a change to CPython’s handling of the legacy C locale such
 that CPython will assume the use of UTF-8 in such environments, rather than
 persisting with the demonstrably problematic assumption of ASCII as an
 appropriate encoding for communicating with operating system interfaces.
@@ -132,7 +131,7 @@ running in subprocesses (such as older Python runtimes).</p>
 works, rather than relying primarily on existing configuration settings that
 are supported by Python versions prior to Python 3.7.</p>
 <p>Accordingly, this PEP proposes that independently of the UTF-8 mode proposed
-in PEP 540, the way the CPython implementation handles the default C locale be
+in <a class="reference external" href="pep-0540.html">PEP 540</a>, the way the CPython implementation handles the default C locale be
 changed to be roughly equivalent to the following existing configuration
 settings (supported since Python 3.1):</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">LC_CTYPE</span><span class="o">=</span><span class="n">C</span><span class="o">.</span><span class="n">UTF</span><span class="o">-</span><span class="mi">8</span>
@@ -153,7 +152,7 @@ setting the new <code class="docutils literal notranslate"><span class="pre">PYT
 <code class="docutils literal notranslate"><span class="pre">C.UTF-8</span></code>, <code class="docutils literal notranslate"><span class="pre">C.utf8</span></code> or <code class="docutils literal notranslate"><span class="pre">UTF-8</span></code> locales as part of its standard
 configuration would only be considered a fully supported platform for CPython
 3.7+ deployments when a suitable locale other than the default <code class="docutils literal notranslate"><span class="pre">C</span></code> locale is
-configured explicitly (e.g. <code class="docutils literal notranslate"><span class="pre">en_AU.UTF-8</span></code>, <code class="docutils literal notranslate"><span class="pre">zh_CN.gb18030</span></code>). If PEP 540 is
+configured explicitly (e.g. <code class="docutils literal notranslate"><span class="pre">en_AU.UTF-8</span></code>, <code class="docutils literal notranslate"><span class="pre">zh_CN.gb18030</span></code>). If <a class="reference external" href="pep-0540.html">PEP 540</a> is
 accepted in addition to this PEP, then pure Python modules would also be
 supported when using the proposed <code class="docutils literal notranslate"><span class="pre">PYTHONUTF8</span></code> mode, but expectations for
 full Unicode compatibility in extension modules would continue to be limited
@@ -188,7 +187,7 @@ system to do the conversion and then ensuring that the text encoding name
 reported by <code class="docutils literal notranslate"><span class="pre">sys.getfilesystemencoding()</span></code> matches the encoding used during
 this early bootstrapping process.</p>
 <p>On Windows, the limitations of the <code class="docutils literal notranslate"><span class="pre">mbcs</span></code> format used by default in these
-conversions proved sufficiently problematic that PEP 528 and PEP 529 were
+conversions proved sufficiently problematic that <a class="reference external" href="pep-0528.html">PEP 528</a> and <a class="reference external" href="pep-0529.html">PEP 529</a> were
 implemented to bypass the operating system supplied interfaces for binary data
 handling and force the use of UTF-8 instead.</p>
 <p>On Mac OS X, iOS, and Android, many components, including CPython, already
@@ -222,7 +221,7 @@ process state change in <code class="docutils literal notranslate"><span class="
 </ul>
 <p>(This summary of the locale handling omits several technical details related
 to exactly where and when the text encoding declared as part of the locale
-settings is used - see PEP 540 for further discussion, as these particular
+settings is used - see <a class="reference external" href="pep-0540.html">PEP 540</a> for further discussion, as these particular
 details matter more when decoupling CPython from the declared C locale than
 they do when overriding the locale with one based on UTF-8)</p>
 <p>These calls are usually sufficient to provide sensible behaviour, but they can
@@ -264,11 +263,11 @@ more narrowly scoped <code class="docutils literal notranslate"><span class="pre
 </div>
 <div class="section" id="relationship-with-other-peps">
 <h2><a class="toc-backref" href="#id26">Relationship with other PEPs</a><a class="headerlink" href="#relationship-with-other-peps" title="Permalink to this headline">¶</a></h2>
-<p>This PEP shares a common problem statement with PEP 540 (improving Python 3’s
+<p>This PEP shares a common problem statement with <a class="reference external" href="pep-0540.html">PEP 540</a> (improving Python 3’s
 behaviour in the default C locale), but diverges markedly in the proposed
 solution:</p>
 <ul class="simple">
-<li>PEP 540 proposes to entirely decouple CPython’s default text encoding from
+<li><a class="reference external" href="pep-0540.html">PEP 540</a> proposes to entirely decouple CPython’s default text encoding from
 the C locale system in that case, allowing text handling inconsistencies to
 arise between CPython and other locale-aware components running in the same
 process and in subprocesses. This approach aims to make CPython behave less
@@ -286,7 +285,7 @@ of the C.UTF-8 locale as a Unicode-aware replacement for the legacy C locale
 in the wider C/C++ ecosystem</li>
 </ul>
 <p>After reviewing both PEPs, it became clear that they didn’t actually conflict
-at a technical level, and the proposal in PEP 540 offered a superior option in
+at a technical level, and the proposal in <a class="reference external" href="pep-0540.html">PEP 540</a> offered a superior option in
 cases where no suitable locale was available, as well as offering a better
 reference behaviour for platforms where the notion of a “locale encoding”
 doesn’t make sense (for example, embedded systems running MicroPython rather
@@ -294,12 +293,12 @@ than the CPython reference interpreter).</p>
 <p>Meanwhile, this PEP offered improved compatibility with other locale-aware
 components, and an approach more amenable to being backported to Python 3.6
 by downstream redistributors.</p>
-<p>As a result, this PEP was amended to refer to PEP 540 as a complementary
+<p>As a result, this PEP was amended to refer to <a class="reference external" href="pep-0540.html">PEP 540</a> as a complementary
 solution that offered improved behaviour when none of the standard UTF-8 based
 locales were available, as well as extending the changes in the default
 settings to APIs that aren’t currently independently configurable (such as
 the default encoding and error handler for <code class="docutils literal notranslate"><span class="pre">open()</span></code>).</p>
-<p>The availability of PEP 540 also meant that the <code class="docutils literal notranslate"><span class="pre">LC_CTYPE=en_US.UTF-8</span></code> legacy
+<p>The availability of <a class="reference external" href="pep-0540.html">PEP 540</a> also meant that the <code class="docutils literal notranslate"><span class="pre">LC_CTYPE=en_US.UTF-8</span></code> legacy
 fallback was removed from the list of UTF-8 locales tried as a coercion target,
 with the expectation being that CPython will instead rely solely on the
 proposed PYTHONUTF8 mode in such cases.</p>
@@ -390,7 +389,7 @@ universally available for use by glibc based applications like CPython [<a class
 this unfortunately doesn’t help on platforms that ship older versions of glibc
 without that feature, and also don’t provide C.UTF-8 (or an equivalent) as an
 on-disk locale the way Debian and Fedora do. These platforms are considered
-out of scope for this PEP - see PEP 540 for further discussion of possible
+out of scope for this PEP - see <a class="reference external" href="pep-0540.html">PEP 540</a> for further discussion of possible
 options for improving CPython’s default behaviour in such environments.</p>
 </div>
 <div class="section" id="design-principles">
@@ -612,7 +611,7 @@ Android-specific details:</p>
 </div>
 <div class="section" id="platform-support-changes">
 <h2><a class="toc-backref" href="#id35">Platform Support Changes</a><a class="headerlink" href="#platform-support-changes" title="Permalink to this headline">¶</a></h2>
-<p>A new “Legacy C Locale” section will be added to PEP 11 that states:</p>
+<p>A new “Legacy C Locale” section will be added to <a class="reference external" href="pep-0011.html">PEP 11</a> that states:</p>
 <ul class="simple">
 <li>as of CPython 3.7, *nix platforms are expected to provide at least one of
 <code class="docutils literal notranslate"><span class="pre">C.UTF-8</span></code> (full locale), <code class="docutils literal notranslate"><span class="pre">C.utf8</span></code> (full locale) or <code class="docutils literal notranslate"><span class="pre">UTF-8</span></code> (
@@ -664,7 +663,7 @@ default encoding of ASCII the way CPython currently does</li>
 ASCII as the preferred text encoding, this PEP also disables the implicit use
 of the “surrogateescape” error handler on the standard IO streams that was
 introduced in Python 3.5 ([<a class="reference internal" href="#id15">15</a>]), as well as the automatic use of
-<code class="docutils literal notranslate"><span class="pre">surrogateescape</span></code> when operating in PEP 540’s proposed UTF-8 mode.</p>
+<code class="docutils literal notranslate"><span class="pre">surrogateescape</span></code> when operating in <a class="reference external" href="pep-0540.html">PEP 540</a>’s proposed UTF-8 mode.</p>
 <p>Rather than introducing yet another configuration option to adjust that
 behaviour, this PEP instead proposes to extend the “surrogateescape” default
 for <code class="docutils literal notranslate"><span class="pre">stdin</span></code> and <code class="docutils literal notranslate"><span class="pre">stderr</span></code> error handling to also apply to the three
@@ -797,7 +796,7 @@ legacy C locale for over a decade at this point. Not only haven’t we been able
 to get it to work, neither has anyone else - the only viable alternatives
 identified have been to pass the bytes along verbatim without eagerly decoding
 them to text (C/C++, Python 2.x, Ruby, etc), or else to largely ignore the
-nominal C/C++ locale encoding and assume the use of either UTF-8 (PEP 540,
+nominal C/C++ locale encoding and assume the use of either UTF-8 (<a class="reference external" href="pep-0540.html">PEP 540</a>,
 Rust, Go, Node.js, etc) or UTF-16-LE (JVM, .NET CLR).</p>
 <p>While this PEP ensures that developers that genuinely need to do so can still
 opt-in to running their Python code in the legacy C locale (by setting
@@ -805,7 +804,7 @@ opt-in to running their Python code in the legacy C locale (by setting
 <code class="docutils literal notranslate"><span class="pre">--without-c-locale-coercion</span></code>), it also makes it clear that we <em>don’t</em>
 expect Python 3’s Unicode handling to be completely reliable in that
 configuration, and the recommended alternative is to use a more appropriate
-locale setting (potentially in combination with PEP 540’s UTF-8 mode, if that
+locale setting (potentially in combination with <a class="reference external" href="pep-0540.html">PEP 540</a>’s UTF-8 mode, if that
 is available).</p>
 </div>
 <div class="section" id="providing-implicit-locale-coercion-only-when-running-standalone">
@@ -928,13 +927,13 @@ coercion notice in that case, coercion is instead skipped entirely.</p>
 </div>
 <div class="section" id="considering-locale-coercion-independently-of-utf-8-mode">
 <h3><a class="toc-backref" href="#id48">Considering locale coercion independently of “UTF-8 mode”</a><a class="headerlink" href="#considering-locale-coercion-independently-of-utf-8-mode" title="Permalink to this headline">¶</a></h3>
-<p>With both this PEP’s locale coercion and PEP 540’s UTF-8 mode under
+<p>With both this PEP’s locale coercion and <a class="reference external" href="pep-0540.html">PEP 540</a>’s UTF-8 mode under
 consideration for Python 3.7, it makes sense to ask whether or not we can
 limit ourselves to only doing one or the other, rather than making both
 changes.</p>
-<p>The UTF-8 mode proposed in PEP 540 has two major limitations that make it a
+<p>The UTF-8 mode proposed in <a class="reference external" href="pep-0540.html">PEP 540</a> has two major limitations that make it a
 potential complement to this PEP rather than a potential replacement.</p>
-<p>First, unlike this PEP, PEP 540’s UTF-8 mode makes it possible to change default
+<p>First, unlike this PEP, <a class="reference external" href="pep-0540.html">PEP 540</a>’s UTF-8 mode makes it possible to change default
 behaviours that are not currently configurable at all. While that’s exactly
 what makes the proposal interesting, it’s also what makes it an entirely
 unproven approach. By contrast, the approach proposed in this PEP builds
@@ -946,7 +945,7 @@ problems discussed in this PEP.</p>
 proposed locale coercion can resolve problems not only in CPython itself,
 but also in extension modules that interact with the standard streams, like
 GNU readline. As an example, consider the following interactive session
-from a PEP 538 enabled CPython build, where each line after the first is
+from a <a class="reference external" href="pep-0538.html">PEP 538</a> enabled CPython build, where each line after the first is
 executed by doing “up-arrow, left-arrow x4, delete, enter”:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ LANG=C ./python
 Python 3.7.0a0 (heads/pep538-coerce-c-locale:188e780, May  7 2017, 00:21:13)
@@ -988,7 +987,7 @@ invalid continuation byte
 <p>That particular misbehaviour is coming from GNU readline, <em>not</em> CPython -
 because the command history editing wasn’t UTF-8 aware, it corrupted the history
 buffer and fed such nonsense to stdin that even the surrogateescape error
-handler was bypassed. While PEP 540’s UTF-8 mode could technically be updated
+handler was bypassed. While <a class="reference external" href="pep-0540.html">PEP 540</a>’s UTF-8 mode could technically be updated
 to also reconfigure readline, that’s just <em>one</em> extension module that might
 be interacting with the standard streams without going through the CPython
 C API, and any change made by CPython would only apply when readline is running
@@ -1118,7 +1117,7 @@ has been working on the Fedora 26 backport and providing feedback on the
 practical viability of the proposed changes.</p>
 <p>The initial draft was posted to the Python Linux SIG for discussion [<a class="reference internal" href="#id10">10</a>] and
 then amended based on both that discussion and Victor Stinner’s work in
-PEP 540 [<a class="reference internal" href="#id11">11</a>].</p>
+<a class="reference external" href="pep-0540.html">PEP 540</a> [<a class="reference internal" href="#id11">11</a>].</p>
 <p>The “ℙƴ☂ℌøἤ” string used in the Unicode handling examples throughout this PEP
 is taken from Ned Batchelder’s excellent “Pragmatic Unicode” presentation [<a class="reference internal" href="#id9">9</a>].</p>
 <p>Stephen Turnbull has long provided valuable insight into the text encoding
@@ -1159,7 +1158,7 @@ handling challenges he regularly encounters at the University of Tsukuba
 <dd>linux-sig discussion of initial PEP draft
 (<a class="reference external" href="https://mail.python.org/pipermail/linux-sig/2017-January/000014.html">https://mail.python.org/pipermail/linux-sig/2017-January/000014.html</a>)</dd>
 <dt class="label" id="id11"><span class="brackets">11</span></dt>
-<dd>Feedback notes from linux-sig discussion and PEP 540
+<dd>Feedback notes from linux-sig discussion and <a class="reference external" href="pep-0540.html">PEP 540</a>
 (<a class="reference external" href="https://github.com/python/peps/issues/171">https://github.com/python/peps/issues/171</a>)</dd>
 <dt class="label" id="id12"><span class="brackets">12</span></dt>
 <dd>GB 18030
@@ -1202,7 +1201,8 @@ handling challenges he regularly encounters at the University of Tsukuba
 CC0 1.0 license: <a class="reference external" href="https://creativecommons.org/publicdomain/zero/1.0/">https://creativecommons.org/publicdomain/zero/1.0/</a></p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0538.txt">https://github.com/python/peps/blob/master/pep-0538.txt</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0538.txt">https://github.com/python/peps/blob/master/pep-0538.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0538.txt">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

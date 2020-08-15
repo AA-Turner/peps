@@ -1,0 +1,925 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PEP 621 – Storing project metadata in pyproject.toml &#8212; PEPs.Python.org</title>
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 622 – Structural Pattern Matching" href="pep-0622.html" />
+    <link rel="prev" title="PEP 620 – Hide implementation details from the C API" href="pep-0620.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 621 – Storing project metadata in pyproject.toml</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-621-storing-project-metadata-in-pyproject-toml">
+<h1 class="page-title">PEP 621 – Storing project metadata in pyproject.toml<a class="headerlink" href="#pep-621-storing-project-metadata-in-pyproject-toml" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">621</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Storing project metadata in pyproject.toml</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Brett Cannon &lt;brett&#32;&#97;t&#32;python.org&gt;,
+Dustin Ingram &lt;di&#32;&#97;t&#32;python.org&gt;,
+Paul Ganssle &lt;paul at ganssle.io&gt;,
+Paul Moore &lt;p.f.moore&#32;&#97;t&#32;gmail.com&gt;,
+Pradyun Gedam &lt;pradyunsg&#32;&#97;t&#32;gmail.com&gt;,
+Sébastien Eustace &lt;sebastien&#32;&#97;t&#32;eustace.io&gt;,
+Thomas Kluyver &lt;thomas&#32;&#97;t&#32;kluyver.me.uk&gt;,
+Tzu-Ping Chung &lt;uranusjr&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">Discussions-To</dt>
+<dd class="field-even"><a class="reference external" href="https://discuss.python.org/t/pep-621-storing-project-metadata-in-pyproject-toml/4513">https://discuss.python.org/t/pep-621-storing-project-metadata-in-pyproject-toml/4513</a></dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd">Draft</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even">Standards Track</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">22-Jun-2020</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">22-Jun-2020</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id75">Abstract</a></li>
+<li><a class="reference internal" href="#motivation" id="id76">Motivation</a></li>
+<li><a class="reference internal" href="#rationale" id="id77">Rationale</a></li>
+<li><a class="reference internal" href="#specification" id="id78">Specification</a><ul>
+<li><a class="reference internal" href="#details" id="id79">Details</a><ul>
+<li><a class="reference internal" href="#table-name" id="id80">Table name</a></li>
+<li><a class="reference internal" href="#name" id="id81"><code class="docutils literal notranslate"><span class="pre">name</span></code></a></li>
+<li><a class="reference internal" href="#version" id="id82"><code class="docutils literal notranslate"><span class="pre">version</span></code></a></li>
+<li><a class="reference internal" href="#description" id="id83"><code class="docutils literal notranslate"><span class="pre">description</span></code></a></li>
+<li><a class="reference internal" href="#readme" id="id84"><code class="docutils literal notranslate"><span class="pre">readme</span></code></a></li>
+<li><a class="reference internal" href="#requires-python" id="id85"><code class="docutils literal notranslate"><span class="pre">requires-python</span></code></a></li>
+<li><a class="reference internal" href="#license" id="id86"><code class="docutils literal notranslate"><span class="pre">license</span></code></a></li>
+<li><a class="reference internal" href="#authors-maintainers" id="id87"><code class="docutils literal notranslate"><span class="pre">authors</span></code>/<code class="docutils literal notranslate"><span class="pre">maintainers</span></code></a></li>
+<li><a class="reference internal" href="#keywords" id="id88"><code class="docutils literal notranslate"><span class="pre">keywords</span></code></a></li>
+<li><a class="reference internal" href="#classifiers" id="id89"><code class="docutils literal notranslate"><span class="pre">classifiers</span></code></a></li>
+<li><a class="reference internal" href="#urls" id="id90"><code class="docutils literal notranslate"><span class="pre">urls</span></code></a></li>
+<li><a class="reference internal" href="#entry-points" id="id91">Entry points</a></li>
+<li><a class="reference internal" href="#dependencies-optional-dependencies" id="id92"><code class="docutils literal notranslate"><span class="pre">dependencies</span></code>/<code class="docutils literal notranslate"><span class="pre">optional-dependencies</span></code></a></li>
+<li><a class="reference internal" href="#dynamic" id="id93"><code class="docutils literal notranslate"><span class="pre">dynamic</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#example" id="id94">Example</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#backwards-compatibility" id="id95">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#security-implications" id="id96">Security Implications</a></li>
+<li><a class="reference internal" href="#how-to-teach-this" id="id97">How to Teach This</a></li>
+<li><a class="reference internal" href="#reference-implementation" id="id98">Reference Implementation</a></li>
+<li><a class="reference internal" href="#rejected-ideas" id="id99">Rejected Ideas</a><ul>
+<li><a class="reference internal" href="#other-table-names" id="id100">Other table names</a><ul>
+<li><a class="reference internal" href="#anything-under-build-system" id="id101">Anything under <code class="docutils literal notranslate"><span class="pre">[build-system]</span></code></a></li>
+<li><a class="reference internal" href="#package" id="id102"><code class="docutils literal notranslate"><span class="pre">[package]</span></code></a></li>
+<li><a class="reference internal" href="#metadata" id="id103"><code class="docutils literal notranslate"><span class="pre">[metadata]</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#support-for-a-metadata-provider" id="id104">Support for a metadata provider</a></li>
+<li><a class="reference internal" href="#require-a-normalized-project-name" id="id105">Require a normalized project name</a></li>
+<li><a class="reference internal" href="#specify-files-to-include-when-building" id="id106">Specify files to include when building</a></li>
+<li><a class="reference internal" href="#name-the-project-urls-table-project-project-urls" id="id107">Name the <code class="docutils literal notranslate"><span class="pre">[project.urls]</span></code> table <code class="docutils literal notranslate"><span class="pre">[project.project-urls]</span></code></a></li>
+<li><a class="reference internal" href="#have-a-separate-url-home-page-field" id="id108">Have a separate <code class="docutils literal notranslate"><span class="pre">url</span></code>/<code class="docutils literal notranslate"><span class="pre">home-page</span></code> field</a></li>
+<li><a class="reference internal" href="#recommend-that-tools-put-development-related-dependencies-into-a-dev-extra" id="id109">Recommend that tools put development-related dependencies into a “dev” extra</a></li>
+<li><a class="reference internal" href="#have-the-dynamic-field-only-require-specifying-missing-required-fields" id="id110">Have the <code class="docutils literal notranslate"><span class="pre">dynamic</span></code> field only require specifying missing required fields</a></li>
+<li><a class="reference internal" href="#different-structures-for-the-readme-field" id="id111">Different structures for the <code class="docutils literal notranslate"><span class="pre">readme</span></code> field</a></li>
+<li><a class="reference internal" href="#allowing-the-readme-field-to-imply-text-plain" id="id112">Allowing the <code class="docutils literal notranslate"><span class="pre">readme</span></code> field to imply <code class="docutils literal notranslate"><span class="pre">text/plain</span></code></a></li>
+<li><a class="reference internal" href="#other-names-for-dependencies-optional-dependencies" id="id113">Other names for <code class="docutils literal notranslate"><span class="pre">dependencies</span></code>/<code class="docutils literal notranslate"><span class="pre">optional-dependencies</span></code></a></li>
+<li><a class="reference internal" href="#support-maintainers-maintainers-email" id="id114">Support <code class="docutils literal notranslate"><span class="pre">Maintainers</span></code>/<code class="docutils literal notranslate"><span class="pre">Maintainers-email</span></code></a></li>
+<li><a class="reference internal" href="#drop-maintainers-to-unify-with-authors" id="id115">Drop <code class="docutils literal notranslate"><span class="pre">maintainers</span></code> to unify with <code class="docutils literal notranslate"><span class="pre">authors</span></code></a></li>
+<li><a class="reference internal" href="#support-an-arbitrary-depth-of-tables-for-project-entry-points" id="id116">Support an arbitrary depth of tables for <code class="docutils literal notranslate"><span class="pre">project.entry-points</span></code></a></li>
+<li><a class="reference internal" href="#backfilling-trove-classifiers-should-occur-instead-of-may-happen" id="id117">Backfilling trove classifiers SHOULD occur instead of MAY happen</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#open-issues" id="id118">Open Issues</a><ul>
+<li><a class="reference internal" href="#how-to-specify-dependencies" id="id119">How to specify dependencies?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id1" id="id120">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id121">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id75">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP specifies how to write a project’s <a class="reference external" href="https://packaging.python.org/specifications/core-metadata/">core metadata</a> <a class="footnote-reference brackets" href="#id2" id="id3">1</a> in a
+<code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> file for packaging-related tools to consume.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id76">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>The key motivators of this PEP are:</p>
+<ul class="simple">
+<li>Encourage users to specify core metadata statically for speed,
+ease of specification, deterministic consumption by build back-ends,
+and ease analysis of source checkouts</li>
+<li>Provide a tool-agnostic way of specifying the metadata for ease of
+learning and transitioning between build back-ends</li>
+<li>Allow for more code sharing between build back-ends for the
+“boring parts” of a project’s metadata</li>
+</ul>
+<p>This PEP does <strong>not</strong> attempt to standardize all possible metadata
+required by a build back-end, only the metadata covered by the
+<a class="reference external" href="https://packaging.python.org/specifications/core-metadata/">core metadata</a> <a class="footnote-reference brackets" href="#id2" id="id4">1</a> specification which are very common across projects
+and would stand to benefit from being static and consistently
+specified. This means build back-ends are still free and able to
+innovate around patterns like how to specify the files to include in a
+wheel. There is also an included escape hatch for users and build
+back-ends to use when they choose to partially opt-out of this PEP
+(compared to opting-out of this PEP entirely, which is also possible).</p>
+<p>This PEP is also not trying to change the underlying <a class="reference external" href="https://packaging.python.org/specifications/core-metadata/">core metadata</a> <a class="footnote-reference brackets" href="#id2" id="id5">1</a>
+in any way. Such considerations should be done in a separate PEP which
+may lead to changes or additions to what this PEP specifies.</p>
+<p>Finally, this PEP is meant for users to specify metadata for build
+back-ends or those doing analysis on a source checkout. Once a build
+back-end has produced an artifact, then the metadata
+contained in the artifact that the build back-end produced should be
+considered canonical and overriding what this PEP specifies. In the
+eyes of this PEP, a source distribution is considered a build
+artifact, thus people should not read the metadata specified in this
+PEP as the canonical metadata in a source distribution.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id77">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>The design guidelines the authors of this PEP followed were:</p>
+<ul class="simple">
+<li>Define as much of the <a class="reference external" href="https://packaging.python.org/specifications/core-metadata/">core metadata</a> <a class="footnote-reference brackets" href="#id2" id="id6">1</a> as reasonable</li>
+<li>Define the metadata statically with an escape hatch for those who
+want to define it dynamically</li>
+<li>Use familiar names where it makes sense, but be willing to use more
+modern terminology</li>
+<li>Try to be ergonomic within a TOML file instead of mirroring how
+tools specify metadata at a low-level</li>
+<li>Learn from other build back-ends in the packaging ecosystem which
+have used TOML for their metadata</li>
+<li>Don’t try to standardize things which lack a pre-existing standard
+at a lower-level</li>
+<li><em>When</em> metadata is specified using this PEP then it is considered
+canonical, but that any and all metadata can be considered
+<em>optional</em> (<a class="reference external" href="https://packaging.python.org/specifications/core-metadata/">core metadata</a> <a class="footnote-reference brackets" href="#id2" id="id7">1</a> has its own requirements of what
+data must be provided <em>somehow</em>)</li>
+</ul>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id78">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>When specifying project metadata, tools MUST adhere and honour the
+metadata as specified in this PEP. If metadata is improperly specified
+then tools MUST raise an error to notify the user about their mistake.</p>
+<div class="section" id="details">
+<h3><a class="toc-backref" href="#id79">Details</a><a class="headerlink" href="#details" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="table-name">
+<h4><a class="toc-backref" href="#id80">Table name</a><a class="headerlink" href="#table-name" title="Permalink to this headline">¶</a></h4>
+<p>Tools MUST specify fields defined by this PEP in a table named
+<code class="docutils literal notranslate"><span class="pre">[project]</span></code>. No tools may add fields to this table which are not
+defined by this PEP. For tools wishing to store their own settings in
+<code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code>, they may use the <code class="docutils literal notranslate"><span class="pre">[tool]</span></code> table as defined in
+<span class="target" id="index-0"></span><a class="pep reference external" href="pep-0518.html"><strong>PEP 518</strong></a>. The lack of a <code class="docutils literal notranslate"><span class="pre">[project]</span></code> table implicitly means the
+build back-end will dynamically provide all fields.</p>
+</div>
+<div class="section" id="name">
+<h4><a class="toc-backref" href="#id81"><code class="docutils literal notranslate"><span class="pre">name</span></code></a><a class="headerlink" href="#name" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Format: string</li>
+<li><a class="reference external" href="https://packaging.python.org/specifications/core-metadata/">Core metadata</a> <a class="footnote-reference brackets" href="#id2" id="id8">1</a>: <code class="docutils literal notranslate"><span class="pre">Name</span></code>
+(<a class="reference external" href="https://packaging.python.org/specifications/core-metadata/#name">link</a>)</li>
+<li>Synonyms<ul>
+<li><a class="reference external" href="https://flit.readthedocs.io/">Flit</a> <a class="footnote-reference brackets" href="#id29" id="id30">2</a>: <code class="docutils literal notranslate"><span class="pre">module</span></code>/<code class="docutils literal notranslate"><span class="pre">dist-name</span></code>
+(<a class="reference external" href="https://flit.readthedocs.io/en/latest/pyproject_toml.html#metadata-section">link</a>)</li>
+<li><a class="reference external" href="https://python-poetry.org/">Poetry</a> <a class="footnote-reference brackets" href="#id42" id="id43">3</a>: <code class="docutils literal notranslate"><span class="pre">name</span></code>
+(<a class="reference external" href="https://python-poetry.org/docs/pyproject/#name">link</a>)</li>
+<li><a class="reference external" href="https://setuptools.readthedocs.io/">Setuptools</a> <a class="footnote-reference brackets" href="#id55" id="id56">4</a>: <code class="docutils literal notranslate"><span class="pre">name</span></code>
+(<a class="reference external" href="https://setuptools.readthedocs.io/en/latest/setuptools.html#metadata">link</a>)</li>
+</ul>
+</li>
+</ul>
+<p>The name of the project.</p>
+<p>Tools MUST require users to statically define this field.</p>
+<p>Tools SHOULD normalize this name, as specified by <span class="target" id="index-1"></span><a class="pep reference external" href="pep-0503.html"><strong>PEP 503</strong></a>, as soon
+as it is read for internal consistency.</p>
+</div>
+<div class="section" id="version">
+<h4><a class="toc-backref" href="#id82"><code class="docutils literal notranslate"><span class="pre">version</span></code></a><a class="headerlink" href="#version" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Format: string</li>
+<li><a class="reference external" href="https://packaging.python.org/specifications/core-metadata/">Core metadata</a> <a class="footnote-reference brackets" href="#id2" id="id9">1</a>: <code class="docutils literal notranslate"><span class="pre">Version</span></code>
+(<a class="reference external" href="https://packaging.python.org/specifications/core-metadata/#version">link</a>)</li>
+<li>Synonyms<ul>
+<li><a class="reference external" href="https://flit.readthedocs.io/">Flit</a> <a class="footnote-reference brackets" href="#id29" id="id31">2</a>: N/A (read from a <code class="docutils literal notranslate"><span class="pre">__version__</span></code> attribute)
+(<a class="reference external" href="https://flit.readthedocs.io/en/latest/index.html#usage">link</a>)</li>
+<li><a class="reference external" href="https://python-poetry.org/">Poetry</a> <a class="footnote-reference brackets" href="#id42" id="id44">3</a>: <code class="docutils literal notranslate"><span class="pre">version</span></code>
+(<a class="reference external" href="https://python-poetry.org/docs/pyproject/#version">link</a>)</li>
+<li><a class="reference external" href="https://setuptools.readthedocs.io/">Setuptools</a> <a class="footnote-reference brackets" href="#id55" id="id57">4</a>: <code class="docutils literal notranslate"><span class="pre">version</span></code>
+(<a class="reference external" href="https://setuptools.readthedocs.io/en/latest/setuptools.html#metadata">link</a>)</li>
+</ul>
+</li>
+</ul>
+<p>The version of the project as supported by <span class="target" id="index-2"></span><a class="pep reference external" href="pep-0440.html"><strong>PEP 440</strong></a>.</p>
+<p>Users SHOULD prefer to specify already-normalized versions.</p>
+</div>
+<div class="section" id="description">
+<h4><a class="toc-backref" href="#id83"><code class="docutils literal notranslate"><span class="pre">description</span></code></a><a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Format: string</li>
+<li><a class="reference external" href="https://packaging.python.org/specifications/core-metadata/">Core metadata</a> <a class="footnote-reference brackets" href="#id2" id="id10">1</a>: <code class="docutils literal notranslate"><span class="pre">Summary</span></code>
+(<a class="reference external" href="https://packaging.python.org/specifications/core-metadata/#summary">link</a>)</li>
+<li>Synonyms<ul>
+<li><a class="reference external" href="https://flit.readthedocs.io/">Flit</a> <a class="footnote-reference brackets" href="#id29" id="id32">2</a>: N/A</li>
+<li><a class="reference external" href="https://python-poetry.org/">Poetry</a> <a class="footnote-reference brackets" href="#id42" id="id45">3</a>: <code class="docutils literal notranslate"><span class="pre">description</span></code>
+(<a class="reference external" href="https://python-poetry.org/docs/pyproject/#description">link</a>)</li>
+<li><a class="reference external" href="https://setuptools.readthedocs.io/">Setuptools</a> <a class="footnote-reference brackets" href="#id55" id="id58">4</a>: <code class="docutils literal notranslate"><span class="pre">description</span></code>
+(<a class="reference external" href="https://setuptools.readthedocs.io/en/latest/setuptools.html#metadata">link</a>)</li>
+</ul>
+</li>
+</ul>
+<p>The summary description of the project.</p>
+</div>
+<div class="section" id="readme">
+<h4><a class="toc-backref" href="#id84"><code class="docutils literal notranslate"><span class="pre">readme</span></code></a><a class="headerlink" href="#readme" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Format: String or table</li>
+<li><a class="reference external" href="https://packaging.python.org/specifications/core-metadata/">Core metadata</a> <a class="footnote-reference brackets" href="#id2" id="id11">1</a>: <code class="docutils literal notranslate"><span class="pre">Description</span></code>
+(<a class="reference external" href="https://packaging.python.org/specifications/core-metadata/#description">link</a>)</li>
+<li>Synonyms<ul>
+<li><a class="reference external" href="https://flit.readthedocs.io/">Flit</a> <a class="footnote-reference brackets" href="#id29" id="id33">2</a>: <code class="docutils literal notranslate"><span class="pre">description-file</span></code>
+(<a class="reference external" href="https://flit.readthedocs.io/en/latest/pyproject_toml.html#metadata-section">link</a>)</li>
+<li><a class="reference external" href="https://python-poetry.org/">Poetry</a> <a class="footnote-reference brackets" href="#id42" id="id46">3</a>: <code class="docutils literal notranslate"><span class="pre">readme</span></code>
+(<a class="reference external" href="https://python-poetry.org/docs/pyproject/#readme">link</a>)</li>
+<li><a class="reference external" href="https://setuptools.readthedocs.io/">Setuptools</a> <a class="footnote-reference brackets" href="#id55" id="id59">4</a>: <code class="docutils literal notranslate"><span class="pre">long_description</span></code>
+(<a class="reference external" href="https://setuptools.readthedocs.io/en/latest/setuptools.html#metadata">link</a>)</li>
+</ul>
+</li>
+</ul>
+<p>The full description of the project (i.e. the README).</p>
+<p>The field accepts either a string or a table. If it is a string then
+it is the relative path to a text file containing the full
+description. Tools MUST assume the file’s encoding as UTF-8. If the
+file path ends in a case-insensitive <code class="docutils literal notranslate"><span class="pre">.md</span></code> suffix, then tools MUST
+assume the content-type is <code class="docutils literal notranslate"><span class="pre">text/markdown</span></code>. If the file path ends in
+a case-insensitive <code class="docutils literal notranslate"><span class="pre">.rst</span></code>, then tools MUST assume the content-type
+is <code class="docutils literal notranslate"><span class="pre">text/x-rst</span></code>. If a tool recognizes more extensions than this PEP,
+they MAY infer the content-type for the user without specifying this
+field as <code class="docutils literal notranslate"><span class="pre">dynamic</span></code>. For all unrecognized suffixes when a
+content-type is not provided, tools MUST raise an error.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">readme</span></code> field may also take a table. The <code class="docutils literal notranslate"><span class="pre">file</span></code> key has a
+string value representing a relative path to a file containing the
+full description. The <code class="docutils literal notranslate"><span class="pre">text</span></code> key has a string value which is the
+full description. These keys are mutually-exclusive, thus tools MUST
+raise an error if the metadata specifies both keys.</p>
+<p>The table also has a <code class="docutils literal notranslate"><span class="pre">content-type</span></code> field which takes a string
+specifying the content-type of the full description. A tool MUST raise
+an error if the metadata does not specify this field in the table. If
+the metadata does not specify the <code class="docutils literal notranslate"><span class="pre">charset</span></code> parameter, then it is
+assumed to be UTF-8. Tools MAY support other encodings if they choose
+to. Tools MAY support alternative content-types which they can
+transform to a content-type as supported by the <a class="reference external" href="https://packaging.python.org/specifications/core-metadata/">core metadata</a> <a class="footnote-reference brackets" href="#id2" id="id12">1</a>.
+Otherwise tools MUST raise an error for unsupported content-types.</p>
+</div>
+<div class="section" id="requires-python">
+<h4><a class="toc-backref" href="#id85"><code class="docutils literal notranslate"><span class="pre">requires-python</span></code></a><a class="headerlink" href="#requires-python" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Format: string</li>
+<li><a class="reference external" href="https://packaging.python.org/specifications/core-metadata/">Core metadata</a> <a class="footnote-reference brackets" href="#id2" id="id13">1</a>: <code class="docutils literal notranslate"><span class="pre">Requires-Python</span></code>
+(<a class="reference external" href="https://packaging.python.org/specifications/core-metadata/#summary">link</a>)</li>
+<li>Synonyms<ul>
+<li><a class="reference external" href="https://flit.readthedocs.io/">Flit</a> <a class="footnote-reference brackets" href="#id29" id="id34">2</a>: <code class="docutils literal notranslate"><span class="pre">requires-python</span></code>
+(<a class="reference external" href="https://flit.readthedocs.io/en/latest/pyproject_toml.html#metadata-section">link</a>)</li>
+<li><a class="reference external" href="https://python-poetry.org/">Poetry</a> <a class="footnote-reference brackets" href="#id42" id="id47">3</a>: As a <code class="docutils literal notranslate"><span class="pre">python</span></code> dependency in the
+<code class="docutils literal notranslate"><span class="pre">[tool.poetry.dependencies]</span></code> table
+(<a class="reference external" href="https://python-poetry.org/docs/pyproject/#dependencies-and-dev-dependencies">link</a>)</li>
+<li><a class="reference external" href="https://setuptools.readthedocs.io/">Setuptools</a> <a class="footnote-reference brackets" href="#id55" id="id60">4</a>: <code class="docutils literal notranslate"><span class="pre">python_requires</span></code>
+(<a class="reference external" href="https://setuptools.readthedocs.io/en/latest/setuptools.html#metadata">link</a>)</li>
+</ul>
+</li>
+</ul>
+<p>The Python version requirements of the project.</p>
+<p>Build back-ends MAY try to backfill appropriate
+<code class="docutils literal notranslate"><span class="pre">Programming</span> <span class="pre">Language</span> <span class="pre">::</span> <span class="pre">Python</span></code> <a class="reference external" href="https://pypi.org/classifiers/">trove classifiers</a> <a class="footnote-reference brackets" href="#id68" id="id69">5</a> based on what
+the user specified for this field.</p>
+</div>
+<div class="section" id="license">
+<h4><a class="toc-backref" href="#id86"><code class="docutils literal notranslate"><span class="pre">license</span></code></a><a class="headerlink" href="#license" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Format: Table</li>
+<li><a class="reference external" href="https://packaging.python.org/specifications/core-metadata/">Core metadata</a> <a class="footnote-reference brackets" href="#id2" id="id14">1</a>: <code class="docutils literal notranslate"><span class="pre">License</span></code>
+(<a class="reference external" href="https://packaging.python.org/specifications/core-metadata/#license">link</a>)</li>
+<li>Synonyms<ul>
+<li><a class="reference external" href="https://flit.readthedocs.io/">Flit</a> <a class="footnote-reference brackets" href="#id29" id="id35">2</a>: <code class="docutils literal notranslate"><span class="pre">license</span></code>
+(<a class="reference external" href="https://flit.readthedocs.io/en/latest/pyproject_toml.html#metadata-section">link</a>)</li>
+<li><a class="reference external" href="https://python-poetry.org/">Poetry</a> <a class="footnote-reference brackets" href="#id42" id="id48">3</a>: <code class="docutils literal notranslate"><span class="pre">license</span></code>
+(<a class="reference external" href="https://python-poetry.org/docs/pyproject/#license">link</a>)</li>
+<li><a class="reference external" href="https://setuptools.readthedocs.io/">Setuptools</a> <a class="footnote-reference brackets" href="#id55" id="id61">4</a>: <code class="docutils literal notranslate"><span class="pre">license</span></code>, <code class="docutils literal notranslate"><span class="pre">license_file</span></code>, <code class="docutils literal notranslate"><span class="pre">license_files</span></code>
+(<a class="reference external" href="https://setuptools.readthedocs.io/en/latest/setuptools.html#metadata">link</a>)</li>
+</ul>
+</li>
+</ul>
+<p>The table may have one of two keys. The <code class="docutils literal notranslate"><span class="pre">file</span></code> key has a string
+value that is a relative file path to the file which contains the
+license for the project. Tools MUST assume the file’s encoding is
+UTF-8. The <code class="docutils literal notranslate"><span class="pre">text</span></code> key has a string value which is the license of the
+project.  These keys are mutually exclusive, so a tool MUST raise an
+error if the metadata specifies both keys.</p>
+<p>A practical string value for the <code class="docutils literal notranslate"><span class="pre">license</span></code> key has been purposefully
+left out to allow for a future PEP to specify support for <a class="reference external" href="https://spdx.dev/">SPDX</a> <a class="footnote-reference brackets" href="#id71" id="id72">6</a>
+expressions (the same logic applies to any sort of “type” field
+specifying what license the <code class="docutils literal notranslate"><span class="pre">file</span></code> or <code class="docutils literal notranslate"><span class="pre">text</span></code> represents). If such
+support comes to fruition and a tool can unambiguously identify the
+license specified, then the tool MAY fill in the appropriate trove
+classifiers.</p>
+</div>
+<div class="section" id="authors-maintainers">
+<h4><a class="toc-backref" href="#id87"><code class="docutils literal notranslate"><span class="pre">authors</span></code>/<code class="docutils literal notranslate"><span class="pre">maintainers</span></code></a><a class="headerlink" href="#authors-maintainers" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Format: Array of inline tables with string keys and values</li>
+<li><a class="reference external" href="https://packaging.python.org/specifications/core-metadata/">Core metadata</a> <a class="footnote-reference brackets" href="#id2" id="id15">1</a>: <code class="docutils literal notranslate"><span class="pre">Author</span></code>/<code class="docutils literal notranslate"><span class="pre">Author-email</span></code>/<code class="docutils literal notranslate"><span class="pre">Maintainer</span></code>/<code class="docutils literal notranslate"><span class="pre">Maintainer-email</span></code>
+(<a class="reference external" href="https://packaging.python.org/specifications/core-metadata/#author">link</a>)</li>
+<li>Synonyms<ul>
+<li><a class="reference external" href="https://flit.readthedocs.io/">Flit</a> <a class="footnote-reference brackets" href="#id29" id="id36">2</a>: <code class="docutils literal notranslate"><span class="pre">author</span></code>/<code class="docutils literal notranslate"><span class="pre">author-email</span></code>/<code class="docutils literal notranslate"><span class="pre">maintainer</span></code>/<code class="docutils literal notranslate"><span class="pre">maintainer-email</span></code>
+(<a class="reference external" href="https://flit.readthedocs.io/en/latest/pyproject_toml.html#metadata-section">link</a>)</li>
+<li><a class="reference external" href="https://python-poetry.org/">Poetry</a> <a class="footnote-reference brackets" href="#id42" id="id49">3</a>: <code class="docutils literal notranslate"><span class="pre">authors</span></code>/<code class="docutils literal notranslate"><span class="pre">maintainers</span></code>
+(<a class="reference external" href="https://python-poetry.org/docs/pyproject/#authors">link</a>)</li>
+<li><a class="reference external" href="https://setuptools.readthedocs.io/">Setuptools</a> <a class="footnote-reference brackets" href="#id55" id="id62">4</a>: <code class="docutils literal notranslate"><span class="pre">author</span></code>/<code class="docutils literal notranslate"><span class="pre">author_email</span></code>/<code class="docutils literal notranslate"><span class="pre">maintainer</span></code>/<code class="docutils literal notranslate"><span class="pre">maintainer_email</span></code>
+(<a class="reference external" href="https://setuptools.readthedocs.io/en/latest/setuptools.html#metadata">link</a>)</li>
+</ul>
+</li>
+</ul>
+<p>The people or organizations considered to be the “authors” of the
+project. The exact meaning is open to interpretation — it may list the
+original or primary authors, current maintainers, or owners of the
+package.</p>
+<p>The “maintainers” field is similar to “authors” in that its exact
+meaning is open to interpretation.</p>
+<p>These fields accept an array of tables with 2 keys: <code class="docutils literal notranslate"><span class="pre">name</span></code> and
+<code class="docutils literal notranslate"><span class="pre">email</span></code>. Both values must be strings. The <code class="docutils literal notranslate"><span class="pre">name</span></code> value MUST be a
+valid email name (i.e. whatever can be put as a name, before an email,
+in <a class="reference external" href="https://tools.ietf.org/html/rfc822">RFC #822</a> <a class="footnote-reference brackets" href="#id73" id="id74">7</a>) and not contain commas. The <code class="docutils literal notranslate"><span class="pre">email</span></code> value MUST be a
+valid email address. Both keys are optional.</p>
+<p>Using the data to fill in <a class="reference external" href="https://packaging.python.org/specifications/core-metadata/">core metadata</a> <a class="footnote-reference brackets" href="#id2" id="id16">1</a> is as follows:</p>
+<ol class="arabic simple">
+<li>If only <code class="docutils literal notranslate"><span class="pre">name</span></code> is provided, the value goes in
+<code class="docutils literal notranslate"><span class="pre">Author</span></code>/<code class="docutils literal notranslate"><span class="pre">Maintainer</span></code> as appropriate.</li>
+<li>If only <code class="docutils literal notranslate"><span class="pre">email</span></code> is provided, the value goes in
+<code class="docutils literal notranslate"><span class="pre">Author-email</span></code>/<code class="docutils literal notranslate"><span class="pre">Maintainer-email</span></code> as appropriate.</li>
+<li>If both <code class="docutils literal notranslate"><span class="pre">email</span></code> and <code class="docutils literal notranslate"><span class="pre">name</span></code> are provided, the value goes in
+<code class="docutils literal notranslate"><span class="pre">Author-email</span></code>/<code class="docutils literal notranslate"><span class="pre">Maintainer-email</span></code> as appropriate, with the
+format <code class="docutils literal notranslate"><span class="pre">{name}</span> <span class="pre">&lt;{email}&gt;</span></code>.</li>
+</ol>
+</div>
+<div class="section" id="keywords">
+<h4><a class="toc-backref" href="#id88"><code class="docutils literal notranslate"><span class="pre">keywords</span></code></a><a class="headerlink" href="#keywords" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Format: array of strings</li>
+<li><a class="reference external" href="https://packaging.python.org/specifications/core-metadata/">Core metadata</a> <a class="footnote-reference brackets" href="#id2" id="id17">1</a>: <code class="docutils literal notranslate"><span class="pre">Keywords</span></code>
+(<a class="reference external" href="https://packaging.python.org/specifications/core-metadata/#keywords">link</a>)</li>
+<li>Synonyms<ul>
+<li><a class="reference external" href="https://flit.readthedocs.io/">Flit</a> <a class="footnote-reference brackets" href="#id29" id="id37">2</a>: <code class="docutils literal notranslate"><span class="pre">keywords</span></code>
+(<a class="reference external" href="https://flit.readthedocs.io/en/latest/pyproject_toml.html#metadata-section">link</a>)</li>
+<li><a class="reference external" href="https://python-poetry.org/">Poetry</a> <a class="footnote-reference brackets" href="#id42" id="id50">3</a>: <code class="docutils literal notranslate"><span class="pre">keywords</span></code>
+(<a class="reference external" href="https://python-poetry.org/docs/pyproject/#keywords">link</a>)</li>
+<li><a class="reference external" href="https://setuptools.readthedocs.io/">Setuptools</a> <a class="footnote-reference brackets" href="#id55" id="id63">4</a>: <code class="docutils literal notranslate"><span class="pre">keywords</span></code>
+(<a class="reference external" href="https://setuptools.readthedocs.io/en/latest/setuptools.html#metadata">link</a>)</li>
+</ul>
+</li>
+</ul>
+<p>The keywords for the project.</p>
+</div>
+<div class="section" id="classifiers">
+<h4><a class="toc-backref" href="#id89"><code class="docutils literal notranslate"><span class="pre">classifiers</span></code></a><a class="headerlink" href="#classifiers" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Format: array of strings</li>
+<li><a class="reference external" href="https://packaging.python.org/specifications/core-metadata/">Core metadata</a> <a class="footnote-reference brackets" href="#id2" id="id18">1</a>: <code class="docutils literal notranslate"><span class="pre">Classifier</span></code>
+(<a class="reference external" href="https://packaging.python.org/specifications/core-metadata/#classifier-multiple-use">link</a>)</li>
+<li>Synonyms<ul>
+<li><a class="reference external" href="https://flit.readthedocs.io/">Flit</a> <a class="footnote-reference brackets" href="#id29" id="id38">2</a>: <code class="docutils literal notranslate"><span class="pre">classifiers</span></code>
+(<a class="reference external" href="https://flit.readthedocs.io/en/latest/pyproject_toml.html#metadata-section">link</a>)</li>
+<li><a class="reference external" href="https://python-poetry.org/">Poetry</a> <a class="footnote-reference brackets" href="#id42" id="id51">3</a>: <code class="docutils literal notranslate"><span class="pre">classifiers</span></code>
+(<a class="reference external" href="https://python-poetry.org/docs/pyproject/#classifiers">link</a>)</li>
+<li><a class="reference external" href="https://setuptools.readthedocs.io/">Setuptools</a> <a class="footnote-reference brackets" href="#id55" id="id64">4</a>: <code class="docutils literal notranslate"><span class="pre">classifiers</span></code>
+(<a class="reference external" href="https://setuptools.readthedocs.io/en/latest/setuptools.html#metadata">link</a>)</li>
+</ul>
+</li>
+</ul>
+<p><a class="reference external" href="https://pypi.org/classifiers/">Trove classifiers</a> <a class="footnote-reference brackets" href="#id68" id="id70">5</a> which apply to the project.</p>
+<p>Build back-ends MAY automatically fill in extra trove classifiers
+if the back-end can deduce the classifiers from the provided metadata.</p>
+</div>
+<div class="section" id="urls">
+<h4><a class="toc-backref" href="#id90"><code class="docutils literal notranslate"><span class="pre">urls</span></code></a><a class="headerlink" href="#urls" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Format: Table, with keys and values of strings</li>
+<li><a class="reference external" href="https://packaging.python.org/specifications/core-metadata/">Core metadata</a> <a class="footnote-reference brackets" href="#id2" id="id19">1</a>: <code class="docutils literal notranslate"><span class="pre">Project-URL</span></code>
+(<a class="reference external" href="https://packaging.python.org/specifications/core-metadata/#project-url-multiple-use">link</a>)</li>
+<li>Synonyms<ul>
+<li><a class="reference external" href="https://flit.readthedocs.io/">Flit</a> <a class="footnote-reference brackets" href="#id29" id="id39">2</a>: <code class="docutils literal notranslate"><span class="pre">[tool.flit.metadata.urls]</span></code> table
+(<a class="reference external" href="https://flit.readthedocs.io/en/latest/pyproject_toml.html#metadata-section">link</a>)</li>
+<li><a class="reference external" href="https://python-poetry.org/">Poetry</a> <a class="footnote-reference brackets" href="#id42" id="id52">3</a>: <code class="docutils literal notranslate"><span class="pre">[tool.poetry.urls]</span></code> table
+(<a class="reference external" href="https://python-poetry.org/docs/pyproject/#urls">link</a>)</li>
+<li><a class="reference external" href="https://setuptools.readthedocs.io/">Setuptools</a> <a class="footnote-reference brackets" href="#id55" id="id65">4</a>: <code class="docutils literal notranslate"><span class="pre">project_urls</span></code>
+(<a class="reference external" href="https://setuptools.readthedocs.io/en/latest/setuptools.html#metadata">link</a>)</li>
+</ul>
+</li>
+</ul>
+<p>A table of URLs where the key is the URL label and the value is the
+URL itself.</p>
+</div>
+<div class="section" id="entry-points">
+<h4><a class="toc-backref" href="#id91">Entry points</a><a class="headerlink" href="#entry-points" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Format: Table (<code class="docutils literal notranslate"><span class="pre">[project.scripts]</span></code>, <code class="docutils literal notranslate"><span class="pre">[project.gui-scripts]</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">[project.entry-points]</span></code>)</li>
+<li><a class="reference external" href="https://packaging.python.org/specifications/core-metadata/">Core metadata</a> <a class="footnote-reference brackets" href="#id2" id="id20">1</a>: N/A;
+<a class="reference external" href="https://packaging.python.org/specifications/entry-points/">Entry point specification</a></li>
+<li>Synonyms<ul>
+<li><a class="reference external" href="https://flit.readthedocs.io/">Flit</a> <a class="footnote-reference brackets" href="#id29" id="id40">2</a>: <code class="docutils literal notranslate"><span class="pre">[tool.flit.scripts]</span></code> table for console scripts,
+<code class="docutils literal notranslate"><span class="pre">[tool.flit.entrypoints]</span></code> for the rest
+(<a class="reference external" href="https://flit.readthedocs.io/en/latest/pyproject_toml.html#scripts-section">link</a>)</li>
+<li><a class="reference external" href="https://python-poetry.org/">Poetry</a> <a class="footnote-reference brackets" href="#id42" id="id53">3</a>: <code class="docutils literal notranslate"><span class="pre">[tool.poetry.scripts]</span></code> table for console scripts
+(<a class="reference external" href="https://python-poetry.org/docs/pyproject/#scripts">link</a>)</li>
+<li><a class="reference external" href="https://setuptools.readthedocs.io/">Setuptools</a> <a class="footnote-reference brackets" href="#id55" id="id66">4</a>: <code class="docutils literal notranslate"><span class="pre">entry_points</span></code>
+(<a class="reference external" href="https://setuptools.readthedocs.io/en/latest/setuptools.html#metadata">link</a>)</li>
+</ul>
+</li>
+</ul>
+<p>There are three tables related to entry points. The
+<code class="docutils literal notranslate"><span class="pre">[project.scripts]</span></code> table corresponds to <code class="docutils literal notranslate"><span class="pre">console_scripts</span></code> group.
+The key of the table is the name of the entry point and the value is
+the object reference.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">[project.gui-scripts]</span></code> table corresponds to the <code class="docutils literal notranslate"><span class="pre">gui_scripts</span></code>
+group. Its format is the same as <code class="docutils literal notranslate"><span class="pre">[project.scripts]</span></code>.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">[project.entry-points]</span></code> table is a collection of tables. Each
+sub-table’s name is an entry point group. The key and value semantics
+are the same as <code class="docutils literal notranslate"><span class="pre">[project.scripts]</span></code>. Users MUST NOT create
+nested sub-tables but instead keep the entry point groups to only one
+level deep.</p>
+<p>Build back-ends MUST raise an error if the metadata defines a
+<code class="docutils literal notranslate"><span class="pre">[project.entry-points.console_scripts]</span></code> or
+<code class="docutils literal notranslate"><span class="pre">[project.entry-points.gui_scripts]</span></code> table, as they would
+be ambiguous in the face of <code class="docutils literal notranslate"><span class="pre">[project.scripts]</span></code> and
+<code class="docutils literal notranslate"><span class="pre">[project.gui-scripts]</span></code>, respectively.</p>
+</div>
+<div class="section" id="dependencies-optional-dependencies">
+<h4><a class="toc-backref" href="#id92"><code class="docutils literal notranslate"><span class="pre">dependencies</span></code>/<code class="docutils literal notranslate"><span class="pre">optional-dependencies</span></code></a><a class="headerlink" href="#dependencies-optional-dependencies" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Format: TBD</li>
+<li><a class="reference external" href="https://packaging.python.org/specifications/core-metadata/">Core metadata</a> <a class="footnote-reference brackets" href="#id2" id="id21">1</a>: <code class="docutils literal notranslate"><span class="pre">Requires-Dist</span></code>
+(<a class="reference external" href="https://packaging.python.org/specifications/core-metadata/#requires-dist-multiple-use">link</a>)</li>
+<li>Synonyms<ul>
+<li><a class="reference external" href="https://flit.readthedocs.io/">Flit</a> <a class="footnote-reference brackets" href="#id29" id="id41">2</a>: <code class="docutils literal notranslate"><span class="pre">requires</span></code> for required dependencies, <code class="docutils literal notranslate"><span class="pre">requires-extra</span></code>
+for optional dependencies
+(<a class="reference external" href="https://flit.readthedocs.io/en/latest/pyproject_toml.html#metadata-section">link</a>)</li>
+<li><a class="reference external" href="https://python-poetry.org/">Poetry</a> <a class="footnote-reference brackets" href="#id42" id="id54">3</a>: <code class="docutils literal notranslate"><span class="pre">[tool.poetry.dependencies]</span></code> for dependencies (both
+required and for development),
+<code class="docutils literal notranslate"><span class="pre">[tool.poetry.extras]</span></code> for optional dependencies
+(<a class="reference external" href="https://python-poetry.org/docs/pyproject/#dependencies-and-dev-dependencies">link</a>)</li>
+<li><a class="reference external" href="https://setuptools.readthedocs.io/">Setuptools</a> <a class="footnote-reference brackets" href="#id55" id="id67">4</a>: <code class="docutils literal notranslate"><span class="pre">install_requires</span></code> for required dependencies,
+<code class="docutils literal notranslate"><span class="pre">extras_require</span></code> for optional dependencies
+(<a class="reference external" href="https://setuptools.readthedocs.io/en/latest/setuptools.html#metadata">link</a>)</li>
+</ul>
+</li>
+</ul>
+<p>See the open issue on <a class="reference internal" href="#how-to-specify-dependencies">How to specify dependencies?</a> for a
+discussion of the options of how to specify a project’s dependencies.</p>
+</div>
+<div class="section" id="dynamic">
+<h4><a class="toc-backref" href="#id93"><code class="docutils literal notranslate"><span class="pre">dynamic</span></code></a><a class="headerlink" href="#dynamic" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>Format: Array of strings</li>
+<li><a class="reference external" href="https://packaging.python.org/specifications/core-metadata/">Core metadata</a> <a class="footnote-reference brackets" href="#id2" id="id22">1</a>: N/A</li>
+<li>No synonyms</li>
+</ul>
+<p>Specifies which fields listed by this PEP were intentionally
+unspecified so another tool can/will provide such metadata
+dynamically. This clearly delineates which metadata is purposefully
+unspecified and expected to stay unspecified compared to being
+provided via tooling later on.</p>
+<ul class="simple">
+<li>A build back-end MUST honour statically-specified metadata (which
+means the metadata did not list the field in <code class="docutils literal notranslate"><span class="pre">dynamic</span></code>).</li>
+<li>A build back-end MUST raise an error if the metadata specifies the
+<code class="docutils literal notranslate"><span class="pre">name</span></code> in <code class="docutils literal notranslate"><span class="pre">dynamic</span></code>.</li>
+<li>If the <a class="reference external" href="https://packaging.python.org/specifications/core-metadata/">core metadata</a> <a class="footnote-reference brackets" href="#id2" id="id23">1</a> specification lists a field as “Required”,
+then the metadata MUST specify the field statically or list it in
+<code class="docutils literal notranslate"><span class="pre">dynamic</span></code> (build back-ends MUST raise an error otherwise, i.e. a
+required field is in no way listed in a <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> file).</li>
+<li>If the <a class="reference external" href="https://packaging.python.org/specifications/core-metadata/">core metadata</a> <a class="footnote-reference brackets" href="#id2" id="id24">1</a> specification lists a field as “Optional”,
+the metadata MAY list it in <code class="docutils literal notranslate"><span class="pre">dynamic</span></code> if the expectation is a
+build back-end will provide the data for the field later.</li>
+<li>Build back-ends MUST raise an error if the metadata specifies a
+field statically as well as being listed in <code class="docutils literal notranslate"><span class="pre">dynamic</span></code>.</li>
+<li>If the metadata does not list a field in <code class="docutils literal notranslate"><span class="pre">dynamic</span></code>, then a build
+back-end CANNOT fill in the requisite metadata on behalf of the user
+(i.e. <code class="docutils literal notranslate"><span class="pre">dynamic</span></code> is the only way to allow a tool to fill in
+metadata and the user must opt into the filling in).</li>
+<li>Build back-ends MUST raise an error if the metadata specifies a
+field in <code class="docutils literal notranslate"><span class="pre">dynamic</span></code> but is still unspecified in the final artifact
+(i.e. the build back-end was unable to provide the data for a field
+listed in <code class="docutils literal notranslate"><span class="pre">dynamic</span></code>).</li>
+</ul>
+</div>
+</div>
+<div class="section" id="example">
+<h3><a class="toc-backref" href="#id94">Example</a><a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">project</span><span class="p">]</span>
+<span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;spam&quot;</span>
+<span class="n">version</span> <span class="o">=</span> <span class="s2">&quot;2020.0.0&quot;</span>
+<span class="n">description</span> <span class="o">=</span> <span class="s2">&quot;Lovely Spam! Wonderful Spam!&quot;</span>
+<span class="n">readme</span> <span class="o">=</span> <span class="s2">&quot;README.rst&quot;</span>
+<span class="n">requires</span><span class="o">-</span><span class="n">python</span> <span class="o">=</span> <span class="s2">&quot;&gt;=3.8&quot;</span>
+<span class="n">license</span> <span class="o">=</span> <span class="p">{</span><span class="n">file</span> <span class="o">=</span> <span class="s2">&quot;LICENSE.txt&quot;</span><span class="p">}</span>
+<span class="n">keywords</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;egg&quot;</span><span class="p">,</span> <span class="s2">&quot;bacon&quot;</span><span class="p">,</span> <span class="s2">&quot;sausage&quot;</span><span class="p">,</span> <span class="s2">&quot;tomatoes&quot;</span><span class="p">,</span> <span class="s2">&quot;Lobster Thermidor&quot;</span><span class="p">]</span>
+<span class="n">authors</span> <span class="o">=</span> <span class="p">[</span>
+  <span class="p">{</span><span class="n">email</span> <span class="o">=</span> <span class="s2">&quot;hi@pradyunsg.me&quot;</span><span class="p">},</span>
+  <span class="p">{</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Tzu-Ping Chung&quot;</span><span class="p">}</span>
+<span class="p">]</span>
+<span class="n">maintainers</span> <span class="o">=</span> <span class="p">[</span>
+  <span class="p">{</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Brett Cannon&quot;</span><span class="p">,</span> <span class="n">email</span> <span class="o">=</span> <span class="s2">&quot;brett@python.org&quot;</span><span class="p">}</span>
+<span class="p">]</span>
+<span class="n">classifiers</span> <span class="o">=</span> <span class="p">[</span>
+  <span class="s2">&quot;Development Status :: 4 - Beta&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;Programming Language :: Python&quot;</span>
+<span class="p">]</span>
+
+<span class="c1"># Using &#39;dependencies&#39; and &#39;optional-dependencies&#39; as an example</span>
+<span class="c1"># as those fields&#39; format are an Open Issue.</span>
+<span class="n">dynamic</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;dependencies&quot;</span><span class="p">,</span> <span class="s2">&quot;optional-dependencies&quot;</span><span class="p">]</span>
+
+<span class="p">[</span><span class="n">project</span><span class="o">.</span><span class="n">urls</span><span class="p">]</span>
+<span class="n">homepage</span> <span class="o">=</span> <span class="s2">&quot;example.com&quot;</span>
+<span class="n">documentation</span> <span class="o">=</span> <span class="s2">&quot;readthedocs.org&quot;</span>
+<span class="n">repository</span> <span class="o">=</span> <span class="s2">&quot;github.com&quot;</span>
+<span class="n">changelog</span> <span class="o">=</span> <span class="s2">&quot;github.com/me/spam/blob/master/CHANGELOG.md&quot;</span>
+
+<span class="p">[</span><span class="n">project</span><span class="o">.</span><span class="n">scripts</span><span class="p">]</span>
+<span class="n">spam</span><span class="o">-</span><span class="n">cli</span> <span class="o">=</span> <span class="s2">&quot;spam:main_cli&quot;</span>
+
+<span class="p">[</span><span class="n">project</span><span class="o">.</span><span class="n">gui</span><span class="o">-</span><span class="n">scripts</span><span class="p">]</span>
+<span class="n">spam</span><span class="o">-</span><span class="n">gui</span> <span class="o">=</span> <span class="s2">&quot;spam:main_gui&quot;</span>
+
+<span class="p">[</span><span class="n">project</span><span class="o">.</span><span class="n">entry</span><span class="o">-</span><span class="n">points</span><span class="o">.</span><span class="s2">&quot;spam.magical&quot;</span><span class="p">]</span>
+<span class="n">tomatoes</span> <span class="o">=</span> <span class="s2">&quot;spam:main_tomatoes&quot;</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="backwards-compatibility">
+<h2><a class="toc-backref" href="#id95">Backwards Compatibility</a><a class="headerlink" href="#backwards-compatibility" title="Permalink to this headline">¶</a></h2>
+<p>As this provides a new way to specify a project’s <a class="reference external" href="https://packaging.python.org/specifications/core-metadata/">core metadata</a> <a class="footnote-reference brackets" href="#id2" id="id25">1</a> and
+is using a new table name which falls under the reserved namespace as
+outlined in <span class="target" id="index-3"></span><a class="pep reference external" href="pep-0518.html"><strong>PEP 518</strong></a>, there are no backwards-compatibility concerns.</p>
+</div>
+<div class="section" id="security-implications">
+<h2><a class="toc-backref" href="#id96">Security Implications</a><a class="headerlink" href="#security-implications" title="Permalink to this headline">¶</a></h2>
+<p>There are no direct security concerns as this PEP covers how to statically
+define project metadata. Any security issues would stem from how tools
+consume the metadata and choose to act upon it.</p>
+</div>
+<div class="section" id="how-to-teach-this">
+<h2><a class="toc-backref" href="#id97">How to Teach This</a><a class="headerlink" href="#how-to-teach-this" title="Permalink to this headline">¶</a></h2>
+<p>[How to teach users, new and experienced, how to apply the PEP to their work.]</p>
+</div>
+<div class="section" id="reference-implementation">
+<h2><a class="toc-backref" href="#id98">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p>There are currently no proofs-of-concept from any build tools implementing this PEP.</p>
+</div>
+<div class="section" id="rejected-ideas">
+<h2><a class="toc-backref" href="#id99">Rejected Ideas</a><a class="headerlink" href="#rejected-ideas" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="other-table-names">
+<h3><a class="toc-backref" href="#id100">Other table names</a><a class="headerlink" href="#other-table-names" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="anything-under-build-system">
+<h4><a class="toc-backref" href="#id101">Anything under <code class="docutils literal notranslate"><span class="pre">[build-system]</span></code></a><a class="headerlink" href="#anything-under-build-system" title="Permalink to this headline">¶</a></h4>
+<p>There was worry that using this table name would exacerbate confusion
+between build metadata and project metadata, e.g. by using
+<code class="docutils literal notranslate"><span class="pre">[build-system.metadata]</span></code> as a table.</p>
+</div>
+<div class="section" id="package">
+<h4><a class="toc-backref" href="#id102"><code class="docutils literal notranslate"><span class="pre">[package]</span></code></a><a class="headerlink" href="#package" title="Permalink to this headline">¶</a></h4>
+<p>Garnered no strong support.</p>
+</div>
+<div class="section" id="metadata">
+<h4><a class="toc-backref" href="#id103"><code class="docutils literal notranslate"><span class="pre">[metadata]</span></code></a><a class="headerlink" href="#metadata" title="Permalink to this headline">¶</a></h4>
+<p>The strongest contender after <code class="docutils literal notranslate"><span class="pre">[project]</span></code>, but in the end it was
+agreed that <code class="docutils literal notranslate"><span class="pre">[project]</span></code> read better for certain sub-tables, e.g.
+<code class="docutils literal notranslate"><span class="pre">[project.urls]</span></code>.</p>
+</div>
+</div>
+<div class="section" id="support-for-a-metadata-provider">
+<h3><a class="toc-backref" href="#id104">Support for a metadata provider</a><a class="headerlink" href="#support-for-a-metadata-provider" title="Permalink to this headline">¶</a></h3>
+<p>Initially there was a proposal to add a middle layer between the
+static metadata specified by this PEP and
+<code class="docutils literal notranslate"><span class="pre">prepare_metadata_for_build_wheel()</span></code> as specified by <span class="target" id="index-4"></span><a class="pep reference external" href="pep-0517.html"><strong>PEP 517</strong></a>. The
+idea was that if a project wanted to insert itself between a build
+back-end and the metadata there would be a hook to do so.</p>
+<p>In the end the authors considered this idea unnecessarily complicated
+and would move the PEP away from its design goal to push people to
+define core metadata statically as much as possible.</p>
+</div>
+<div class="section" id="require-a-normalized-project-name">
+<h3><a class="toc-backref" href="#id105">Require a normalized project name</a><a class="headerlink" href="#require-a-normalized-project-name" title="Permalink to this headline">¶</a></h3>
+<p>While it would make things easier for tools to only work with the
+normalized name as specified in <span class="target" id="index-5"></span><a class="pep reference external" href="pep-0503.html"><strong>PEP 503</strong></a>, the idea was ultimately
+rejected as it would hurt projects transitioning to using this PEP.</p>
+</div>
+<div class="section" id="specify-files-to-include-when-building">
+<h3><a class="toc-backref" href="#id106">Specify files to include when building</a><a class="headerlink" href="#specify-files-to-include-when-building" title="Permalink to this headline">¶</a></h3>
+<p>The authors decided fairly quickly during design discussions that
+this PEP should focus exclusively on project metadata and not build
+metadata. As such, specifying what files should end up in a source
+distribution or wheel file is out of scope for this PEP.</p>
+</div>
+<div class="section" id="name-the-project-urls-table-project-project-urls">
+<h3><a class="toc-backref" href="#id107">Name the <code class="docutils literal notranslate"><span class="pre">[project.urls]</span></code> table <code class="docutils literal notranslate"><span class="pre">[project.project-urls]</span></code></a><a class="headerlink" href="#name-the-project-urls-table-project-project-urls" title="Permalink to this headline">¶</a></h3>
+<p>This suggestion came thanks to the corresponding <a class="reference external" href="https://packaging.python.org/specifications/core-metadata/">core metadata</a> <a class="footnote-reference brackets" href="#id2" id="id26">1</a>
+being <code class="docutils literal notranslate"><span class="pre">Project-Url</span></code>. But once the overall table name of <code class="docutils literal notranslate"><span class="pre">[project]</span></code>
+was chosen, the redundant use of the word “project” suggested the
+current, shorter name was a better fit.</p>
+</div>
+<div class="section" id="have-a-separate-url-home-page-field">
+<h3><a class="toc-backref" href="#id108">Have a separate <code class="docutils literal notranslate"><span class="pre">url</span></code>/<code class="docutils literal notranslate"><span class="pre">home-page</span></code> field</a><a class="headerlink" href="#have-a-separate-url-home-page-field" title="Permalink to this headline">¶</a></h3>
+<p>While the <a class="reference external" href="https://packaging.python.org/specifications/core-metadata/">core metadata</a> <a class="footnote-reference brackets" href="#id2" id="id27">1</a> supports it, having a single field for a
+project’s URL while also supporting a full table seemed redundant and
+confusing.</p>
+</div>
+<div class="section" id="recommend-that-tools-put-development-related-dependencies-into-a-dev-extra">
+<h3><a class="toc-backref" href="#id109">Recommend that tools put development-related dependencies into a “dev” extra</a><a class="headerlink" href="#recommend-that-tools-put-development-related-dependencies-into-a-dev-extra" title="Permalink to this headline">¶</a></h3>
+<p>As various tools have grown the concept of required dependencies
+versus development dependencies, the idea of suggesting to tools that
+they put such development tool into a “dev” grouping came up. In the
+end, though, the authors deemed it out-of-scope for this specification
+to suggest such a workflow.</p>
+</div>
+<div class="section" id="have-the-dynamic-field-only-require-specifying-missing-required-fields">
+<h3><a class="toc-backref" href="#id110">Have the <code class="docutils literal notranslate"><span class="pre">dynamic</span></code> field only require specifying missing required fields</a><a class="headerlink" href="#have-the-dynamic-field-only-require-specifying-missing-required-fields" title="Permalink to this headline">¶</a></h3>
+<p>The authors considered the idea that the <code class="docutils literal notranslate"><span class="pre">dynamic</span></code> field would only
+require the listing of missing required fields and make listing
+optional fields optional. In the end, though, this went against the
+design goal of promoting specifying as much information statically as
+possible.</p>
+</div>
+<div class="section" id="different-structures-for-the-readme-field">
+<h3><a class="toc-backref" href="#id111">Different structures for the <code class="docutils literal notranslate"><span class="pre">readme</span></code> field</a><a class="headerlink" href="#different-structures-for-the-readme-field" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">readme</span></code> field had a proposed <code class="docutils literal notranslate"><span class="pre">readme_content_type</span></code> field, but
+the authors considered the string/table hybrid more practical for the
+common case while still accommodating the more complex case. Same goes
+for using <code class="docutils literal notranslate"><span class="pre">long_description</span></code> and a corresponding
+<code class="docutils literal notranslate"><span class="pre">long_description_content_type</span></code> field.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">file</span></code> key in the table format was originally proposed as
+<code class="docutils literal notranslate"><span class="pre">path</span></code>, but <code class="docutils literal notranslate"><span class="pre">file</span></code> corresponds to setuptools’ <code class="docutils literal notranslate"><span class="pre">file</span></code> key and
+there is no strong reason otherwise to choose one over the other.</p>
+</div>
+<div class="section" id="allowing-the-readme-field-to-imply-text-plain">
+<h3><a class="toc-backref" href="#id112">Allowing the <code class="docutils literal notranslate"><span class="pre">readme</span></code> field to imply <code class="docutils literal notranslate"><span class="pre">text/plain</span></code></a><a class="headerlink" href="#allowing-the-readme-field-to-imply-text-plain" title="Permalink to this headline">¶</a></h3>
+<p>The authors considered allowing for unspecified content-types which
+would default to <code class="docutils literal notranslate"><span class="pre">text/plain</span></code>, but decided that it would be best to
+be explicit in this case to prevent accidental incorrect renderings on
+PyPI and to force users to be clear in their intent.</p>
+</div>
+<div class="section" id="other-names-for-dependencies-optional-dependencies">
+<h3><a class="toc-backref" href="#id113">Other names for <code class="docutils literal notranslate"><span class="pre">dependencies</span></code>/<code class="docutils literal notranslate"><span class="pre">optional-dependencies</span></code></a><a class="headerlink" href="#other-names-for-dependencies-optional-dependencies" title="Permalink to this headline">¶</a></h3>
+<p>The authors originally proposed <code class="docutils literal notranslate"><span class="pre">requires</span></code>/<code class="docutils literal notranslate"><span class="pre">extra-requires</span></code> as
+names, but decided to go with the current names after a survey of
+other packaging ecosystems showed Python was an outlier:</p>
+<ol class="arabic simple">
+<li><a class="reference external" href="https://docs.npmjs.com/files/package.json#optionaldependencies">npm</a></li>
+<li><a class="reference external" href="https://doc.rust-lang.org/cargo/guide/dependencies.html">Rust</a></li>
+<li><a class="reference external" href="https://dart.dev/guides/packages">Dart</a></li>
+<li><a class="reference external" href="https://swift.org/package-manager/">Swift</a></li>
+<li><a class="reference external" href="https://guides.rubygems.org/specification-reference/#add_runtime_dependency">Ruby</a></li>
+</ol>
+<p>Normalizing on the current names helps minimize confusion for people coming from
+other ecosystems without using terminology that is necessarily foreign to new
+programmers. It also prevents potential confusion with <code class="docutils literal notranslate"><span class="pre">requires</span></code> in the
+<code class="docutils literal notranslate"><span class="pre">[build-system]</span></code> table as specified in <span class="target" id="index-6"></span><a class="pep reference external" href="pep-0518.html"><strong>PEP 518</strong></a>.</p>
+</div>
+<div class="section" id="support-maintainers-maintainers-email">
+<h3><a class="toc-backref" href="#id114">Support <code class="docutils literal notranslate"><span class="pre">Maintainers</span></code>/<code class="docutils literal notranslate"><span class="pre">Maintainers-email</span></code></a><a class="headerlink" href="#support-maintainers-maintainers-email" title="Permalink to this headline">¶</a></h3>
+<p>When discussing how to support <code class="docutils literal notranslate"><span class="pre">Authors</span></code>/<code class="docutils literal notranslate"><span class="pre">Authors-email</span></code>, the question was
+brought up as to how exactly authors differed from maintainers. As this was
+never clearly defined and no one could come up with a good definition, the
+decision was made to drop the concept of maintainers.</p>
+</div>
+<div class="section" id="drop-maintainers-to-unify-with-authors">
+<h3><a class="toc-backref" href="#id115">Drop <code class="docutils literal notranslate"><span class="pre">maintainers</span></code> to unify with <code class="docutils literal notranslate"><span class="pre">authors</span></code></a><a class="headerlink" href="#drop-maintainers-to-unify-with-authors" title="Permalink to this headline">¶</a></h3>
+<p>As the difference between <code class="docutils literal notranslate"><span class="pre">Authors</span></code> and <code class="docutils literal notranslate"><span class="pre">Maintainers</span></code> fields in
+the <a class="reference external" href="https://packaging.python.org/specifications/core-metadata/">core metadata</a> <a class="footnote-reference brackets" href="#id2" id="id28">1</a> is unspecified and ambiguous, this PEP originally
+proposed unifying them as a single <code class="docutils literal notranslate"><span class="pre">authors</span></code> field. Other ecosystems
+have selected “author” as the term to use, so the thinking was to
+standardize on <code class="docutils literal notranslate"><span class="pre">Author</span></code> in the core metadata as the place to list
+people maintaining a project.</p>
+<p>In the end, though, the decision to adhere to the core metadata was
+deemed more important to help with the the acceptance of this PEP,
+rather than trying to introduce a new interpretation for some of the
+core metadata.</p>
+</div>
+<div class="section" id="support-an-arbitrary-depth-of-tables-for-project-entry-points">
+<h3><a class="toc-backref" href="#id116">Support an arbitrary depth of tables for <code class="docutils literal notranslate"><span class="pre">project.entry-points</span></code></a><a class="headerlink" href="#support-an-arbitrary-depth-of-tables-for-project-entry-points" title="Permalink to this headline">¶</a></h3>
+<p>There was a worry that keeping <code class="docutils literal notranslate"><span class="pre">project.entry-points</span></code> to a depth of 1 for sub-tables
+would cause confusion to users if they use a dotted name and are not used to table
+names using quotation marks (e.g. <code class="docutils literal notranslate"><span class="pre">project.entry-points.&quot;spam.magical&quot;</span></code>). But
+supporting an arbitrary depth – e.g. <code class="docutils literal notranslate"><span class="pre">project.entry-points.spam.magical</span></code> – would
+preclude any form of an exploded table format in the future. It would also complicate
+things for build back-ends as they would have to make sure to traverse the full
+table structure rather than a single level and raising errors as appropriate on
+value types.</p>
+</div>
+<div class="section" id="backfilling-trove-classifiers-should-occur-instead-of-may-happen">
+<h3><a class="toc-backref" href="#id117">Backfilling trove classifiers SHOULD occur instead of MAY happen</a><a class="headerlink" href="#backfilling-trove-classifiers-should-occur-instead-of-may-happen" title="Permalink to this headline">¶</a></h3>
+<p>Originally this PEP said that tools SHOULD backfill appropriate trove classifiers.
+This was changed to say it MAY occur to emphasize it was entirely optional for
+build back-ends to implement.</p>
+</div>
+</div>
+<div class="section" id="open-issues">
+<h2><a class="toc-backref" href="#id118">Open Issues</a><a class="headerlink" href="#open-issues" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="how-to-specify-dependencies">
+<h3><a class="toc-backref" href="#id119">How to specify dependencies?</a><a class="headerlink" href="#how-to-specify-dependencies" title="Permalink to this headline">¶</a></h3>
+<p>People seem to fall into two camps on how to specify dependencies:
+using <span class="target" id="index-7"></span><a class="pep reference external" href="pep-0508.html"><strong>PEP 508</strong></a> strings or TOML tables (sometimes referred to as the
+“exploded table” format due to it being the equivalent of translating
+a <span class="target" id="index-8"></span><a class="pep reference external" href="pep-0508.html"><strong>PEP 508</strong></a> string into a table format). There is no question as to
+whether one format or another can fully represent what the other can.
+This very much comes down to a question of familiarity and (perceived)
+ease of use.</p>
+<p>Supporters of <span class="target" id="index-9"></span><a class="pep reference external" href="pep-0508.html"><strong>PEP 508</strong></a> strings believe familiarity is important as
+the format has been in use for 5 years and in some variant for 15
+years (since the introduction of <span class="target" id="index-10"></span><a class="pep reference external" href="pep-0345.html"><strong>PEP 345</strong></a>). This would facilitate
+transitioning people to using this PEP as there would be one less new
+concept to learn. Supporters also think the format is reasonably
+ergonomic and understandable upon first glance, so using a DSL for it
+is not a major drawback.</p>
+<p>Supporters of the exploded table format believe it has better
+ergonomics. Tooling which can validate TOML formats could also help
+detect errors in a <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> file while editing instead of
+waiting until the user has run a tool in the case of <span class="target" id="index-11"></span><a class="pep reference external" href="pep-0508.html"><strong>PEP 508</strong></a>’s DSL.
+Supporters also believe it is easier to read and reason (both in
+general and for first-time users). They also point out that other
+programming languages have adopted a format more like an exploded
+table thanks to their use of standardized configuration formats (e.g.
+<a class="reference external" href="https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html">Rust</a>,
+and <a class="reference external" href="https://dart.dev/tools/pub/dependencies">Dart</a>). The thinking
+is that an exploded table format would be more familiar to people
+coming to Python from another programming language.</p>
+<p>The authors briefly considered supporting both formats, but decided
+that it would lead to confusion as people would need to be familiar
+with two formats instead of just one.</p>
+</div>
+</div>
+<div class="section" id="id1">
+<h2><a class="toc-backref" href="#id120">References</a><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets">1</span><span class='fn-backref'><em> (<a href="#id3">1</a>, <a href="#id4">2</a>, <a href="#id5">3</a>, <a href="#id6">4</a>, <a href="#id7">5</a>, <a href="#id8">6</a>, <a href="#id9">7</a>, <a href="#id10">8</a>, <a href="#id11">9</a>, <a href="#id12">10</a>, <a href="#id13">11</a>, <a href="#id14">12</a>, <a href="#id15">13</a>, <a href="#id16">14</a>, <a href="#id17">15</a>, <a href="#id18">16</a>, <a href="#id19">17</a>, <a href="#id20">18</a>, <a href="#id21">19</a>, <a href="#id22">20</a>, <a href="#id23">21</a>, <a href="#id24">22</a>, <a href="#id25">23</a>, <a href="#id26">24</a>, <a href="#id27">25</a>, <a href="#id28">26</a>) </em></span></dt>
+<dd><a class="reference external" href="https://packaging.python.org/specifications/core-metadata/">https://packaging.python.org/specifications/core-metadata/</a></dd>
+<dt class="label" id="id29"><span class="brackets">2</span><span class='fn-backref'><em> (<a href="#id30">1</a>, <a href="#id31">2</a>, <a href="#id32">3</a>, <a href="#id33">4</a>, <a href="#id34">5</a>, <a href="#id35">6</a>, <a href="#id36">7</a>, <a href="#id37">8</a>, <a href="#id38">9</a>, <a href="#id39">10</a>, <a href="#id40">11</a>, <a href="#id41">12</a>) </em></span></dt>
+<dd><a class="reference external" href="https://flit.readthedocs.io/">https://flit.readthedocs.io/</a></dd>
+<dt class="label" id="id42"><span class="brackets">3</span><span class='fn-backref'><em> (<a href="#id43">1</a>, <a href="#id44">2</a>, <a href="#id45">3</a>, <a href="#id46">4</a>, <a href="#id47">5</a>, <a href="#id48">6</a>, <a href="#id49">7</a>, <a href="#id50">8</a>, <a href="#id51">9</a>, <a href="#id52">10</a>, <a href="#id53">11</a>, <a href="#id54">12</a>) </em></span></dt>
+<dd><a class="reference external" href="https://python-poetry.org/">https://python-poetry.org/</a></dd>
+<dt class="label" id="id55"><span class="brackets">4</span><span class='fn-backref'><em> (<a href="#id56">1</a>, <a href="#id57">2</a>, <a href="#id58">3</a>, <a href="#id59">4</a>, <a href="#id60">5</a>, <a href="#id61">6</a>, <a href="#id62">7</a>, <a href="#id63">8</a>, <a href="#id64">9</a>, <a href="#id65">10</a>, <a href="#id66">11</a>, <a href="#id67">12</a>) </em></span></dt>
+<dd><a class="reference external" href="https://setuptools.readthedocs.io/">https://setuptools.readthedocs.io/</a></dd>
+<dt class="label" id="id68"><span class="brackets">5</span><span class='fn-backref'><em> (<a href="#id69">1</a>, <a href="#id70">2</a>) </em></span></dt>
+<dd><a class="reference external" href="https://pypi.org/classifiers/">https://pypi.org/classifiers/</a></dd>
+<dt class="label" id="id71"><span class="brackets"><a class="fn-backref" href="#id72">6</a></span></dt>
+<dd><a class="reference external" href="https://spdx.dev/">https://spdx.dev/</a></dd>
+<dt class="label" id="id73"><span class="brackets"><a class="fn-backref" href="#id74">7</a></span></dt>
+<dd><a class="reference external" href="https://tools.ietf.org/html/rfc822">https://tools.ietf.org/html/rfc822</a></dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id121">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document is placed in the public domain or under the
+CC0-1.0-Universal license, whichever is more permissive.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0621.rst">https://github.com/python/peps/blob/master/pep-0621.rst</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0621.rst">2020-08-15T06:07:35</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0621.rst.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0620.html">PEP 0620</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0622.html">PEP 0622</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 621 – Storing project metadata in pyproject.toml</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#details">Details</a><ul>
+<li><a class="reference internal" href="#table-name">Table name</a></li>
+<li><a class="reference internal" href="#name"><code class="docutils literal notranslate"><span class="pre">name</span></code></a></li>
+<li><a class="reference internal" href="#version"><code class="docutils literal notranslate"><span class="pre">version</span></code></a></li>
+<li><a class="reference internal" href="#description"><code class="docutils literal notranslate"><span class="pre">description</span></code></a></li>
+<li><a class="reference internal" href="#readme"><code class="docutils literal notranslate"><span class="pre">readme</span></code></a></li>
+<li><a class="reference internal" href="#requires-python"><code class="docutils literal notranslate"><span class="pre">requires-python</span></code></a></li>
+<li><a class="reference internal" href="#license"><code class="docutils literal notranslate"><span class="pre">license</span></code></a></li>
+<li><a class="reference internal" href="#authors-maintainers"><code class="docutils literal notranslate"><span class="pre">authors</span></code>/<code class="docutils literal notranslate"><span class="pre">maintainers</span></code></a></li>
+<li><a class="reference internal" href="#keywords"><code class="docutils literal notranslate"><span class="pre">keywords</span></code></a></li>
+<li><a class="reference internal" href="#classifiers"><code class="docutils literal notranslate"><span class="pre">classifiers</span></code></a></li>
+<li><a class="reference internal" href="#urls"><code class="docutils literal notranslate"><span class="pre">urls</span></code></a></li>
+<li><a class="reference internal" href="#entry-points">Entry points</a></li>
+<li><a class="reference internal" href="#dependencies-optional-dependencies"><code class="docutils literal notranslate"><span class="pre">dependencies</span></code>/<code class="docutils literal notranslate"><span class="pre">optional-dependencies</span></code></a></li>
+<li><a class="reference internal" href="#dynamic"><code class="docutils literal notranslate"><span class="pre">dynamic</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#example">Example</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#security-implications">Security Implications</a></li>
+<li><a class="reference internal" href="#how-to-teach-this">How to Teach This</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#rejected-ideas">Rejected Ideas</a><ul>
+<li><a class="reference internal" href="#other-table-names">Other table names</a><ul>
+<li><a class="reference internal" href="#anything-under-build-system">Anything under <code class="docutils literal notranslate"><span class="pre">[build-system]</span></code></a></li>
+<li><a class="reference internal" href="#package"><code class="docutils literal notranslate"><span class="pre">[package]</span></code></a></li>
+<li><a class="reference internal" href="#metadata"><code class="docutils literal notranslate"><span class="pre">[metadata]</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#support-for-a-metadata-provider">Support for a metadata provider</a></li>
+<li><a class="reference internal" href="#require-a-normalized-project-name">Require a normalized project name</a></li>
+<li><a class="reference internal" href="#specify-files-to-include-when-building">Specify files to include when building</a></li>
+<li><a class="reference internal" href="#name-the-project-urls-table-project-project-urls">Name the <code class="docutils literal notranslate"><span class="pre">[project.urls]</span></code> table <code class="docutils literal notranslate"><span class="pre">[project.project-urls]</span></code></a></li>
+<li><a class="reference internal" href="#have-a-separate-url-home-page-field">Have a separate <code class="docutils literal notranslate"><span class="pre">url</span></code>/<code class="docutils literal notranslate"><span class="pre">home-page</span></code> field</a></li>
+<li><a class="reference internal" href="#recommend-that-tools-put-development-related-dependencies-into-a-dev-extra">Recommend that tools put development-related dependencies into a “dev” extra</a></li>
+<li><a class="reference internal" href="#have-the-dynamic-field-only-require-specifying-missing-required-fields">Have the <code class="docutils literal notranslate"><span class="pre">dynamic</span></code> field only require specifying missing required fields</a></li>
+<li><a class="reference internal" href="#different-structures-for-the-readme-field">Different structures for the <code class="docutils literal notranslate"><span class="pre">readme</span></code> field</a></li>
+<li><a class="reference internal" href="#allowing-the-readme-field-to-imply-text-plain">Allowing the <code class="docutils literal notranslate"><span class="pre">readme</span></code> field to imply <code class="docutils literal notranslate"><span class="pre">text/plain</span></code></a></li>
+<li><a class="reference internal" href="#other-names-for-dependencies-optional-dependencies">Other names for <code class="docutils literal notranslate"><span class="pre">dependencies</span></code>/<code class="docutils literal notranslate"><span class="pre">optional-dependencies</span></code></a></li>
+<li><a class="reference internal" href="#support-maintainers-maintainers-email">Support <code class="docutils literal notranslate"><span class="pre">Maintainers</span></code>/<code class="docutils literal notranslate"><span class="pre">Maintainers-email</span></code></a></li>
+<li><a class="reference internal" href="#drop-maintainers-to-unify-with-authors">Drop <code class="docutils literal notranslate"><span class="pre">maintainers</span></code> to unify with <code class="docutils literal notranslate"><span class="pre">authors</span></code></a></li>
+<li><a class="reference internal" href="#support-an-arbitrary-depth-of-tables-for-project-entry-points">Support an arbitrary depth of tables for <code class="docutils literal notranslate"><span class="pre">project.entry-points</span></code></a></li>
+<li><a class="reference internal" href="#backfilling-trove-classifiers-should-occur-instead-of-may-happen">Backfilling trove classifiers SHOULD occur instead of MAY happen</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#open-issues">Open Issues</a><ul>
+<li><a class="reference internal" href="#how-to-specify-dependencies">How to specify dependencies?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id1">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

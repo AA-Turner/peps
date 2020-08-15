@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 415 – Implement context suppression with exception attributes &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -56,7 +55,7 @@
 <dt class="field-odd">Post-History</dt>
 <dd class="field-odd">26-Feb-2012</dd>
 <dt class="field-even">Replaces</dt>
-<dd class="field-even"><a class="reference external" href="./pep-0409.html">409</a></dd>
+<dd class="field-even"><a class="reference external" href="pep-0409.html">409</a></dd>
 <dt class="field-odd">Resolution</dt>
 <dd class="field-odd"><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2012-May/119467.html">https://mail.python.org/pipermail/python-dev/2012-May/119467.html</a></dd>
 </dl>
@@ -75,9 +74,9 @@
 </div>
 <div class="section" id="abstract">
 <h2><a class="toc-backref" href="#id3">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
-<p>PEP 409 introduced support for the <code class="docutils literal notranslate"><span class="pre">raise</span> <span class="pre">exc</span> <span class="pre">from</span> <span class="pre">None</span></code> construct to
+<p><a class="reference external" href="pep-0409.html">PEP 409</a> introduced support for the <code class="docutils literal notranslate"><span class="pre">raise</span> <span class="pre">exc</span> <span class="pre">from</span> <span class="pre">None</span></code> construct to
 allow the display of the exception context to be explicitly suppressed.
-This PEP retains the language level changes already implemented in PEP 409,
+This PEP retains the language level changes already implemented in <a class="reference external" href="pep-0409.html">PEP 409</a>,
 but replaces the underlying implementation mechanism with a simpler approach
 based on a new <code class="docutils literal notranslate"><span class="pre">__suppress_context__</span></code> attribute on all <code class="docutils literal notranslate"><span class="pre">BaseException</span></code>
 instances.</p>
@@ -88,7 +87,7 @@ instances.</p>
 </div>
 <div class="section" id="rationale">
 <h2><a class="toc-backref" href="#id5">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
-<p>PEP 409 changes <code class="docutils literal notranslate"><span class="pre">__cause__</span></code> to be <code class="docutils literal notranslate"><span class="pre">Ellipsis</span></code> by default. Then if
+<p><a class="reference external" href="pep-0409.html">PEP 409</a> changes <code class="docutils literal notranslate"><span class="pre">__cause__</span></code> to be <code class="docutils literal notranslate"><span class="pre">Ellipsis</span></code> by default. Then if
 <code class="docutils literal notranslate"><span class="pre">__cause__</span></code> is set to <code class="docutils literal notranslate"><span class="pre">None</span></code> by <code class="docutils literal notranslate"><span class="pre">raise</span> <span class="pre">exc</span> <span class="pre">from</span> <span class="pre">None</span></code>, no context or cause
 will be printed should the exception be uncaught.</p>
 <p>The main problem with this scheme is it complicates the role of
@@ -96,8 +95,8 @@ will be printed should the exception be uncaught.</p>
 whether <code class="docutils literal notranslate"><span class="pre">__context__</span></code> should be printed or not. This use of <code class="docutils literal notranslate"><span class="pre">__cause__</span></code> is
 also not easily extended in the future. For example, we may someday want to
 allow the programmer to select which of <code class="docutils literal notranslate"><span class="pre">__context__</span></code> and <code class="docutils literal notranslate"><span class="pre">__cause__</span></code> will
-be printed. The PEP 409 implementation is not amenable to this.</p>
-<p>The use of <code class="docutils literal notranslate"><span class="pre">Ellipsis</span></code> is a hack. Before PEP 409, <code class="docutils literal notranslate"><span class="pre">Ellipsis</span></code> was used
+be printed. The <a class="reference external" href="pep-0409.html">PEP 409</a> implementation is not amenable to this.</p>
+<p>The use of <code class="docutils literal notranslate"><span class="pre">Ellipsis</span></code> is a hack. Before <a class="reference external" href="pep-0409.html">PEP 409</a>, <code class="docutils literal notranslate"><span class="pre">Ellipsis</span></code> was used
 exclusively in extended slicing. Extended slicing has nothing to do with
 exceptions, so it’s not clear to someone inspecting an exception object why
 <code class="docutils literal notranslate"><span class="pre">__cause__</span></code> should be set to <code class="docutils literal notranslate"><span class="pre">Ellipsis</span></code>. Using <code class="docutils literal notranslate"><span class="pre">Ellipsis</span></code> by default for
@@ -138,7 +137,8 @@ original purpose and values.</p>
 <p>This document has been placed in the public domain.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0415.txt">https://github.com/python/peps/blob/master/pep-0415.txt</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0415.txt">https://github.com/python/peps/blob/master/pep-0415.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0415.txt">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

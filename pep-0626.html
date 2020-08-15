@@ -1,0 +1,384 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PEP 626 – Precise line numbers for debugging and other tools. &#8212; PEPs.Python.org</title>
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 627 – Recording installed projects" href="pep-0627.html" />
+    <link rel="prev" title="PEP 625 – File name of a Source Distribution" href="pep-0625.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 626 – Precise line numbers for debugging and other tools.</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-626-precise-line-numbers-for-debugging-and-other-tools">
+<h1 class="page-title">PEP 626 – Precise line numbers for debugging and other tools.<a class="headerlink" href="#pep-626-precise-line-numbers-for-debugging-and-other-tools" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">626</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Precise line numbers for debugging and other tools.</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Mark Shannon &lt;mark&#32;&#97;t&#32;hotpy.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Draft</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">15-Jul-2020</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.10</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">17-Jul-2020</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id3">Abstract</a></li>
+<li><a class="reference internal" href="#motivation" id="id4">Motivation</a></li>
+<li><a class="reference internal" href="#rationale" id="id5">Rationale</a></li>
+<li><a class="reference internal" href="#specification" id="id6">Specification</a><ul>
+<li><a class="reference internal" href="#tracing" id="id7">Tracing</a></li>
+<li><a class="reference internal" href="#the-f-lineno-attribute" id="id8">The f_lineno attribute</a></li>
+<li><a class="reference internal" href="#the-new-co-lines-method-of-code-objects" id="id9">The new co_lines() method of code objects</a></li>
+<li><a class="reference internal" href="#the-co-linetable-attribute" id="id10">The co_linetable attribute</a></li>
+<li><a class="reference internal" href="#the-co-lnotab-attribute" id="id11">The co_lnotab attribute</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#backwards-compatibility" id="id12">Backwards Compatibility</a><ul>
+<li><a class="reference internal" href="#examples-of-code-for-which-the-sequence-of-trace-events-will-change" id="id13">Examples of code for which the sequence of trace events will change</a><ul>
+<li><a class="reference internal" href="#pass-statement-in-an-if-statement" id="id14"><code class="docutils literal notranslate"><span class="pre">pass</span></code> statement in an <code class="docutils literal notranslate"><span class="pre">if</span></code> statement.</a></li>
+<li><a class="reference internal" href="#multiple-pass-statements" id="id15">Multiple <code class="docutils literal notranslate"><span class="pre">pass</span></code> statements.</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#c-api" id="id16">C API</a></li>
+<li><a class="reference internal" href="#out-of-process-debuggers-and-profilers" id="id17">Out of process debuggers and profilers</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#performance-implications" id="id18">Performance Implications</a></li>
+<li><a class="reference internal" href="#reference-implementation" id="id19">Reference Implementation</a></li>
+<li><a class="reference internal" href="#copyright" id="id20">Copyright</a></li>
+<li><a class="reference internal" href="#references" id="id21">References</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id3">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>Python should guarantee that when tracing is turned on, “line” tracing events are generated for <em>all</em> lines of code executed and <em>only</em> for lines of
+code that are executed.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">f_lineo</span></code> attribute of frame objects should always contain the expected line number.
+During frame execution, the expected line number is the line number of source code currently being executed.
+After a frame has completed, either by returning or by raising an exception,
+the expected line number is the line number of the last line of source that was executed.</p>
+<p>A side effect of ensuring correct line numbers, is that some bytecodes will need to be marked as artificial, and not have a meaningful line number.
+To assist tools, a new <code class="docutils literal notranslate"><span class="pre">co_lines</span></code> attribute will be added that describes the mapping from bytecode to source.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id4">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>Users of <code class="docutils literal notranslate"><span class="pre">sys.settrace</span></code> and associated tools should be able to rely on tracing events being
+generated for all lines of code, and only for actual code.
+They should also be able to assume that the line number in <code class="docutils literal notranslate"><span class="pre">f_lineno</span></code> is correct.</p>
+<p>The current implementation mostly does this, but fails in a few cases.
+This requires workarounds in tooling and is a nuisance for alternative Python implementions.</p>
+<p>Having this guarantee also benefits implementers of CPython in the long term, as the current behaviour is not obvious and has some odd corner cases.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id5">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>In order to guarantee that line events are generated when expected, the <code class="docutils literal notranslate"><span class="pre">co_lnotab</span></code> attribute, in its current form,
+can no longer be the soure of truth for line number information.</p>
+<p>Rather than attempt to fix the <code class="docutils literal notranslate"><span class="pre">co_lnotab</span></code> attribute, a new method
+<code class="docutils literal notranslate"><span class="pre">co_lines()</span></code> will be added, which returns an iterator over bytecode offsets and source code lines.</p>
+<p>Ensuring that the bytecode is annotated correctly to enable accurate line number information means that
+some bytecodes must be marked as artificial, and not have a line number.</p>
+<p>Some care must be taken not to break existing tooling.
+To minimize breakage, the <code class="docutils literal notranslate"><span class="pre">co_lnotab</span></code> attribute will be retained, but lazily generated on demand.</p>
+</div>
+<div class="section" id="specification">
+<h2><a class="toc-backref" href="#id6">Specification</a><a class="headerlink" href="#specification" title="Permalink to this headline">¶</a></h2>
+<p>Line events and the <code class="docutils literal notranslate"><span class="pre">f_lineno</span></code> attribute should act as an experienced Python user would expect in <em>all</em> cases.</p>
+<div class="section" id="tracing">
+<h3><a class="toc-backref" href="#id7">Tracing</a><a class="headerlink" href="#tracing" title="Permalink to this headline">¶</a></h3>
+<p>Tracing generates events for calls, returns, exceptions, lines of source code executed, and, under some circumstances, instructions executed.</p>
+<p>Only line events are covered by this PEP.</p>
+<p>When tracing is turned on, line events will be generated when:</p>
+<ul class="simple">
+<li>A new line of source code is reached.</li>
+<li>A backwards jump occurs, even if it jumps to the same line, as may happen in list comprehensions.</li>
+</ul>
+<p>Additionally, line events will <em>never</em> be generated for source code lines that are not executed.</p>
+</div>
+<div class="section" id="the-f-lineno-attribute">
+<h3><a class="toc-backref" href="#id8">The f_lineno attribute</a><a class="headerlink" href="#the-f-lineno-attribute" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>When a frame object is created, the <code class="docutils literal notranslate"><span class="pre">f_lineno</span></code> will be set to the line
+at which the function or class is defined; that is the line on which the <code class="docutils literal notranslate"><span class="pre">def</span></code> or <code class="docutils literal notranslate"><span class="pre">class</span></code> keyword appears.
+For modules it will be set to zero.</li>
+<li>The <code class="docutils literal notranslate"><span class="pre">f_lineno</span></code> attribute will be updated to match the line number about to be executed,
+even if tracing is turned off and no event is generated.</li>
+</ul>
+</div>
+<div class="section" id="the-new-co-lines-method-of-code-objects">
+<h3><a class="toc-backref" href="#id9">The new co_lines() method of code objects</a><a class="headerlink" href="#the-new-co-lines-method-of-code-objects" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">co_lines()</span></code> method will return an iterator which yields tuples of values,
+each representing the line number of a range of bytecodes. Each tuple will consist of three values:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">start</span></code> – The offset (inclusive) of the start of the bytecode range</li>
+<li><code class="docutils literal notranslate"><span class="pre">end</span></code> – The offset (exclusive) of the end of the bytecode range</li>
+<li><code class="docutils literal notranslate"><span class="pre">line</span></code> – The line number, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if the the bytecodes in the given range do not have a line number.</li>
+</ul>
+<p>The sequence generated will have the following properties:</p>
+<ul class="simple">
+<li>The first range in the sequence with have a <code class="docutils literal notranslate"><span class="pre">start</span></code> of <code class="docutils literal notranslate"><span class="pre">0</span></code></li>
+<li>The <code class="docutils literal notranslate"><span class="pre">(start,</span> <span class="pre">end)</span></code> ranges will be strictly increasing and consecutive.
+That is, for any pair of tuples the <code class="docutils literal notranslate"><span class="pre">start</span></code> of the second
+will equal to the <code class="docutils literal notranslate"><span class="pre">end</span></code> of the first.</li>
+<li>No range will be empty, that is <code class="docutils literal notranslate"><span class="pre">end</span></code> &gt; <code class="docutils literal notranslate"><span class="pre">start</span></code> for all triples.</li>
+<li>The final range in the sequence with have <code class="docutils literal notranslate"><span class="pre">end</span></code> equal to the size of the bytecode.</li>
+<li><code class="docutils literal notranslate"><span class="pre">line</span></code> will either be a positive integer, or <code class="docutils literal notranslate"><span class="pre">None</span></code></li>
+</ul>
+</div>
+<div class="section" id="the-co-linetable-attribute">
+<h3><a class="toc-backref" href="#id10">The co_linetable attribute</a><a class="headerlink" href="#the-co-linetable-attribute" title="Permalink to this headline">¶</a></h3>
+<p>The co_linetable attribute will hold the line number information.
+The format is opaque, unspecified and may be changed without notice.
+The attribute is public only to support creation of new code objects.</p>
+</div>
+<div class="section" id="the-co-lnotab-attribute">
+<h3><a class="toc-backref" href="#id11">The co_lnotab attribute</a><a class="headerlink" href="#the-co-lnotab-attribute" title="Permalink to this headline">¶</a></h3>
+<p>Historically the <code class="docutils literal notranslate"><span class="pre">co_lnotab</span></code> attribute held a mapping from bytecode offset to line number, but does not support bytecodes without a line number.
+For backward compatibility, the <code class="docutils literal notranslate"><span class="pre">co_lnotab</span></code> bytes object will be lazily created when needed.
+For ranges of bytecodes without a line number, the line number of the previous bytecode range will be used.</p>
+<p>Tools that parse the <code class="docutils literal notranslate"><span class="pre">co_lnotab</span></code> table should move to using the new <code class="docutils literal notranslate"><span class="pre">co_lines()</span></code> method as soon as is practical.</p>
+</div>
+</div>
+<div class="section" id="backwards-compatibility">
+<h2><a class="toc-backref" href="#id12">Backwards Compatibility</a><a class="headerlink" href="#backwards-compatibility" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">co_lnotab</span></code> attribute will be deprecated in 3.10 and removed in 3.12.</p>
+<p>Any tools that parse the <code class="docutils literal notranslate"><span class="pre">co_lnotab</span></code> attribute of code objects will need to move to using <code class="docutils literal notranslate"><span class="pre">co_lines()</span></code> before 3.12 is released.
+Tools that use <code class="docutils literal notranslate"><span class="pre">sys.settrace</span></code> will be unaffected, except in cases where the “line” events they receive are more accurate.</p>
+<div class="section" id="examples-of-code-for-which-the-sequence-of-trace-events-will-change">
+<h3><a class="toc-backref" href="#id13">Examples of code for which the sequence of trace events will change</a><a class="headerlink" href="#examples-of-code-for-which-the-sequence-of-trace-events-will-change" title="Permalink to this headline">¶</a></h3>
+<p>In the following examples, events are listed as “name”, <code class="docutils literal notranslate"><span class="pre">f_lineno</span></code> pairs.</p>
+<div class="section" id="pass-statement-in-an-if-statement">
+<h4><a class="toc-backref" href="#id14"><code class="docutils literal notranslate"><span class="pre">pass</span></code> statement in an <code class="docutils literal notranslate"><span class="pre">if</span></code> statement.</a><a class="headerlink" href="#pass-statement-in-an-if-statement" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mf">0.</span>  <span class="k">def</span> <span class="nf">spam</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+<span class="mf">1.</span>      <span class="k">if</span> <span class="n">a</span><span class="p">:</span>
+<span class="mf">2.</span>          <span class="n">eggs</span><span class="p">()</span>
+<span class="mf">3.</span>      <span class="k">else</span><span class="p">:</span>
+<span class="mf">4.</span>          <span class="k">pass</span>
+</pre></div>
+</div>
+<p>If <code class="docutils literal notranslate"><span class="pre">a</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, then the sequence of events generated by Python 3.9 is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;line&quot;</span> <span class="mi">1</span>
+<span class="s2">&quot;line&quot;</span> <span class="mi">2</span>
+<span class="s2">&quot;line&quot;</span> <span class="mi">4</span>
+<span class="s2">&quot;return&quot;</span> <span class="mi">4</span>
+</pre></div>
+</div>
+<p>From 3.10 the sequence will be:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;line&quot;</span> <span class="mi">1</span>
+<span class="s2">&quot;line&quot;</span> <span class="mi">2</span>
+<span class="s2">&quot;return&quot;</span> <span class="mi">2</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="multiple-pass-statements">
+<h4><a class="toc-backref" href="#id15">Multiple <code class="docutils literal notranslate"><span class="pre">pass</span></code> statements.</a><a class="headerlink" href="#multiple-pass-statements" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mf">0.</span>  <span class="k">def</span> <span class="nf">bar</span><span class="p">():</span>
+<span class="mf">1.</span>      <span class="k">pass</span>
+<span class="mf">2.</span>      <span class="k">pass</span>
+<span class="mf">3.</span>      <span class="k">pass</span>
+</pre></div>
+</div>
+<p>The sequence of events generated by Python 3.9 is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;line&quot;</span> <span class="mi">3</span>
+<span class="s2">&quot;return&quot;</span> <span class="mi">3</span>
+</pre></div>
+</div>
+<p>From 3.10 the sequence will be:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;line&quot;</span> <span class="mi">1</span>
+<span class="s2">&quot;line&quot;</span> <span class="mi">2</span>
+<span class="s2">&quot;line&quot;</span> <span class="mi">3</span>
+<span class="s2">&quot;return&quot;</span> <span class="mi">3</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="c-api">
+<h3><a class="toc-backref" href="#id16">C API</a><a class="headerlink" href="#c-api" title="Permalink to this headline">¶</a></h3>
+<p>Access to the <code class="docutils literal notranslate"><span class="pre">f_lineno</span></code> attribute of frame objects through C API functions is unchanged.
+<code class="docutils literal notranslate"><span class="pre">f_lineno</span></code> can be read by <code class="docutils literal notranslate"><span class="pre">PyFrame_GetLineNumber</span></code>. <code class="docutils literal notranslate"><span class="pre">f_lineno</span></code> can only be set via <code class="docutils literal notranslate"><span class="pre">PyObject_SetAttr</span></code> and similar functions.</p>
+<p>Accessing <code class="docutils literal notranslate"><span class="pre">f_lineno</span></code> directly through the underlying data structure is forbidden.</p>
+</div>
+<div class="section" id="out-of-process-debuggers-and-profilers">
+<h3><a class="toc-backref" href="#id17">Out of process debuggers and profilers</a><a class="headerlink" href="#out-of-process-debuggers-and-profilers" title="Permalink to this headline">¶</a></h3>
+<p>Out of process tools, such as py-spy <a class="footnote-reference brackets" href="#id2" id="id1">1</a>, cannot use the C-API, and must parse the line number table themselves.
+Although the line number table format may change without warning,
+it will not change during a release unless absolutely necessary for a bug fix.</p>
+<p>To reduce the work required to implement these tools, the following C struct and utility functions are provided.
+Note that these functions are not part of the C-API, so will be need to be linked into any code that needs to use them.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">typedef</span> <span class="n">struct</span> <span class="n">addressrange</span> <span class="p">{</span>
+    <span class="nb">int</span> <span class="n">ar_start</span><span class="p">;</span>
+    <span class="nb">int</span> <span class="n">ar_end</span><span class="p">;</span>
+    <span class="nb">int</span> <span class="n">ar_line</span><span class="p">;</span>
+    <span class="nb">int</span> <span class="n">opaque1</span><span class="p">;</span>
+    <span class="n">void</span> <span class="o">*</span><span class="n">opaque2</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">PyCodeAddressRange</span><span class="p">;</span>
+
+<span class="n">void</span> <span class="n">PyLineTable_InitAddressRange</span><span class="p">(</span><span class="n">char</span> <span class="o">*</span><span class="n">linetable</span><span class="p">,</span> <span class="nb">int</span> <span class="n">firstlineno</span><span class="p">,</span> <span class="n">PyCodeAddressRange</span> <span class="o">*</span><span class="nb">range</span><span class="p">);</span>
+<span class="nb">int</span> <span class="n">PyLineTable_NextAddressRange</span><span class="p">(</span><span class="n">PyCodeAddressRange</span> <span class="o">*</span><span class="nb">range</span><span class="p">);</span>
+<span class="nb">int</span> <span class="n">PyLineTable_PreviousAddressRange</span><span class="p">(</span><span class="n">PyCodeAddressRange</span> <span class="o">*</span><span class="nb">range</span><span class="p">);</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">PyLineTable_InitAddressRange</span></code> initializes the <code class="docutils literal notranslate"><span class="pre">PyCodeAddressRange</span></code> struct from the line number table and first line number.</p>
+<p><code class="docutils literal notranslate"><span class="pre">PyLineTable_NextAddressRange</span></code> advances the range to the next entry, returning non-zero if valid.</p>
+<p><code class="docutils literal notranslate"><span class="pre">PyLineTable_PreviousAddressRange</span></code> retreats the range to the previous entry, returning non-zero if valid.</p>
+<p>For example, the following code prints out all the address ranges:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">void</span> <span class="n">print_address_ranges</span><span class="p">(</span><span class="n">char</span> <span class="o">*</span><span class="n">linetable</span><span class="p">,</span> <span class="nb">int</span> <span class="n">firstlineno</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">PyCodeAddressRange</span> <span class="nb">range</span><span class="p">;</span>
+    <span class="n">PyLineTable_InitAddressRange</span><span class="p">(</span><span class="n">linetable</span><span class="p">,</span> <span class="n">firstlineno</span><span class="p">,</span> <span class="o">&amp;</span><span class="nb">range</span><span class="p">);</span>
+    <span class="k">while</span> <span class="p">(</span><span class="n">PyLineTable_NextAddressRange</span><span class="p">(</span><span class="o">&amp;</span><span class="nb">range</span><span class="p">))</span> <span class="p">{</span>
+        <span class="n">printf</span><span class="p">(</span><span class="s2">&quot;Bytecodes from </span><span class="si">%d</span><span class="s2"> (inclusive) to </span><span class="si">%d</span><span class="s2"> (exclusive) &quot;</span><span class="p">,</span>
+               <span class="nb">range</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="nb">range</span><span class="o">.</span><span class="n">end</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">range</span><span class="o">.</span><span class="n">line</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+            <span class="o">/*</span> <span class="n">line</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="n">means</span> <span class="n">no</span> <span class="n">line</span> <span class="n">number</span> <span class="o">*/</span>
+            <span class="n">printf</span><span class="p">(</span><span class="s2">&quot;have no line number</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">);</span>
+        <span class="p">}</span>
+        <span class="k">else</span> <span class="p">{</span>
+            <span class="n">printf</span><span class="p">(</span><span class="s2">&quot;have line number </span><span class="si">%d</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="nb">range</span><span class="o">.</span><span class="n">line</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="performance-implications">
+<h2><a class="toc-backref" href="#id18">Performance Implications</a><a class="headerlink" href="#performance-implications" title="Permalink to this headline">¶</a></h2>
+<p>In general, there should be no change in performance.
+When tracing, programs should run a little faster as the new table format can be designed with line number calculation speed in mind.
+Code with long sequences of <code class="docutils literal notranslate"><span class="pre">pass</span></code> statements will probably become a bit slower.</p>
+</div>
+<div class="section" id="reference-implementation">
+<h2><a class="toc-backref" href="#id19">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="https://github.com/markshannon/cpython/tree/new-linetable-format-version-2">https://github.com/markshannon/cpython/tree/new-linetable-format-version-2</a></p>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id20">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document is placed in the public domain or under the
+CC0-1.0-Universal license, whichever is more permissive.</p>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id21">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>py-spy: Sampling profiler for Python programs
+(<a class="reference external" href="https://github.com/benfred/py-spy">https://github.com/benfred/py-spy</a>)</dd>
+</dl>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0626.rst">https://github.com/python/peps/blob/master/pep-0626.rst</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0626.rst">2020-08-15T06:07:35</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0626.rst.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0625.html">PEP 0625</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0627.html">PEP 0627</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 626 – Precise line numbers for debugging and other tools.</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#tracing">Tracing</a></li>
+<li><a class="reference internal" href="#the-f-lineno-attribute">The f_lineno attribute</a></li>
+<li><a class="reference internal" href="#the-new-co-lines-method-of-code-objects">The new co_lines() method of code objects</a></li>
+<li><a class="reference internal" href="#the-co-linetable-attribute">The co_linetable attribute</a></li>
+<li><a class="reference internal" href="#the-co-lnotab-attribute">The co_lnotab attribute</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a><ul>
+<li><a class="reference internal" href="#examples-of-code-for-which-the-sequence-of-trace-events-will-change">Examples of code for which the sequence of trace events will change</a><ul>
+<li><a class="reference internal" href="#pass-statement-in-an-if-statement"><code class="docutils literal notranslate"><span class="pre">pass</span></code> statement in an <code class="docutils literal notranslate"><span class="pre">if</span></code> statement.</a></li>
+<li><a class="reference internal" href="#multiple-pass-statements">Multiple <code class="docutils literal notranslate"><span class="pre">pass</span></code> statements.</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#c-api">C API</a></li>
+<li><a class="reference internal" href="#out-of-process-debuggers-and-profilers">Out of process debuggers and profilers</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#performance-implications">Performance Implications</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

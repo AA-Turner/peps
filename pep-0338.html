@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 338 – Executing modules as scripts &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -77,7 +76,7 @@
 script, either with the <code class="docutils literal notranslate"><span class="pre">-m</span></code> command line switch, or by invoking
 it via <code class="docutils literal notranslate"><span class="pre">runpy.run_module(modulename)</span></code>.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">-m</span></code> switch implemented in Python 2.4 is quite limited. This
-PEP proposes making use of the PEP 302 <a class="footnote-reference brackets" href="#id9" id="id1">4</a> import hooks to allow any
+PEP proposes making use of the <a class="reference external" href="pep-0302.html">PEP 302</a> <a class="footnote-reference brackets" href="#id9" id="id1">4</a> import hooks to allow any
 module which provides access to its code object to be executed.</p>
 </div>
 <div class="section" id="rationale">
@@ -117,7 +116,7 @@ true for modules inside packages, or accessed via alternative import
 mechanisms (such as <code class="docutils literal notranslate"><span class="pre">zipimport</span></code>).</p>
 <p>Prior discussions suggest it should be noted that this PEP is <strong>not</strong>
 about changing the idiom for making Python modules also useful as
-scripts (see PEP 299 <a class="footnote-reference brackets" href="#id6" id="id2">1</a>). That issue is considered orthogonal to the
+scripts (see <a class="reference external" href="pep-0299.html">PEP 299</a> <a class="footnote-reference brackets" href="#id6" id="id2">1</a>). That issue is considered orthogonal to the
 specific feature addressed by this PEP.</p>
 </div>
 <div class="section" id="current-behaviour">
@@ -141,7 +140,7 @@ is printed.</p>
 <div class="section" id="proposed-semantics">
 <h2><a class="toc-backref" href="#id15">Proposed Semantics</a><a class="headerlink" href="#proposed-semantics" title="Permalink to this headline">¶</a></h2>
 <p>The semantics proposed are fairly simple: if <code class="docutils literal notranslate"><span class="pre">-m</span></code> is used to execute
-a module the PEP 302 import mechanisms are used to locate the module and
+a module the <a class="reference external" href="pep-0302.html">PEP 302</a> import mechanisms are used to locate the module and
 retrieve its compiled code, before executing the module in accordance
 with the semantics for a top-level module. The interpreter does this by
 invoking a new standard library function <code class="docutils literal notranslate"><span class="pre">runpy.run_module</span></code>.</p>
@@ -151,7 +150,7 @@ variable during initialisation.  In addition, paths may be affected by
 <code class="docutils literal notranslate"><span class="pre">*.pth</span></code> files, and some packages will install custom loaders on
 <code class="docutils literal notranslate"><span class="pre">sys.metapath</span></code>.  Accordingly, the only way for Python to reliably
 locate the module is by importing the containing package and
-using the PEP 302 import hooks to gain access to the Python code.</p>
+using the <a class="reference external" href="pep-0302.html">PEP 302</a> import hooks to gain access to the Python code.</p>
 <p>Note that the process of locating the module to be executed may require
 importing the containing package.  The effects of such a package import
 that will be visible to the executed module are:</p>
@@ -178,7 +177,7 @@ The delegation has the form:</p>
 <blockquote>
 <div><p>Execute the code of the specified module and return the resulting
 module globals dictionary. The module’s code is first located using
-the standard import mechanism (refer to PEP 302 for details) and
+the standard import mechanism (refer to <a class="reference external" href="pep-0302.html">PEP 302</a> for details) and
 then executed in a fresh module namespace.</p>
 <p>The optional dictionary argument <code class="docutils literal notranslate"><span class="pre">init_globals</span></code> may be used to
 pre-populate the globals dictionary before the code is executed.
@@ -190,7 +189,7 @@ definitions are overridden by the run_module function.</p>
 before the module code is executed.</p>
 <p><code class="docutils literal notranslate"><span class="pre">__name__</span></code> is set to <code class="docutils literal notranslate"><span class="pre">run_name</span></code> if this optional argument is
 supplied, and the original <code class="docutils literal notranslate"><span class="pre">mod_name</span></code> argument otherwise.</p>
-<p><code class="docutils literal notranslate"><span class="pre">__loader__</span></code> is set to the PEP 302 module loader used to retrieve
+<p><code class="docutils literal notranslate"><span class="pre">__loader__</span></code> is set to the <a class="reference external" href="pep-0302.html">PEP 302</a> module loader used to retrieve
 the code for the module (This loader may be a wrapper around the
 standard import mechanism).</p>
 <p><code class="docutils literal notranslate"><span class="pre">__file__</span></code> is set to the name provided by the module loader. If
@@ -214,7 +213,7 @@ and then invokes <code class="docutils literal notranslate"><span class="pre">ru
 <div class="section" id="import-statements-and-the-main-module">
 <h2><a class="toc-backref" href="#id17">Import Statements and the Main Module</a><a class="headerlink" href="#import-statements-and-the-main-module" title="Permalink to this headline">¶</a></h2>
 <p>The release of 2.5b1 showed a surprising  (although obvious in
-retrospect) interaction between this PEP and PEP 328 - explicit
+retrospect) interaction between this PEP and <a class="reference external" href="pep-0328.html">PEP 328</a> - explicit
 relative imports don’t work from a main module. This is due to
 the fact that relative imports rely on <code class="docutils literal notranslate"><span class="pre">__name__</span></code> to determine
 the current module’s position in the package hierarchy. In a main
@@ -256,7 +255,7 @@ added automatically).</p>
 </div>
 <p>So long as the current directory is <code class="docutils literal notranslate"><span class="pre">devel</span></code>, or <code class="docutils literal notranslate"><span class="pre">devel</span></code> is already
 on <code class="docutils literal notranslate"><span class="pre">sys.path</span></code> and the test modules use absolute imports (such as
-<code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">pkg</span> <span class="pre">moduleA</span></code> to retrieve the module under test, PEP 338
+<code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">pkg</span> <span class="pre">moduleA</span></code> to retrieve the module under test, <a class="reference external" href="pep-0338.html">PEP 338</a>
 allows the tests to be run as:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">pkg</span><span class="o">.</span><span class="n">test</span><span class="o">.</span><span class="n">test_A</span>
 <span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">pkg</span><span class="o">.</span><span class="n">test</span><span class="o">.</span><span class="n">test_B</span>
@@ -298,7 +297,7 @@ __path__ variables, and looked only in the main package directory.  A
 Python script with this behaviour can be found in the discussion of
 the <code class="docutils literal notranslate"><span class="pre">execmodule</span></code> cookbook recipe <a class="footnote-reference brackets" href="#id8" id="id5">3</a>.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">execmodule</span></code> cookbook recipe itself was the proposed mechanism in
-an earlier version of this PEP (before the PEP’s author read PEP 302).</p>
+an earlier version of this PEP (before the PEP’s author read <a class="reference external" href="pep-0302.html">PEP 302</a>).</p>
 <p>Both approaches were rejected as they do not meet the main goal of the
 <code class="docutils literal notranslate"><span class="pre">-m</span></code> switch – to allow the full Python namespace to be used to
 locate modules for execution from the command line.</p>
@@ -325,7 +324,7 @@ actual search for the module, and releases it before execution, even if
 <dd>Special __main__() function in modules
 (<a class="reference external" href="http://www.python.org/dev/peps/pep-0299/">http://www.python.org/dev/peps/pep-0299/</a>)</dd>
 <dt class="label" id="id7"><span class="brackets"><a class="fn-backref" href="#id3">2</a></span></dt>
-<dd>PEP 338 implementation (runpy module and <code class="docutils literal notranslate"><span class="pre">-m</span></code> update)
+<dd><a class="reference external" href="pep-0338.html">PEP 338</a> implementation (runpy module and <code class="docutils literal notranslate"><span class="pre">-m</span></code> update)
 (<a class="reference external" href="https://bugs.python.org/issue1429601">https://bugs.python.org/issue1429601</a>)</dd>
 <dt class="label" id="id8"><span class="brackets"><a class="fn-backref" href="#id5">3</a></span></dt>
 <dd>execmodule Python Cookbook Recipe
@@ -334,7 +333,7 @@ actual search for the module, and releases it before execution, even if
 <dd>New import hooks
 (<a class="reference external" href="http://www.python.org/dev/peps/pep-0302/">http://www.python.org/dev/peps/pep-0302/</a>)</dd>
 <dt class="label" id="id10"><span class="brackets"><a class="fn-backref" href="#id4">5</a></span></dt>
-<dd>PEP 338 documentation (for runpy module)
+<dd><a class="reference external" href="pep-0338.html">PEP 338</a> documentation (for runpy module)
 (<a class="reference external" href="https://bugs.python.org/issue1429605">https://bugs.python.org/issue1429605</a>)</dd>
 </dl>
 </div>
@@ -343,7 +342,8 @@ actual search for the module, and releases it before execution, even if
 <p>This document has been placed in the public domain.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0338.txt">https://github.com/python/peps/blob/master/pep-0338.txt</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0338.txt">https://github.com/python/peps/blob/master/pep-0338.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0338.txt">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

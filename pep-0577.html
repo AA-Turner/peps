@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 577 – Augmented Assignment Expressions &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -94,12 +93,12 @@
 <div class="section" id="pep-withdrawal">
 <h2><a class="toc-backref" href="#id5">PEP Withdrawal</a><a class="headerlink" href="#pep-withdrawal" title="Permalink to this headline">¶</a></h2>
 <p>While working on this PEP, I realised that it didn’t really address what was
-actually bothering me about PEP 572’s proposed scoping rules for previously
+actually bothering me about <a class="reference external" href="pep-0572.html">PEP 572</a>’s proposed scoping rules for previously
 unreferenced assignment targets, and also had some significant undesirable
 consequences (most notably, allowing <code class="docutils literal notranslate"><span class="pre">&gt;&gt;=`</span> <span class="pre">and</span> <span class="pre">``&lt;&lt;=</span></code> as inline augmented
 assignment operators that meant something entirely different from the <code class="docutils literal notranslate"><span class="pre">&gt;=</span></code>
 and <code class="docutils literal notranslate"><span class="pre">&lt;=</span></code> comparison operators).</p>
-<p>I also realised that even without dedicated syntax of their own, PEP 572
+<p>I also realised that even without dedicated syntax of their own, <a class="reference external" href="pep-0572.html">PEP 572</a>
 technically allows inline augmented assignments to be written using the
 <code class="docutils literal notranslate"><span class="pre">operator</span></code> module:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">operator</span> <span class="kn">import</span> <span class="n">iadd</span>
@@ -118,7 +117,7 @@ the time I also started writing a replacement PEP that focused specifically on
 the handling of assignment targets which hadn’t already been declared as local
 variables in the current scope (for both regular block scopes, and for scoped
 expressions), but that draft never even reached a stage where <em>I</em> liked it
-better than the ultimately accepted proposal in PEP 572, so it was never
+better than the ultimately accepted proposal in <a class="reference external" href="pep-0572.html">PEP 572</a>, so it was never
 posted anywhere, nor assigned a PEP number.</p>
 </div>
 <div class="section" id="abstract">
@@ -131,7 +130,7 @@ defining a new local variable name the way that existing name binding
 statements do. The question of allowing expression level local variable
 declarations at function scope is deliberately separated from the question of
 allowing expression level name bindings, and deferred to a later PEP.</p>
-<p>This PEP is a direct competitor to PEP 572 (although it borrows heavily from that
+<p>This PEP is a direct competitor to <a class="reference external" href="pep-0572.html">PEP 572</a> (although it borrows heavily from that
 PEP’s motivation, and even shares the proposed syntax for inline assignments).
 See <a class="reference internal" href="#relationship-with-pep-572">Relationship with PEP 572</a> for more details on the connections between
 the two PEPs.</p>
@@ -211,7 +210,7 @@ used as a workaround for the lack of a <code class="docutils literal notranslate
 used today (in combination with <code class="docutils literal notranslate"><span class="pre">operator.itemsetter</span></code>) to work around the
 lack of expression level assignments.</p>
 <p>Rather than requiring such workarounds, this PEP instead proposes that
-PEP 572’s “NAME := EXPR” syntax be adopted as a new inline assignment
+<a class="reference external" href="pep-0572.html">PEP 572</a>’s “NAME := EXPR” syntax be adopted as a new inline assignment
 expression that uses the augmented assignment scoping rules described below.</p>
 <p>This cleanly handles cases where only the new value is of interest, and the
 previously bound value (if any) can just be discarded completely.</p>
@@ -230,11 +229,11 @@ than all other operators, include the comma pseudo-operator. This ensures
 that when used as a top level expression the entire right hand side of the
 expression is still interpreted as the value to be processed (even when that
 value is a tuple without parentheses).</p>
-<p>The difference this introduces relative to PEP 572 is that where
-<code class="docutils literal notranslate"><span class="pre">(n</span> <span class="pre">:=</span> <span class="pre">first,</span> <span class="pre">second)</span></code> sets <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">=</span> <span class="pre">first</span></code> in PEP 572, in this PEP it would set
+<p>The difference this introduces relative to <a class="reference external" href="pep-0572.html">PEP 572</a> is that where
+<code class="docutils literal notranslate"><span class="pre">(n</span> <span class="pre">:=</span> <span class="pre">first,</span> <span class="pre">second)</span></code> sets <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">=</span> <span class="pre">first</span></code> in <a class="reference external" href="pep-0572.html">PEP 572</a>, in this PEP it would set
 <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">=</span> <span class="pre">(first,</span> <span class="pre">second)`,</span> <span class="pre">and</span> <span class="pre">getting</span> <span class="pre">the</span> <span class="pre">first</span> <span class="pre">meaning</span> <span class="pre">would</span> <span class="pre">require</span> <span class="pre">an</span> <span class="pre">extra</span>
 <span class="pre">set</span> <span class="pre">of</span> <span class="pre">parentheses</span> <span class="pre">(``((n</span> <span class="pre">:=</span> <span class="pre">first),</span> <span class="pre">second)</span></code>).</p>
-<p>PEP 572 quite reasonably notes that this results in ambiguity when assignment
+<p><a class="reference external" href="pep-0572.html">PEP 572</a> quite reasonably notes that this results in ambiguity when assignment
 expressions are used as function call arguments. This PEP resolves that concern
 a different way by requiring that assignment expressions be parenthesised
 when used as arguments to a function call (unless they’re the sole argument).</p>
@@ -414,7 +413,7 @@ backwards incompatible change.</p>
 <h2><a class="toc-backref" href="#id13">Design discussion</a><a class="headerlink" href="#design-discussion" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="allowing-complex-assignment-targets">
 <h3><a class="toc-backref" href="#id14">Allowing complex assignment targets</a><a class="headerlink" href="#allowing-complex-assignment-targets" title="Permalink to this headline">¶</a></h3>
-<p>The initial drafts of this PEP kept PEP 572’s restriction to single name targets
+<p>The initial drafts of this PEP kept <a class="reference external" href="pep-0572.html">PEP 572</a>’s restriction to single name targets
 when augmented assignments were used as expressions, allowing attribute and
 subscript targets solely for the statement form.</p>
 <p>However, enforcing that required varying the permitted targets based on whether
@@ -427,7 +426,7 @@ that also gained support for assignment and subscript targets.</p>
 </div>
 <div class="section" id="augmented-assignment-or-name-binding-only">
 <h3><a class="toc-backref" href="#id15">Augmented assignment or name binding only?</a><a class="headerlink" href="#augmented-assignment-or-name-binding-only" title="Permalink to this headline">¶</a></h3>
-<p>PEP 572 makes a reasonable case that the potential use cases for inline
+<p><a class="reference external" href="pep-0572.html">PEP 572</a> makes a reasonable case that the potential use cases for inline
 augmented assignment are notably weaker than those for inline assignment in
 general, so it’s acceptable to require that they be spelled as <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">:=</span> <span class="pre">x</span> <span class="pre">+</span> <span class="pre">1</span></code>,
 bypassing any in-place augmented assignment methods.</p>
@@ -477,7 +476,7 @@ currently executing module and modifying its attributes).</p>
 <p>For class scopes, the answer to both questions is also “Yes” in practice,
 although less unequivocally so, since the semantics of <code class="docutils literal notranslate"><span class="pre">locals()</span></code> are
 currently formally unspecified. However, if the current behaviour of <code class="docutils literal notranslate"><span class="pre">locals()</span></code>
-at class scope is taken as normative (as PEP 558 proposes), then this is
+at class scope is taken as normative (as <a class="reference external" href="pep-0558.html">PEP 558</a> proposes), then this is
 essentially the same scenario as manipulating the module globals, just using
 <code class="docutils literal notranslate"><span class="pre">locals()</span></code> instead.</p>
 <p>For function scopes, however, the current answers to these two questions are
@@ -518,7 +517,7 @@ level bindings are sufficient.</p>
 </div>
 <div class="section" id="ignoring-scoped-expressions-when-determining-augmented-assignment-targets">
 <h3><a class="toc-backref" href="#id17">Ignoring scoped expressions when determining augmented assignment targets</a><a class="headerlink" href="#ignoring-scoped-expressions-when-determining-augmented-assignment-targets" title="Permalink to this headline">¶</a></h3>
-<p>When discussing possible binding semantics for PEP 572’s assignment expressions,
+<p>When discussing possible binding semantics for <a class="reference external" href="pep-0572.html">PEP 572</a>’s assignment expressions,
 Tim Peters made a plausible case [<a class="reference internal" href="#id1">1</a>,2_,3_] for assignment expressions targeting
 the containing block scope, essentially ignoring any intervening scoped
 expressions.</p>
@@ -556,12 +555,12 @@ to detect it), so there’s also no need to tinker with that.</p>
 </div>
 <div class="section" id="treating-inline-assignment-as-an-augmented-assignment-variant">
 <h3><a class="toc-backref" href="#id18">Treating inline assignment as an augmented assignment variant</a><a class="headerlink" href="#treating-inline-assignment-as-an-augmented-assignment-variant" title="Permalink to this headline">¶</a></h3>
-<p>One of the challenges with PEP 572 is the fact that <code class="docutils literal notranslate"><span class="pre">NAME</span> <span class="pre">=</span> <span class="pre">EXPR</span></code> and
+<p>One of the challenges with <a class="reference external" href="pep-0572.html">PEP 572</a> is the fact that <code class="docutils literal notranslate"><span class="pre">NAME</span> <span class="pre">=</span> <span class="pre">EXPR</span></code> and
 <code class="docutils literal notranslate"><span class="pre">NAME</span> <span class="pre">:=</span> <span class="pre">EXPR</span></code> are entirely semantically equivalent at every scope. This
 makes the two forms hard to teach, since there’s no inherent nudge towards
 choosing one over the other at the statement level, so you end up having to
 resort to “<code class="docutils literal notranslate"><span class="pre">NAME</span> <span class="pre">=</span> <span class="pre">EXPR</span></code> is preferred because it’s been around longer”
-(and PEP 572 proposes to enfore that historical idiosyncrasy at the compiler
+(and <a class="reference external" href="pep-0572.html">PEP 572</a> proposes to enfore that historical idiosyncrasy at the compiler
 level).</p>
 <p>That semantic equivalence is difficult to avoid at module and class scope while
 still having <code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">NAME</span> <span class="pre">:=</span> <span class="pre">EXPR:</span></code> and <code class="docutils literal notranslate"><span class="pre">while</span> <span class="pre">NAME</span> <span class="pre">:=</span> <span class="pre">EXPR:</span></code> work sensibly, but
@@ -577,7 +576,7 @@ design requirement, then this PEP would be updated to propose that
 <code class="docutils literal notranslate"><span class="pre">EXPR</span> <span class="pre">given</span> <span class="pre">NAME</span></code> also be introduced as a way to support inline name declarations
 after arbitrary expressions (this would allow the inline name declarations to be
 deferred until the end of a complex expression rather than needing to be
-embedded in the middle of it, and PEP 8 would gain a recommendation encouraging
+embedded in the middle of it, and <a class="reference external" href="pep-0008.html">PEP 8</a> would gain a recommendation encouraging
 that style).</p>
 </div>
 <div class="section" id="disallowing-augmented-assignments-in-class-level-scoped-expressions">
@@ -603,7 +602,7 @@ operation:</p>
 <span class="n">x</span> <span class="o">&lt;=</span> <span class="n">y</span> <span class="c1"># Less-than-or-equal-to</span>
 </pre></div>
 </div>
-<p>Both this PEP and PEP 572 propose adding at least one operator that’s somewhat
+<p>Both this PEP and <a class="reference external" href="pep-0572.html">PEP 572</a> propose adding at least one operator that’s somewhat
 similar in appearance, but defines an assignment instead:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">:=</span> <span class="n">y</span> <span class="c1"># Becomes</span>
 </pre></div>
@@ -699,7 +698,7 @@ be written using nested if-else statements:</p>
             <span class="o">...</span>
 </pre></div>
 </div>
-<p>As with PEP 572, this PEP allows the else/if portions of that chain to be
+<p>As with <a class="reference external" href="pep-0572.html">PEP 572</a>, this PEP allows the else/if portions of that chain to be
 condensed, making their consistent and mutually exclusive structure more
 readily apparent:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">pattern</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
@@ -713,7 +712,7 @@ readily apparent:</p>
     <span class="o">...</span>
 </pre></div>
 </div>
-<p>Unlike PEP 572, this PEP requires that the assignment target be explicitly
+<p>Unlike <a class="reference external" href="pep-0572.html">PEP 572</a>, this PEP requires that the assignment target be explicitly
 indicated as local before the first use as a <code class="docutils literal notranslate"><span class="pre">:=</span></code> target, either by
 binding it to a value (as shown above), or else by including an appropriate
 explicit type declaration:</p>
@@ -769,32 +768,32 @@ practice.</p>
 </div>
 </div>
 <div class="section" id="relationship-with-pep-572">
-<h2><a class="toc-backref" href="#id26">Relationship with PEP 572</a><a class="headerlink" href="#relationship-with-pep-572" title="Permalink to this headline">¶</a></h2>
-<p>The case for allowing inline assignments at all is made in PEP 572. This
+<h2>Relationship with <a class="reference external" href="pep-0572.html">PEP 572</a><a class="headerlink" href="#relationship-with-pep-572" title="Permalink to this headline">¶</a></h2>
+<p>The case for allowing inline assignments at all is made in <a class="reference external" href="pep-0572.html">PEP 572</a>. This
 competing PEP was initially going to propose an alternate surface syntax
 (<code class="docutils literal notranslate"><span class="pre">EXPR</span> <span class="pre">given</span> <span class="pre">NAME</span> <span class="pre">=</span> <span class="pre">EXPR</span></code>), while retaining the expression semantics from
-PEP 572, but that changed when discussing one of the initial motivating use
+<a class="reference external" href="pep-0572.html">PEP 572</a>, but that changed when discussing one of the initial motivating use
 cases for allowing embedded assignments at all: making it possible to easily
 calculate cumulative sums in comprehensions and generator expressions.</p>
-<p>As a result of that, and unlike PEP 572, this PEP focuses primarily on use
+<p>As a result of that, and unlike <a class="reference external" href="pep-0572.html">PEP 572</a>, this PEP focuses primarily on use
 cases for inline augmented assignment. It also has the effect of converting
 cases that currently inevitably raise <code class="docutils literal notranslate"><span class="pre">UnboundLocalError</span></code> at function call
 time to report a new compile time <code class="docutils literal notranslate"><span class="pre">TargetNameError</span></code>.</p>
 <p>New syntax for a name rebinding expression (<code class="docutils literal notranslate"><span class="pre">NAME</span> <span class="pre">:=</span> <span class="pre">TARGET</span></code>) is then added
-not only to handle the same use cases as are identified in PEP 572, but also
+not only to handle the same use cases as are identified in <a class="reference external" href="pep-0572.html">PEP 572</a>, but also
 as a lower level primitive to help illustrate, implement and explain
 the new augmented assignment semantics, rather than being the sole change being
 proposed.</p>
 <p>The author of this PEP believes that this approach makes the value of the new
 flexibility in name rebinding clearer, while also mitigating many of the
-potential concerns raised with PEP 572 around explaining when to use
+potential concerns raised with <a class="reference external" href="pep-0572.html">PEP 572</a> around explaining when to use
 <code class="docutils literal notranslate"><span class="pre">NAME</span> <span class="pre">=</span> <span class="pre">EXPR</span></code> over <code class="docutils literal notranslate"><span class="pre">NAME</span> <span class="pre">:=</span> <span class="pre">EXPR</span></code> (and vice-versa), without resorting to
 prohibiting the bare statement form of <code class="docutils literal notranslate"><span class="pre">NAME</span> <span class="pre">:=</span> <span class="pre">EXPR</span></code> outright (such
 that <code class="docutils literal notranslate"><span class="pre">NAME</span> <span class="pre">:=</span> <span class="pre">EXPR</span></code> is a compile error, but <code class="docutils literal notranslate"><span class="pre">(NAME</span> <span class="pre">:=</span> <span class="pre">EXPR)</span></code> is permitted).</p>
 </div>
 <div class="section" id="acknowledgements">
 <h2><a class="toc-backref" href="#id27">Acknowledgements</a><a class="headerlink" href="#acknowledgements" title="Permalink to this headline">¶</a></h2>
-<p>The PEP author wishes to thank Chris Angelico for his work on PEP 572, and his
+<p>The PEP author wishes to thank Chris Angelico for his work on <a class="reference external" href="pep-0572.html">PEP 572</a>, and his
 efforts to create a coherent summary of the great many sprawling discussions
 that spawned on both python-ideas and python-dev, as well as Tim Peters for
 the in-depth discussion of parent local scoping that prompted the above
@@ -824,7 +823,8 @@ significantly more readable.</p>
 <p>This document has been placed in the public domain.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0577.rst">https://github.com/python/peps/blob/master/pep-0577.rst</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0577.rst">https://github.com/python/peps/blob/master/pep-0577.rst</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0577.rst">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

@@ -1,0 +1,318 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PEP 623 – Remove wstr from Unicode &#8212; PEPs.Python.org</title>
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 624 – Remove Py_UNICODE encoder APIs" href="pep-0624.html" />
+    <link rel="prev" title="PEP 622 – Structural Pattern Matching" href="pep-0622.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 623 – Remove wstr from Unicode</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-623-remove-wstr-from-unicode">
+<h1 class="page-title">PEP 623 – Remove wstr from Unicode<a class="headerlink" href="#pep-623-remove-wstr-from-unicode" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">623</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Remove wstr from Unicode</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Inada Naoki &lt;songofacandy&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even">Victor Stinner &lt;vstinner&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd">Accepted</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even">Standards Track</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">25-Jun-2020</dd>
+<dt class="field-even">Python-Version</dt>
+<dd class="field-even">3.10</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id3">Abstract</a></li>
+<li><a class="reference internal" href="#motivation" id="id4">Motivation</a><ul>
+<li><a class="reference internal" href="#memory-usage" id="id5">Memory usage</a></li>
+<li><a class="reference internal" href="#runtime-overhead" id="id6">Runtime overhead</a></li>
+<li><a class="reference internal" href="#simplicity" id="id7">Simplicity</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rationale" id="id8">Rationale</a><ul>
+<li><a class="reference internal" href="#python-4-0-is-not-scheduled-yet" id="id9">Python 4.0 is not scheduled yet</a></li>
+<li><a class="reference internal" href="#python-2-reached-eol" id="id10">Python 2 reached EOL</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#plan" id="id11">Plan</a><ul>
+<li><a class="reference internal" href="#python-3-9" id="id12">Python 3.9</a></li>
+<li><a class="reference internal" href="#python-3-10" id="id13">Python 3.10</a></li>
+<li><a class="reference internal" href="#python-3-12" id="id14">Python 3.12</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#discussion" id="id15">Discussion</a></li>
+<li><a class="reference internal" href="#references" id="id16">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id17">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id3">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="pep-0393.html">PEP 393</a> deprecated some unicode APIs, and introduced <code class="docutils literal notranslate"><span class="pre">wchar_t</span> <span class="pre">*wstr</span></code>,
+and <code class="docutils literal notranslate"><span class="pre">Py_ssize_t</span> <span class="pre">wstr_length</span></code> in the Unicode structure to support
+these deprecated APIs. <a class="footnote-reference brackets" href="#id2" id="id1">1</a></p>
+<p>This PEP is planning removal of <code class="docutils literal notranslate"><span class="pre">wstr</span></code>, and <code class="docutils literal notranslate"><span class="pre">wstr_length</span></code> with
+deprecated APIs using these members by Python 3.12.</p>
+<p>Deprecated APIs which doesn’t use the members are out of scope because
+they can be removed independently.</p>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id4">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="memory-usage">
+<h3><a class="toc-backref" href="#id5">Memory usage</a><a class="headerlink" href="#memory-usage" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code> is one of the most used types in Python. Even most simple ASCII
+strings have a <code class="docutils literal notranslate"><span class="pre">wstr</span></code> member. It consumes 8 bytes per string on 64-bit
+systems.</p>
+</div>
+<div class="section" id="runtime-overhead">
+<h3><a class="toc-backref" href="#id6">Runtime overhead</a><a class="headerlink" href="#runtime-overhead" title="Permalink to this headline">¶</a></h3>
+<p>To support legacy Unicode object, many Unicode APIs must call
+<code class="docutils literal notranslate"><span class="pre">PyUnicode_READY()</span></code>.</p>
+<p>We can remove this overhead too by dropping support of legacy Unicode
+object.</p>
+</div>
+<div class="section" id="simplicity">
+<h3><a class="toc-backref" href="#id7">Simplicity</a><a class="headerlink" href="#simplicity" title="Permalink to this headline">¶</a></h3>
+<p>Supporting legacy Unicode object makes the Unicode implementation more
+complex.
+Until we drop legacy Unicode object, it is very hard to try other
+Unicode implementation like UTF-8 based implementation in PyPy.</p>
+</div>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id8">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="python-4-0-is-not-scheduled-yet">
+<h3><a class="toc-backref" href="#id9">Python 4.0 is not scheduled yet</a><a class="headerlink" href="#python-4-0-is-not-scheduled-yet" title="Permalink to this headline">¶</a></h3>
+<p><a class="reference external" href="pep-0393.html">PEP 393</a> introduced efficient internal representation of Unicode and
+removed border between “narrow” and “wide” build of Python.</p>
+<p><a class="reference external" href="pep-0393.html">PEP 393</a> was implemented in Python 3.3 which is released in 2012. Old
+APIs were deprecated since then, and the removal was scheduled in
+Python 4.0.</p>
+<p>Python 4.0 was expected as next version of Python 3.9 when <a class="reference external" href="pep-0393.html">PEP 393</a>
+was accepted. But the next version of Python 3.9 is Python 3.10,
+not 4.0. This is why this PEP schedule the removal plan again.</p>
+</div>
+<div class="section" id="python-2-reached-eol">
+<h3><a class="toc-backref" href="#id10">Python 2 reached EOL</a><a class="headerlink" href="#python-2-reached-eol" title="Permalink to this headline">¶</a></h3>
+<p>Since Python 2 didn’t have <a class="reference external" href="pep-0393.html">PEP 393</a> Unicode implementation, legacy
+APIs might help C extensiom modules supporting both of Python 2 and 3.</p>
+<p>But Python 2 reached the EOL in 2020. We can remove legacy APIs kept
+for compatibility with Python 2.</p>
+</div>
+</div>
+<div class="section" id="plan">
+<h2><a class="toc-backref" href="#id11">Plan</a><a class="headerlink" href="#plan" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="python-3-9">
+<h3><a class="toc-backref" href="#id12">Python 3.9</a><a class="headerlink" href="#python-3-9" title="Permalink to this headline">¶</a></h3>
+<p>These macros and functions are marked as deprecated, using
+<code class="docutils literal notranslate"><span class="pre">Py_DEPRECATED</span></code> macro.</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">Py_UNICODE_WSTR_LENGTH()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_GET_SIZE()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_GetSize()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_GET_DATA_SIZE()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_AS_UNICODE()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_AS_DATA()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_AsUnicode()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">_PyUnicode_AsUnicode()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_AsUnicodeAndSize()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_FromUnicode()</span></code></li>
+</ul>
+</div>
+<div class="section" id="python-3-10">
+<h3><a class="toc-backref" href="#id13">Python 3.10</a><a class="headerlink" href="#python-3-10" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Following macros, enum members are marked as deprecated.
+<code class="docutils literal notranslate"><span class="pre">Py_DEPRECATED(3.10)</span></code> macro are used as possible. But they
+are deprecated only in comment and document if the macro can
+not be used easily.<ul>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_WCHAR_KIND</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_READY()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_IS_READY()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_IS_COMPACT()</span></code></li>
+</ul>
+</li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_FromUnicode(NULL,</span> <span class="pre">size)</span></code> and
+<code class="docutils literal notranslate"><span class="pre">PyUnicode_FromStringAndSize(NULL,</span> <span class="pre">size)</span></code> emit
+<code class="docutils literal notranslate"><span class="pre">DeprecationWarning</span></code> when <code class="docutils literal notranslate"><span class="pre">size</span> <span class="pre">&gt;</span> <span class="pre">0</span></code>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">PyArg_ParseTuple()</span></code> and <code class="docutils literal notranslate"><span class="pre">PyArg_ParseTupleAndKeywords()</span></code> emit
+<code class="docutils literal notranslate"><span class="pre">DeprecationWarning</span></code> when <code class="docutils literal notranslate"><span class="pre">u</span></code>, <code class="docutils literal notranslate"><span class="pre">u#</span></code>, <code class="docutils literal notranslate"><span class="pre">Z</span></code>, and <code class="docutils literal notranslate"><span class="pre">Z#</span></code> formats are used.</li>
+</ul>
+</div>
+<div class="section" id="python-3-12">
+<h3><a class="toc-backref" href="#id14">Python 3.12</a><a class="headerlink" href="#python-3-12" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Following members are removed from the Unicode structures:<ul>
+<li><code class="docutils literal notranslate"><span class="pre">wstr</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">wstr_length</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">state.compact</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">state.ready</span></code></li>
+</ul>
+</li>
+<li>The <code class="docutils literal notranslate"><span class="pre">PyUnicodeObject</span></code> structure is removed.</li>
+<li>Following macros and functions, and enum members are removed:<ul>
+<li><code class="docutils literal notranslate"><span class="pre">Py_UNICODE_WSTR_LENGTH()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_GET_SIZE()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_GetSize()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_GET_DATA_SIZE()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_AS_UNICODE()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_AS_DATA()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_AsUnicode()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">_PyUnicode_AsUnicode()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_AsUnicodeAndSize()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_FromUnicode()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_WCHAR_KIND</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_READY()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_IS_READY()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_IS_COMPACT()</span></code></li>
+</ul>
+</li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_FromStringAndSize(NULL,</span> <span class="pre">size))</span></code> raises
+<code class="docutils literal notranslate"><span class="pre">RuntimeError</span></code> when <code class="docutils literal notranslate"><span class="pre">size</span> <span class="pre">&gt;</span> <span class="pre">0</span></code>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">PyArg_ParseTuple()</span></code> and <code class="docutils literal notranslate"><span class="pre">PyArg_ParseTupleAndKeywords()</span></code> raise
+<code class="docutils literal notranslate"><span class="pre">SystemError</span></code> when <code class="docutils literal notranslate"><span class="pre">u</span></code>, <code class="docutils literal notranslate"><span class="pre">u#</span></code>, <code class="docutils literal notranslate"><span class="pre">Z</span></code>, and <code class="docutils literal notranslate"><span class="pre">Z#</span></code> formats are used,
+as other unsupported format character.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="discussion">
+<h2><a class="toc-backref" href="#id15">Discussion</a><a class="headerlink" href="#discussion" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference external" href="https://mail.python.org/archives/list/python-dev&#64;python.org/thread/BO2TQHSXWL2RJMINWQQRBF5LANDDJNHH/#BO2TQHSXWL2RJMINWQQRBF5LANDDJNHH">Draft PEP: Remove wstr from Unicode</a></li>
+<li><a class="reference external" href="https://mail.python.org/archives/list/python-dev&#64;python.org/thread/7JVC3IKS2V73K36ISEJAAWMRFN2T4KKR/#7JVC3IKS2V73K36ISEJAAWMRFN2T4KKR">When can we remove wchar_t* cache from string?</a></li>
+<li><a class="reference external" href="https://github.com/python/peps/pull/1462">PEP 623: Remove wstr from Unicode object #1462</a></li>
+</ul>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id16">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference external" href="https://bugs.python.org/issue38604">bpo-38604: Schedule Py_UNICODE API removal</a></li>
+<li><a class="reference external" href="https://bugs.python.org/issue36346">bpo-36346: Prepare for removing the legacy Unicode C API</a></li>
+<li><a class="reference external" href="https://bugs.python.org/issue30863">bpo-30863: Rewrite PyUnicode_AsWideChar() and
+PyUnicode_AsWideCharString()</a>:
+They no longer cache the <code class="docutils literal notranslate"><span class="pre">wchar_t*</span></code> representation of string
+objects.</li>
+</ul>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><a class="reference external" href="pep-0393.html">PEP 393</a> – Flexible String Representation
+(<a class="reference external" href="https://www.python.org/dev/peps/pep-0393/">https://www.python.org/dev/peps/pep-0393/</a>)</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id17">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0623.rst">https://github.com/python/peps/blob/master/pep-0623.rst</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0623.rst">2020-08-15T06:07:35</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0623.rst.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0622.html">PEP 0622</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0624.html">PEP 0624</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 623 – Remove wstr from Unicode</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a><ul>
+<li><a class="reference internal" href="#memory-usage">Memory usage</a></li>
+<li><a class="reference internal" href="#runtime-overhead">Runtime overhead</a></li>
+<li><a class="reference internal" href="#simplicity">Simplicity</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rationale">Rationale</a><ul>
+<li><a class="reference internal" href="#python-4-0-is-not-scheduled-yet">Python 4.0 is not scheduled yet</a></li>
+<li><a class="reference internal" href="#python-2-reached-eol">Python 2 reached EOL</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#plan">Plan</a><ul>
+<li><a class="reference internal" href="#python-3-9">Python 3.9</a></li>
+<li><a class="reference internal" href="#python-3-10">Python 3.10</a></li>
+<li><a class="reference internal" href="#python-3-12">Python 3.12</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#discussion">Discussion</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

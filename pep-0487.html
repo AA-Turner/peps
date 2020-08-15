@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 487 – Simpler customisation of class creation &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -54,7 +53,7 @@
 <dt class="field-even">Post-History</dt>
 <dd class="field-even">27-Feb-2015, 5-Feb-2016, 24-Jun-2016, 2-Jul-2016, 13-Jul-2016</dd>
 <dt class="field-odd">Replaces</dt>
-<dd class="field-odd"><a class="reference external" href="./pep-0422.html">422</a></dd>
+<dd class="field-odd"><a class="reference external" href="pep-0422.html">422</a></dd>
 <dt class="field-even">Resolution</dt>
 <dd class="field-even"><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2016-July/145629.html">https://mail.python.org/pipermail/python-dev/2016-July/145629.html</a></dd>
 </dl>
@@ -132,7 +131,7 @@ all subclasses of a given class.</li>
 <li>upon class creation, a <code class="docutils literal notranslate"><span class="pre">__set_name__</span></code> hook is called on all the
 attribute (descriptors) defined in the class, and</li>
 </ol>
-<p>The third category is the topic of another PEP, PEP 520.</p>
+<p>The third category is the topic of another PEP, <a class="reference external" href="pep-0520.html">PEP 520</a>.</p>
 <p>As an example, the first use case looks as follows:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">QuestBase</span><span class="p">:</span>
 <span class="gp">... </span>   <span class="c1"># this is implicitly a @classmethod (see below for motivation)</span>
@@ -420,7 +419,7 @@ to fix even if someone used this feature.</p>
 <div class="section" id="calling-the-hook-on-the-class-itself">
 <h3><a class="toc-backref" href="#id18">Calling the hook on the class itself</a><a class="headerlink" href="#calling-the-hook-on-the-class-itself" title="Permalink to this headline">¶</a></h3>
 <p>Adding an <code class="docutils literal notranslate"><span class="pre">__autodecorate__</span></code> hook that would be called on the class
-itself was the proposed idea of PEP 422.  Most examples work the same
+itself was the proposed idea of <a class="reference external" href="pep-0422.html">PEP 422</a>.  Most examples work the same
 way or even better if the hook is called only on strict subclasses. In general,
 it is much easier to arrange to explicitly call the hook on the class in which it
 is defined (to opt-in to such a behavior) than to opt-out (by remember to check for
@@ -464,27 +463,27 @@ sensible interpretation for leaving it out, and that case would need
 to be detected anyway in order to give a useful error message.</p>
 <p>This decision was reinforced after noticing that the user experience of
 defining <code class="docutils literal notranslate"><span class="pre">__prepare__</span></code> and forgetting the <code class="docutils literal notranslate"><span class="pre">&#64;classmethod</span></code> method
-decorator is singularly incomprehensible (particularly since PEP 3115
+decorator is singularly incomprehensible (particularly since <a class="reference external" href="pep-3115.html">PEP 3115</a>
 documents it as an ordinary method, and the current documentation doesn’t
 explicitly say anything one way or the other).</p>
 </div>
 <div class="section" id="a-more-new-like-hook">
 <h3><a class="toc-backref" href="#id21">A more <code class="docutils literal notranslate"><span class="pre">__new__</span></code>-like hook</a><a class="headerlink" href="#a-more-new-like-hook" title="Permalink to this headline">¶</a></h3>
-<p>In PEP 422 the hook worked more like the <code class="docutils literal notranslate"><span class="pre">__new__</span></code> method than the
+<p>In <a class="reference external" href="pep-0422.html">PEP 422</a> the hook worked more like the <code class="docutils literal notranslate"><span class="pre">__new__</span></code> method than the
 <code class="docutils literal notranslate"><span class="pre">__init__</span></code> method, meaning that it returned a class instead of
 modifying one. This allows a bit more flexibility, but at the cost
 of much harder implementation and undesired side effects.</p>
 </div>
 <div class="section" id="adding-a-class-attribute-with-the-attribute-order">
 <h3><a class="toc-backref" href="#id22">Adding a class attribute with the attribute order</a><a class="headerlink" href="#adding-a-class-attribute-with-the-attribute-order" title="Permalink to this headline">¶</a></h3>
-<p>This got its own PEP 520.</p>
+<p>This got its own <a class="reference external" href="pep-0520.html">PEP 520</a>.</p>
 </div>
 </div>
 <div class="section" id="history">
 <h2><a class="toc-backref" href="#id23">History</a><a class="headerlink" href="#history" title="Permalink to this headline">¶</a></h2>
-<p>This used to be a competing proposal to PEP 422 by Nick Coghlan and Daniel
-Urban. PEP 422 intended to achieve the same goals as this PEP, but with a
-different way of implementation.  In the meantime, PEP 422 has been withdrawn
+<p>This used to be a competing proposal to <a class="reference external" href="pep-0422.html">PEP 422</a> by Nick Coghlan and Daniel
+Urban. <a class="reference external" href="pep-0422.html">PEP 422</a> intended to achieve the same goals as this PEP, but with a
+different way of implementation.  In the meantime, <a class="reference external" href="pep-0422.html">PEP 422</a> has been withdrawn
 favouring this approach.</p>
 </div>
 <div class="section" id="references">
@@ -501,7 +500,8 @@ favouring this approach.</p>
 <p>This document has been placed in the public domain.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0487.txt">https://github.com/python/peps/blob/master/pep-0487.txt</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0487.txt">https://github.com/python/peps/blob/master/pep-0487.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0487.txt">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 584 – Add Union Operators To dict &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -47,7 +46,7 @@ Brandt Bucher &lt;brandtbucher&#32;&#97;t&#32;gmail.com&gt;</dd>
 <dt class="field-even">BDFL-Delegate</dt>
 <dd class="field-even">Guido van Rossum &lt;guido&#32;&#97;t&#32;python.org&gt;</dd>
 <dt class="field-odd">Status</dt>
-<dd class="field-odd">Accepted</dd>
+<dd class="field-odd">Final</dd>
 <dt class="field-even">Type</dt>
 <dd class="field-even">Standards Track</dd>
 <dt class="field-odd">Created</dt>
@@ -55,9 +54,10 @@ Brandt Bucher &lt;brandtbucher&#32;&#97;t&#32;gmail.com&gt;</dd>
 <dt class="field-even">Python-Version</dt>
 <dd class="field-even">3.9</dd>
 <dt class="field-odd">Post-History</dt>
-<dd class="field-odd">01-Mar-2019, 16-Oct-2019, 04-Feb-2020, 17-Feb-2020</dd>
+<dd class="field-odd">01-Mar-2019, 16-Oct-2019, 02-Dec-2019, 04-Feb-2020,
+17-Feb-2020</dd>
 <dt class="field-even">Resolution</dt>
-<dd class="field-even"><p></p></dd>
+<dd class="field-even"><a class="reference external" href="https://mail.python.org/archives/list/python-dev&#64;python.org/thread/6KT2KIOTYXMDCD2CCAOLOI7LUGTN6MBS">https://mail.python.org/archives/list/python-dev&#64;python.org/thread/6KT2KIOTYXMDCD2CCAOLOI7LUGTN6MBS</a></dd>
 </dl>
 <hr class="docutils" />
 <div class="contents topic" id="contents">
@@ -187,7 +187,7 @@ would be able to guess what it means the first time they see it, or
 think of it as the “obvious way” to merge two dicts.</p>
 <p><a class="reference external" href="https://mail.python.org/archives/list/python-ideas&#64;python.org/message/K4IC74IXE23K4KEL7OUFK3VBC62HGGVF/">As Guido said</a>:</p>
 <blockquote>
-<div>I’m sorry for PEP 448, but even if you know about <code class="docutils literal notranslate"><span class="pre">**d</span></code> in
+<div>I’m sorry for <a class="reference external" href="pep-0448.html">PEP 448</a>, but even if you know about <code class="docutils literal notranslate"><span class="pre">**d</span></code> in
 simpler contexts, if you were to ask a typical Python user how
 to combine two dicts into a new one, I doubt many people would
 think of <code class="docutils literal notranslate"><span class="pre">{**d1,</span> <span class="pre">**d2}</span></code>. I know I myself had forgotten about
@@ -295,10 +295,12 @@ accept any iterable, not just lists.  Continued from above:</p>
 <span class="go">{&#39;eggs&#39;: 2, &#39;cheese&#39;: &#39;cheddar&#39;, &#39;aardvark&#39;: &#39;Ethel&#39;, &#39;spam&#39;: 999}</span>
 </pre></div>
 </div>
+<p>When new keys are added, their order matches their order within the
+right-hand mapping, if any exists for its type.</p>
 </div>
 <div class="section" id="reference-implementation">
 <h2><a class="toc-backref" href="#id20">Reference Implementation</a><a class="headerlink" href="#reference-implementation" title="Permalink to this headline">¶</a></h2>
-<p>One of the authors has <a class="reference external" href="https://github.com/python/cpython/pull/12088">drafted a C implementation</a>.</p>
+<p>One of the authors has <a class="reference external" href="https://github.com/python/cpython/pull/12088">written a C implementation</a>.</p>
 <p>An <em>approximate</em> pure-Python implementation is:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="fm">__or__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
@@ -964,7 +966,7 @@ expression when it is efficient to do so.</p>
 clear increase in readability, reducing the number of lines of code
 and improving clarity.  However other examples using the <code class="docutils literal notranslate"><span class="pre">|</span></code>
 operator lead to long, complex single expressions, possibly well over
-the PEP 8 maximum line length of 80 columns.  As with any other
+the <a class="reference external" href="pep-0008.html">PEP 8</a> maximum line length of 80 columns.  As with any other
 language feature, the programmer should use their own judgement about
 whether <code class="docutils literal notranslate"><span class="pre">|</span></code> improves their code.</p>
 </div>
@@ -1009,7 +1011,8 @@ raised <a class="reference external" href="https://bugs.python.org/issue36431">a
 CC0-1.0-Universal license, whichever is more permissive.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0584.rst">https://github.com/python/peps/blob/master/pep-0584.rst</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0584.rst">https://github.com/python/peps/blob/master/pep-0584.rst</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0584.rst">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 573 – Module State Access from C Extension Methods &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -51,7 +50,7 @@ Marcel Plch &lt;gmarcel.plch&#32;&#97;t&#32;gmail.com&gt;</dd>
 <dt class="field-odd">Discussions-To</dt>
 <dd class="field-odd"><a class="reference external" href="mailto:import-sig&#37;&#52;&#48;python&#46;org?subject=PEP%20573">import-sig&#32;&#97;t&#32;python.org</a></dd>
 <dt class="field-even">Status</dt>
-<dd class="field-even">Accepted</dd>
+<dd class="field-even">Final</dd>
 <dt class="field-odd">Type</dt>
 <dd class="field-odd">Standards Track</dd>
 <dt class="field-even">Created</dt>
@@ -110,11 +109,11 @@ such as the state of the modules they are defined in.</p>
 rather than PyState_FindModule for looking up module state, reducing or
 eliminating the performance cost of using module-scoped state over process
 global state.</p>
-<p>This fixes one of the remaining roadblocks for adoption of PEP 3121 (Extension
-module initialization and finalization) and PEP 489
+<p>This fixes one of the remaining roadblocks for adoption of <a class="reference external" href="pep-3121.html">PEP 3121</a> (Extension
+module initialization and finalization) and <a class="reference external" href="pep-0489.html">PEP 489</a>
 (Multi-phase extension module initialization).</p>
 <p>While this PEP takes an additional step towards fully solving the problems that
-PEP 3121 and PEP 489 started tackling, it does not attempt to resolve <em>all</em>
+<a class="reference external" href="pep-3121.html">PEP 3121</a> and <a class="reference external" href="pep-0489.html">PEP 489</a> started tackling, it does not attempt to resolve <em>all</em>
 remaining concerns. In particular, access to the module state
 from slot methods (<code class="docutils literal notranslate"><span class="pre">nb_add</span></code>, etc) is not solved.</p>
 </div>
@@ -154,7 +153,7 @@ A class that merely inherits the method from its base is not the defining class.
 <p>In C, the defining class is the one defined with the corresponding
 <code class="docutils literal notranslate"><span class="pre">tp_methods</span></code> or “tp slots” <a class="footnote-reference brackets" href="#tp-slots" id="id2">1</a> entry.
 For methods defined in Python, the defining class is saved in the
-<cite>__class__</cite> closure cell.</p>
+<code class="docutils literal notranslate"><span class="pre">__class__</span></code> closure cell.</p>
 </div>
 <div class="section" id="c-api">
 <h3><a class="toc-backref" href="#id18">C-API</a><a class="headerlink" href="#c-api" title="Permalink to this headline">¶</a></h3>
@@ -164,7 +163,7 @@ CPython implements the C-API, but other implementations exist.</p>
 </div>
 <div class="section" id="rationale">
 <h2><a class="toc-backref" href="#id19">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
-<p>PEP 489 introduced a new way to initialize extension modules, which brings
+<p><a class="reference external" href="pep-0489.html">PEP 489</a> introduced a new way to initialize extension modules, which brings
 several advantages to extensions that implement it:</p>
 <ul class="simple">
 <li>The extension modules behave more like their Python counterparts.</li>
@@ -175,7 +174,7 @@ module objects, which paves the way for extension module support for
 makes it possible to test module isolation (a key feature for proper
 sub-interpreter support) from a single interpreter.</li>
 </ul>
-<p>The biggest hurdle for adoption of PEP 489 is allowing access to module state
+<p>The biggest hurdle for adoption of <a class="reference external" href="pep-0489.html">PEP 489</a> is allowing access to module state
 from methods of extension types.
 Currently, the way to access this state from extension methods is by looking up
 the module via <code class="docutils literal notranslate"><span class="pre">PyState_FindModule</span></code> (in contrast to module level functions in
@@ -186,7 +185,7 @@ deterring module authors from using it.</p>
 <p>Also, <code class="docutils literal notranslate"><span class="pre">PyState_FindModule</span></code> relies on the assumption that in each
 subinterpreter, there is at most one module corresponding to
 a given <code class="docutils literal notranslate"><span class="pre">PyModuleDef</span></code>.  This assumption does not hold for modules that use
-PEP 489’s multi-phase initialization, so <code class="docutils literal notranslate"><span class="pre">PyState_FindModule</span></code> is unavailable
+<a class="reference external" href="pep-0489.html">PEP 489</a>’s multi-phase initialization, so <code class="docutils literal notranslate"><span class="pre">PyState_FindModule</span></code> is unavailable
 for these modules.</p>
 <p>A faster, safer way of accessing module-level state from extension methods
 is needed.</p>
@@ -238,7 +237,7 @@ their shared state in C-level process globals, causing problems when:</p>
 <li>reloading modules (e.g. to test conditional imports)</li>
 <li>loading extension modules in subinterpreters</li>
 </ul>
-<p>PEP 3121 attempted to resolve this by offering the <code class="docutils literal notranslate"><span class="pre">PyState_FindModule</span></code> API,
+<p><a class="reference external" href="pep-3121.html">PEP 3121</a> attempted to resolve this by offering the <code class="docutils literal notranslate"><span class="pre">PyState_FindModule</span></code> API,
 but this still has significant problems when it comes to extension methods
 (rather than module level functions):</p>
 <ul class="simple">
@@ -452,7 +451,7 @@ Solving this problem is left to future discussions.</p>
 </div>
 <div class="section" id="easy-creation-of-types-with-module-references">
 <h3><a class="toc-backref" href="#id34">Easy creation of types with module references</a><a class="headerlink" href="#easy-creation-of-types-with-module-references" title="Permalink to this headline">¶</a></h3>
-<p>It would be possible to add a PEP 489 execution slot type to make
+<p>It would be possible to add a <a class="reference external" href="pep-0489.html">PEP 489</a> execution slot type to make
 creating heap types significantly easier than calling
 <code class="docutils literal notranslate"><span class="pre">PyType_FromModuleAndSpec</span></code>.
 This is left to a future PEP.</p>
@@ -495,7 +494,8 @@ they may be added.</p>
 CC0-1.0-Universal license, whichever is more permissive.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0573.rst">https://github.com/python/peps/blob/master/pep-0573.rst</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0573.rst">https://github.com/python/peps/blob/master/pep-0573.rst</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0573.rst">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

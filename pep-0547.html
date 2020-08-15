@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 547 – Running extension modules using the -m option &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -87,7 +86,7 @@ See discussion at <a class="reference external" href="https://github.com/cython/
 <h2><a class="toc-backref" href="#id8">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
 <p>This PEP proposes implementation that allows built-in and extension
 modules to be executed in the <code class="docutils literal notranslate"><span class="pre">__main__</span></code> namespace using
-the PEP 489 multi-phase initialization.</p>
+the <a class="reference external" href="pep-0489.html">PEP 489</a> multi-phase initialization.</p>
 <p>With this, a multi-phase initialization enabled module can be run
 using following command:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python3 -m _testmultiphase
@@ -101,7 +100,7 @@ This is a test module named __main__.
 Python source modules.
 Specifically, it is not possible to run extension modules as scripts using
 Python’s <code class="docutils literal notranslate"><span class="pre">-m</span></code> option.</p>
-<p>The technical groundwork to make this possible has been done for PEP 489,
+<p>The technical groundwork to make this possible has been done for <a class="reference external" href="pep-0489.html">PEP 489</a>,
 and enabling the <code class="docutils literal notranslate"><span class="pre">-m</span></code> option is listed in that PEP’s
 “Possible Future Extensions” section.
 Technically, the additional changes proposed here are relatively small.</p>
@@ -138,7 +137,7 @@ existing module’s <code class="docutils literal notranslate"><span class="pre"
 This is not the case for extension modules, whose <code class="docutils literal notranslate"><span class="pre">PyInit_*</span></code> entry point
 traditionally both created a new module object (using <code class="docutils literal notranslate"><span class="pre">PyModule_Create</span></code>),
 and initialized it.</p>
-<p>Since Python 3.5, extension modules can use PEP 489 multi-phase initialization.
+<p>Since Python 3.5, extension modules can use <a class="reference external" href="pep-0489.html">PEP 489</a> multi-phase initialization.
 In this scenario, the <code class="docutils literal notranslate"><span class="pre">PyInit_*</span></code> entry point returns a <code class="docutils literal notranslate"><span class="pre">PyModuleDef</span></code>
 structure: a description of how the module should be created and initialized.
 The extension can choose to customize creation of the module object using
@@ -169,7 +168,7 @@ extension module will fail if <code class="docutils literal notranslate"><span c
 its <code class="docutils literal notranslate"><span class="pre">md_state</span></code> is normally <code class="docutils literal notranslate"><span class="pre">NULL</span></code>.
 Before initializing an extension module in <code class="docutils literal notranslate"><span class="pre">__main__</span></code>’s context, its module
 state will be allocated according to the <code class="docutils literal notranslate"><span class="pre">PyModuleDef</span></code> of that module.</p>
-<p>While PEP 489 was designed to make these changes generally possible,
+<p>While <a class="reference external" href="pep-0489.html">PEP 489</a> was designed to make these changes generally possible,
 it’s necessary to decouple module discovery, creation, and initialization
 steps for extension modules, so that another module can be used instead of
 a newly initialized one, and the functionality needs to be added to
@@ -194,7 +193,7 @@ Otherwise, <code class="docutils literal notranslate"><span class="pre">runpy</s
 <p><code class="docutils literal notranslate"><span class="pre">_imp.exec_in_module</span></code> will use existing machinery to find and call an
 extension module’s <code class="docutils literal notranslate"><span class="pre">PyInit_*</span></code> function.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">PyInit_*</span></code> function can return either a fully initialized module
-(single-phase initialization) or a <code class="docutils literal notranslate"><span class="pre">PyModuleDef</span></code> (for PEP 489 multi-phase
+(single-phase initialization) or a <code class="docutils literal notranslate"><span class="pre">PyModuleDef</span></code> (for <a class="reference external" href="pep-0489.html">PEP 489</a> multi-phase
 initialization).</p>
 <p>In the single-phase initialization case, <code class="docutils literal notranslate"><span class="pre">_imp.exec_in_module</span></code> will raise
 <code class="docutils literal notranslate"><span class="pre">ImportError</span></code>.</p>
@@ -233,7 +232,8 @@ a loader that previously did not support running modules as <code class="docutil
 <p>This document has been placed in the public domain.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0547.rst">https://github.com/python/peps/blob/master/pep-0547.rst</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0547.rst">https://github.com/python/peps/blob/master/pep-0547.rst</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0547.rst">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 613 – Explicit Type Aliases &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -97,7 +96,7 @@ expressions that are impossible to express as type aliases and punts error
 diagnosis of malformed type aliases downstream.</p>
 <p>The following examples each include an illustration of some of the suboptimal
 or confusing behaviors resulting from existing implicit alias declarations.
-We also introduce explicit aliases of the format <code class="code docutils literal notranslate"><span class="pre">TypeName:</span> <span class="pre">TypeAlias</span> <span class="pre">=</span> <span class="pre">Expression</span></code>
+We also introduce explicit aliases of the format <code class="docutils literal notranslate"><span class="pre">TypeName:</span> <span class="pre">TypeAlias</span> <span class="pre">=</span> <span class="pre">Expression</span></code>
 here for the sake of comparison, but the syntax is discussed in further detail
 in later sections.</p>
 <div class="section" id="forward-references">
@@ -106,17 +105,17 @@ in later sections.</p>
 <span class="k">def</span> <span class="nf">foo</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MyType</span><span class="p">:</span> <span class="o">...</span>
 </pre></div>
 </div>
-<p>This code snippet should not error so long as <code class="code docutils literal notranslate"><span class="pre">ClassName</span></code> is defined
+<p>This code snippet should not error so long as <code class="docutils literal notranslate"><span class="pre">ClassName</span></code> is defined
 later on. However, a type checker is forced to assume that MyType is a value
 assignment rather than a type alias, and therefore may throw spurious errors
-that (1) <code class="code docutils literal notranslate"><span class="pre">MyType</span></code> is an unannotated global string, and (2) <code class="code docutils literal notranslate"><span class="pre">MyType</span></code>
+that (1) <code class="docutils literal notranslate"><span class="pre">MyType</span></code> is an unannotated global string, and (2) <code class="docutils literal notranslate"><span class="pre">MyType</span></code>
 cannot be used as a return annotation because it is not a valid type.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>MyType: TypeAlias = “ClassName”
 def foo() -&gt; MyType: ...
 </pre></div>
 </div>
 <p>Explicit aliases remove ambiguity so neither of the above errors will be
-thrown. Additionally, if something is wrong with <code class="code docutils literal notranslate"><span class="pre">ClassName</span></code>
+thrown. Additionally, if something is wrong with <code class="docutils literal notranslate"><span class="pre">ClassName</span></code>
 (i.e., it’s not actually defined later), the type checker can throw an error.</p>
 </div>
 <div class="section" id="error-messaging">
@@ -125,20 +124,20 @@ thrown. Additionally, if something is wrong with <code class="code docutils lite
 <span class="n">MyType2</span> <span class="o">=</span> <span class="n">MyGeneric</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>  <span class="c1"># i.e., intention was MyGeneric[int]</span>
 </pre></div>
 </div>
-<p>A type checker should warn on this code snippet that <code class="code docutils literal notranslate"><span class="pre">InvalidType</span></code> is not
+<p>A type checker should warn on this code snippet that <code class="docutils literal notranslate"><span class="pre">InvalidType</span></code> is not
 a valid type, and therefore cannot be used to annotate an expression or to
 construct a type alias. Instead, type checkers are forced to throw spurious
-errors that (1) <code class="code docutils literal notranslate"><span class="pre">MyType</span></code> is a global expression missing an annotation,
-and (2) <code class="code docutils literal notranslate"><span class="pre">MyType</span></code> is not a valid type in all usages of <code class="code docutils literal notranslate"><span class="pre">MyType</span></code>
+errors that (1) <code class="docutils literal notranslate"><span class="pre">MyType</span></code> is a global expression missing an annotation,
+and (2) <code class="docutils literal notranslate"><span class="pre">MyType</span></code> is not a valid type in all usages of <code class="docutils literal notranslate"><span class="pre">MyType</span></code>
 across the codebase.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">MyType1</span><span class="p">:</span> <span class="n">TypeAlias</span> <span class="o">=</span> <span class="n">InvalidType</span>
 <span class="n">MyType2</span><span class="p">:</span> <span class="n">TypeAlias</span> <span class="o">=</span> <span class="n">MyGeneric</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>With explicit aliases, the type checker has enough information to error on the
-actual definition of the bad type alias, and explain why: that <code class="code docutils literal notranslate"><span class="pre">MyGeneric(int)</span></code>
-and <cite>InvalidType</cite> are not valid types. When the value expression is no longer
-evaluated as a global value, unactionable type errors on all usages of <code class="code docutils literal notranslate"><span class="pre">MyType</span></code>
+actual definition of the bad type alias, and explain why: that <code class="docutils literal notranslate"><span class="pre">MyGeneric(int)</span></code>
+and <code class="docutils literal notranslate"><span class="pre">InvalidType</span></code> are not valid types. When the value expression is no longer
+evaluated as a global value, unactionable type errors on all usages of <code class="docutils literal notranslate"><span class="pre">MyType</span></code>
 across the codebase can be suppressed.</p>
 </div>
 <div class="section" id="scope-restrictions">
@@ -148,8 +147,8 @@ across the codebase can be suppressed.</p>
   <span class="n">x</span> <span class="o">=</span> <span class="n">ClassName</span>
 </pre></div>
 </div>
-<p>The outer <code class="code docutils literal notranslate"><span class="pre">x</span></code> is a valid type alias, but type checkers must error if the
-inner <code class="code docutils literal notranslate"><span class="pre">x</span></code> is ever used as a type because type aliases cannot be defined
+<p>The outer <code class="docutils literal notranslate"><span class="pre">x</span></code> is a valid type alias, but type checkers must error if the
+inner <code class="docutils literal notranslate"><span class="pre">x</span></code> is ever used as a type because type aliases cannot be defined
 inside a nested scope.
 This is confusing because the alias declaration rule is not explicit, and because
 a type error will not be thrown on the location of the inner type alias declaration
@@ -195,7 +194,7 @@ x: TypeAlias = “MyClass”  # type alias
 </div>
 <p>Note: The examples above illustrate implicit and explicit alias declarations in
 isolation. For the sake of backwards compatibility, type checkers should support
-both simultaneously, meaning an untyped global expression <code class="code docutils literal notranslate"><span class="pre">x</span> <span class="pre">=</span> <span class="pre">int</span></code> will
+both simultaneously, meaning an untyped global expression <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">=</span> <span class="pre">int</span></code> will
 still be considered a valid type alias.</p>
 </div>
 <div class="section" id="backwards-compatibility">
@@ -219,9 +218,9 @@ alias declarations.</p>
 </pre></div>
 </div>
 <p>Along with the option above, this format potentially adds confusion around
-what the runtime value of <code class="code docutils literal notranslate"><span class="pre">MyType</span></code> is.</p>
-<p>In comparison, the chosen syntax option <code class="code docutils literal notranslate"><span class="pre">MyType:</span> <span class="pre">TypeAlias</span> <span class="pre">=</span> <span class="pre">int</span></code> is
-appealing because it still sticks with the <code class="code docutils literal notranslate"><span class="pre">MyType</span> <span class="pre">=</span> <span class="pre">int</span></code> assignment
+what the runtime value of <code class="docutils literal notranslate"><span class="pre">MyType</span></code> is.</p>
+<p>In comparison, the chosen syntax option <code class="docutils literal notranslate"><span class="pre">MyType:</span> <span class="pre">TypeAlias</span> <span class="pre">=</span> <span class="pre">int</span></code> is
+appealing because it still sticks with the <code class="docutils literal notranslate"><span class="pre">MyType</span> <span class="pre">=</span> <span class="pre">int</span></code> assignment
 syntax, and adds some information for the type checker purely as an annotation.</p>
 </div>
 <div class="section" id="copyright">
@@ -230,7 +229,8 @@ syntax, and adds some information for the type checker purely as an annotation.<
 CC0-1.0-Universal license, whichever is more permissive.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0613.rst">https://github.com/python/peps/blob/master/pep-0613.rst</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0613.rst">https://github.com/python/peps/blob/master/pep-0613.rst</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0613.rst">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

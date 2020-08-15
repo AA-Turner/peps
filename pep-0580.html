@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 580 – The C call protocol &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -104,7 +103,7 @@
 </div>
 <div class="section" id="rejection-notice">
 <h2><a class="toc-backref" href="#id7">Rejection Notice</a><a class="headerlink" href="#rejection-notice" title="Permalink to this headline">¶</a></h2>
-<p>This PEP is rejected in favor of PEP 590, which proposes a simpler public
+<p>This PEP is rejected in favor of <a class="reference external" href="pep-0590.html">PEP 590</a>, which proposes a simpler public
 C API for callable objects.</p>
 </div>
 <div class="section" id="abstract">
@@ -145,7 +144,7 @@ Future PEPs may implement the C call protocol for more classes,
 enabling even further simplifications.</p>
 <p>We also design the C call protocol such that it can easily
 be extended with new features in the future.</p>
-<p>For more background and motivation, see PEP 579.</p>
+<p>For more background and motivation, see <a class="reference external" href="pep-0579.html">PEP 579</a>.</p>
 </div>
 <div class="section" id="overview">
 <h2><a class="toc-backref" href="#id10">Overview</a><a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
@@ -245,7 +244,7 @@ It is only used by the C call protocol if the
 that defines the method (which may be a superclass of <code class="docutils literal notranslate"><span class="pre">type(self)</span></code>).
 This is currently non-trivial to retrieve from a method’s code.
 In the future, this can be used to access the module state via
-the defining class. See the rationale of PEP 573 for details.</p>
+the defining class. See the rationale of <a class="reference external" href="pep-0573.html">PEP 573</a> for details.</p>
 <p>When the flag <code class="docutils literal notranslate"><span class="pre">CCALL_OBJCLASS</span></code> is set (as it will be for methods of
 extension types), <code class="docutils literal notranslate"><span class="pre">cc_parent</span></code> is used for type checks like the following:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="o">.</span><span class="n">append</span><span class="p">({},</span> <span class="s2">&quot;x&quot;</span><span class="p">)</span>
@@ -570,7 +569,7 @@ are added to the stable ABI.</p>
 <p>There are two reasons for this:
 first of all, the most useful feature of the C call protocol is probably the
 <code class="docutils literal notranslate"><span class="pre">METH_FASTCALL</span></code> calling convention.
-Given that this is not even part of the public API (see also PEP 579, issue 6),
+Given that this is not even part of the public API (see also <a class="reference external" href="pep-0579.html">PEP 579</a>, issue 6),
 it would be strange to add anything else from the C call protocol
 to the stable ABI.</p>
 <p>Second, we want the C call protocol to be extensible in the future.
@@ -589,8 +588,8 @@ We expect very few problems because of this.</p>
 <div class="section" id="rationale">
 <h2><a class="toc-backref" href="#id27">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="why-is-this-better-than-pep-575">
-<h3><a class="toc-backref" href="#id28">Why is this better than PEP 575?</a><a class="headerlink" href="#why-is-this-better-than-pep-575" title="Permalink to this headline">¶</a></h3>
-<p>One of the major complaints of PEP 575 was that is was coupling
+<h3>Why is this better than <a class="reference external" href="pep-0575.html">PEP 575</a>?<a class="headerlink" href="#why-is-this-better-than-pep-575" title="Permalink to this headline">¶</a></h3>
+<p>One of the major complaints of <a class="reference external" href="pep-0575.html">PEP 575</a> was that is was coupling
 functionality (the calling and introspection protocol)
 with the class hierarchy:
 a class could only benefit from the new features
@@ -598,7 +597,7 @@ if it was a subclass of <code class="docutils literal notranslate"><span class="
 It may be difficult for existing classes to do that
 because they may have other constraints on the layout of the C object structure,
 coming from an existing base class or implementation details.
-For example, <code class="docutils literal notranslate"><span class="pre">functools.lru_cache</span></code> cannot implement PEP 575 as-is.</p>
+For example, <code class="docutils literal notranslate"><span class="pre">functools.lru_cache</span></code> cannot implement <a class="reference external" href="pep-0575.html">PEP 575</a> as-is.</p>
 <p>It also complicated the implementation precisely because changes
 were needed both in the implementation details and in the class hierarchy.</p>
 <p>The current PEP does not have these problems.</p>
@@ -686,7 +685,7 @@ The <code class="docutils literal notranslate"><span class="pre">CCALL_SELFARG</
 <p>The flag <code class="docutils literal notranslate"><span class="pre">CCALL_DEFARG</span></code> gives the callee access to the <code class="docutils literal notranslate"><span class="pre">PyCCallDef</span> <span class="pre">*</span></code>.
 There are various use cases for this:</p>
 <ol class="arabic simple">
-<li>The callee can use the <code class="docutils literal notranslate"><span class="pre">cc_parent</span></code> field, which is useful for PEP 573.</li>
+<li>The callee can use the <code class="docutils literal notranslate"><span class="pre">cc_parent</span></code> field, which is useful for <a class="reference external" href="pep-0573.html">PEP 573</a>.</li>
 <li>Applications are free to extend the <code class="docutils literal notranslate"><span class="pre">PyCCallDef</span></code> structure with user-defined
 fields, which can then be accessed analogously.</li>
 <li>In the case where the <code class="docutils literal notranslate"><span class="pre">PyCCallDef</span></code> structure
@@ -715,9 +714,9 @@ In particular, the Cython project has shown interest in doing that
 </div>
 <div class="section" id="alternative-suggestions">
 <h2><a class="toc-backref" href="#id34">Alternative suggestions</a><a class="headerlink" href="#alternative-suggestions" title="Permalink to this headline">¶</a></h2>
-<p>PEP 576 is an alternative approach to solving the same problem as this PEP.
+<p><a class="reference external" href="pep-0576.html">PEP 576</a> is an alternative approach to solving the same problem as this PEP.
 See <a class="reference external" href="https://mail.python.org/pipermail/python-dev/2018-July/154238.html">https://mail.python.org/pipermail/python-dev/2018-July/154238.html</a>
-for comments on the difference between PEP 576 and PEP 580.</p>
+for comments on the difference between <a class="reference external" href="pep-0576.html">PEP 576</a> and <a class="reference external" href="pep-0580.html">PEP 580</a>.</p>
 </div>
 <div class="section" id="discussion">
 <h2><a class="toc-backref" href="#id35">Discussion</a><a class="headerlink" href="#discussion" title="Permalink to this headline">¶</a></h2>
@@ -740,14 +739,14 @@ where this PEP has been discussed:</p>
 <p>The reference implementation can be found at
 <a class="reference external" href="https://github.com/jdemeyer/cpython/tree/pep580">https://github.com/jdemeyer/cpython/tree/pep580</a></p>
 <p>For an example of using the C call protocol,
-the following branch implements <code class="docutils literal notranslate"><span class="pre">functools.lru_cache</span></code> using PEP 580:
+the following branch implements <code class="docutils literal notranslate"><span class="pre">functools.lru_cache</span></code> using <a class="reference external" href="pep-0580.html">PEP 580</a>:
 <a class="reference external" href="https://github.com/jdemeyer/cpython/tree/lru580">https://github.com/jdemeyer/cpython/tree/lru580</a></p>
 </div>
 <div class="section" id="references">
 <h2><a class="toc-backref" href="#id37">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
 <dl class="footnote brackets">
 <dt class="label" id="pep384"><span class="brackets">1</span><span class='fn-backref'><em> (<a href="#id1">1</a>, <a href="#id3">2</a>, <a href="#id4">3</a>, <a href="#id5">4</a>) </em></span></dt>
-<dd>Löwis, PEP 384 – Defining a Stable ABI,
+<dd>Löwis, <a class="reference external" href="pep-0384.html">PEP 384</a> – Defining a Stable ABI,
 <a class="reference external" href="https://www.python.org/dev/peps/pep-0384/">https://www.python.org/dev/peps/pep-0384/</a></dd>
 <dt class="label" id="bpo29259"><span class="brackets"><a class="fn-backref" href="#id6">2</a></span></dt>
 <dd>Add tp_fastcall to PyTypeObject: support FASTCALL calling convention for all callable objects,
@@ -762,7 +761,8 @@ the following branch implements <code class="docutils literal notranslate"><span
 <p>This document has been placed in the public domain.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0580.rst">https://github.com/python/peps/blob/master/pep-0580.rst</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0580.rst">https://github.com/python/peps/blob/master/pep-0580.rst</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0580.rst">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

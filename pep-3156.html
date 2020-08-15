@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 3156 – Asynchronous IO Support Rebooted: the “asyncio” Module &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -56,7 +55,7 @@
 <dt class="field-odd">Post-History</dt>
 <dd class="field-odd">21-Dec-2012</dd>
 <dt class="field-even">Replaces</dt>
-<dd class="field-even"><a class="reference external" href="./pep-3153.html">3153</a></dd>
+<dd class="field-even"><a class="reference external" href="pep-3153.html">3153</a></dd>
 <dt class="field-odd">Resolution</dt>
 <dd class="field-odd"><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2013-November/130419.html">https://mail.python.org/pipermail/python-dev/2013-November/130419.html</a></dd>
 </dl>
@@ -147,9 +146,9 @@
 <h2><a class="toc-backref" href="#id1">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
 <p>This is a proposal for asynchronous I/O in Python 3, starting at
 Python 3.3.  Consider this the concrete proposal that is missing from
-PEP 3153.  The proposal includes a pluggable event loop, transport and
+<a class="reference external" href="pep-3153.html">PEP 3153</a>.  The proposal includes a pluggable event loop, transport and
 protocol abstractions similar to those in Twisted, and a higher-level
-scheduler based on <code class="docutils literal notranslate"><span class="pre">yield</span> <span class="pre">from</span></code> (PEP 380).  The proposed package
+scheduler based on <code class="docutils literal notranslate"><span class="pre">yield</span> <span class="pre">from</span></code> (<a class="reference external" href="pep-0380.html">PEP 380</a>).  The proposed package
 name is <code class="docutils literal notranslate"><span class="pre">asyncio</span></code>.</p>
 </div>
 <div class="section" id="introduction">
@@ -237,7 +236,7 @@ there is a system event loop that cannot be started or stopped; see
 <p>The event loop API does not depend on <code class="docutils literal notranslate"><span class="pre">await/yield</span> <span class="pre">from</span></code>.  Rather, it uses
 a combination of callbacks, additional interfaces (transports and
 protocols), and Futures.  The latter are similar to those defined in
-PEP 3148, but have a different implementation and are not tied to
+<a class="reference external" href="pep-3148.html">PEP 3148</a>, but have a different implementation and are not tied to
 threads.  In particular, the <code class="docutils literal notranslate"><span class="pre">result()</span></code> method raises an exception
 instead of blocking when a result is not yet ready; the user is
 expected to use callbacks (or <code class="docutils literal notranslate"><span class="pre">await/yield</span> <span class="pre">from</span></code>) to wait for the result.</p>
@@ -249,8 +248,8 @@ accept both Futures and coroutines for such arguments.  (A convenience
 function, <code class="docutils literal notranslate"><span class="pre">ensure_future()</span></code>, exists to convert an argument that is either a
 coroutine or a Future into a Future.)</p>
 <p>For users (like myself) who don’t like using callbacks, a scheduler is
-provided for writing asynchronous I/O code as coroutines using the PEP
-380 <code class="docutils literal notranslate"><span class="pre">yield</span> <span class="pre">from</span></code> or PEP 492 <code class="docutils literal notranslate"><span class="pre">await</span></code> expressions.
+provided for writing asynchronous I/O code as coroutines using the <a class="reference external" href="pep-0380.html">PEP
+380</a> <code class="docutils literal notranslate"><span class="pre">yield</span> <span class="pre">from</span></code> or <a class="reference external" href="pep-0492.html">PEP 492</a> <code class="docutils literal notranslate"><span class="pre">await</span></code> expressions.
 The scheduler is not pluggable;
 pluggability occurs at the event loop level, and the standard
 scheduler implementation should work with any conforming event loop
@@ -270,7 +269,7 @@ implementing (a superset of) the Future/Task interfaces.</p>
 <code class="docutils literal notranslate"><span class="pre">loop.set_task_factory()</span></code> to replace the Task class without
 implementing its own event loop.</p>
 <p>The event loop API provides limited interoperability with threads:
-there is an API to submit a function to an executor (see PEP 3148)
+there is an API to submit a function to an executor (see <a class="reference external" href="pep-3148.html">PEP 3148</a>)
 which returns a Future that is compatible with the event loop, and
 there is a method to schedule a callback with an event loop from
 another thread in a thread-safe manner.</p>
@@ -563,7 +562,7 @@ but the time is expressed as an absolute time.  Returns a similar
 clock.  This may be <code class="docutils literal notranslate"><span class="pre">time.time()</span></code> or <code class="docutils literal notranslate"><span class="pre">time.monotonic()</span></code> or some
 other system-specific clock, but it must return a float expressing
 the time in units of approximately one second since some epoch.
-(No clock is perfect – see PEP 418.)</li>
+(No clock is perfect – see <a class="reference external" href="pep-0418.html">PEP 418</a>.)</li>
 </ul>
 <p>Note: A previous version of this PEP defined a method named
 <code class="docutils literal notranslate"><span class="pre">call_repeatedly()</span></code>, which promised to call a callback at regular
@@ -573,7 +572,7 @@ easily be emulated using a callback that reschedules itself using
 <code class="docutils literal notranslate"><span class="pre">call_later()</span></code>; it is also easy to write coroutine containing a loop
 and a <code class="docutils literal notranslate"><span class="pre">sleep()</span></code> call (a toplevel function in the module, see below).
 On the other hand, due to the complexities of accurate timekeeping
-there are many traps and pitfalls here for the unaware (see PEP 418),
+there are many traps and pitfalls here for the unaware (see <a class="reference external" href="pep-0418.html">PEP 418</a>),
 and different use cases require different behavior in edge cases.  It
 is impossible to offer an API for this purpose that is bullet-proof in
 all cases, so it is deemed better to let application designers decide
@@ -594,7 +593,7 @@ time in a threadsafe manner, you can use
 want to handle signals, use <code class="docutils literal notranslate"><span class="pre">add_signal_handler()</span></code> described
 below.</li>
 <li><code class="docutils literal notranslate"><span class="pre">run_in_executor(executor,</span> <span class="pre">callback,</span> <span class="pre">*args)</span></code>.  Arrange to call
-<code class="docutils literal notranslate"><span class="pre">callback(*args)</span></code> in an executor (see PEP 3148).  Returns an
+<code class="docutils literal notranslate"><span class="pre">callback(*args)</span></code> in an executor (see <a class="reference external" href="pep-3148.html">PEP 3148</a>).  Returns an
 <code class="docutils literal notranslate"><span class="pre">asyncio.Future</span></code> instance whose result on success is the return
 value of that call.  This is equivalent to
 <code class="docutils literal notranslate"><span class="pre">wrap_future(executor.submit(callback,</span> <span class="pre">*args))</span></code>.  If <code class="docutils literal notranslate"><span class="pre">executor</span></code>
@@ -604,7 +603,7 @@ is used.  If no default executor has been set yet, a
 and set as the default executor.  (The default implementation uses
 5 threads in this case.)</li>
 <li><code class="docutils literal notranslate"><span class="pre">set_default_executor(executor)</span></code>.  Set the default executor used
-by <code class="docutils literal notranslate"><span class="pre">run_in_executor()</span></code>.  The argument must be a PEP 3148
+by <code class="docutils literal notranslate"><span class="pre">run_in_executor()</span></code>.  The argument must be a <a class="reference external" href="pep-3148.html">PEP 3148</a>
 <code class="docutils literal notranslate"><span class="pre">Executor</span></code> instance or <code class="docutils literal notranslate"><span class="pre">None</span></code>, in order to reset the default
 executor.</li>
 </ul>
@@ -1091,11 +1090,11 @@ closed and all accepted requests have been handled.</li>
 <div class="section" id="futures">
 <h3><a class="toc-backref" href="#id30">Futures</a><a class="headerlink" href="#futures" title="Permalink to this headline">¶</a></h3>
 <p>The <code class="docutils literal notranslate"><span class="pre">asyncio.Future</span></code> class here is intentionally similar to the
-<code class="docutils literal notranslate"><span class="pre">concurrent.futures.Future</span></code> class specified by PEP 3148, but there
+<code class="docutils literal notranslate"><span class="pre">concurrent.futures.Future</span></code> class specified by <a class="reference external" href="pep-3148.html">PEP 3148</a>, but there
 are slight differences.  Whenever this PEP talks about Futures or
 futures this should be understood to refer to <code class="docutils literal notranslate"><span class="pre">asyncio.Future</span></code> unless
 <code class="docutils literal notranslate"><span class="pre">concurrent.futures.Future</span></code> is explicitly mentioned.  The supported
-public API is as follows, indicating the differences with PEP 3148:</p>
+public API is as follows, indicating the differences with <a class="reference external" href="pep-3148.html">PEP 3148</a>:</p>
 <ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">cancel()</span></code>.  If the Future is already done (or cancelled), do
 nothing and return <code class="docutils literal notranslate"><span class="pre">False</span></code>.  Otherwise, this attempts to cancel
@@ -1111,37 +1110,37 @@ cancelled.</li>
 cancelled Future is considered done too (here and everywhere).</li>
 <li><code class="docutils literal notranslate"><span class="pre">result()</span></code>.  Returns the result set with <code class="docutils literal notranslate"><span class="pre">set_result()</span></code>, or
 raises the exception set with <code class="docutils literal notranslate"><span class="pre">set_exception()</span></code>.  Raises
-<code class="docutils literal notranslate"><span class="pre">CancelledError</span></code> if cancelled.  Difference with PEP 3148: This has
+<code class="docutils literal notranslate"><span class="pre">CancelledError</span></code> if cancelled.  Difference with <a class="reference external" href="pep-3148.html">PEP 3148</a>: This has
 no timeout argument and does <em>not</em> wait; if the future is not yet
 done, it raises an exception.</li>
 <li><code class="docutils literal notranslate"><span class="pre">exception()</span></code>.  Returns the exception if set with
 <code class="docutils literal notranslate"><span class="pre">set_exception()</span></code>, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if a result was set with
 <code class="docutils literal notranslate"><span class="pre">set_result()</span></code>.  Raises <code class="docutils literal notranslate"><span class="pre">CancelledError</span></code> if cancelled.
-Difference with PEP 3148: This has no timeout argument and does
+Difference with <a class="reference external" href="pep-3148.html">PEP 3148</a>: This has no timeout argument and does
 <em>not</em> wait; if the future is not yet done, it raises an exception.</li>
 <li><code class="docutils literal notranslate"><span class="pre">add_done_callback(fn)</span></code>.  Add a callback to be run when the Future
 becomes done (or is cancelled).  If the Future is already done (or
 cancelled), schedules the callback to using <code class="docutils literal notranslate"><span class="pre">call_soon()</span></code>.
-Difference with PEP 3148: The callback is never called immediately,
+Difference with <a class="reference external" href="pep-3148.html">PEP 3148</a>: The callback is never called immediately,
 and always in the context of the caller – typically this is a
 thread.  You can think of this as calling the callback through
-<code class="docutils literal notranslate"><span class="pre">call_soon()</span></code>.  Note that in order to match PEP 3148, the callback
+<code class="docutils literal notranslate"><span class="pre">call_soon()</span></code>.  Note that in order to match <a class="reference external" href="pep-3148.html">PEP 3148</a>, the callback
 (unlike all other callbacks defined in this PEP, and ignoring the
 convention from the section “Callback Style” below) is always called
 with a single argument, the Future object.  (The motivation for
 strictly serializing callbacks scheduled with <code class="docutils literal notranslate"><span class="pre">call_soon()</span></code>
 applies here too.)</li>
 <li><code class="docutils literal notranslate"><span class="pre">remove_done_callback(fn)</span></code>.  Remove the argument from the list of
-callbacks.  This method is not defined by PEP 3148.  The argument
+callbacks.  This method is not defined by <a class="reference external" href="pep-3148.html">PEP 3148</a>.  The argument
 must be equal (using <code class="docutils literal notranslate"><span class="pre">==</span></code>) to the argument passed to
 <code class="docutils literal notranslate"><span class="pre">add_done_callback()</span></code>.  Returns the number of times the callback
 was removed.</li>
 <li><code class="docutils literal notranslate"><span class="pre">set_result(result)</span></code>.  The Future must not be done (nor cancelled)
 already.  This makes the Future done and schedules the callbacks.
-Difference with PEP 3148: This is a public API.</li>
+Difference with <a class="reference external" href="pep-3148.html">PEP 3148</a>: This is a public API.</li>
 <li><code class="docutils literal notranslate"><span class="pre">set_exception(exception)</span></code>.  The Future must not be done (nor
 cancelled) already.  This makes the Future done and schedules the
-callbacks.  Difference with PEP 3148: This is a public API.</li>
+callbacks.  Difference with <a class="reference external" href="pep-3148.html">PEP 3148</a>: This is a public API.</li>
 </ul>
 <p>The internal method <code class="docutils literal notranslate"><span class="pre">set_running_or_notify_cancel()</span></code> is not
 supported; there is no way to set the running state.  Likewise,
@@ -1190,7 +1189,7 @@ coroutine object or a Future (i.e., anything you can use with
 <code class="docutils literal notranslate"><span class="pre">yield</span> <span class="pre">from</span></code>) and returns a Future.  If the argument is a Future,
 it is returned unchanged; if it is a coroutine object, it wraps it
 in a Task (remember that <code class="docutils literal notranslate"><span class="pre">Task</span></code> is a subclass of <code class="docutils literal notranslate"><span class="pre">Future</span></code>).</li>
-<li><code class="docutils literal notranslate"><span class="pre">asyncio.wrap_future(future)</span></code>.  This takes a PEP 3148 Future
+<li><code class="docutils literal notranslate"><span class="pre">asyncio.wrap_future(future)</span></code>.  This takes a <a class="reference external" href="pep-3148.html">PEP 3148</a> Future
 (i.e., an instance of <code class="docutils literal notranslate"><span class="pre">concurrent.futures.Future</span></code>) and returns a
 Future compatible with the event loop (i.e., a <code class="docutils literal notranslate"><span class="pre">asyncio.Future</span></code>
 instance).</li>
@@ -1198,8 +1197,8 @@ instance).</li>
 </div>
 <div class="section" id="transports">
 <h3><a class="toc-backref" href="#id31">Transports</a><a class="headerlink" href="#transports" title="Permalink to this headline">¶</a></h3>
-<p>Transports and protocols are strongly influenced by Twisted and PEP
-3153.  Users rarely implement or instantiate transports – rather,
+<p>Transports and protocols are strongly influenced by Twisted and <a class="reference external" href="pep-3153.html">PEP
+3153</a>.  Users rarely implement or instantiate transports – rather,
 event loops offer utility methods to set up transports.</p>
 <p>Transports work in conjunction with protocols.  Protocols are
 typically written without knowing or caring about the exact type of
@@ -1555,7 +1554,7 @@ and if you’re using coroutines, that’s the one you’re using.</p>
 <p>A coroutine is a generator that follows certain conventions.  For
 documentation purposes, all coroutines should be decorated with
 <code class="docutils literal notranslate"><span class="pre">&#64;asyncio.coroutine</span></code>, but this cannot be strictly enforced.</p>
-<p>Coroutines use the <code class="docutils literal notranslate"><span class="pre">yield</span> <span class="pre">from</span></code> syntax introduced in PEP 380,
+<p>Coroutines use the <code class="docutils literal notranslate"><span class="pre">yield</span> <span class="pre">from</span></code> syntax introduced in <a class="reference external" href="pep-0380.html">PEP 380</a>,
 instead of the original <code class="docutils literal notranslate"><span class="pre">yield</span></code> syntax.</p>
 <p>The word “coroutine”, like the word “generator”, is used for two
 different (though related) concepts:</p>
@@ -1612,7 +1611,7 @@ same meaning and defaults as for <code class="docutils literal notranslate"><spa
 <code class="docutils literal notranslate"><span class="pre">timeout</span></code>, if not <code class="docutils literal notranslate"><span class="pre">None</span></code>, specifies a timeout for the overall
 operation; <code class="docutils literal notranslate"><span class="pre">return_when</span></code>, specifies when to stop.  The constants
 <code class="docutils literal notranslate"><span class="pre">FIRST_COMPLETED</span></code>, <code class="docutils literal notranslate"><span class="pre">FIRST_EXCEPTION</span></code>, <code class="docutils literal notranslate"><span class="pre">ALL_COMPLETED</span></code> are
-defined with the same values and the same meanings as in PEP 3148:</p>
+defined with the same values and the same meanings as in <a class="reference external" href="pep-3148.html">PEP 3148</a>:</p>
 <ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">ALL_COMPLETED</span></code> (default): Wait until all Futures are done (or
 until the timeout occurs).</li>
@@ -1620,7 +1619,7 @@ until the timeout occurs).</li>
 until the timeout occurs).</li>
 <li><code class="docutils literal notranslate"><span class="pre">FIRST_EXCEPTION</span></code>: Wait until at least one Future is done but
 not cancelled with an exception set.  (The exclusion of cancelled
-Futures from the condition is surprising, but PEP 3148 does it
+Futures from the condition is surprising, but <a class="reference external" href="pep-3148.html">PEP 3148</a> does it
 this way.)</li>
 </ul>
 </li>
@@ -1970,14 +1969,14 @@ default for a specific operation globally (i.e., per event loop).</li>
 <div class="section" id="references">
 <h2><a class="toc-backref" href="#id57">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li>PEP 492 describes the semantics of <code class="docutils literal notranslate"><span class="pre">async/await</span></code>.</li>
-<li>PEP 380 describes the semantics of <code class="docutils literal notranslate"><span class="pre">yield</span> <span class="pre">from</span></code>.</li>
+<li><a class="reference external" href="pep-0492.html">PEP 492</a> describes the semantics of <code class="docutils literal notranslate"><span class="pre">async/await</span></code>.</li>
+<li><a class="reference external" href="pep-0380.html">PEP 380</a> describes the semantics of <code class="docutils literal notranslate"><span class="pre">yield</span> <span class="pre">from</span></code>.</li>
 <li>Greg Ewing’s <code class="docutils literal notranslate"><span class="pre">yield</span> <span class="pre">from</span></code> tutorials:
 <a class="reference external" href="http://www.cosc.canterbury.ac.nz/greg.ewing/python/yield-from/yield_from.html">http://www.cosc.canterbury.ac.nz/greg.ewing/python/yield-from/yield_from.html</a></li>
-<li>PEP 3148 describes <code class="docutils literal notranslate"><span class="pre">concurrent.futures.Future</span></code>.</li>
-<li>PEP 3153, while rejected, has a good write-up explaining the need
+<li><a class="reference external" href="pep-3148.html">PEP 3148</a> describes <code class="docutils literal notranslate"><span class="pre">concurrent.futures.Future</span></code>.</li>
+<li><a class="reference external" href="pep-3153.html">PEP 3153</a>, while rejected, has a good write-up explaining the need
 to separate transports and protocols.</li>
-<li>PEP 418 discusses the issues of timekeeping.</li>
+<li><a class="reference external" href="pep-0418.html">PEP 418</a> discusses the issues of timekeeping.</li>
 <li>Tulip repo: <a class="reference external" href="http://code.google.com/p/tulip/">http://code.google.com/p/tulip/</a></li>
 <li>PyPI: the Python Package Index at <a class="reference external" href="http://pypi.python.org/">http://pypi.python.org/</a></li>
 <li>Nick Coghlan wrote a nice blog post with some background, thoughts
@@ -1990,7 +1989,7 @@ pyftpdlib, libevent, libev, pyev, libuv, wattle, and so on.</li>
 </div>
 <div class="section" id="acknowledgments">
 <h2><a class="toc-backref" href="#id58">Acknowledgments</a><a class="headerlink" href="#acknowledgments" title="Permalink to this headline">¶</a></h2>
-<p>Apart from PEP 3153, influences include PEP 380 and Greg Ewing’s
+<p>Apart from <a class="reference external" href="pep-3153.html">PEP 3153</a>, influences include <a class="reference external" href="pep-0380.html">PEP 380</a> and Greg Ewing’s
 tutorial for <code class="docutils literal notranslate"><span class="pre">yield</span> <span class="pre">from</span></code>, Twisted, Tornado, ZeroMQ, pyftpdlib, and
 wattle (Steve Dower’s counter-proposal).  My previous work on
 asynchronous support in the NDB library for Google App Engine provided
@@ -2023,7 +2022,8 @@ BDFL.</p>
 <p>This document has been placed in the public domain.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-3156.txt">https://github.com/python/peps/blob/master/pep-3156.txt</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-3156.txt">https://github.com/python/peps/blob/master/pep-3156.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-3156.txt">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

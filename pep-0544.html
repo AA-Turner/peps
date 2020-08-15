@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 544 – Protocols: Structural subtyping (static duck typing) &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -123,20 +122,20 @@
 </div>
 <div class="section" id="abstract">
 <h2><a class="toc-backref" href="#id17">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
-<p>Type hints introduced in PEP 484 can be used to specify type metadata
-for static type checkers and other third party tools. However, PEP 484
+<p>Type hints introduced in <a class="reference external" href="pep-0484.html">PEP 484</a> can be used to specify type metadata
+for static type checkers and other third party tools. However, <a class="reference external" href="pep-0484.html">PEP 484</a>
 only specifies the semantics of <em>nominal</em> subtyping. In this PEP we specify
 static and runtime semantics of protocol classes that will provide a support
 for <em>structural</em> subtyping (static duck typing).</p>
 </div>
 <div class="section" id="rationale-and-goals">
 <span id="rationale"></span><h2><a class="toc-backref" href="#id18">Rationale and Goals</a><a class="headerlink" href="#rationale-and-goals" title="Permalink to this headline">¶</a></h2>
-<p>Currently, PEP 484 and the <code class="docutils literal notranslate"><span class="pre">typing</span></code> module <a class="reference internal" href="#typing" id="id1"><span>[typing]</span></a> define abstract
+<p>Currently, <a class="reference external" href="pep-0484.html">PEP 484</a> and the <code class="docutils literal notranslate"><span class="pre">typing</span></code> module <a class="reference internal" href="#typing" id="id1"><span>[typing]</span></a> define abstract
 base classes for several common Python protocols such as <code class="docutils literal notranslate"><span class="pre">Iterable</span></code> and
 <code class="docutils literal notranslate"><span class="pre">Sized</span></code>. The problem with them is that a class has to be explicitly marked
 to support them, which is unpythonic and unlike what one would
 normally do in idiomatic dynamically typed Python code. For example,
-this conforms to PEP 484:</p>
+this conforms to <a class="reference external" href="pep-0484.html">PEP 484</a>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Sized</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Iterator</span>
 
 <span class="k">class</span> <span class="nc">Bucket</span><span class="p">(</span><span class="n">Sized</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">int</span><span class="p">]):</span>
@@ -179,9 +178,9 @@ the required protocol.</p>
 <p>Structural subtyping is natural for Python programmers since it matches
 the runtime semantics of duck typing: an object that has certain properties
 is treated independently of its actual runtime class.
-However, as discussed in PEP 483, both nominal and structural
+However, as discussed in <a class="reference external" href="pep-0483.html">PEP 483</a>, both nominal and structural
 subtyping have their strengths and weaknesses. Therefore, in this PEP we
-<em>do not propose</em> to replace the nominal subtyping described by PEP 484 with
+<em>do not propose</em> to replace the nominal subtyping described by <a class="reference external" href="pep-0484.html">PEP 484</a> with
 structural subtyping completely. Instead, protocol classes as specified in
 this PEP complement normal classes, and users are free to choose
 where to apply a particular solution. See section on <a class="reference internal" href="#rejected">rejected</a> ideas at the
@@ -192,7 +191,7 @@ end of this PEP for additional motivation.</p>
 <p>At runtime, protocol classes will be simple ABCs. There is no intent to
 provide sophisticated runtime instance and class checks against protocol
 classes. This would be difficult and error-prone and will contradict the logic
-of PEP 484. As well, following PEP 484 and PEP 526 we state that protocols are
+of <a class="reference external" href="pep-0484.html">PEP 484</a>. As well, following <a class="reference external" href="pep-0484.html">PEP 484</a> and <a class="reference external" href="pep-0526.html">PEP 526</a> we state that protocols are
 <strong>completely optional</strong>:</p>
 <ul class="simple">
 <li>No runtime semantics will be imposed for variables or parameters annotated
@@ -414,7 +413,7 @@ a compatible type signature.</p>
 <p>All methods defined in the protocol class body are protocol members, both
 normal and decorated with <code class="docutils literal notranslate"><span class="pre">&#64;abstractmethod</span></code>. If any parameters of a
 protocol method are not annotated, then their types are assumed to be <code class="docutils literal notranslate"><span class="pre">Any</span></code>
-(see PEP 484). Bodies of protocol methods are type checked.
+(see <a class="reference external" href="pep-0484.html">PEP 484</a>). Bodies of protocol methods are type checked.
 An abstract method that should not be called via <code class="docutils literal notranslate"><span class="pre">super()</span></code> ought to raise
 <code class="docutils literal notranslate"><span class="pre">NotImplementedError</span></code>. Example:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Protocol</span>
@@ -431,7 +430,7 @@ An abstract method that should not be called via <code class="docutils literal n
 </div>
 <p>Static methods, class methods, and properties are equally allowed
 in protocols.</p>
-<p>To define a protocol variable, one can use PEP 526 variable
+<p>To define a protocol variable, one can use <a class="reference external" href="pep-0526.html">PEP 526</a> variable
 annotations in the class body. Additional attributes <em>only</em> defined in
 the body of a method by assignment via <code class="docutils literal notranslate"><span class="pre">self</span></code> are not allowed. The rationale
 for this is that the protocol class implementation is often not shared by
@@ -459,7 +458,7 @@ Examples:</p>
 </div>
 <p>To distinguish between protocol class variables and protocol instance
 variables, the special <code class="docutils literal notranslate"><span class="pre">ClassVar</span></code> annotation should be used as specified
-by PEP 526. By default, protocol variables as defined above are considered
+by <a class="reference external" href="pep-0526.html">PEP 526</a>. By default, protocol variables as defined above are considered
 readable and writable. To define a read-only protocol variable, one can use
 an (abstract) property.</p>
 </div>
@@ -635,7 +634,7 @@ declared as invariant, since this can break transitivity of subtyping
 <div class="section" id="recursive-protocols">
 <h3><a class="toc-backref" href="#id29">Recursive protocols</a><a class="headerlink" href="#recursive-protocols" title="Permalink to this headline">¶</a></h3>
 <p>Recursive protocols are also supported. Forward references to the protocol
-class names can be given as strings as specified by PEP 484. Recursive
+class names can be given as strings as specified by <a class="reference external" href="pep-0484.html">PEP 484</a>. Recursive
 protocols are useful for representing self-referential data structures
 like trees in an abstract fashion:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Traversable</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
@@ -666,7 +665,7 @@ Continuing the previous example:</p>
 <div class="section" id="self-types-in-protocols">
 <h3><a class="toc-backref" href="#id30">Self-types in protocols</a><a class="headerlink" href="#self-types-in-protocols" title="Permalink to this headline">¶</a></h3>
 <p>The self-types in protocols follow the corresponding specification
-<a class="reference internal" href="#self-types" id="id10"><span>[self-types]</span></a> of PEP 484. For example:</p>
+<a class="reference internal" href="#self-types" id="id10"><span>[self-types]</span></a> of <a class="reference external" href="pep-0484.html">PEP 484</a>. For example:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">C</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="s1">&#39;Copyable&#39;</span><span class="p">)</span>
 <span class="k">class</span> <span class="nc">Copyable</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">C</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">C</span><span class="p">:</span>
@@ -690,7 +689,7 @@ Continuing the previous example:</p>
 <h3><a class="toc-backref" href="#id31">Callback protocols</a><a class="headerlink" href="#callback-protocols" title="Permalink to this headline">¶</a></h3>
 <p>Protocols can be used to define flexible callback types that are hard
 (or even impossible) to express using the <code class="docutils literal notranslate"><span class="pre">Callable[...]</span></code> syntax
-specified by PEP 484, such as variadic, overloaded, and complex generic
+specified by <a class="reference external" href="pep-0484.html">PEP 484</a>, such as variadic, overloaded, and complex generic
 callbacks. They can be defined as protocols with a <code class="docutils literal notranslate"><span class="pre">__call__</span></code> member:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Protocol</span>
 
@@ -795,7 +794,7 @@ Example:</p>
 </pre></div>
 </div>
 <p>If this will prove to be a widely used scenario, then a special
-intersection type construct could be added in future as specified by PEP 483,
+intersection type construct could be added in future as specified by <a class="reference external" href="pep-0483.html">PEP 483</a>,
 see <a class="reference internal" href="#rejected">rejected</a> ideas for more details.</p>
 </div>
 <div class="section" id="type-and-class-objects-vs-protocols">
@@ -999,7 +998,7 @@ Properties can be settable and/or abstract if needed:</p>
         <span class="k">return</span> <span class="mi">0</span>
 </pre></div>
 </div>
-<p>Also function type comments can be used as per PEP 484 (for example
+<p>Also function type comments can be used as per <a class="reference external" href="pep-0484.html">PEP 484</a> (for example
 to provide compatibility with Python 2). The <code class="docutils literal notranslate"><span class="pre">typing</span></code> module changes
 proposed in this PEP will also be backported to earlier versions via the
 backport currently available on PyPI.</p>
@@ -1153,7 +1152,7 @@ variables. However, using getters and setters in cases where only a
 simple variable is needed would be quite unpythonic. Moreover, the widespread
 use of properties (that often act as type validators) in large code bases
 is partially due to previous absence of static type checkers for Python,
-the problem that PEP 484 and this PEP are aiming to solve. For example:</p>
+the problem that <a class="reference external" href="pep-0484.html">PEP 484</a> and this PEP are aiming to solve. For example:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># without static types</span>
 
 <span class="k">class</span> <span class="nc">MyClass</span><span class="p">:</span>
@@ -1210,7 +1209,7 @@ for example. Attempting such interoperabilities will significantly
 complicate both the concept and the implementation.</p>
 <p>On the other hand, Zope interfaces are conceptually a superset of protocols
 defined here, but using an incompatible syntax to define them,
-because before PEP 526 there was no straightforward way to annotate attributes.
+because before <a class="reference external" href="pep-0526.html">PEP 526</a> there was no straightforward way to annotate attributes.
 In the 3.6+ world, <code class="docutils literal notranslate"><span class="pre">zope.interface</span></code> might potentially adopt the <code class="docutils literal notranslate"><span class="pre">Protocol</span></code>
 syntax. In this case, type checkers could be taught to recognize interfaces
 as protocols and make simple structural checks with respect to them.</p>
@@ -1349,7 +1348,7 @@ subsequently rejected, since this may mask some hard to spot bugs.</p>
 <div class="section" id="overriding-inferred-variance-of-protocol-classes">
 <h3><a class="toc-backref" href="#id56">Overriding inferred variance of protocol classes</a><a class="headerlink" href="#overriding-inferred-variance-of-protocol-classes" title="Permalink to this headline">¶</a></h3>
 <p>It was proposed to allow declaring protocols as invariant if they are actually
-covariant or contravariant (as it is possible for nominal classes, see PEP 484).
+covariant or contravariant (as it is possible for nominal classes, see <a class="reference external" href="pep-0484.html">PEP 484</a>).
 However, it was decided not to do this because of several downsides:</p>
 <ul>
 <li><p>Declared protocol invariance breaks transitivity of sub-typing. Consider
@@ -1392,9 +1391,9 @@ unexpected errors at the point of use.</p>
 </div>
 <div class="section" id="support-adapters-and-adaptation">
 <h3><a class="toc-backref" href="#id57">Support adapters and adaptation</a><a class="headerlink" href="#support-adapters-and-adaptation" title="Permalink to this headline">¶</a></h3>
-<p>Adaptation was proposed by PEP 246 (rejected) and is supported by
+<p>Adaptation was proposed by <a class="reference external" href="pep-0246.html">PEP 246</a> (rejected) and is supported by
 <code class="docutils literal notranslate"><span class="pre">zope.interface</span></code>, see <a class="reference external" href="https://docs.zope.org/zope.interface/adapter.html">https://docs.zope.org/zope.interface/adapter.html</a>.
-Adapters is quite an advanced concept, and PEP 484 supports unions and
+Adapters is quite an advanced concept, and <a class="reference external" href="pep-0484.html">PEP 484</a> supports unions and
 generic aliases that can be used instead of adapters. This can be illustrated
 with an example of <code class="docutils literal notranslate"><span class="pre">Iterable</span></code> protocol, there is another way of supporting
 iteration by providing <code class="docutils literal notranslate"><span class="pre">__getitem__</span></code> and <code class="docutils literal notranslate"><span class="pre">__len__</span></code>. If a function
@@ -1495,7 +1494,8 @@ available in <code class="docutils literal notranslate"><span class="pre">typing
 <p>This document has been placed in the public domain.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0544.txt">https://github.com/python/peps/blob/master/pep-0544.txt</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0544.txt">https://github.com/python/peps/blob/master/pep-0544.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0544.txt">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

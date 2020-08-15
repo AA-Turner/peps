@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 343 – The “with” Statement &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -102,9 +101,9 @@ originally in the future are now in the past :)</p>
 </div>
 <div class="section" id="introduction">
 <h2><a class="toc-backref" href="#id35">Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
-<p>After a lot of discussion about PEP 340 and alternatives, I
-decided to withdraw PEP 340 and proposed a slight variant on PEP
-310.  After more discussion, I have added back a mechanism for
+<p>After a lot of discussion about <a class="reference external" href="pep-0340.html">PEP 340</a> and alternatives, I
+decided to withdraw <a class="reference external" href="pep-0340.html">PEP 340</a> and proposed a slight variant on <a class="reference external" href="pep-0310.html">PEP
+310</a>.  After more discussion, I have added back a mechanism for
 raising an exception in a suspended generator using a <code class="docutils literal notranslate"><span class="pre">throw()</span></code>
 method, and a <code class="docutils literal notranslate"><span class="pre">close()</span></code> method which throws a new GeneratorExit
 exception; these additions were first proposed on python-dev in
@@ -113,9 +112,9 @@ exception; these additions were first proposed on python-dev in
 <p>After acceptance of this PEP, the following PEPs were rejected due
 to overlap:</p>
 <ul class="simple">
-<li>PEP 310, Reliable Acquisition/Release Pairs.  This is the
+<li><a class="reference external" href="pep-0310.html">PEP 310</a>, Reliable Acquisition/Release Pairs.  This is the
 original with-statement proposal.</li>
-<li>PEP 319, Python Synchronize/Asynchronize Block.  Its use cases
+<li><a class="reference external" href="pep-0319.html">PEP 319</a>, Python Synchronize/Asynchronize Block.  Its use cases
 can be covered by the current PEP by providing suitable
 with-statement controllers: for ‘synchronize’ we can use the
 “locking” template from example 1; for ‘asynchronize’ we can use
@@ -124,14 +123,14 @@ a similar “unlocking” template.  I don’t think having an
 important; in fact it may be better to always be explicit about
 the mutex being used.</li>
 </ul>
-<p>PEP 340 and PEP 346 also overlapped with this PEP, but were
+<p><a class="reference external" href="pep-0340.html">PEP 340</a> and <a class="reference external" href="pep-0346.html">PEP 346</a> also overlapped with this PEP, but were
 voluntarily withdrawn when this PEP was submitted.</p>
 <p>Some discussion of earlier incarnations of this PEP took place on
 the Python Wiki <a class="footnote-reference brackets" href="#id19" id="id3">3</a>.</p>
 </div>
 <div class="section" id="motivation-and-summary">
 <h2><a class="toc-backref" href="#id36">Motivation and Summary</a><a class="headerlink" href="#motivation-and-summary" title="Permalink to this headline">¶</a></h2>
-<p>PEP 340, Anonymous Block Statements, combined many powerful ideas:
+<p><a class="reference external" href="pep-0340.html">PEP 340</a>, Anonymous Block Statements, combined many powerful ideas:
 using generators as block templates, adding exception handling and
 finalization to generators, and more.  Besides praise it received
 a lot of opposition from people who didn’t like the fact that it
@@ -143,14 +142,14 @@ resource management tool.</p>
 flow-control macros <a class="footnote-reference brackets" href="#id17" id="id4">1</a>.  Raymond argues convincingly that hiding
 flow control in macros makes your code inscrutable, and I find
 that his argument applies to Python as well as to C.  I realized
-that PEP 340 templates can hide all sorts of control flow; for
+that <a class="reference external" href="pep-0340.html">PEP 340</a> templates can hide all sorts of control flow; for
 example, its example 4 (<code class="docutils literal notranslate"><span class="pre">auto_retry()</span></code>) catches exceptions and
 repeats the block up to three times.</p>
-<p>However, the with-statement of PEP 310 does <strong>not</strong> hide control
+<p>However, the with-statement of <a class="reference external" href="pep-0310.html">PEP 310</a> does <strong>not</strong> hide control
 flow, in my view: while a finally-suite temporarily suspends the
 control flow, in the end, the control flow resumes as if the
 finally-suite wasn’t there at all.</p>
-<p>Remember, PEP 310 proposes roughly this syntax (the “VAR =” part is
+<p>Remember, <a class="reference external" href="pep-0310.html">PEP 310</a> proposes roughly this syntax (the “VAR =” part is
 optional):</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">VAR</span> <span class="o">=</span> <span class="n">EXPR</span><span class="p">:</span>
     <span class="n">BLOCK</span>
@@ -182,12 +181,12 @@ other exceptions; the nature of exceptions is that they can happen
 <strong>anywhere</strong>, and you just have to live with that.  Even if you
 write bug-free code, a KeyboardInterrupt exception can still cause
 it to exit between any two virtual machine opcodes.)</p>
-<p>This argument almost led me to endorse PEP 310, but I had one idea
-left from the PEP 340 euphoria that I wasn’t ready to drop: using
+<p>This argument almost led me to endorse <a class="reference external" href="pep-0310.html">PEP 310</a>, but I had one idea
+left from the <a class="reference external" href="pep-0340.html">PEP 340</a> euphoria that I wasn’t ready to drop: using
 generators as “templates” for abstractions like acquiring and
 releasing a lock or opening and closing a file is a powerful idea,
 as can be seen by looking at the examples in that PEP.</p>
-<p>Inspired by a counter-proposal to PEP 340 by Phillip Eby I tried
+<p>Inspired by a counter-proposal to <a class="reference external" href="pep-0340.html">PEP 340</a> by Phillip Eby I tried
 to create a decorator that would turn a suitable generator into an
 object with the necessary <code class="docutils literal notranslate"><span class="pre">__enter__()</span></code> and <code class="docutils literal notranslate"><span class="pre">__exit__()</span></code> methods.
 Here I ran into a snag: while it wasn’t too hard for the locking
@@ -207,7 +206,7 @@ The idea was to define the template like this:</p>
     <span class="o">...</span><span class="n">read</span> <span class="n">data</span> <span class="kn">from</span> <span class="nn">f...</span>
 </pre></div>
 </div>
-<p>The problem is that in PEP 310, the result of calling <code class="docutils literal notranslate"><span class="pre">EXPR</span></code> is
+<p>The problem is that in <a class="reference external" href="pep-0310.html">PEP 310</a>, the result of calling <code class="docutils literal notranslate"><span class="pre">EXPR</span></code> is
 assigned directly to <code class="docutils literal notranslate"><span class="pre">VAR</span></code>, and then <code class="docutils literal notranslate"><span class="pre">VAR</span></code>’s <code class="docutils literal notranslate"><span class="pre">__exit__()</span></code> method is
 called upon exit from <code class="docutils literal notranslate"><span class="pre">BLOCK1</span></code>.  But here, <code class="docutils literal notranslate"><span class="pre">VAR</span></code> clearly needs to
 receive the opened file, and that would mean that <code class="docutils literal notranslate"><span class="pre">__exit__()</span></code> would
@@ -222,13 +221,13 @@ calls the generator’s <code class="docutils literal notranslate"><span class="
 returns; the wrapper instance’s <code class="docutils literal notranslate"><span class="pre">__exit__()</span></code> method calls <code class="docutils literal notranslate"><span class="pre">next()</span></code>
 again but expects it to raise StopIteration.  (Details below in
 the section Optional Generator Decorator.)</p>
-<p>So now the final hurdle was that the PEP 310 syntax:</p>
+<p>So now the final hurdle was that the <a class="reference external" href="pep-0310.html">PEP 310</a> syntax:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">VAR</span> <span class="o">=</span> <span class="n">EXPR</span><span class="p">:</span>
     <span class="n">BLOCK1</span>
 </pre></div>
 </div>
 <p>would be deceptive, since <code class="docutils literal notranslate"><span class="pre">VAR</span></code> does <strong>not</strong> receive the value of
-<code class="docutils literal notranslate"><span class="pre">EXPR</span></code>.  Borrowing from PEP 340, it was an easy step to:</p>
+<code class="docutils literal notranslate"><span class="pre">EXPR</span></code>.  Borrowing from <a class="reference external" href="pep-0340.html">PEP 340</a>, it was an easy step to:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">EXPR</span> <span class="k">as</span> <span class="n">VAR</span><span class="p">:</span>
     <span class="n">BLOCK1</span>
 </pre></div>
@@ -263,7 +262,7 @@ to it goes away, implementations that use other GC algorithms do
 not make the same guarantee.  This applies to Jython, IronPython,
 and probably to Python running on Parrot.</p>
 <p>(The details of the changes made to generators can now be found in
-PEP 342 rather than in the current PEP)</p>
+<a class="reference external" href="pep-0342.html">PEP 342</a> rather than in the current PEP)</p>
 </div>
 <div class="section" id="use-cases">
 <h2><a class="toc-backref" href="#id37">Use Cases</a><a class="headerlink" href="#use-cases" title="Permalink to this headline">¶</a></h2>
@@ -343,7 +342,7 @@ that a try/except block in a decorated generator behaves exactly
 as if the body of the generator were expanded in-line at the place
 of the with-statement.</p>
 <p>The motivation for passing the exception details to <code class="docutils literal notranslate"><span class="pre">__exit__()</span></code>, as
-opposed to the argument-less <code class="docutils literal notranslate"><span class="pre">__exit__()</span></code> from PEP 310, was given by
+opposed to the argument-less <code class="docutils literal notranslate"><span class="pre">__exit__()</span></code> from <a class="reference external" href="pep-0310.html">PEP 310</a>, was given by
 the <code class="docutils literal notranslate"><span class="pre">transactional()</span></code> use case, example 3 below.  The template in
 that example must commit or roll back the transaction depending on
 whether an exception occurred or not.  Rather than just having a
@@ -391,7 +390,7 @@ and ‘as’ are always keywords.</p>
 </div>
 <div class="section" id="generator-decorator">
 <h2><a class="toc-backref" href="#id40">Generator Decorator</a><a class="headerlink" href="#generator-decorator" title="Permalink to this headline">¶</a></h2>
-<p>With PEP 342 accepted, it is possible to write a decorator
+<p>With <a class="reference external" href="pep-0342.html">PEP 342</a> accepted, it is possible to write a decorator
 that makes it possible to use a generator that yields exactly once
 to control a with-statement.  Here’s a sketch of such a decorator:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">GeneratorContextManager</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -553,7 +552,7 @@ of any major objections on python-dev).</p>
 <li><p>What exception should <code class="docutils literal notranslate"><span class="pre">GeneratorContextManager</span></code> raise when the
 underlying generator-iterator misbehaves? The following quote is
 the reason behind Guido’s choice of <code class="docutils literal notranslate"><span class="pre">RuntimeError</span></code> for both this
-and for the generator <code class="docutils literal notranslate"><span class="pre">close()</span></code> method in PEP 342 (from <a class="footnote-reference brackets" href="#id24" id="id6">8</a>):</p>
+and for the generator <code class="docutils literal notranslate"><span class="pre">close()</span></code> method in <a class="reference external" href="pep-0342.html">PEP 342</a> (from <a class="footnote-reference brackets" href="#id24" id="id6">8</a>):</p>
 <p>“I’d rather not introduce a new exception class just for this
 purpose, since it’s not an exception that I want people to catch:
 I want it to turn into a traceback which is seen by the
@@ -589,14 +588,14 @@ was analogous to an iterable’s <code class="docutils literal notranslate"><spa
 The ongoing problems <a class="footnote-reference brackets" href="#id26" id="id13">10</a> <a class="footnote-reference brackets" href="#id29" id="id14">13</a> with explaining what it was and why
 it was and how it was meant to work eventually lead to Guido
 killing the concept outright <a class="footnote-reference brackets" href="#id31" id="id15">15</a> (and there was much rejoicing!).</p>
-<p>The notion of using the PEP 342 generator API directly to define
+<p>The notion of using the <a class="reference external" href="pep-0342.html">PEP 342</a> generator API directly to define
 the with statement was also briefly entertained <a class="footnote-reference brackets" href="#id22" id="id16">6</a>, but quickly
 dismissed as making it too difficult to write non-generator
 based context managers.</p>
 </div>
 <div class="section" id="examples">
 <h2><a class="toc-backref" href="#id46">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
-<p>The generator based examples rely on PEP 342. Also, some of the
+<p>The generator based examples rely on <a class="reference external" href="pep-0342.html">PEP 342</a>. Also, some of the
 examples are unnecessary in practice, as the appropriate objects,
 such as <code class="docutils literal notranslate"><span class="pre">threading.RLock</span></code>, are able to be used directly in with
 statements.</p>
@@ -835,7 +834,7 @@ iterable):</p>
 <p>(Python 2.5’s contextlib module contains a version
 of this context manager)</p>
 </li>
-<li><p>PEP 319 gives a use case for also having a <code class="docutils literal notranslate"><span class="pre">released()</span></code>
+<li><p><a class="reference external" href="pep-0319.html">PEP 319</a> gives a use case for also having a <code class="docutils literal notranslate"><span class="pre">released()</span></code>
 context to temporarily release a previously acquired lock;
 this can be written very similarly to the locked context
 manager above by swapping the <code class="docutils literal notranslate"><span class="pre">acquire()</span></code> and <code class="docutils literal notranslate"><span class="pre">release()</span></code> calls:</p>
@@ -922,8 +921,8 @@ The <code class="docutils literal notranslate"><span class="pre">__context__()</
 <div class="section" id="acknowledgements">
 <h2><a class="toc-backref" href="#id48">Acknowledgements</a><a class="headerlink" href="#acknowledgements" title="Permalink to this headline">¶</a></h2>
 <p>Many people contributed to the ideas and concepts in this PEP,
-including all those mentioned in the acknowledgements for PEP 340
-and PEP 346.</p>
+including all those mentioned in the acknowledgements for <a class="reference external" href="pep-0340.html">PEP 340</a>
+and <a class="reference external" href="pep-0346.html">PEP 346</a>.</p>
 <p>Additional thanks goes to (in no meaningful order): Paul Moore,
 Phillip J. Eby, Greg Ewing, Jason Orendorff, Michael Hudson,
 Raymond Hettinger, Walter Dörwald, Aahz, Georg Brandl, Terry Reedy,
@@ -937,10 +936,10 @@ discussions on python-dev.</p>
 <dd>Raymond Chen’s article on hidden flow control
 <a class="reference external" href="https://devblogs.microsoft.com/oldnewthing/20050106-00/?p=36783">https://devblogs.microsoft.com/oldnewthing/20050106-00/?p=36783</a></dd>
 <dt class="label" id="id18"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
-<dd>Guido suggests some generator changes that ended up in PEP 342
+<dd>Guido suggests some generator changes that ended up in <a class="reference external" href="pep-0342.html">PEP 342</a>
 <a class="reference external" href="https://mail.python.org/pipermail/python-dev/2005-May/053885.html">https://mail.python.org/pipermail/python-dev/2005-May/053885.html</a></dd>
 <dt class="label" id="id19"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
-<dd>Wiki discussion of PEP 343
+<dd>Wiki discussion of <a class="reference external" href="pep-0343.html">PEP 343</a>
 <a class="reference external" href="http://wiki.python.org/moin/WithStatement">http://wiki.python.org/moin/WithStatement</a></dd>
 <dt class="label" id="id20"><span class="brackets"><a class="fn-backref" href="#id5">4</a></span></dt>
 <dd>Early draft of some documentation for the with statement
@@ -949,7 +948,7 @@ discussions on python-dev.</p>
 <dd>Proposal to add the __with__ method
 <a class="reference external" href="https://mail.python.org/pipermail/python-dev/2005-October/056947.html">https://mail.python.org/pipermail/python-dev/2005-October/056947.html</a></dd>
 <dt class="label" id="id22"><span class="brackets"><a class="fn-backref" href="#id16">6</a></span></dt>
-<dd>Proposal to use the PEP 342 enhanced generator API directly
+<dd>Proposal to use the <a class="reference external" href="pep-0342.html">PEP 342</a> enhanced generator API directly
 <a class="reference external" href="https://mail.python.org/pipermail/python-dev/2005-October/056969.html">https://mail.python.org/pipermail/python-dev/2005-October/056969.html</a></dd>
 <dt class="label" id="id23"><span class="brackets"><a class="fn-backref" href="#id11">7</a></span></dt>
 <dd>Guido lets me (Nick Coghlan) talk him into a bad idea ;)
@@ -967,13 +966,13 @@ discussions on python-dev.</p>
 <dd>Guido says AttributeError is fine for missing special methods
 <a class="reference external" href="https://mail.python.org/pipermail/python-dev/2005-October/057625.html">https://mail.python.org/pipermail/python-dev/2005-October/057625.html</a></dd>
 <dt class="label" id="id28"><span class="brackets">12</span></dt>
-<dd>Original PEP 342 implementation patch
+<dd>Original <a class="reference external" href="pep-0342.html">PEP 342</a> implementation patch
 <a class="reference external" href="http://sourceforge.net/tracker/index.php?func=detail&amp;aid=1223381&amp;group_id=5470&amp;atid=305470">http://sourceforge.net/tracker/index.php?func=detail&amp;aid=1223381&amp;group_id=5470&amp;atid=305470</a></dd>
 <dt class="label" id="id29"><span class="brackets">13</span><span class='fn-backref'><em> (<a href="#id9">1</a>, <a href="#id14">2</a>) </em></span></dt>
 <dd>Guido restores the ability to suppress exceptions
 <a class="reference external" href="https://mail.python.org/pipermail/python-dev/2006-February/061909.html">https://mail.python.org/pipermail/python-dev/2006-February/061909.html</a></dd>
 <dt class="label" id="id30"><span class="brackets"><a class="fn-backref" href="#id1">14</a></span></dt>
-<dd>A simple question kickstarts a thorough review of PEP 343
+<dd>A simple question kickstarts a thorough review of <a class="reference external" href="pep-0343.html">PEP 343</a>
 <a class="reference external" href="https://mail.python.org/pipermail/python-dev/2006-April/063859.html">https://mail.python.org/pipermail/python-dev/2006-April/063859.html</a></dd>
 <dt class="label" id="id31"><span class="brackets"><a class="fn-backref" href="#id15">15</a></span></dt>
 <dd>Guido kills the __context__() method
@@ -988,7 +987,8 @@ discussions on python-dev.</p>
 <p>This document has been placed in the public domain.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0343.txt">https://github.com/python/peps/blob/master/pep-0343.txt</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0343.txt">https://github.com/python/peps/blob/master/pep-0343.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0343.txt">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

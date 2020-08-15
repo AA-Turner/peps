@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 101 – Doing Python Releases 101 &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -52,7 +51,7 @@
 <dt class="field-odd">Post-History</dt>
 <dd class="field-odd"><p></p></dd>
 <dt class="field-even">Replaces</dt>
-<dd class="field-even"><a class="reference external" href="./pep-0102.html">102</a></dd>
+<dd class="field-even"><a class="reference external" href="pep-0102.html">102</a></dd>
 </dl>
 <hr class="docutils" />
 <div class="contents topic" id="contents">
@@ -660,7 +659,15 @@ have each one reference to ‘[Pp]ython3x’.</p>
 </li>
 <li><p>Add a new <code class="docutils literal notranslate"><span class="pre">whatsnew/3.x.rst</span></code> file (with the comment near the top
 and the toplevel sections copied from the previous file) and
-add it to the toctree in <code class="docutils literal notranslate"><span class="pre">whatsnew/index.rst</span></code>.</p>
+add it to the toctree in <code class="docutils literal notranslate"><span class="pre">whatsnew/index.rst</span></code>.  But beware that
+the initial <code class="docutils literal notranslate"><span class="pre">whatsnew/3.x.rst</span></code> checkin from previous releases
+may be incorrect due to the initial midstream change to <code class="docutils literal notranslate"><span class="pre">blurb</span></code>
+that propagates from release to release!  Help break the cycle: if
+necessary make the following change:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>- For full details, see the :source:`Misc/NEWS` file.
++ For full details, see the :ref:`changelog &lt;changelog&gt;`.
+</pre></div>
+</div>
 </li>
 <li><p>Update the version number in <code class="docutils literal notranslate"><span class="pre">configure.ac</span></code> and re-run <code class="docutils literal notranslate"><span class="pre">autoconf</span></code>.</p>
 </li>
@@ -855,7 +862,11 @@ To add a new entry, go to
 </li>
 <li><p>Send email to python-committers informing them that the release has been
 published and a reminder about any relevant changes in policy
-based on the phase of the release cycle.</p>
+based on the phase of the release cycle.  In particular,
+if this is a <strong>new branch</strong> release, remind everyone that the
+new release branch exists and that they need to start
+considering whether to backport to it when merging changes to
+master.</p>
 </li>
 <li><p>Update any release PEPs (e.g. 361) with the release dates.</p>
 </li>
@@ -878,27 +889,45 @@ besides reminding people to fix the easy ones they forgot about.</li>
 <li><p>If this is a <strong>new branch</strong> release, you will need to ensure various
 pieces of the development infrastructure are updated for the new branch.
 These include:</p>
-<ul class="simple">
-<li>Update the devguide to reflect the new branches and versions.</li>
-<li>Create a PR to update the supported releases table on the
+<ul>
+<li><p>Update the issue tracker for the new branch.</p>
+<blockquote>
+<div><ul class="simple">
+<li>Add the new version to the versions list (contact the tracker
+admins?).</li>
+<li>Add a <a class="reference external" href="https://bugs.python.org/keyword">regressions keyword</a>
+for the release</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>Update the devguide to reflect the new branches and versions.</p>
+</li>
+<li><p>Create a PR to update the supported releases table on the
 <a class="reference external" href="https://www.python.org/downloads/">downloads page</a>.
-(See <a class="reference external" href="https://github.com/python/pythondotorg/issues/1302">https://github.com/python/pythondotorg/issues/1302</a>)</li>
-<li>Ensure buildbots are defined for the new branch (contact zware).</li>
-<li>Ensure the daily docs build scripts are updated to include
-the new branch (contact DE).</li>
-<li>Ensure the various Github bots are updated, as needed, for the
+(See <a class="reference external" href="https://github.com/python/pythondotorg/issues/1302">https://github.com/python/pythondotorg/issues/1302</a>)</p>
+</li>
+<li><p>Ensure buildbots are defined for the new branch (contact zware).</p>
+</li>
+<li><p>Ensure the daily docs build scripts are updated to include
+the new branch (contact DE).</p>
+</li>
+<li><p>Ensure the various Github bots are updated, as needed, for the
 new branch, in particular, make sure backporting to the new
 branch works (contact core-workflow team)
-<a class="reference external" href="https://github.com/python/core-workflow/issues">https://github.com/python/core-workflow/issues</a></li>
-<li>Review the most recent commit history for the master and new release
+<a class="reference external" href="https://github.com/python/core-workflow/issues">https://github.com/python/core-workflow/issues</a></p>
+</li>
+<li><p>Review the most recent commit history for the master and new release
 branches to identify and backport any merges that might have been made
 to the master branch during the release engineering phase and that
-should be in the release branch.</li>
-<li>Verify that CI is working for new PRs for the master and new release
+should be in the release branch.</p>
+</li>
+<li><p>Verify that CI is working for new PRs for the master and new release
 branches and that the release branch is properly protected (no direct
-pushes, etc).</li>
-<li>Verify that the on-line docs are building properly (this may take up to
-24 hours for a complete build on the web site).</li>
+pushes, etc).</p>
+</li>
+<li><p>Verify that the on-line docs are building properly (this may take up to
+24 hours for a complete build on the web site).</p>
+</li>
 </ul>
 </li>
 </ul>
@@ -1040,7 +1069,8 @@ Admin and a plain User (not Power User) account.</p>
 <p>This document has been placed in the public domain.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0101.txt">https://github.com/python/peps/blob/master/pep-0101.txt</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0101.txt">https://github.com/python/peps/blob/master/pep-0101.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0101.txt">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

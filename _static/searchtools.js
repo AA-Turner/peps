@@ -9,39 +9,39 @@
  *
  */
 
+if (!Scorer) {
+  /**
+   * Simple result scoring code.
+   */
+  var Scorer = {
+    // Implement the following function to further tweak the score for each result
+    // The function takes a result array [filename, title, anchor, descr, score]
+    // and returns the new score.
+    /*
+    score: function(result) {
+      return result[4];
+    },
+    */
 
-/**
- * Simple result scoring code.
- */
-const Scorer = {
-  // Implement the following function to further tweak the score for each result
-  // The function takes a result array [filename, title, anchor, descr, score]
-  // and returns the new score.
-  /*
-  score: function(result) {
-    return result[4];
-  },
-  */
+    // query matches the full name of an object
+    objNameMatch: 11,
+    // or matches in the last dotted part of the object name
+    objPartialMatch: 6,
+    // Additive scores depending on the priority of the object
+    objPrio: {0:  15,   // used to be importantResults
+              1:  5,   // used to be objectResults
+              2: -5},  // used to be unimportantResults
+    //  Used when the priority is not in the mapping.
+    objPrioDefault: 0,
 
-  // query matches the full name of an object
-  objNameMatch: 11,
-  // or matches in the last dotted part of the object name
-  objPartialMatch: 6,
-  // Additive scores depending on the priority of the object
-  objPrio: {0:  15,   // used to be importantResults
-            1:  5,   // used to be objectResults
-            2: -5},  // used to be unimportantResults
-  //  Used when the priority is not in the mapping.
-  objPrioDefault: 0,
-
-  // query found in title
-  title: 15,
-  partialTitle: 7,
-  // query found in terms
-  term: 5,
-  partialTerm: 2
-};
-
+    // query found in title
+    title: 15,
+    partialTitle: 7,
+    // query found in terms
+    term: 5,
+    partialTerm: 2
+  };
+}
 
 if (!splitQuery) {
   function splitQuery(query) {
@@ -49,45 +49,49 @@ if (!splitQuery) {
   }
 }
 
-
-const removeChildren = (elm) => {
-  while (elm.lastChild) {
-    elm.removeChild(elm.lastChild);
-  }
-}
 /**
  * Search Module
  */
-const Search = {
+var Search = {
 
-  _index: null,
-  _queued_query: null,
-  _pulse_status: -1,
+  _index : null,
+  _queued_query : null,
+  _pulse_status : -1,
 
-  htmlToText: function (htmlString) {
-    const htmlElement = document.createElement('span');
-    htmlElement.innerHTML = htmlString;
-    removeElements(htmlElement.getElementsByClassName('headerlink'));
-    const docContent = htmlElement.querySelector('[role="main"]');
-    if (docContent === undefined) {
-      console.warn("Content block not found. Sphinx search tries to obtain it " +
-          "via '[role=main]'. Could you check your theme or template.");
-      return "";
-    }
-    return docContent.textContent || docContent.innerText;
+  htmlToText : function(htmlString) {
+      var htmlElement = document.createElement('span');
+      htmlElement.innerHTML = htmlString;
+      $(htmlElement).find('.headerlink').remove();
+      docContent = $(htmlElement).find('[role=main]')[0];
+      if(docContent === undefined) {
+          console.warn("Content block not found. Sphinx search tries to obtain it " +
+                       "via '[role=main]'. Could you check your theme or template.");
+          return "";
+      }
+      return docContent.textContent || docContent.innerText;
   },
 
-  init: function () {
-    const urlParams = new URLSearchParams(window.location.search);
-    const query = urlParams.get("q");
-    if (query) {
-      document.querySelector('input[name="q"]').value = query;
-      this.performSearch(query);
-    }
+  init : function() {
+      var params = $.getQueryParameters();
+      if (params.q) {
+          var query = params.q[0];
+          $('input[name="q"]')[0].value = query;
+          this.performSearch(query);
+      }
   },
 
-  setIndex: function (index) {
-    let q;
+  loadIndex : function(url) {
+    $.ajax({type: "GET", url: url, data: null,
+            dataType: "script", cache: true,
+            complete: function(jqxhr, textstatus) {
+              if (textstatus != "success") {
+                document.getElementById("searchindexloader").src = url;
+              }
+            }});
+  },
+
+  setIndex : function(index) {
+    var q;
     this._index = index;
     if ((q = this._queued_query) !== null) {
       this._queued_query = null;
@@ -95,57 +99,46 @@ const Search = {
     }
   },
 
-  hasIndex: function () {
-    return this._index !== null;
+  hasIndex : function() {
+      return this._index !== null;
   },
 
-  deferQuery: function (query) {
-    this._queued_query = query;
+  deferQuery : function(query) {
+      this._queued_query = query;
   },
 
-  stopPulse: function () {
-    this._pulse_status = 0;
+  stopPulse : function() {
+      this._pulse_status = 0;
   },
 
-  startPulse: function () {
+  startPulse : function() {
     if (this._pulse_status >= 0)
-      return;
-
+        return;
     function pulse() {
-      let i;
+      var i;
       Search._pulse_status = (Search._pulse_status + 1) % 4;
-      let dotString = '';
+      var dotString = '';
       for (i = 0; i < Search._pulse_status; i++)
         dotString += '.';
-      Search.dots.innerText = dotString;
+      Search.dots.text(dotString);
       if (Search._pulse_status > -1)
         window.setTimeout(pulse, 500);
     }
-
     pulse();
   },
 
   /**
    * perform a search for something (or wait until index is loaded)
    */
-  performSearch: function (query) {
-    const dotsSpan = document.createElement("span");
-    const searchText = document.createElement("h2");
-    searchText.textContent = _('Searching');
-    const searchSummary = document.createElement("p");
-    searchSummary.classList.add("search-summary")
-    searchSummary.innerText = ""
-    const searchList = document.createElement("ul");
-    searchList.classList.add("search")
-
+  performSearch : function(query) {
     // create the required interface elements
-    this.out = document.getElementById("search-results");
-    this.title = this.out.appendChild(searchText);
-    this.dots = this.title.appendChild(dotsSpan)
-    this.status = this.out.appendChild(searchSummary);
-    this.output = this.out.appendChild(searchList);
+    this.out = $('#search-results');
+    this.title = $('<h2>' + _('Searching') + '</h2>').appendTo(this.out);
+    this.dots = $('<span></span>').appendTo(this.title);
+    this.status = $('<p class="search-summary">&nbsp;</p>').appendTo(this.out);
+    this.output = $('<ul class="search"/>').appendTo(this.out);
 
-    document.getElementById("search-progress").innerText = _('Preparing search...')
+    $('#search-progress').text(_('Preparing search...'));
     this.startPulse();
 
     // index already loaded, the browser was quick!
@@ -158,64 +151,63 @@ const Search = {
   /**
    * execute search (requires search index to be loaded)
    */
-  query: function (query) {
-    let i;
+  query : function(query) {
+    var i;
 
     // stem the searchterms and add them to the correct list
-    const stemmer = new Stemmer();
-    const searchterms = [];
-    const excluded = [];
-    const hlterms = [];
-    const tmp = splitQuery(query);
-    const objectterms = [];
+    var stemmer = new Stemmer();
+    var searchterms = [];
+    var excluded = [];
+    var hlterms = [];
+    var tmp = splitQuery(query);
+    var objectterms = [];
     for (i = 0; i < tmp.length; i++) {
       if (tmp[i] !== "") {
-        objectterms.push(tmp[i].toLowerCase());
+          objectterms.push(tmp[i].toLowerCase());
       }
 
-      // stopwords array is from language_data.js
-      if (stopwords.indexOf(tmp[i].toLowerCase()) !== -1 || tmp[i].match(/^\d+$/) ||
-          tmp[i] === "") {
+      if ($u.indexOf(stopwords, tmp[i].toLowerCase()) != -1 || tmp[i] === "") {
         // skip this "word"
         continue;
       }
       // stem the word
-      let word = stemmer.stemWord(tmp[i].toLowerCase());
+      var word = stemmer.stemWord(tmp[i].toLowerCase());
       // prevent stemmer from cutting word smaller than two chars
-      if (word.length < 3 && tmp[i].length >= 3) {
+      if(word.length < 3 && tmp[i].length >= 3) {
         word = tmp[i];
       }
-      let toAppend;
+      var toAppend;
       // select the correct list
-      if (word[0] === '-') {
+      if (word[0] == '-') {
         toAppend = excluded;
         word = word.substr(1);
-      } else {
+      }
+      else {
         toAppend = searchterms;
         hlterms.push(tmp[i].toLowerCase());
       }
       // only add if not already in the list
-      if (!toAppend.includes(word))
+      if (!$u.contains(toAppend, word))
         toAppend.push(word);
     }
-    const highlightstring = '?highlight=' + encodeURIComponent(hlterms.join(" "));
+    var highlightstring = '?highlight=' + $.urlencode(hlterms.join(" "));
 
     // console.debug('SEARCH: searching for:');
     // console.info('required: ', searchterms);
     // console.info('excluded: ', excluded);
 
     // prepare search
-    const terms = this._index.terms;
-    const titleterms = this._index.titleterms;
+    var terms = this._index.terms;
+    var titleterms = this._index.titleterms;
 
     // array of [filename, title, anchor, descr, score]
-    let results = [];
-    removeChildren(document.getElementById("search-progress"))
+    var results = [];
+    $('#search-progress').empty();
 
     // lookup as object
     for (i = 0; i < objectterms.length; i++) {
-      const others = [].concat(objectterms.slice(0, i),
-          objectterms.slice(i + 1, objectterms.length));
+      var others = [].concat(objectterms.slice(0, i),
+                             objectterms.slice(i+1, objectterms.length));
       results = results.concat(this.performObjectSearch(objectterms[i], others));
     }
 
@@ -231,9 +223,9 @@ const Search = {
     // now sort the results by score (in opposite order of appearance, since the
     // display function below uses pop() to retrieve items) and then
     // alphabetically
-    results.sort(function (a, b) {
-      let left = a[4];
-      let right = b[4];
+    results.sort(function(a, b) {
+      var left = a[4];
+      var right = b[4];
       if (left > right) {
         return 1;
       } else if (left < right) {
@@ -250,73 +242,70 @@ const Search = {
     //Search.lastresults = results.slice();  // a copy
     //console.info('search results:', Search.lastresults);
 
-    const resultCount = results.length
-
+    // print the results
+    var resultCount = results.length;
     function displayNextItem() {
-      const doc_builder = DOCUMENTATION_OPTIONS.BUILDER
-      const docUrlRoot = DOCUMENTATION_OPTIONS.URL_ROOT
-      const docFileSuffix = DOCUMENTATION_OPTIONS.FILE_SUFFIX
-      const docLinkSuffix = DOCUMENTATION_OPTIONS.LINK_SUFFIX
-      const docHasSource = DOCUMENTATION_OPTIONS.HAS_SOURCE
-
       // results left, load the summary and display it
-      // this is intended to be dynamic (don't sub resultsCount)
       if (results.length) {
-        const item = results.pop();
-
-        let listItem = document.createElement("li")
-        let requestUrl = "";
-        let linkUrl = "";
-        if (doc_builder === 'dirhtml') {
+        var item = results.pop();
+        var listItem = $('<li style="display:none"></li>');
+        var requestUrl = "";
+        var linkUrl = "";
+        if (DOCUMENTATION_OPTIONS.BUILDER === 'dirhtml') {
           // dirhtml builder
-          let dirname = item[0] + '/';
+          var dirname = item[0] + '/';
           if (dirname.match(/\/index\/$/)) {
-            dirname = dirname.substring(0, dirname.length - 6);
-          } else if (dirname === 'index/') {
+            dirname = dirname.substring(0, dirname.length-6);
+          } else if (dirname == 'index/') {
             dirname = '';
           }
-          requestUrl = docUrlRoot + dirname;
+          requestUrl = DOCUMENTATION_OPTIONS.URL_ROOT + dirname;
           linkUrl = requestUrl;
 
         } else {
           // normal html builders
-          requestUrl = docUrlRoot + item[0] + docFileSuffix;
-          linkUrl = item[0] + docLinkSuffix;
+          requestUrl = DOCUMENTATION_OPTIONS.URL_ROOT + item[0] + DOCUMENTATION_OPTIONS.FILE_SUFFIX;
+          linkUrl = item[0] + DOCUMENTATION_OPTIONS.LINK_SUFFIX;
         }
-        let linkEl = document.createElement("a")
-        linkEl.href = linkUrl + highlightstring + item[2]
-        linkEl.innerHTML = item[1]
-        listItem.appendChild(linkEl)
+        listItem.append($('<a/>').attr('href',
+            linkUrl +
+            highlightstring + item[2]).html(item[1]));
         if (item[3]) {
-          let spanEl = document.createElement("span")
-          spanEl.innerText = " (" + item[3] + ')'
-          listItem.appendChild(spanEl)
-          Search.output.appendChild(listItem);
-          setTimeout(() => displayNextItem(), 5)
-        } else if (docHasSource) {
-          fetch(requestUrl)
-              .then(responseData => responseData.text())
-              .then(data => {
-                if (data !== '' && data !== undefined) {
-                  listItem.appendChild(Search.makeSearchSummary(data, searchterms, hlterms));
-                }
-                Search.output.appendChild(listItem);
-                setTimeout(() => displayNextItem(), 5)
-              })
+          listItem.append($('<span> (' + item[3] + ')</span>'));
+          Search.output.append(listItem);
+          listItem.slideDown(5, function() {
+            displayNextItem();
+          });
+        } else if (DOCUMENTATION_OPTIONS.HAS_SOURCE) {
+          $.ajax({url: requestUrl,
+                  dataType: "text",
+                  complete: function(jqxhr, textstatus) {
+                    var data = jqxhr.responseText;
+                    if (data !== '' && data !== undefined) {
+                      listItem.append(Search.makeSearchSummary(data, searchterms, hlterms));
+                    }
+                    Search.output.append(listItem);
+                    listItem.slideDown(5, function() {
+                      displayNextItem();
+                    });
+                  }});
         } else {
           // no source available, just display title
-          Search.output.appendChild(listItem);
-          setTimeout(() => displayNextItem(), 5)
+          Search.output.append(listItem);
+          listItem.slideDown(5, function() {
+            displayNextItem();
+          });
         }
       }
       // search finished, update title and status message
       else {
         Search.stopPulse();
-        Search.title.innerText = _('Search Results');
+        Search.title.text(_('Search Results'));
         if (!resultCount)
-          Search.status.innerText = _('Your search did not match any documents. Please make sure that all words are spelled correctly and that you\'ve selected enough categories.');
+          Search.status.text(_('Your search did not match any documents. Please make sure that all words are spelled correctly and that you\'ve selected enough categories.'));
         else
-          Search.status.innerText = _('Search finished, found %s page(s) matching the search query.').replace('%s', resultCount);
+            Search.status.text(_('Search finished, found %s page(s) matching the search query.').replace('%s', resultCount));
+        Search.status.fadeIn(500);
       }
     }
     displayNextItem();
@@ -325,40 +314,40 @@ const Search = {
   /**
    * search for object names
    */
-  performObjectSearch: function (object, otherterms) {
-    const filenames = this._index.filenames;
-    const docnames = this._index.docnames;
-    const objects = this._index.objects;
-    const objnames = this._index.objnames;
-    const titles = this._index.titles;
+  performObjectSearch : function(object, otherterms) {
+    var filenames = this._index.filenames;
+    var docnames = this._index.docnames;
+    var objects = this._index.objects;
+    var objnames = this._index.objnames;
+    var titles = this._index.titles;
 
-    let i;
-    const results = [];
+    var i;
+    var results = [];
 
-    for (let prefix in objects) {
-      for (let name in objects[prefix]) {
-        const fullname = (prefix ? prefix + '.' : '') + name;
-        const fullnameLower = fullname.toLowerCase();
+    for (var prefix in objects) {
+      for (var name in objects[prefix]) {
+        var fullname = (prefix ? prefix + '.' : '') + name;
+        var fullnameLower = fullname.toLowerCase()
         if (fullnameLower.indexOf(object) > -1) {
-          let score = 0;
-          const parts = fullnameLower.split('.');
+          var score = 0;
+          var parts = fullnameLower.split('.');
           // check for different match types: exact matches of full name or
           // "last name" (i.e. last dotted part)
           if (fullnameLower == object || parts[parts.length - 1] == object) {
             score += Scorer.objNameMatch;
-            // matches in last name
+          // matches in last name
           } else if (parts[parts.length - 1].indexOf(object) > -1) {
             score += Scorer.objPartialMatch;
           }
-          const match = objects[prefix][name];
-          const objname = objnames[match[1]][2];
-          const title = titles[match[0]];
+          var match = objects[prefix][name];
+          var objname = objnames[match[1]][2];
+          var title = titles[match[0]];
           // If more than one term searched for, we require other words to be
           // found in the name/title/description
           if (otherterms.length > 0) {
-            const haystack = (prefix + ' ' + name + ' ' +
-                objname + ' ' + title).toLowerCase();
-            let allfound = true;
+            var haystack = (prefix + ' ' + name + ' ' +
+                            objname + ' ' + title).toLowerCase();
+            var allfound = true;
             for (i = 0; i < otherterms.length; i++) {
               if (haystack.indexOf(otherterms[i]) == -1) {
                 allfound = false;
@@ -369,9 +358,9 @@ const Search = {
               continue;
             }
           }
-          const descr = objname + _(', in ') + title;
+          var descr = objname + _(', in ') + title;
 
-          let anchor = match[3];
+          var anchor = match[3];
           if (anchor === '')
             anchor = fullname;
           else if (anchor == '-')
@@ -382,7 +371,7 @@ const Search = {
           } else {
             score += Scorer.objPrioDefault;
           }
-          results.push([docnames[match[0]], fullname, '#' + anchor, descr, score, filenames[match[0]]]);
+          results.push([docnames[match[0]], fullname, '#'+anchor, descr, score, filenames[match[0]]]);
         }
       }
     }
@@ -393,46 +382,45 @@ const Search = {
   /**
    * search for full-text terms in the index
    */
-  performTermsSearch: function (searchterms, excluded, terms, titleterms) {
-    const docnames = this._index.docnames;
-    const filenames = this._index.filenames;
-    const titles = this._index.titles;
+  performTermsSearch : function(searchterms, excluded, terms, titleterms) {
+    var docnames = this._index.docnames;
+    var filenames = this._index.filenames;
+    var titles = this._index.titles;
 
-    let i, j, file;
-    const fileMap = {};
-    const scoreMap = {};
-    const results = [];
+    var i, j, file;
+    var fileMap = {};
+    var scoreMap = {};
+    var results = [];
 
     // perform the search on the required terms
     for (i = 0; i < searchterms.length; i++) {
-      const word = searchterms[i];
-      let files = [];
-      const _o = [
+      var word = searchterms[i];
+      var files = [];
+      var _o = [
         {files: terms[word], score: Scorer.term},
         {files: titleterms[word], score: Scorer.title}
       ];
       // add support for partial matches
       if (word.length > 2) {
-        let w;
-        for (w in terms) {
+        for (var w in terms) {
           if (w.match(word) && !terms[word]) {
             _o.push({files: terms[w], score: Scorer.partialTerm})
           }
         }
-        for (w in titleterms) {
+        for (var w in titleterms) {
           if (w.match(word) && !titleterms[word]) {
-            _o.push({files: titleterms[w], score: Scorer.partialTitle})
+              _o.push({files: titleterms[w], score: Scorer.partialTitle})
           }
         }
       }
 
       // no match but word was a required one
-      if (_o.every(o => o.files === undefined)) {
+      if ($u.every(_o, function(o){return o.files === undefined;})) {
         break;
       }
       // found search word in contents
-      _o.forEach(o => {
-        let _files = o.files;
+      $u.each(_o, function(o) {
+        var _files = o.files;
         if (_files === undefined)
           return
 
@@ -461,24 +449,22 @@ const Search = {
 
     // now check if the files don't contain excluded terms
     for (file in fileMap) {
-      let valid = true;
+      var valid = true;
 
       // check if all requirements are matched
-      const filteredTermCount = // as search terms with length < 3 are discarded: ignore
-          searchterms.filter(function (term) {
-            return term.length > 2
-          }).length;
+      var filteredTermCount = // as search terms with length < 3 are discarded: ignore
+        searchterms.filter(function(term){return term.length > 2}).length
       if (
-          fileMap[file].length != searchterms.length &&
-          fileMap[file].length != filteredTermCount
+        fileMap[file].length != searchterms.length &&
+        fileMap[file].length != filteredTermCount
       ) continue;
 
       // ensure that none of the excluded terms is in the search result
       for (i = 0; i < excluded.length; i++) {
-        if (terms[excluded[i]] === file ||
-            titleterms[excluded[i]] === file ||
-            (terms[excluded[i]] || []).includes(file) ||
-            (titleterms[excluded[i]] || []).includes(file)) {
+        if (terms[excluded[i]] == file ||
+            titleterms[excluded[i]] == file ||
+            $u.contains(terms[excluded[i]] || [], file) ||
+            $u.contains(titleterms[excluded[i]] || [], file)) {
           valid = false;
           break;
         }
@@ -488,7 +474,7 @@ const Search = {
       if (valid) {
         // select one (max) score for the file.
         // for better ranking, we should calculate ranking by using words statistics like basic tf-idf...
-        const score = Math.max(...fileMap[file].map(w => scoreMap[file][w]))
+        var score = $u.max($u.map(fileMap[file], function(w){return scoreMap[file][w]}));
         results.push([docnames[file], titles[file], '', null, score, filenames[file]]);
       }
     }
@@ -502,29 +488,27 @@ const Search = {
    * words. the first one is used to find the occurrence, the
    * latter for highlighting it.
    */
-  makeSearchSummary: function (htmlText, keywords, hlwords) {
-    const text = Search.htmlToText(htmlText);
-    const textLower = text.toLowerCase();
-    let start = 0;
-    keywords.forEach(keyword => {
-      const i = textLower.indexOf(keyword.toLowerCase());
+  makeSearchSummary : function(htmlText, keywords, hlwords) {
+    var text = Search.htmlToText(htmlText);
+    var textLower = text.toLowerCase();
+    var start = 0;
+    $.each(keywords, function() {
+      var i = textLower.indexOf(this.toLowerCase());
       if (i > -1)
         start = i;
-    })
+    });
     start = Math.max(start - 120, 0);
-    const excerpt = ((start > 0) ? '...' : '') +
-        text.substr(start, 240).trim() +
-        ((start + 240 - text.length) ? '...' : '');
-    let contextEl = document.createElement("div")
-    contextEl.classList.add("context")
-    contextEl.innerText = excerpt
-    hlwords.forEach(hlword => {
-      contextEl = highlightText(hlword, 'highlighted', contextEl);
-    })
-    return contextEl;
+    var excerpt = ((start > 0) ? '...' : '') +
+      $.trim(text.substr(start, 240)) +
+      ((start + 240 - text.length) ? '...' : '');
+    var rv = $('<div class="context"></div>').text(excerpt);
+    $.each(hlwords, function() {
+      rv = rv.highlightText(this, 'highlighted');
+    });
+    return rv;
   }
 };
 
-ready(() => {
+$(document).ready(function() {
   Search.init();
 });

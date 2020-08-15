@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 615 – Support for the IANA Time Zone Database in the Standard Library &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -56,7 +55,7 @@
 <dt class="field-odd">Post-History</dt>
 <dd class="field-odd">2020-02-25, 2020-03-29</dd>
 <dt class="field-even">Replaces</dt>
-<dd class="field-even"><a class="reference external" href="./pep-0431.html">431</a></dd>
+<dd class="field-even"><a class="reference external" href="pep-0431.html">431</a></dd>
 </dl>
 <hr class="docutils" />
 <div class="contents topic" id="contents">
@@ -143,6 +142,7 @@ possible to get a fixed time zone offset from a local time:</p>
 <span class="gp">... </span>      <span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S %Z&quot;</span><span class="p">))</span>
 <span class="go">2020-02-22 12:00:00 EST</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2020</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">22</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astimezone</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">))</span>
+<span class="go">2020-02-22 17:00:00+00:00</span>
 </pre></div>
 </div>
 <p>However, there is still no support for the time zones described in the IANA
@@ -150,8 +150,8 @@ time zone database (also called the “tz” database or the Olson database
 <a class="footnote-reference brackets" href="#tzdb-wiki" id="id4">9</a>).  The time zone database is in the public domain and is widely
 distributed — it is present by default on many Unix-like operating systems.
 Great care goes into the stability of the database: there are IETF RFCs both
-for the maintenance procedures (RFC 6557 <a class="footnote-reference brackets" href="#rfc6557" id="id5">1</a>) and for the compiled
-binary (TZif) format (RFC 8636 <a class="footnote-reference brackets" href="#rfc8536" id="id6">3</a>).  As such, it is likely that adding
+for the maintenance procedures (<a class="reference external" href="https://tools.ietf.org/html/rfc6557.html">RFC 6557</a> <a class="footnote-reference brackets" href="#rfc6557" id="id5">1</a>) and for the compiled
+binary (TZif) format (<a class="reference external" href="https://tools.ietf.org/html/rfc8636.html">RFC 8636</a> <a class="footnote-reference brackets" href="#rfc8536" id="id6">3</a>).  As such, it is likely that adding
 support for the compiled outputs of the IANA database will add great value to
 end users even with the relatively long cadence of standard library releases.</p>
 </div>
@@ -656,7 +656,7 @@ minimal real world effects were it to occur.</p>
 </div>
 <div class="section" id="including-tzdata-in-the-standard-library-by-default">
 <span id="why-no-default-tzdata"></span><h3><a class="toc-backref" href="#id52">Including <code class="docutils literal notranslate"><span class="pre">tzdata</span></code> in the standard library by default</a><a class="headerlink" href="#including-tzdata-in-the-standard-library-by-default" title="Permalink to this headline">¶</a></h3>
-<p>Although PEP 453 <a class="footnote-reference brackets" href="#pep453-ensurepip" id="id21">13</a>, which introduced the <code class="docutils literal notranslate"><span class="pre">ensurepip</span></code>
+<p>Although <a class="reference external" href="pep-0453.html">PEP 453</a> <a class="footnote-reference brackets" href="#pep453-ensurepip" id="id21">13</a>, which introduced the <code class="docutils literal notranslate"><span class="pre">ensurepip</span></code>
 mechanism to CPython, provides a convenient template for a standard library
 module maintained on PyPI, a potentially similar <code class="docutils literal notranslate"><span class="pre">ensuretzdata</span></code> mechanism is
 somewhat less necessary, and would be complicated enough that it is considered
@@ -682,9 +682,9 @@ is not used by the <code class="docutils literal notranslate"><span class="pre">
 </div>
 <div class="section" id="using-a-pytz-like-interface">
 <h3><a class="toc-backref" href="#id54">Using a <code class="docutils literal notranslate"><span class="pre">pytz</span></code>-like interface</a><a class="headerlink" href="#using-a-pytz-like-interface" title="Permalink to this headline">¶</a></h3>
-<p>A <code class="docutils literal notranslate"><span class="pre">pytz</span></code>-like (<a class="footnote-reference brackets" href="#pytz" id="id22">24</a>) interface was proposed in PEP 431 <a class="footnote-reference brackets" href="#pep431" id="id23">14</a>, but
+<p>A <code class="docutils literal notranslate"><span class="pre">pytz</span></code>-like (<a class="footnote-reference brackets" href="#pytz" id="id22">24</a>) interface was proposed in <a class="reference external" href="pep-0431.html">PEP 431</a> <a class="footnote-reference brackets" href="#pep431" id="id23">14</a>, but
 was ultimately withdrawn / rejected for lack of ambiguous datetime support.
-PEP 495 <a class="footnote-reference brackets" href="#pep495" id="id24">15</a> added the <code class="docutils literal notranslate"><span class="pre">fold</span></code> attribute to address this problem, but
+<a class="reference external" href="pep-0495.html">PEP 495</a> <a class="footnote-reference brackets" href="#pep495" id="id24">15</a> added the <code class="docutils literal notranslate"><span class="pre">fold</span></code> attribute to address this problem, but
 <code class="docutils literal notranslate"><span class="pre">fold</span></code> obviates the need for <code class="docutils literal notranslate"><span class="pre">pytz</span></code>’s non-standard <code class="docutils literal notranslate"><span class="pre">tzinfo</span></code> classes, and
 so a <code class="docutils literal notranslate"><span class="pre">pytz</span></code>-like interface is no longer necessary. <a class="footnote-reference brackets" href="#fastest-footgun" id="id25">5</a></p>
 <p>The <code class="docutils literal notranslate"><span class="pre">zoneinfo</span></code> approach is more closely based on <code class="docutils literal notranslate"><span class="pre">dateutil.tz</span></code>, which
@@ -804,7 +804,7 @@ to importing <code class="docutils literal notranslate"><span class="pre">dateti
 module). This is the way <code class="docutils literal notranslate"><span class="pre">dateutil</span></code> works (all submodules are lazily
 imported), and it is a perennial source of confusion for end users.</p>
 <p>This confusing requirement from end-users can be avoided using a
-module-level <code class="docutils literal notranslate"><span class="pre">__getattr__</span></code> and <code class="docutils literal notranslate"><span class="pre">__dir__</span></code> per PEP 562, but this would
+module-level <code class="docutils literal notranslate"><span class="pre">__getattr__</span></code> and <code class="docutils literal notranslate"><span class="pre">__dir__</span></code> per <a class="reference external" href="pep-0562.html">PEP 562</a>, but this would
 add some complexity to the implementation of the <code class="docutils literal notranslate"><span class="pre">datetime</span></code> module. This
 sort of behavior in modules or classes tends to confuse static analysis
 tools, which may not be desirable for a library as widely-used and critical
@@ -855,13 +855,13 @@ CPython rather than a “blessed” third-party package.</dd>
 <h2><a class="toc-backref" href="#id61">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
 <dl class="footnote brackets">
 <dt class="label" id="rfc6557"><span class="brackets"><a class="fn-backref" href="#id5">1</a></span></dt>
-<dd>RFC 6557: Procedures for Maintaining the Time Zone Database
+<dd><a class="reference external" href="https://tools.ietf.org/html/rfc6557.html">RFC 6557</a>: Procedures for Maintaining the Time Zone Database
 <a class="reference external" href="https://tools.ietf.org/html/rfc6557">https://tools.ietf.org/html/rfc6557</a></dd>
 <dt class="label" id="rfc7808"><span class="brackets"><a class="fn-backref" href="#id29">2</a></span></dt>
-<dd>RFC 7808: Time Zone Data Distribution Service
+<dd><a class="reference external" href="https://tools.ietf.org/html/rfc7808.html">RFC 7808</a>: Time Zone Data Distribution Service
 <a class="reference external" href="https://tools.ietf.org/html/rfc7808">https://tools.ietf.org/html/rfc7808</a></dd>
 <dt class="label" id="rfc8536"><span class="brackets"><a class="fn-backref" href="#id6">3</a></span></dt>
-<dd>RFC 8536: The Time Zone Information Format (TZif)
+<dd><a class="reference external" href="https://tools.ietf.org/html/rfc8536.html">RFC 8536</a>: The Time Zone Information Format (TZif)
 <a class="reference external" href="https://tools.ietf.org/html/rfc8536">https://tools.ietf.org/html/rfc8536</a></dd>
 <dt class="label" id="nontransitive-comp"><span class="brackets"><a class="fn-backref" href="#id9">4</a></span></dt>
 <dd>Paul Ganssle: “A curious case of non-transitive datetime comparison”
@@ -894,13 +894,13 @@ offsets (Paul Eggert, 23 April 2018)
 Davis)
 <a class="reference external" href="https://pyfound.blogspot.com/2019/05/russell-keith-magee-python-on-other.html">https://pyfound.blogspot.com/2019/05/russell-keith-magee-python-on-other.html</a></dd>
 <dt class="label" id="pep453-ensurepip"><span class="brackets"><a class="fn-backref" href="#id21">13</a></span></dt>
-<dd>PEP 453: Explicit bootstrapping of pip in Python installations
+<dd><a class="reference external" href="pep-0453.html">PEP 453</a>: Explicit bootstrapping of pip in Python installations
 <a class="reference external" href="https://www.python.org/dev/peps/pep-0453/">https://www.python.org/dev/peps/pep-0453/</a></dd>
 <dt class="label" id="pep431"><span class="brackets"><a class="fn-backref" href="#id23">14</a></span></dt>
-<dd>PEP 431: Time zone support improvements
+<dd><a class="reference external" href="pep-0431.html">PEP 431</a>: Time zone support improvements
 <a class="reference external" href="https://www.python.org/dev/peps/pep-0431/">https://www.python.org/dev/peps/pep-0431/</a></dd>
 <dt class="label" id="pep495"><span class="brackets"><a class="fn-backref" href="#id24">15</a></span></dt>
-<dd>PEP 495: Local Time Disambiguation
+<dd><a class="reference external" href="pep-0495.html">PEP 495</a>: Local Time Disambiguation
 <a class="reference external" href="https://www.python.org/dev/peps/pep-0495/">https://www.python.org/dev/peps/pep-0495/</a></dd>
 <dt class="label" id="tzinfo"><span class="brackets"><a class="fn-backref" href="#id2">16</a></span></dt>
 <dd><code class="docutils literal notranslate"><span class="pre">datetime.tzinfo</span></code> documentation
@@ -943,7 +943,8 @@ time zones
 CC0-1.0-Universal license, whichever is more permissive.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0615.rst">https://github.com/python/peps/blob/master/pep-0615.rst</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0615.rst">https://github.com/python/peps/blob/master/pep-0615.rst</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0615.rst">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

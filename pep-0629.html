@@ -1,0 +1,242 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PEP 629 – Versioning PyPI’s Simple API &#8212; PEPs.Python.org</title>
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 666 – Reject Foolish Indentation" href="pep-0666.html" />
+    <link rel="prev" title="PEP 628 – Add ``math.tau``" href="pep-0628.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 629 – Versioning PyPI’s Simple API</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-629-versioning-pypi-s-simple-api">
+<h1 class="page-title">PEP 629 – Versioning PyPI’s Simple API<a class="headerlink" href="#pep-629-versioning-pypi-s-simple-api" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">629</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Versioning PyPI’s Simple API</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Donald Stufft &lt;donald&#32;&#97;t&#32;stufft.io&gt;</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even">Brett Cannon &lt;brett&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-odd">Discussions-To</dt>
+<dd class="field-odd"><a class="reference external" href="https://discuss.python.org/t/pep-629-versioning-pypis-simple-api/4720">https://discuss.python.org/t/pep-629-versioning-pypis-simple-api/4720</a></dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Draft</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">16-Jul-2020</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd">16-Jul-2020</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id2">Abstract</a></li>
+<li><a class="reference internal" href="#rationale" id="id3">Rationale</a></li>
+<li><a class="reference internal" href="#overview" id="id4">Overview</a><ul>
+<li><a class="reference internal" href="#clients" id="id5">Clients</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rejected-ideas" id="id6">Rejected Ideas</a><ul>
+<li><a class="reference internal" href="#using-a-header" id="id7">Using a Header</a></li>
+<li><a class="reference internal" href="#using-an-url" id="id8">Using an URL</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#copyright" id="id9">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id2">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes adding a method for versioning the simple API so
+that clients can determine which features of the simple API that a
+specific repository supports.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id3">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<p>When evolving the simple API, clients wish to be able to determine
+which features the repository supports. Currently there is no
+mechanism to do this, except by attempting to detect new features
+by looking at the data in the reponses and see if it appears like
+a particular feature is in use.</p>
+<p>This works reasonably well for a modern version of a client to determine
+if the repository supports all of the features it wants to implement,
+however it does not do anything to tell an older version the client that
+the repository supports features that it might not understand and to
+allow messaging to indicate that it might not be correctly understanding
+the output of the repository.</p>
+<p>An example of a scenario where this happened was the phasing in of
+python-requires metadata, while existing clients could still successfully
+use the repository, they were lacking the ability to understand this new
+piece of data which would have informed their behavior to select a better
+file for end users.</p>
+</div>
+<div class="section" id="overview">
+<h2><a class="toc-backref" href="#id4">Overview</a><a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes the inclusion of a meta tag on the responses of every
+sucessful request to a simple API page, which contains a name attribute
+of “pypi:repository-version”, and a content that is a <a class="reference external" href="pep-0440.html">PEP 440</a> compatible
+version number, which is further constrained to ONLY be Major.Minor, and
+none of the additional features supported by <a class="reference external" href="pep-0440.html">PEP 440</a>.</p>
+<p>This would end up looking like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">meta</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;pypi:repository-version&quot;</span> <span class="n">content</span><span class="o">=</span><span class="s2">&quot;1.0&quot;</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>When interpreting the repository version:</p>
+<ul class="simple">
+<li>Incrementing the major version is used to signal a backwards
+incompatible change such that existing clients would no longer be
+expected to be able to meaningfully use the API.</li>
+<li>Incrementing the minor version is used to signal a backwards
+compatible change such that existing clients would still be
+expected to be able to meaningfully use the API.</li>
+</ul>
+<p>It is left up to the discretion of any future PEPs as to what
+specifically constitutes a backwards incompatible vs compatible change
+beyond the broad suggestion that existing clients will be able to
+“meaningfully” continue to use the API, and can include adding,
+modifying, or removing existing features.</p>
+<p>It is expectation of this PEP that the major version will never be
+incremented, and any future major API evolutions would utilize a
+different mechanism for API evolution. However the major version
+is included to disambiguate with future versions (e.g. a hypothetical
+simple api v2 that lived at /v2/, but which would be confusing if the
+repository-version was set to a version &gt;= 2).</p>
+<p>This PEP sets the current API version to “1.0”, and expects that
+future PEPs that further evolve the simple API will increment the
+minor version number.</p>
+<div class="section" id="clients">
+<h3><a class="toc-backref" href="#id5">Clients</a><a class="headerlink" href="#clients" title="Permalink to this headline">¶</a></h3>
+<p>Clients interacting with the simple API <strong>SHOULD</strong> introspect each
+response for the repository version, and if that data does not exist
+<strong>MUST</strong> assumee that it is version 1.0.</p>
+<p>When encountering a major version greater than expected, clients
+<strong>MUST</strong> hard fail with an appropiate error message for the user.</p>
+<p>When encountering a minor version greater than expected, clients
+<strong>SHOULD</strong> warn users with an appropiate message.</p>
+<p>Clients <strong>MAY</strong> still continue to use feature detection in order to
+determine what features a repository uses.</p>
+</div>
+</div>
+<div class="section" id="rejected-ideas">
+<h2><a class="toc-backref" href="#id6">Rejected Ideas</a><a class="headerlink" href="#rejected-ideas" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="using-a-header">
+<h3><a class="toc-backref" href="#id7">Using a Header</a><a class="headerlink" href="#using-a-header" title="Permalink to this headline">¶</a></h3>
+<p>Instead of baking this information into the actual HTML, an
+alternative would be to use a HTTP header. This idea was
+considered and ultimately was rejected because it would make
+mirrors have to start modifying headers instead of being able
+to operate as a “dumb” HTTP server of files.</p>
+</div>
+<div class="section" id="using-an-url">
+<h3><a class="toc-backref" href="#id8">Using an URL</a><a class="headerlink" href="#using-an-url" title="Permalink to this headline">¶</a></h3>
+<p>Another traditional mechanism for versioning APIs is to bake it
+into the URL, something like <code class="docutils literal notranslate"><span class="pre">/1.0/simplee/</span></code> or so. This works
+well for major version changes where olders clients are not
+expected to be capable of continuing to use it, but it is not
+well suited to minor version bumps, particularly when the version
+numbers can be viewed as largely advisory for end users.</p>
+</div>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id9">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document is placed in the public domain or under the
+CC0-1.0-Universal license, whichever is more permissive.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0629.rst">https://github.com/python/peps/blob/master/pep-0629.rst</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0629.rst">2020-08-15T06:07:35</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0629.rst.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0628.html">PEP 0628</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0666.html">PEP 0666</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 629 – Versioning PyPI’s Simple API</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#overview">Overview</a><ul>
+<li><a class="reference internal" href="#clients">Clients</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rejected-ideas">Rejected Ideas</a><ul>
+<li><a class="reference internal" href="#using-a-header">Using a Header</a></li>
+<li><a class="reference internal" href="#using-an-url">Using an URL</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

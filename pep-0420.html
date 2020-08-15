@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 420 – Implicit Namespace Packages &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -95,7 +94,7 @@ across multiple directories on disk.  In current Python versions, an algorithm
 to compute the packages <code class="docutils literal notranslate"><span class="pre">__path__</span></code> must be formulated.  With the enhancement
 proposed here, the import machinery itself will construct the list of
 directories that make up the package.  This PEP builds upon previous work,
-documented in PEP 382 and PEP 402.  Those PEPs have since been rejected in
+documented in <a class="reference external" href="pep-0382.html">PEP 382</a> and <a class="reference external" href="pep-0402.html">PEP 402</a>.  Those PEPs have since been rejected in
 favor of this one.  An implementation of this PEP is at <a class="footnote-reference brackets" href="#id12" id="id1">1</a>.</p>
 </div>
 <div class="section" id="terminology">
@@ -150,8 +149,8 @@ additional portions to each package.</p>
 <p>setuptools allows declaring namespace packages in a distribution’s
 <code class="docutils literal notranslate"><span class="pre">setup.py</span></code>, so that distribution developers don’t need to put the
 magic <code class="docutils literal notranslate"><span class="pre">__path__</span></code> modification into <code class="docutils literal notranslate"><span class="pre">__init__.py</span></code> themselves.</p>
-<p>See PEP 402’s “The Problem” section <a class="footnote-reference brackets" href="#id13" id="id2">2</a> for additional motivations
-for namespace packages.  Note that PEP 402 has been rejected, but the
+<p>See <a class="reference external" href="pep-0402.html">PEP 402</a>’s “The Problem” section <a class="footnote-reference brackets" href="#id13" id="id2">2</a> for additional motivations
+for namespace packages.  Note that <a class="reference external" href="pep-0402.html">PEP 402</a> has been rejected, but the
 motivating use cases are still valid.</p>
 </div>
 <div class="section" id="rationale">
@@ -257,7 +256,7 @@ path with a new path entry list object.</p>
 </div>
 <div class="section" id="impact-on-import-finders-and-loaders">
 <h3><a class="toc-backref" href="#id26">Impact on import finders and loaders</a><a class="headerlink" href="#impact-on-import-finders-and-loaders" title="Permalink to this headline">¶</a></h3>
-<p>PEP 302 defines “finders” that are called to search path elements.
+<p><a class="reference external" href="pep-0302.html">PEP 302</a> defines “finders” that are called to search path elements.
 These finders’ <code class="docutils literal notranslate"><span class="pre">find_module</span></code> methods return either a “loader” object
 or <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
 <p>For a finder to contribute to namespace packages, it must implement a
@@ -281,7 +280,7 @@ iterable will contain only a single string.</p>
 back to <code class="docutils literal notranslate"><span class="pre">find_module</span></code>.  Legacy finders which implement
 <code class="docutils literal notranslate"><span class="pre">find_module</span></code> but not <code class="docutils literal notranslate"><span class="pre">find_loader</span></code> will be unable to contribute
 portions to a namespace package.</p>
-<p>The specification expands PEP 302 loaders to include an optional method called
+<p>The specification expands <a class="reference external" href="pep-0302.html">PEP 302</a> loaders to include an optional method called
 <code class="docutils literal notranslate"><span class="pre">module_repr()</span></code> which if present, is used to generate module object reprs.
 See the section below for further details.</p>
 </div>
@@ -315,9 +314,9 @@ scope of this PEP.</p>
 used by legacy portions to create namespace packages.  Because it is
 likely not practical for all existing portions of a namespace package
 to be migrated to this PEP at once, <code class="docutils literal notranslate"><span class="pre">extend_path()</span></code> will be modified
-to also recognize PEP 420 namespace packages.  This will allow some
+to also recognize <a class="reference external" href="pep-0420.html">PEP 420</a> namespace packages.  This will allow some
 portions of a namespace to be legacy portions while others are
-migrated to PEP 420.  These hybrid namespace packages will not have
+migrated to <a class="reference external" href="pep-0420.html">PEP 420</a>.  These hybrid namespace packages will not have
 the dynamic path computation that normal namespace packages have,
 since <code class="docutils literal notranslate"><span class="pre">extend_path()</span></code> never provided this functionality in the past.</p>
 </div>
@@ -449,7 +448,7 @@ imported, <code class="docutils literal notranslate"><span class="pre">project3/
 <div class="section" id="discussion">
 <h2><a class="toc-backref" href="#id34">Discussion</a><a class="headerlink" href="#discussion" title="Permalink to this headline">¶</a></h2>
 <p>At PyCon 2012, we had a discussion about namespace packages at which
-PEP 382 and PEP 402 were rejected, to be replaced by this PEP <a class="footnote-reference brackets" href="#id14" id="id4">3</a>.</p>
+<a class="reference external" href="pep-0382.html">PEP 382</a> and <a class="reference external" href="pep-0402.html">PEP 402</a> were rejected, to be replaced by this PEP <a class="footnote-reference brackets" href="#id14" id="id4">3</a>.</p>
 <p>There is no intention to remove support of regular packages.  If a
 developer knows that her package will never be a portion of a
 namespace package, then there is a performance advantage to it being a
@@ -479,8 +478,8 @@ is summarized here:</p>
 status quo.</li>
 <li>Minor backward compatibility issues are okay, as long as they are
 properly documented.</li>
-<li>This will be addressed in PEP 395.</li>
-<li>This will also be addressed in PEP 395.</li>
+<li>This will be addressed in <a class="reference external" href="pep-0395.html">PEP 395</a>.</li>
+<li>This will also be addressed in <a class="reference external" href="pep-0395.html">PEP 395</a>.</li>
 </ol>
 <p>The inclusion of namespace packages in the standard library was
 motivated by Martin v. Löwis, who wanted the <code class="docutils literal notranslate"><span class="pre">encodings</span></code> package to
@@ -535,7 +534,7 @@ attribute <code class="docutils literal notranslate"><span class="pre">&quot;__p
 <p>Previously, module reprs were hard coded based on assumptions about a module’s
 <code class="docutils literal notranslate"><span class="pre">__file__</span></code> attribute.  If this attribute existed and was a string, it was
 assumed to be a file system path, and the module object’s repr would include
-this in its value.  The only exception was that PEP 302 reserved missing
+this in its value.  The only exception was that <a class="reference external" href="pep-0302.html">PEP 302</a> reserved missing
 <code class="docutils literal notranslate"><span class="pre">__file__</span></code> attributes to built-in modules, and in CPython, this assumption
 was baked into the module object’s implementation.  Because of this
 restriction, some modules contained contrived <code class="docutils literal notranslate"><span class="pre">__file__</span></code> values that did not
@@ -550,7 +549,7 @@ the definitive way to determine the origin of a module is to check its
 <p>For example, namespace packages as described in this PEP will have no
 <code class="docutils literal notranslate"><span class="pre">__file__</span></code> attribute because no corresponding file exists.  In order to
 provide flexibility and descriptiveness in the reprs of such modules, a new
-optional protocol is added to PEP 302 loaders.  Loaders can implement a
+optional protocol is added to <a class="reference external" href="pep-0302.html">PEP 302</a> loaders.  Loaders can implement a
 <code class="docutils literal notranslate"><span class="pre">module_repr()</span></code> method which takes a single argument, the module object.
 This method should return the string to be used verbatim as the repr of the
 module.  The rules for producing a module repr are now standardized as:</p>
@@ -616,9 +615,9 @@ different sets of the related attributes:</p>
 <h2><a class="toc-backref" href="#id38">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
 <dl class="footnote brackets">
 <dt class="label" id="id12"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
-<dd>PEP 420 branch (<a class="reference external" href="http://hg.python.org/features/pep-420">http://hg.python.org/features/pep-420</a>)</dd>
+<dd><a class="reference external" href="pep-0420.html">PEP 420</a> branch (<a class="reference external" href="http://hg.python.org/features/pep-420">http://hg.python.org/features/pep-420</a>)</dd>
 <dt class="label" id="id13"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
-<dd>PEP 402’s description of use cases for namespace packages
+<dd><a class="reference external" href="pep-0402.html">PEP 402</a>’s description of use cases for namespace packages
 (<a class="reference external" href="http://www.python.org/dev/peps/pep-0402/#the-problem">http://www.python.org/dev/peps/pep-0402/#the-problem</a>)</dd>
 <dt class="label" id="id14"><span class="brackets"><a class="fn-backref" href="#id4">3</a></span></dt>
 <dd>PyCon 2012 Namespace Package discussion outcome
@@ -646,7 +645,8 @@ package
 <p>This document has been placed in the public domain.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0420.txt">https://github.com/python/peps/blob/master/pep-0420.txt</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0420.txt">https://github.com/python/peps/blob/master/pep-0420.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0420.txt">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

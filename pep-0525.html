@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 525 – Asynchronous Generators &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -98,21 +97,21 @@
 </div>
 <div class="section" id="abstract">
 <h2><a class="toc-backref" href="#id7">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
-<p>PEP 492 introduced support for native coroutines and <code class="docutils literal notranslate"><span class="pre">async</span></code>/<code class="docutils literal notranslate"><span class="pre">await</span></code>
+<p><a class="reference external" href="pep-0492.html">PEP 492</a> introduced support for native coroutines and <code class="docutils literal notranslate"><span class="pre">async</span></code>/<code class="docutils literal notranslate"><span class="pre">await</span></code>
 syntax to Python 3.5.  It is proposed here to extend Python’s
 asynchronous capabilities by adding support for
 <em>asynchronous generators</em>.</p>
 </div>
 <div class="section" id="rationale-and-goals">
 <h2><a class="toc-backref" href="#id8">Rationale and Goals</a><a class="headerlink" href="#rationale-and-goals" title="Permalink to this headline">¶</a></h2>
-<p>Regular generators (introduced in PEP 255) enabled an elegant way of
+<p>Regular generators (introduced in <a class="reference external" href="pep-0255.html">PEP 255</a>) enabled an elegant way of
 writing complex <em>data producers</em> and have them behave like an iterator.</p>
 <p>However, currently there is no equivalent concept for the <em>asynchronous
 iteration protocol</em> (<code class="docutils literal notranslate"><span class="pre">async</span> <span class="pre">for</span></code>).  This makes writing asynchronous
 data producers unnecessarily complex, as one must define a class that
 implements <code class="docutils literal notranslate"><span class="pre">__aiter__</span></code> and <code class="docutils literal notranslate"><span class="pre">__anext__</span></code> to be able to use it in
 an <code class="docutils literal notranslate"><span class="pre">async</span> <span class="pre">for</span></code> statement.</p>
-<p>Essentially, the goals and rationale for PEP 255, applied to the
+<p>Essentially, the goals and rationale for <a class="reference external" href="pep-0255.html">PEP 255</a>, applied to the
 asynchronous execution case, hold true for this proposal as well.</p>
 <p>Performance is an additional point for this proposal: in our testing of
 the reference implementation, asynchronous generators are <strong>2x</strong> faster
@@ -154,7 +153,7 @@ following class that prints numbers with a given delay once iterated:</p>
 <p>This proposal introduces the concept of <em>asynchronous generators</em> to
 Python.</p>
 <p>This specification presumes knowledge of the implementation of
-generators and coroutines in Python (PEP 342, PEP 380 and PEP 492).</p>
+generators and coroutines in Python (<a class="reference external" href="pep-0342.html">PEP 342</a>, <a class="reference external" href="pep-0380.html">PEP 380</a> and <a class="reference external" href="pep-0492.html">PEP 492</a>).</p>
 <div class="section" id="asynchronous-generators">
 <h3><a class="toc-backref" href="#id10">Asynchronous Generators</a><a class="headerlink" href="#asynchronous-generators" title="Permalink to this headline">¶</a></h3>
 <p>A Python <em>generator</em> is any function containing one or more <code class="docutils literal notranslate"><span class="pre">yield</span></code>
@@ -178,7 +177,7 @@ expressions:</p>
 </div>
 <p>The result of calling an <em>asynchronous generator function</em> is
 an <em>asynchronous generator object</em>, which implements the asynchronous
-iteration protocol defined in PEP 492.</p>
+iteration protocol defined in <a class="reference external" href="pep-0492.html">PEP 492</a>.</p>
 <p>It is a <code class="docutils literal notranslate"><span class="pre">SyntaxError</span></code> to have a non-empty <code class="docutils literal notranslate"><span class="pre">return</span></code> statement in an
 asynchronous generator.</p>
 </div>
@@ -210,7 +209,7 @@ iterate over a simple asynchronous generator:</p>
 </div>
 <div class="section" id="finalization">
 <h3><a class="toc-backref" href="#id12">Finalization</a><a class="headerlink" href="#finalization" title="Permalink to this headline">¶</a></h3>
-<p>PEP 492 requires an event loop or a scheduler to run coroutines.
+<p><a class="reference external" href="pep-0492.html">PEP 492</a> requires an event loop or a scheduler to run coroutines.
 Because asynchronous generators are meant to be used from coroutines,
 they also require an event loop to run and finalize them.</p>
 <p>Asynchronous generators can have <code class="docutils literal notranslate"><span class="pre">try..finally</span></code> blocks, as well as
@@ -536,7 +535,7 @@ pure Python:</p>
 <h2><a class="toc-backref" href="#id22">Design Considerations</a><a class="headerlink" href="#design-considerations" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="aiter-and-anext-builtins">
 <h3><a class="toc-backref" href="#id23"><code class="docutils literal notranslate"><span class="pre">aiter()</span></code> and <code class="docutils literal notranslate"><span class="pre">anext()</span></code> builtins</a><a class="headerlink" href="#aiter-and-anext-builtins" title="Permalink to this headline">¶</a></h3>
-<p>Originally, PEP 492 defined <code class="docutils literal notranslate"><span class="pre">__aiter__</span></code> as a method that should
+<p>Originally, <a class="reference external" href="pep-0492.html">PEP 492</a> defined <code class="docutils literal notranslate"><span class="pre">__aiter__</span></code> as a method that should
 return an <em>awaitable</em> object, resulting in an asynchronous iterator.</p>
 <p>However, in CPython 3.5.2, <code class="docutils literal notranslate"><span class="pre">__aiter__</span></code> was redefined to return
 asynchronous iterators directly.  To avoid breaking backwards
@@ -626,7 +625,7 @@ print numbers from 0 to 9 with one second delay):</p>
 </div>
 <div class="section" id="acceptance">
 <h2><a class="toc-backref" href="#id28">Acceptance</a><a class="headerlink" href="#acceptance" title="Permalink to this headline">¶</a></h2>
-<p>PEP 525 was accepted by Guido, September 6, 2016 <a class="footnote-reference brackets" href="#id5" id="id1">2</a>.</p>
+<p><a class="reference external" href="pep-0525.html">PEP 525</a> was accepted by Guido, September 6, 2016 <a class="footnote-reference brackets" href="#id5" id="id1">2</a>.</p>
 </div>
 <div class="section" id="implementation">
 <h2><a class="toc-backref" href="#id29">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
@@ -656,7 +655,8 @@ PEP.</p>
 <p>This document has been placed in the public domain.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0525.txt">https://github.com/python/peps/blob/master/pep-0525.txt</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0525.txt">https://github.com/python/peps/blob/master/pep-0525.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0525.txt">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

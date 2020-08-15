@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 492 – Coroutines with async and await syntax &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -192,9 +191,9 @@ returns anything but an asynchronous iterator.</p>
 </div>
 <div class="section" id="rationale-and-goals">
 <h2><a class="toc-backref" href="#id52">Rationale and Goals</a><a class="headerlink" href="#rationale-and-goals" title="Permalink to this headline">¶</a></h2>
-<p>Current Python supports implementing coroutines via generators (PEP
-342), further enhanced by the <code class="docutils literal notranslate"><span class="pre">yield</span> <span class="pre">from</span></code> syntax introduced in PEP
-380. This approach has a number of shortcomings:</p>
+<p>Current Python supports implementing coroutines via generators (<a class="reference external" href="pep-0342.html">PEP
+342</a>), further enhanced by the <code class="docutils literal notranslate"><span class="pre">yield</span> <span class="pre">from</span></code> syntax introduced in <a class="reference external" href="pep-0380.html">PEP
+380</a>. This approach has a number of shortcomings:</p>
 <ul class="simple">
 <li>It is easy to confuse coroutines with regular generators, since they
 share the same syntax; this is especially true for new developers.</li>
@@ -223,9 +222,9 @@ statement makes it possible to perform asynchronous calls in iterators.</p>
 <p>This proposal introduces new syntax and semantics to enhance coroutine
 support in Python.</p>
 <p>This specification presumes knowledge of the implementation of
-coroutines in Python (PEP 342 and PEP 380).  Motivation for the syntax
-changes proposed here comes from the asyncio framework (PEP 3156) and
-the “Cofunctions” proposal (PEP 3152, now rejected in favor of this
+coroutines in Python (<a class="reference external" href="pep-0342.html">PEP 342</a> and <a class="reference external" href="pep-0380.html">PEP 380</a>).  Motivation for the syntax
+changes proposed here comes from the asyncio framework (<a class="reference external" href="pep-3156.html">PEP 3156</a>) and
+the “Cofunctions” proposal (<a class="reference external" href="pep-3152.html">PEP 3152</a>, now rejected in favor of this
 specification).</p>
 <p>From this point in this document we use the word <em>native coroutine</em> to
 refer to functions declared using the new syntax.  <em>generator-based
@@ -257,7 +256,7 @@ coroutines</em> compatible with <em>native coroutines</em> (set by
 similarly, coroutines return a <em>coroutine</em> object.</li>
 <li><code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> exceptions are not propagated out of coroutines,
 and are replaced with a <code class="docutils literal notranslate"><span class="pre">RuntimeError</span></code>.  For regular generators
-such behavior requires a future import (see PEP 479).</li>
+such behavior requires a future import (see <a class="reference external" href="pep-0479.html">PEP 479</a>).</li>
 <li>When a <em>native coroutine</em> is garbage collected, a <code class="docutils literal notranslate"><span class="pre">RuntimeWarning</span></code>
 is raised if it was never awaited on (see also
 <a class="reference internal" href="#debugging-features">Debugging Features</a>).</li>
@@ -311,7 +310,7 @@ decorated with <code class="docutils literal notranslate"><span class="pre">type
 fundamental mechanism of how <em>Futures</em> are implemented.  Since,
 internally, coroutines are a special kind of generators, every
 <code class="docutils literal notranslate"><span class="pre">await</span></code> is suspended by a <code class="docutils literal notranslate"><span class="pre">yield</span></code> somewhere down the chain of
-<code class="docutils literal notranslate"><span class="pre">await</span></code> calls (please refer to PEP 3156 for a detailed
+<code class="docutils literal notranslate"><span class="pre">await</span></code> calls (please refer to <a class="reference external" href="pep-3156.html">PEP 3156</a> for a detailed
 explanation).</p>
 <p>To enable this behavior for coroutines, a new magic method called
 <code class="docutils literal notranslate"><span class="pre">__await__</span></code> is added.  In asyncio, for instance, to enable <em>Future</em>
@@ -714,8 +713,8 @@ iterators.</p>
 </div>
 <div class="section" id="why-stopasynciteration">
 <h4><a class="toc-backref" href="#id66">Why StopAsyncIteration?</a><a class="headerlink" href="#why-stopasynciteration" title="Permalink to this headline">¶</a></h4>
-<p>Coroutines are still based on generators internally.  So, before PEP
-479, there was no fundamental difference between</p>
+<p>Coroutines are still based on generators internally.  So, before <a class="reference external" href="pep-0479.html">PEP
+479</a>, there was no fundamental difference between</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">g1</span><span class="p">():</span>
     <span class="k">yield from</span> <span class="n">fut</span>
     <span class="k">return</span> <span class="s1">&#39;spam&#39;</span>
@@ -727,7 +726,7 @@ iterators.</p>
     <span class="k">raise</span> <span class="ne">StopIteration</span><span class="p">(</span><span class="s1">&#39;spam&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>And since PEP 479 is accepted and enabled by default for coroutines,
+<p>And since <a class="reference external" href="pep-0479.html">PEP 479</a> is accepted and enabled by default for coroutines,
 the following example will have its <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> wrapped into a
 <code class="docutils literal notranslate"><span class="pre">RuntimeError</span></code></p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">async</span> <span class="k">def</span> <span class="nf">a1</span><span class="p">():</span>
@@ -738,7 +737,7 @@ the following example will have its <code class="docutils literal notranslate"><
 <p>The only way to tell the outside code that the iteration has ended is
 to raise something other than <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code>.  Therefore, a new
 built-in exception class <code class="docutils literal notranslate"><span class="pre">StopAsyncIteration</span></code> was added.</p>
-<p>Moreover, with semantics from PEP 479, all <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> exceptions
+<p>Moreover, with semantics from <a class="reference external" href="pep-0479.html">PEP 479</a>, all <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> exceptions
 raised in coroutines are wrapped in <code class="docutils literal notranslate"><span class="pre">RuntimeError</span></code>.</p>
 </div>
 </div>
@@ -776,7 +775,7 @@ coroutine functions</em>.</li>
 implementation.  Similarly to generator objects, <em>coroutines</em> have
 <code class="docutils literal notranslate"><span class="pre">throw()</span></code>, <code class="docutils literal notranslate"><span class="pre">send()</span></code> and <code class="docutils literal notranslate"><span class="pre">close()</span></code> methods.  <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> and
 <code class="docutils literal notranslate"><span class="pre">GeneratorExit</span></code> play the same role for coroutines (although
-PEP 479 is enabled by default for coroutines).  See PEP 342, PEP 380,
+<a class="reference external" href="pep-0479.html">PEP 479</a> is enabled by default for coroutines).  See <a class="reference external" href="pep-0342.html">PEP 342</a>, <a class="reference external" href="pep-0380.html">PEP 380</a>,
 and Python Documentation <a class="footnote-reference brackets" href="#id40" id="id13">11</a> for details.</p>
 <p><code class="docutils literal notranslate"><span class="pre">throw()</span></code>, <code class="docutils literal notranslate"><span class="pre">send()</span></code> methods for <em>coroutines</em> are used to push
 values and raise errors into <em>Future-like</em> objects.</p>
@@ -1006,8 +1005,8 @@ for people to port their code to Python 3.</p>
 <div class="section" id="design-considerations">
 <h2><a class="toc-backref" href="#id81">Design Considerations</a><a class="headerlink" href="#design-considerations" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="pep-3152">
-<h3><a class="toc-backref" href="#id82">PEP 3152</a><a class="headerlink" href="#pep-3152" title="Permalink to this headline">¶</a></h3>
-<p>PEP 3152 by Gregory Ewing proposes a different mechanism for coroutines
+<h3><a class="reference external" href="pep-3152.html">PEP 3152</a><a class="headerlink" href="#pep-3152" title="Permalink to this headline">¶</a></h3>
+<p><a class="reference external" href="pep-3152.html">PEP 3152</a> by Gregory Ewing proposes a different mechanism for coroutines
 (called “cofunctions”).  Some key points:</p>
 <ol class="arabic">
 <li>A new keyword <code class="docutils literal notranslate"><span class="pre">codef</span></code> to declare a <em>cofunction</em>.  <em>Cofunction</em> is
@@ -1040,7 +1039,7 @@ to define <em>Future-like</em> objects.</li>
 grammar (it is later enforced that <code class="docutils literal notranslate"><span class="pre">await</span></code> can only be inside
 <code class="docutils literal notranslate"><span class="pre">async</span> <span class="pre">def</span></code>).  It is possible to simply write <code class="docutils literal notranslate"><span class="pre">await</span> <span class="pre">future</span></code>,
 whereas <code class="docutils literal notranslate"><span class="pre">cocall</span></code> always requires parentheses.</li>
-<li>To make asyncio work with PEP 3152 it would be required to modify
+<li>To make asyncio work with <a class="reference external" href="pep-3152.html">PEP 3152</a> it would be required to modify
 <code class="docutils literal notranslate"><span class="pre">&#64;asyncio.coroutine</span></code> decorator to wrap all functions in an object
 with a <code class="docutils literal notranslate"><span class="pre">__cocall__</span></code> method, or to implement <code class="docutils literal notranslate"><span class="pre">__cocall__</span></code> on
 generators.  To call <em>cofunctions</em> from existing generator-based
@@ -1074,8 +1073,8 @@ of new problems.</p>
 </pre></div>
 </div>
 </li>
-<li>There are no equivalents of <code class="docutils literal notranslate"><span class="pre">async</span> <span class="pre">for</span></code> and <code class="docutils literal notranslate"><span class="pre">async</span> <span class="pre">with</span></code> in PEP
-3152.</li>
+<li>There are no equivalents of <code class="docutils literal notranslate"><span class="pre">async</span> <span class="pre">for</span></code> and <code class="docutils literal notranslate"><span class="pre">async</span> <span class="pre">with</span></code> in <a class="reference external" href="pep-3152.html">PEP
+3152</a>.</li>
 </ol>
 </div>
 <div class="section" id="coroutine-generators">
@@ -1110,10 +1109,10 @@ project easier (Python with ECMAScript 7 for instance).</p>
 </div>
 <div class="section" id="why-aiter-does-not-return-an-awaitable">
 <h3><a class="toc-backref" href="#id85">Why “__aiter__” does not return an awaitable</a><a class="headerlink" href="#why-aiter-does-not-return-an-awaitable" title="Permalink to this headline">¶</a></h3>
-<p>PEP 492 was accepted in CPython 3.5.0 with <code class="docutils literal notranslate"><span class="pre">__aiter__</span></code> defined as
+<p><a class="reference external" href="pep-0492.html">PEP 492</a> was accepted in CPython 3.5.0 with <code class="docutils literal notranslate"><span class="pre">__aiter__</span></code> defined as
 a method, that was expected to return an awaitable resolving to an
 asynchronous iterator.</p>
-<p>In 3.5.2 (as PEP 492 was accepted on a provisional basis) the
+<p>In 3.5.2 (as <a class="reference external" href="pep-0492.html">PEP 492</a> was accepted on a provisional basis) the
 <code class="docutils literal notranslate"><span class="pre">__aiter__</span></code> protocol was updated to return asynchronous iterators
 directly.</p>
 <p>The motivation behind this change is to make it possible to
@@ -1385,7 +1384,7 @@ tested.</p>
 </div>
 <div class="section" id="acceptance">
 <h2><a class="toc-backref" href="#id103">Acceptance</a><a class="headerlink" href="#acceptance" title="Permalink to this headline">¶</a></h2>
-<p>PEP 492 was accepted by Guido, Tuesday, May 5, 2015 <a class="footnote-reference brackets" href="#id43" id="id28">14</a>.</p>
+<p><a class="reference external" href="pep-0492.html">PEP 492</a> was accepted by Guido, Tuesday, May 5, 2015 <a class="footnote-reference brackets" href="#id43" id="id28">14</a>.</p>
 </div>
 <div class="section" id="implementation">
 <h2><a class="toc-backref" href="#id104">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
@@ -1451,7 +1450,8 @@ reviews, and discussions around this PEP.</p>
 <p>This document has been placed in the public domain.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0492.txt">https://github.com/python/peps/blob/master/pep-0492.txt</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0492.txt">https://github.com/python/peps/blob/master/pep-0492.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0492.txt">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

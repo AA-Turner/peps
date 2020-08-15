@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 403 – General purpose decorator clause (aka “@in” clause) &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -100,7 +99,7 @@ class is needed, and placing the function or class definition before the
 statement that uses it actually makes the code harder to read. It also
 avoids any name shadowing concerns by making sure the new name is visible
 only to the statement in the <code class="docutils literal notranslate"><span class="pre">&#64;in</span></code> clause.</p>
-<p>This PEP is based heavily on many of the ideas in PEP 3150 (Statement Local
+<p>This PEP is based heavily on many of the ideas in <a class="reference external" href="pep-3150.html">PEP 3150</a> (Statement Local
 Namespaces) so some elements of the rationale will be familiar to readers of
 that PEP. Both PEPs remain deferred for the time being, primarily due to the
 lack of compelling real world use cases in either PEP.</p>
@@ -174,7 +173,7 @@ those that don’t make any sense in that context, such as <code class="docutils
 such code would be legal, there wouldn’t be any point in writing it). This
 permissive structure is easier to define and easier to explain, but a more
 restrictive approach that only permits operations that “make sense” would
-also be possible (see PEP 3150 for a list of possible candidates).</p>
+also be possible (see <a class="reference external" href="pep-3150.html">PEP 3150</a> for a list of possible candidates).</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">&#64;in</span></code> clause will not create a new scope - all name binding
 operations aside from the trailing function or class definition will affect
 the containing scope.</p>
@@ -252,8 +251,8 @@ thought. The rationale is essentially the same as that used when introducing
 decorators, but covering a broader set of applications.</p>
 </div>
 <div class="section" id="relation-to-pep-3150">
-<h3><a class="toc-backref" href="#id9">Relation to PEP 3150</a><a class="headerlink" href="#relation-to-pep-3150" title="Permalink to this headline">¶</a></h3>
-<p>PEP 3150 (Statement Local Namespaces) describes its primary motivation
+<h3>Relation to <a class="reference external" href="pep-3150.html">PEP 3150</a><a class="headerlink" href="#relation-to-pep-3150" title="Permalink to this headline">¶</a></h3>
+<p><a class="reference external" href="pep-3150.html">PEP 3150</a> (Statement Local Namespaces) describes its primary motivation
 as being to elevate ordinary assignment statements to be on par with <code class="docutils literal notranslate"><span class="pre">class</span></code>
 and <code class="docutils literal notranslate"><span class="pre">def</span></code> statements where the name of the item to be defined is presented
 to the reader in advance of the details of how the value of that item is
@@ -261,11 +260,11 @@ calculated. This PEP achieves the same goal in a different way, by allowing
 the simple name binding of a standard function definition to be replaced
 with something else (like assigning the result of the function to a value).</p>
 <p>Despite having the same author, the two PEPs are in direct competition with
-each other. PEP 403 represents a minimalist approach that attempts to achieve
+each other. <a class="reference external" href="pep-0403.html">PEP 403</a> represents a minimalist approach that attempts to achieve
 useful functionality with a minimum of change from the status quo. This PEP
 instead aims for a more flexible standalone statement design, which requires
 a larger degree of change to the language.</p>
-<p>Note that where PEP 403 is better suited to explaining the behaviour of
+<p>Note that where <a class="reference external" href="pep-0403.html">PEP 403</a> is better suited to explaining the behaviour of
 generator expressions correctly, this PEP is better able to explain the
 behaviour of decorator clauses in general. Both PEPs support adequate
 explanations for the semantics of container comprehensions.</p>
@@ -296,7 +295,7 @@ introspection. Similar objections are raised regarding constructs that
 promote short, cryptic function names (including this one, which requires
 that the name of the trailing definition be supplied at least twice,
 encouraging the use of shorthand placeholder names like <code class="docutils literal notranslate"><span class="pre">f</span></code>).</p>
-<p>However, the introduction of qualified names in PEP 3155 means that even
+<p>However, the introduction of qualified names in <a class="reference external" href="pep-3155.html">PEP 3155</a> means that even
 anonymous classes and functions will now have different representations if
 they occur in different scopes. For example:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">f</span><span class="p">():</span>
@@ -313,7 +312,7 @@ still a major improvement over the historical situation where everything
 </div>
 <div class="section" id="possible-implementation-strategy">
 <h3><a class="toc-backref" href="#id12">Possible Implementation Strategy</a><a class="headerlink" href="#possible-implementation-strategy" title="Permalink to this headline">¶</a></h3>
-<p>This proposal has at least one titanic advantage over PEP 3150:
+<p>This proposal has at least one titanic advantage over <a class="reference external" href="pep-3150.html">PEP 3150</a>:
 implementation should be relatively straightforward.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">&#64;in</span></code> clause will be included in the AST for the associated function or
 class definition and the statement that references it. When the <code class="docutils literal notranslate"><span class="pre">&#64;in</span></code>
@@ -481,12 +480,12 @@ class ...:
 <div class="section" id="using-a-nested-suite">
 <h3><a class="toc-backref" href="#id20">Using a nested suite</a><a class="headerlink" href="#using-a-nested-suite" title="Permalink to this headline">¶</a></h3>
 <p>The problems with using a full nested suite are best described in
-PEP 3150. It’s comparatively difficult to implement properly, the scoping
+<a class="reference external" href="pep-3150.html">PEP 3150</a>. It’s comparatively difficult to implement properly, the scoping
 semantics are harder to explain and it creates quite a few situations where
 there are two ways to do it without clear guidelines for choosing between
 them (as almost any construct that can be expressed with ordinary imperative
 code could instead be expressed using a given statement). While the PEP does
-propose some new PEP 8 guidelines to help address that last problem, the
+propose some new <a class="reference external" href="pep-0008.html">PEP 8</a> guidelines to help address that last problem, the
 difficulties in implementation are not so easily dealt with.</p>
 <p>By contrast, the decorator inspired syntax in this PEP explicitly limits the
 new feature to cases where it should actually improve readability, rather
@@ -495,7 +494,7 @@ the idea of this new syntax is that if it <em>can</em> be used (i.e. the local n
 binding of the function is completely unnecessary) then it probably <em>should</em>
 be used.</p>
 <p>Another possible variant of this idea is to keep the decorator based
-<em>semantics</em> of this PEP, while adopting the prettier syntax from PEP 3150:</p>
+<em>semantics</em> of this PEP, while adopting the prettier syntax from <a class="reference external" href="pep-3150.html">PEP 3150</a>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">weakref</span><span class="o">.</span><span class="n">ref</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">report_destruction</span><span class="p">)</span> <span class="n">given</span><span class="p">:</span>
     <span class="k">def</span> <span class="nf">report_destruction</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> is being destroyed&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
@@ -508,7 +507,7 @@ which name(s) in the leading expression are forward references (although
 that could potentially be addressed through a suitable definition of the
 suite-that-is-not-a-suite in the language grammar).</p>
 <p>However, a nested suite has not yet been ruled out completely. The latest
-version of PEP 3150 uses explicit forward reference and name binding
+version of <a class="reference external" href="pep-3150.html">PEP 3150</a> uses explicit forward reference and name binding
 schemes that greatly simplify the semantics of the statement, and it
 does offer the advantage of allowing the definition of arbitrary
 subexpressions rather than being restricted to a single function or
@@ -528,7 +527,8 @@ class definition.</p>
 <p>This document has been placed in the public domain.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0403.txt">https://github.com/python/peps/blob/master/pep-0403.txt</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0403.txt">https://github.com/python/peps/blob/master/pep-0403.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0403.txt">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

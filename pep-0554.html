@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 554 – Multiple Interpreters in the Stdlib &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -201,7 +200,7 @@ section for more details about sharing between interpreters.</p>
 <li>bytes</li>
 <li>str</li>
 <li>int</li>
-<li>PEP 554 channels</li>
+<li><a class="reference external" href="pep-0554.html">PEP 554</a> channels</li>
 </ul>
 <p>Support for other basic types (e.g. bool, float, Ellipsis) will be added later.</p>
 </div>
@@ -449,7 +448,7 @@ following:</p>
 <ul class="simple">
 <li>be clear that extension modules are <em>not</em> required to support use in
 subinterpreters</li>
-<li>raise <code class="docutils literal notranslate"><span class="pre">ImportError</span></code> when an incompatible (no PEP 489 support) module
+<li>raise <code class="docutils literal notranslate"><span class="pre">ImportError</span></code> when an incompatible (no <a class="reference external" href="pep-0489.html">PEP 489</a> support) module
 is imported in a subinterpreter</li>
 <li>provide resources (e.g. docs) to help maintainers reach compatibility</li>
 <li>reach out to the maintainers of Cython and of the most used extension
@@ -725,9 +724,9 @@ on C extension authors”</li>
 <p>In the <a class="reference internal" href="#interpreter-isolation">Interpreter Isolation</a> section below we identify ways in
 which isolation in CPython’s subinterpreters is incomplete.  Most
 notable is extension modules that use C globals to store internal
-state.  PEP 3121 and PEP 489 provide a solution for most of the
+state.  <a class="reference external" href="pep-3121.html">PEP 3121</a> and <a class="reference external" href="pep-0489.html">PEP 489</a> provide a solution for most of the
 problem, but one still remains. <a class="reference internal" href="#petr-c-ext" id="id3"><span>[petr-c-ext]</span></a>  Until that is resolved
-(see PEP 573), C extension authors will face extra difficulty
+(see <a class="reference external" href="pep-0573.html">PEP 573</a>), C extension authors will face extra difficulty
 to support subinterpreters.</p>
 <p>Consequently, projects that publish extension modules may face an
 increased maintenance burden as their users start using subinterpreters,
@@ -901,7 +900,7 @@ to judge the utility of the feature.</p>
 <div class="section" id="provisional-status">
 <h2><a class="toc-backref" href="#id43">Provisional Status</a><a class="headerlink" href="#provisional-status" title="Permalink to this headline">¶</a></h2>
 <p>The new <code class="docutils literal notranslate"><span class="pre">interpreters</span></code> module will be added with “provisional” status
-(see PEP 411).  This allows Python users to experiment with the feature
+(see <a class="reference external" href="pep-0411.html">PEP 411</a>).  This allows Python users to experiment with the feature
 and provide feedback while still allowing us to adjust to that feedback.
 The module will be provisional in Python 3.9 and we will make a decision
 before the 3.10 release whether to keep it provisional, graduate it, or
@@ -1072,7 +1071,7 @@ many-to-many, channels are buffered (though they also offer methods
 with unbuffered semantics).</p>
 <p>Python objects are not shared between interpreters.  However, in some
 cases data those objects wrap is actually shared and not just copied.
-One example might be PEP 3118 buffers.  In those cases the object in the
+One example might be <a class="reference external" href="pep-3118.html">PEP 3118</a> buffers.  In those cases the object in the
 original interpreter is kept alive until the shared data in the other
 interpreter is no longer used.  Then object destruction can happen like
 normal in the original interpreter, along with the previously shared
@@ -1162,7 +1161,7 @@ has specific restrictions on any code it runs.  This includes the
 following:</p>
 <ul class="simple">
 <li>importing an extension module fails if it does not implement the
-PEP 489 API</li>
+<a class="reference external" href="pep-0489.html">PEP 489</a> API</li>
 <li>new threads are not allowed (including daemon threads)</li>
 <li><code class="docutils literal notranslate"><span class="pre">os.fork()</span></code> is not allowed (so no <code class="docutils literal notranslate"><span class="pre">multiprocessing</span></code>)</li>
 <li><code class="docutils literal notranslate"><span class="pre">os.exec*()</span></code>, AKA “fork+exec”, is not allowed (so no <code class="docutils literal notranslate"><span class="pre">subprocess</span></code>)</li>
@@ -1173,7 +1172,7 @@ keyword-only argument set to <code class="docutils literal notranslate"><span cl
 <code class="docutils literal notranslate"><span class="pre">interpreters.create(isolated=False)</span></code> is called then none of those
 restrictions is applied.</p>
 <p>One advantage of this approach is that it allows extension maintainers
-to check subinterpreter compatibility before they implement the PEP 489
+to check subinterpreter compatibility before they implement the <a class="reference external" href="pep-0489.html">PEP 489</a>
 API.  Also note that <code class="docutils literal notranslate"><span class="pre">isolated=False</span></code> represents the historical
 behavior when using the existing subinterpreters C-API, thus providing
 backward compatibility.  For the existing C-API itself, the default
@@ -1181,7 +1180,7 @@ remains <code class="docutils literal notranslate"><span class="pre">isolated=Fa
 existing use of Python will not change.</p>
 <p>We may choose to later loosen some of the above restrictions or provide
 a way to enable/disable granular restrictions individually.  Regardless,
-requiring PEP 489 support from extension modules will always be a
+requiring <a class="reference external" href="pep-0489.html">PEP 489</a> support from extension modules will always be a
 default restriction.</p>
 </div>
 <div class="section" id="documentation">
@@ -1200,16 +1199,16 @@ subinterpreter compatibilty</li>
 </ul>
 <p>A separate page will be added to the docs for resources to help
 extension maintainers ensure their modules can be used safely in
-subinterpreters, under <cite>Extending Python &lt;extension-docs_&gt;</cite>.  The page
+subinterpreters, under <a class="reference external" href="extension-docs">Extending Python</a>.  The page
 will include the following information:</p>
 <ul class="simple">
 <li>a summary about subinterpreters (similar to the same in the new
 <code class="docutils literal notranslate"><span class="pre">interpreters</span></code> module page and in the C-API docs)</li>
 <li>an explanation of how extension modules can be impacted</li>
-<li>how to implement PEP 489 support</li>
+<li>how to implement <a class="reference external" href="pep-0489.html">PEP 489</a> support</li>
 <li>how to move from global module state to per-interpreter</li>
-<li>how to take advantage of PEP 384 (heap types), PEP 3121
-(module state), and PEP 573</li>
+<li>how to take advantage of <a class="reference external" href="pep-0384.html">PEP 384</a> (heap types), <a class="reference external" href="pep-3121.html">PEP 3121</a>
+(module state), and <a class="reference external" href="pep-0573.html">PEP 573</a></li>
 <li>strategies for dealing with 3rd party C libraries that keep their
 own subinterpreter-incompatible global state</li>
 </ul>
@@ -1288,14 +1287,14 @@ request.  However, it is outside the narrow scope of this PEP.</p>
 </div>
 <div class="section" id="c-extension-opt-in-opt-out">
 <h3><a class="toc-backref" href="#id59">C-extension opt-in/opt-out</a><a class="headerlink" href="#c-extension-opt-in-opt-out" title="Permalink to this headline">¶</a></h3>
-<p>By using the <code class="docutils literal notranslate"><span class="pre">PyModuleDef_Slot</span></code> introduced by PEP 489, we could easily
+<p>By using the <code class="docutils literal notranslate"><span class="pre">PyModuleDef_Slot</span></code> introduced by <a class="reference external" href="pep-0489.html">PEP 489</a>, we could easily
 add a mechanism by which C-extension modules could opt out of support
 for subinterpreters.  Then the import machinery, when operating in
 a subinterpreter, would need to check the module for support.  It would
 raise an ImportError if unsupported.</p>
 <p>Alternately we could support opting in to subinterpreter support.
 However, that would probably exclude many more modules (unnecessarily)
-than the opt-out approach.  Also, note that PEP 489 defined that an
+than the opt-out approach.  Also, note that <a class="reference external" href="pep-0489.html">PEP 489</a> defined that an
 extension’s use of the PEP’s machinery implies support for
 subinterpreters.</p>
 <p>The scope of adding the ModuleDef slot and fixing up the import
@@ -1419,7 +1418,7 @@ this can wait.</p>
 basic types aren’t required to achieve the minimal useful functionality
 of subinterpreters.  Such types include pipes (like unbuffered channels,
 but one-to-one) and queues (like channels, but more generic).  See below
-in <cite>Rejected Ideas</cite> for more information.</p>
+in <a class="reference internal" href="#rejected-ideas">Rejected Ideas</a> for more information.</p>
 <p>Even though these types aren’t part of this proposal, they may still
 be useful in the context of concurrency.  Adding them later is entirely
 reasonable.  The could be trivially implemented as wrappers around
@@ -1547,7 +1546,7 @@ for now.</p>
 <div class="section" id="add-sendchannel-send-buffer">
 <h3><a class="toc-backref" href="#id80">Add SendChannel.send_buffer()</a><a class="headerlink" href="#add-sendchannel-send-buffer" title="Permalink to this headline">¶</a></h3>
 <p>This method would allow no-copy sending of an object through a channel
-if it supports the PEP 3118 buffer protocol (e.g. memoryview).</p>
+if it supports the <a class="reference external" href="pep-3118.html">PEP 3118</a> buffer protocol (e.g. memoryview).</p>
 <p>Support for this is not fundamental to channels and can be added on
 later without much disruption.</p>
 </div>
@@ -1744,7 +1743,7 @@ will not require extensive work.</li>
 <li>all necessary C-API work has been finished</li>
 <li>all anticipated work in the runtime has been finished</li>
 </ul>
-<p>The implementation effort for PEP 554 is being tracked as part of
+<p>The implementation effort for <a class="reference external" href="pep-0554.html">PEP 554</a> is being tracked as part of
 a larger project aimed at improving multi-core support in CPython.
 <a class="reference internal" href="#multi-core-project" id="id16"><span>[multi-core-project]</span></a></p>
 </div>
@@ -1812,7 +1811,8 @@ a larger project aimed at improving multi-core support in CPython.
 <p>This document has been placed in the public domain.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0554.rst">https://github.com/python/peps/blob/master/pep-0554.rst</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0554.rst">https://github.com/python/peps/blob/master/pep-0554.rst</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0554.rst">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 484 – Type Hints &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -128,7 +127,7 @@
 </div>
 <div class="section" id="abstract">
 <h2><a class="toc-backref" href="#id10">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
-<p>PEP 3107 introduced syntax for function annotations, but the semantics
+<p><a class="reference external" href="pep-3107.html">PEP 3107</a> introduced syntax for function annotations, but the semantics
 were deliberately left undefined.  There has now been enough 3rd party
 usage for static type analysis that the community would benefit from
 a standard vocabulary and baseline tools within the standard library.</p>
@@ -138,7 +137,7 @@ where annotations are not available.</p>
 <p>Note that this PEP still explicitly does NOT prevent other uses of
 annotations, nor does it require (or forbid) any particular processing
 of annotations, even when they conform to this specification.  It
-simply enables better coordination, as PEP 333 did for web frameworks.</p>
+simply enables better coordination, as <a class="reference external" href="pep-0333.html">PEP 333</a> did for web frameworks.</p>
 <p>For example, here is a simple function whose argument and return type
 are declared in the annotations:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">greeting</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -163,13 +162,13 @@ works at runtime by implementing <code class="docutils literal notranslate"><spa
 <p>The type system supports unions, generic types, and a special type
 named <code class="docutils literal notranslate"><span class="pre">Any</span></code> which is consistent with (i.e. assignable to and from) all
 types.  This latter feature is taken from the idea of gradual typing.
-Gradual typing and the full type system are explained in PEP 483.</p>
+Gradual typing and the full type system are explained in <a class="reference external" href="pep-0483.html">PEP 483</a>.</p>
 <p>Other approaches from which we have borrowed or to which ours can be
-compared and contrasted are described in PEP 482.</p>
+compared and contrasted are described in <a class="reference external" href="pep-0482.html">PEP 482</a>.</p>
 </div>
 <div class="section" id="rationale-and-goals">
 <h2><a class="toc-backref" href="#id11">Rationale and Goals</a><a class="headerlink" href="#rationale-and-goals" title="Permalink to this headline">¶</a></h2>
-<p>PEP 3107 added support for arbitrary annotations on parts of a
+<p><a class="reference external" href="pep-3107.html">PEP 3107</a> added support for arbitrary annotations on parts of a
 function definition.  Although no meaning was assigned to annotations
 then, there has always been an implicit goal to use them for type
 hinting <a class="reference internal" href="#gvr-artima" id="id2"><span>[gvr-artima]</span></a>, which is listed as the first possible use case
@@ -229,7 +228,7 @@ decorators <code class="docutils literal notranslate"><span class="pre">&#64;pro
 </div>
 <div class="section" id="type-definition-syntax">
 <h2><a class="toc-backref" href="#id14">Type Definition Syntax</a><a class="headerlink" href="#type-definition-syntax" title="Permalink to this headline">¶</a></h2>
-<p>The syntax leverages PEP 3107-style annotations with a number of
+<p>The syntax leverages <a class="reference external" href="pep-3107.html">PEP 3107</a>-style annotations with a number of
 extensions described in sections below.  In its basic form, type
 hinting is used by filling function annotation slots with classes:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">greeting</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -780,32 +779,22 @@ classes without a metaclass conflict.</p>
 <p>A type variable may specify an upper bound using <code class="docutils literal notranslate"><span class="pre">bound=&lt;type&gt;</span></code> (note:
 &lt;type&gt; itself cannot be parameterized by type variables). This means that an
 actual type substituted (explicitly or implicitly) for the type variable must
-be a subtype of the boundary type. A common example is the definition of a
-<code class="docutils literal notranslate"><span class="pre">Comparable</span></code> type that works well enough to catch the most common errors:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">TypeVar</span>
+be a subtype of the boundary type. Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">TypeVar</span><span class="p">,</span> <span class="n">Sized</span>
 
-<span class="k">class</span> <span class="nc">Comparable</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
-    <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="fm">__lt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span> <span class="o">...</span>
-    <span class="o">...</span>  <span class="c1"># __gt__ etc. as well</span>
+<span class="n">ST</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s1">&#39;ST&#39;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="n">Sized</span><span class="p">)</span>
 
-<span class="n">CT</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s1">&#39;CT&#39;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="n">Comparable</span><span class="p">)</span>
-
-<span class="k">def</span> <span class="nf">min</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">CT</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">CT</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CT</span><span class="p">:</span>
-    <span class="k">if</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="n">y</span><span class="p">:</span>
+<span class="k">def</span> <span class="nf">longer</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">ST</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">ST</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ST</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">x</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">y</span>
 
-<span class="nb">min</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>      <span class="c1"># ok, return type int</span>
-<span class="nb">min</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">)</span>  <span class="c1"># ok, return type str</span>
+<span class="n">longer</span><span class="p">([</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>  <span class="c1"># ok, return type List[int]</span>
+<span class="n">longer</span><span class="p">({</span><span class="mi">1</span><span class="p">},</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">})</span>  <span class="c1"># ok, return type Set[int]</span>
+<span class="n">longer</span><span class="p">([</span><span class="mi">1</span><span class="p">],</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">})</span>  <span class="c1"># ok, return type Collection[int]</span>
 </pre></div>
 </div>
-<p>(Note that this is not ideal – for example <code class="docutils literal notranslate"><span class="pre">min('x',</span> <span class="pre">1)</span></code> is invalid
-at runtime but a type checker would simply infer the return type
-<code class="docutils literal notranslate"><span class="pre">Comparable</span></code>.  Unfortunately, addressing this would require
-introducing a much more powerful and also much more complicated
-concept, F-bounded polymorphism.  We may revisit this in the future.)</p>
 <p>An upper bound cannot be combined with type constraints (as in used
 <code class="docutils literal notranslate"><span class="pre">AnyStr</span></code>, see the example earlier); type constraints cause the
 inferred type to be _exactly_ one of the constraint types, while an
@@ -826,7 +815,7 @@ to the list, which would violate the variable’s type in the caller.</p>
 intuitive answer (which is correct in case the function doesn’t mutate
 its argument!) requires the argument to act <em>covariantly</em>.  A longer
 introduction to these concepts can be found on Wikipedia
-<a class="reference internal" href="#wiki-variance" id="id3"><span>[wiki-variance]</span></a> and in PEP 483; here we just show how to control
+<a class="reference internal" href="#wiki-variance" id="id3"><span>[wiki-variance]</span></a> and in <a class="reference external" href="pep-0483.html">PEP 483</a>; here we just show how to control
 a type checker’s behavior.</p>
 <p>By default generic types are considered <em>invariant</em> in all type variables,
 which means that values for variables annotated with types like
@@ -900,7 +889,7 @@ fine:</p>
 </div>
 <div class="section" id="the-numeric-tower">
 <h3><a class="toc-backref" href="#id27">The numeric tower</a><a class="headerlink" href="#the-numeric-tower" title="Permalink to this headline">¶</a></h3>
-<p>PEP 3141 defines Python’s numeric tower, and the stdlib module
+<p><a class="reference external" href="pep-3141.html">PEP 3141</a> defines Python’s numeric tower, and the stdlib module
 <code class="docutils literal notranslate"><span class="pre">numbers</span></code> implements the corresponding ABCs (<code class="docutils literal notranslate"><span class="pre">Number</span></code>,
 <code class="docutils literal notranslate"><span class="pre">Complex</span></code>, <code class="docutils literal notranslate"><span class="pre">Real</span></code>, <code class="docutils literal notranslate"><span class="pre">Rational</span></code> and <code class="docutils literal notranslate"><span class="pre">Integral</span></code>).  There are some
 issues with these ABCs, but the built-in concrete numeric classes
@@ -1406,7 +1395,7 @@ the generic type <code class="docutils literal notranslate"><span class="pre">Ge
     <span class="k">return</span> <span class="s1">&#39;OK&#39;</span>
 </pre></div>
 </div>
-<p>Coroutines introduced in PEP 492 are annotated with the same syntax as
+<p>Coroutines introduced in <a class="reference external" href="pep-0492.html">PEP 492</a> are annotated with the same syntax as
 ordinary functions. However, the return type annotation corresponds to the
 type of <code class="docutils literal notranslate"><span class="pre">await</span></code> expression, not to the coroutine type:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">async</span> <span class="k">def</span> <span class="nf">spam</span><span class="p">(</span><span class="n">ignored</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -1491,7 +1480,7 @@ contains the variable definition. They can also be placed on
 </pre></div>
 </div>
 <p>In stubs it may be useful to declare the existence of a variable
-without giving it an initial value.  This can be done using PEP 526
+without giving it an initial value.  This can be done using <a class="reference external" href="pep-0526.html">PEP 526</a>
 variable annotation syntax:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">IO</span>
 
@@ -1532,7 +1521,7 @@ other comments and linting markers:</p>
 <div># type: ignore # &lt;comment or other marker&gt;</div></blockquote>
 <p>If type hinting proves useful in general, a syntax for typing variables
 may be provided in a future Python version. (<strong>UPDATE</strong>: This syntax
-was added in Python 3.6 through PEP 526.)</p>
+was added in Python 3.6 through <a class="reference external" href="pep-0526.html">PEP 526</a>.)</p>
 </div>
 <div class="section" id="casts">
 <h2><a class="toc-backref" href="#id42">Casts</a><a class="headerlink" href="#casts" title="Permalink to this headline">¶</a></h2>
@@ -1713,7 +1702,7 @@ arguments depending on the type of the callable:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">TypeVar</span><span class="p">,</span> <span class="n">overload</span>
 
 <span class="n">T1</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s1">&#39;T1&#39;</span><span class="p">)</span>
-<span class="n">T2</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s1">&#39;T2)</span>
+<span class="n">T2</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s1">&#39;T2&#39;</span><span class="p">)</span>
 <span class="n">S</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s1">&#39;S&#39;</span><span class="p">)</span>
 
 <span class="nd">@overload</span>
@@ -1762,7 +1751,7 @@ implementation using this syntax, its implementation would require
 using <code class="docutils literal notranslate"><span class="pre">sys._getframe()</span></code>, which is frowned upon.  Also, designing and
 implementing an efficient multiple dispatch mechanism is hard, which
 is why previous attempts were abandoned in favor of
-<code class="docutils literal notranslate"><span class="pre">functools.singledispatch()</span></code>.  (See PEP 443, especially its section
+<code class="docutils literal notranslate"><span class="pre">functools.singledispatch()</span></code>.  (See <a class="reference external" href="pep-0443.html">PEP 443</a>, especially its section
 “Alternative approaches”.)  In the future we may come up with a
 satisfactory multiple dispatch design, but we don’t want such a design
 to be constrained by the overloading syntax defined for type hints in
@@ -1845,7 +1834,7 @@ Stub file package authors might use the following snippet in <code class="docuti
 <p>(<em>UPDATE:</em> As of June 2018 the recommended way to distribute type
 hints for third-party packages has changed – in addition to typeshed
 (see the next section) there is now a standard for distributing type
-hints, PEP 561. It supports separately installable packages containing
+hints, <a class="reference external" href="pep-0561.html">PEP 561</a>. It supports separately installable packages containing
 stubs, stub files included in the same distribution as the executable
 code of a package, and inline type hints, the latter two options
 enabled by including a file named <code class="docutils literal notranslate"><span class="pre">py.typed</span></code> in the package.)</p>
@@ -2164,10 +2153,10 @@ Scala also use square brackets.</p>
 </div>
 <div class="section" id="what-about-existing-uses-of-annotations">
 <h3><a class="toc-backref" href="#id53">What about existing uses of annotations?</a><a class="headerlink" href="#what-about-existing-uses-of-annotations" title="Permalink to this headline">¶</a></h3>
-<p>One line of argument points out that PEP 3107 explicitly supports
+<p>One line of argument points out that <a class="reference external" href="pep-3107.html">PEP 3107</a> explicitly supports
 the use of arbitrary expressions in function annotations.  The new
-proposal is then considered incompatible with the specification of PEP
-3107.</p>
+proposal is then considered incompatible with the specification of <a class="reference external" href="pep-3107.html">PEP
+3107</a>.</p>
 <p>Our response to this is that, first of all, the current proposal does
 not introduce any direct incompatibilities, so programs using
 annotations in Python 3.4 will still work correctly and without
@@ -2176,7 +2165,7 @@ prejudice in Python 3.5.</p>
 annotations, but this will require additional discussion and a
 deprecation period after the initial roll-out of the typing module
 with Python 3.5.  The current PEP will have provisional status (see
-PEP 411) until Python 3.6 is released.  The fastest conceivable scheme
+<a class="reference external" href="pep-0411.html">PEP 411</a>) until Python 3.6 is released.  The fastest conceivable scheme
 would introduce silent deprecation of non-type-hint annotations in
 3.6, full deprecation in 3.7, and declare type hints as the only
 allowed use of annotations in Python 3.8.  This should give authors of
@@ -2185,7 +2174,7 @@ approach, even if type hints become an overnight success.</p>
 <p>(<em>UPDATE:</em> As of fall 2017, the timeline for the end of provisional
 status for this PEP and for the <code class="docutils literal notranslate"><span class="pre">typing.py</span></code> module has changed, and
 so has the deprecation schedule for other uses of annotations.  For
-the updated schedule see PEP 563.)</p>
+the updated schedule see <a class="reference external" href="pep-0563.html">PEP 563</a>.)</p>
 <p>Another possible outcome would be that type hints will eventually
 become the default meaning for annotations, but that there will always
 remain an option to disable them.  For this purpose the current
@@ -2217,7 +2206,7 @@ by the time they are used.  Apart from circular imports this is rarely
 a problem: “use” here means “look up at runtime”, and with most
 “forward” references there is no problem in ensuring that a name is
 defined before the function using it is called.</p>
-<p>The problem with type hints is that annotations (per PEP 3107, and
+<p>The problem with type hints is that annotations (per <a class="reference external" href="pep-3107.html">PEP 3107</a>, and
 similar to default values) are evaluated at the time a function is
 defined, and thus any names used in an annotation must be already
 defined when the function is being defined.  A common scenario is a
@@ -2260,7 +2249,7 @@ follows:</p>
 <p>Such a <code class="docutils literal notranslate"><span class="pre">__future__</span></code> import statement may be proposed in a separate
 PEP.</p>
 <p>(<em>UPDATE:</em> That <code class="docutils literal notranslate"><span class="pre">__future__</span></code> import statement and its consequences
-are discussed in PEP 563.)</p>
+are discussed in <a class="reference external" href="pep-0563.html">PEP 563</a>.)</p>
 </div>
 <div class="section" id="the-double-colon">
 <h3><a class="toc-backref" href="#id55">The double colon</a><a class="headerlink" href="#the-double-colon" title="Permalink to this headline">¶</a></h3>
@@ -2279,7 +2268,7 @@ is unheard of in English, and in other languages (e.g. C++) it is
 used as a scoping operator, which is a very different beast.  In
 contrast, the single colon for type hints reads naturally – and no
 wonder, since it was carefully designed for this purpose (the idea
-long predates PEP 3107 <a class="reference internal" href="#gvr-artima" id="id6"><span>[gvr-artima]</span></a>).  It is also used in the same
+long predates <a class="reference external" href="pep-3107.html">PEP 3107</a> <a class="reference internal" href="#gvr-artima" id="id6"><span>[gvr-artima]</span></a>).  It is also used in the same
 fashion in other languages from Pascal to Swift.</li>
 <li>What would you do for return type annotations?</li>
 <li>It’s actually a feature that type hints are evaluated at runtime.<ul>
@@ -2318,7 +2307,7 @@ would apply to a new <code class="docutils literal notranslate"><span class="pre
 <ul class="simple">
 <li>A decorator, e.g. <code class="docutils literal notranslate"><span class="pre">&#64;typehints(name=str,</span> <span class="pre">returns=str)</span></code>.  This could
 work, but it’s pretty verbose (an extra line, and the argument names
-must be repeated), and a far cry in elegance from the PEP 3107
+must be repeated), and a far cry in elegance from the <a class="reference external" href="pep-3107.html">PEP 3107</a>
 notation.</li>
 <li>Stub files.  We do want stub files, but they are primarily useful
 for adding type hints to existing code that doesn’t lend itself to
@@ -2352,7 +2341,7 @@ encouragement and advice from Jim Baker, Jeremy Siek, Michael Matson
 Vitousek, Andrey Vlasovskikh, Radomir Dopieralski, Peter Ludemann,
 and the BDFL-Delegate, Mark Shannon.</p>
 <p>Influences include existing languages, libraries and frameworks
-mentioned in PEP 482.  Many thanks to their creators, in alphabetical
+mentioned in <a class="reference external" href="pep-0482.html">PEP 482</a>.  Many thanks to their creators, in alphabetical
 order: Stefan Behnel, William Edwards, Greg Ewing, Larry Hastings,
 Anders Hejlsberg, Alok Menghrajani, Travis E. Oliphant, Joe Pamer,
 Raoul-Gabriel Urma, and Julien Verlaguet.</p>
@@ -2389,7 +2378,8 @@ Raoul-Gabriel Urma, and Julien Verlaguet.</p>
 <p>This document has been placed in the public domain.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0484.txt">https://github.com/python/peps/blob/master/pep-0484.txt</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0484.txt">https://github.com/python/peps/blob/master/pep-0484.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0484.txt">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

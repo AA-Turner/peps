@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 364 – Transitioning to the Py3K Standard Library &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -72,7 +71,7 @@
 </div>
 <div class="section" id="abstract">
 <h2><a class="toc-backref" href="#id9">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
-<p>PEP 3108 describes the reorganization of the Python standard library
+<p><a class="reference external" href="pep-3108.html">PEP 3108</a> describes the reorganization of the Python standard library
 for the Python 3.0 release <a class="footnote-reference brackets" href="#id5" id="id1">1</a>.  This PEP describes a
 mechanism for transitioning from the Python 2.x standard library to
 the Python 3.0 standard library.  This transition will allow and
@@ -84,20 +83,20 @@ existing Python programs.</p>
 </div>
 <div class="section" id="rationale">
 <h2><a class="toc-backref" href="#id10">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
-<p>PEP 3108 presents a rationale for Python standard library (stdlib)
+<p><a class="reference external" href="pep-3108.html">PEP 3108</a> presents a rationale for Python standard library (stdlib)
 reorganization.  The reader is encouraged to consult that PEP for
 details about why and how the library will be reorganized.  Should
-PEP 3108 be accepted in part or in whole, then it is advantageous to
+<a class="reference external" href="pep-3108.html">PEP 3108</a> be accepted in part or in whole, then it is advantageous to
 allow Python programmers to begin the transition to the new stdlib
 module names in Python 2.x, so that they can write forward compatible
 code starting with Python 2.6.</p>
-<p>Note that PEP 3108 proposes to remove some “silly old stuff”,
+<p>Note that <a class="reference external" href="pep-3108.html">PEP 3108</a> proposes to remove some “silly old stuff”,
 i.e. modules that are no longer useful or necessary.  The PEP you are
 reading does not address this because there are no forward
 compatibility issues for modules that are to be removed, except to
 stop using such modules.</p>
 <p>This PEP concerns only the mechanism by which mappings from old stdlib
-names to new stdlib names are maintained.  Please consult PEP 3108 for
+names to new stdlib names are maintained.  Please consult <a class="reference external" href="pep-3108.html">PEP 3108</a> for
 all specific module renaming proposals.  Specifically see the section
 titled <code class="docutils literal notranslate"><span class="pre">Modules</span> <span class="pre">to</span> <span class="pre">Rename</span></code> for guidelines on the old name to new
 name mappings.  The few examples in this PEP are given for
@@ -118,8 +117,8 @@ renamed, such as <code class="docutils literal notranslate"><span class="pre">em
 <p>Two use cases supported by this PEP include renaming simple top-level
 modules, such as <code class="docutils literal notranslate"><span class="pre">StringIO</span></code>, as well as modules within packages,
 such as <code class="docutils literal notranslate"><span class="pre">email.MIMEText</span></code>.</p>
-<p>In the former case, PEP 3108 currently recommends <code class="docutils literal notranslate"><span class="pre">StringIO</span></code> be
-renamed to <code class="docutils literal notranslate"><span class="pre">stringio</span></code>, following PEP 8 recommendations <a class="footnote-reference brackets" href="#id6" id="id2">2</a>.</p>
+<p>In the former case, <a class="reference external" href="pep-3108.html">PEP 3108</a> currently recommends <code class="docutils literal notranslate"><span class="pre">StringIO</span></code> be
+renamed to <code class="docutils literal notranslate"><span class="pre">stringio</span></code>, following <a class="reference external" href="pep-0008.html">PEP 8</a> recommendations <a class="footnote-reference brackets" href="#id6" id="id2">2</a>.</p>
 <p>In the latter case, the email 4.0 package distributed with Python 2.5
 already renamed <code class="docutils literal notranslate"><span class="pre">email.MIMEText</span></code> to <code class="docutils literal notranslate"><span class="pre">email.mime.text</span></code>, although it
 did so in a one-off, uniquely hackish way inside the email package.
@@ -160,12 +159,12 @@ should be specified for top-level Python 2.x standard library modules.</p>
 <h2><a class="toc-backref" href="#id13">Implementation Specification</a><a class="headerlink" href="#implementation-specification" title="Permalink to this headline">¶</a></h2>
 <p>This section provides the full specification for how module renamings
 in Python 2.x are implemented.  The central mechanism relies on
-various import hooks as described in PEP 302 <a class="footnote-reference brackets" href="#id7" id="id3">3</a>.  Specifically
+various import hooks as described in <a class="reference external" href="pep-0302.html">PEP 302</a> <a class="footnote-reference brackets" href="#id7" id="id3">3</a>.  Specifically
 <code class="docutils literal notranslate"><span class="pre">sys.path_importer_cache</span></code>, <code class="docutils literal notranslate"><span class="pre">sys.path</span></code>, and <code class="docutils literal notranslate"><span class="pre">sys.meta_path</span></code> are
 all employed to provide the necessary functionality.</p>
 <p>When Python’s import machinery is initialized, the oldlib package is
 imported.  Inside oldlib there is a class called <code class="docutils literal notranslate"><span class="pre">OldStdlibLoader</span></code>.
-This class implements the PEP 302 interface and is automatically
+This class implements the <a class="reference external" href="pep-0302.html">PEP 302</a> interface and is automatically
 instantiated, with zero arguments.  The constructor reads all the
 <code class="docutils literal notranslate"><span class="pre">.mv</span></code> files from the oldlib package directory, automatically
 registering all the remappings found in those <code class="docutils literal notranslate"><span class="pre">.mv</span></code> files.  This is
@@ -174,7 +173,7 @@ how the Python 2.x standard library is remapped.</p>
 modules.  Instead, you can access the global OldStdlibLoader instance
 via the <code class="docutils literal notranslate"><span class="pre">sys.stdlib_remapper</span></code> instance.  Use this instance if you want
 programmatic access to the remapping machinery.</p>
-<p>One important implementation detail: as needed by the PEP 302 API, a
+<p>One important implementation detail: as needed by the <a class="reference external" href="pep-0302.html">PEP 302</a> API, a
 magic string is added to sys.path, and module __path__ attributes in
 order to hook in our remapping loader.  This magic string is currently
 <code class="docutils literal notranslate"><span class="pre">&lt;oldlib&gt;</span></code> and some changes were necessary to Python’s site.py file
@@ -262,19 +261,19 @@ the email package instead of in the oldlib package:</p>
 as SourceForge patch #1675334 <a class="footnote-reference brackets" href="#id8" id="id4">4</a>.  Note that this patch includes a
 rename of <code class="docutils literal notranslate"><span class="pre">cStringIO</span></code> to <code class="docutils literal notranslate"><span class="pre">cstringio</span></code>, but this is primarily for
 illustrative and unit testing purposes.  Should the patch be accepted,
-we might want to split this change off into other PEP 3108 changes.</p>
+we might want to split this change off into other <a class="reference external" href="pep-3108.html">PEP 3108</a> changes.</p>
 </div>
 <div class="section" id="references">
 <h2><a class="toc-backref" href="#id17">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
 <dl class="footnote brackets">
 <dt class="label" id="id5"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
-<dd>PEP 3108, Standard Library Reorganization, Cannon
+<dd><a class="reference external" href="pep-3108.html">PEP 3108</a>, Standard Library Reorganization, Cannon
 (<a class="reference external" href="http://www.python.org/dev/peps/pep-3108">http://www.python.org/dev/peps/pep-3108</a>)</dd>
 <dt class="label" id="id6"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
-<dd>PEP 8, Style Guide for Python Code, GvR, Warsaw
+<dd><a class="reference external" href="pep-0008.html">PEP 8</a>, Style Guide for Python Code, GvR, Warsaw
 (<a class="reference external" href="http://www.python.org/dev/peps/pep-0008">http://www.python.org/dev/peps/pep-0008</a>)</dd>
 <dt class="label" id="id7"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
-<dd>PEP 302, New Import Hooks, JvR, Moore
+<dd><a class="reference external" href="pep-0302.html">PEP 302</a>, New Import Hooks, JvR, Moore
 (<a class="reference external" href="http://www.python.org/dev/peps/pep-0302">http://www.python.org/dev/peps/pep-0302</a>)</dd>
 <dt class="label" id="id8"><span class="brackets"><a class="fn-backref" href="#id4">4</a></span></dt>
 <dd>Reference implementation
@@ -286,7 +285,8 @@ we might want to split this change off into other PEP 3108 changes.</p>
 <p>This document has been placed in the public domain.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0364.txt">https://github.com/python/peps/blob/master/pep-0364.txt</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0364.txt">https://github.com/python/peps/blob/master/pep-0364.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0364.txt">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

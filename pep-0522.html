@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 522 – Allow BlockingIOError in security sensitive APIs &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -48,7 +47,7 @@
 <dt class="field-odd">Type</dt>
 <dd class="field-odd">Standards Track</dd>
 <dt class="field-even">Requires</dt>
-<dd class="field-even"><a class="reference external" href="./pep-0506.html">506</a></dd>
+<dd class="field-even"><a class="reference external" href="pep-0506.html">506</a></dd>
 <dt class="field-odd">Created</dt>
 <dd class="field-odd">16 June 2016</dd>
 <dt class="field-even">Python-Version</dt>
@@ -134,14 +133,14 @@ VM host)</li>
 </div>
 <div class="section" id="relationship-with-other-peps">
 <h2><a class="toc-backref" href="#id24">Relationship with other PEPs</a><a class="headerlink" href="#relationship-with-other-peps" title="Permalink to this headline">¶</a></h2>
-<p>This PEP depends on the Accepted PEP 506, which adds the <code class="docutils literal notranslate"><span class="pre">secrets</span></code> module.</p>
-<p>This PEP competes with Victor Stinner’s PEP 524, which proposes to make
+<p>This PEP depends on the Accepted <a class="reference external" href="pep-0506.html">PEP 506</a>, which adds the <code class="docutils literal notranslate"><span class="pre">secrets</span></code> module.</p>
+<p>This PEP competes with Victor Stinner’s <a class="reference external" href="pep-0524.html">PEP 524</a>, which proposes to make
 <code class="docutils literal notranslate"><span class="pre">os.urandom</span></code> itself implicitly block when the system RNG is not ready.</p>
 </div>
 <div class="section" id="pep-rejection">
 <h2><a class="toc-backref" href="#id25">PEP Rejection</a><a class="headerlink" href="#pep-rejection" title="Permalink to this headline">¶</a></h2>
 <p>For the reference implementation, Guido rejected this PEP in favour of the
-unconditional implicit blocking proposal in PEP 524 (which brings CPython’s
+unconditional implicit blocking proposal in <a class="reference external" href="pep-0524.html">PEP 524</a> (which brings CPython’s
 behaviour on Linux into line with its behaviour on other operating systems).</p>
 <p>This means any further discussion of appropriate default behaviour for
 <code class="docutils literal notranslate"><span class="pre">os.urandom()</span></code> in system Python installations in Linux distributions should
@@ -153,7 +152,7 @@ CPython mailing lists.</p>
 <p>CPython interpreter initialization and <code class="docutils literal notranslate"><span class="pre">random</span></code> module initialization have
 already been updated to gracefully fall back to alternative seeding options if
 the system random number generator is not ready.</p>
-<p>This PEP does not compete with the proposal in PEP 524 to add an
+<p>This PEP does not compete with the proposal in <a class="reference external" href="pep-0524.html">PEP 524</a> to add an
 <code class="docutils literal notranslate"><span class="pre">os.getrandom()</span></code> API to expose the <code class="docutils literal notranslate"><span class="pre">getrandom</span></code> syscall on platforms that
 offer it. There is sufficient motive for adding that API in the <code class="docutils literal notranslate"><span class="pre">os</span></code> module’s
 role as a thin wrapper around potentially platform dependent operating system
@@ -171,7 +170,7 @@ if the kernel reports that the call would block.</p>
 <p>This behaviour will then propagate through to the existing
 <code class="docutils literal notranslate"><span class="pre">random.SystemRandom</span></code>, which provides a relatively thin wrapper around
 <code class="docutils literal notranslate"><span class="pre">os.urandom()</span></code> that matches the <code class="docutils literal notranslate"><span class="pre">random.Random()</span></code> API.</p>
-<p>However, the new <code class="docutils literal notranslate"><span class="pre">secrets</span></code> module introduced by PEP 506 will be updated to
+<p>However, the new <code class="docutils literal notranslate"><span class="pre">secrets</span></code> module introduced by <a class="reference external" href="pep-0506.html">PEP 506</a> will be updated to
 catch the new exception and implicitly wait for the system random number
 generator if the exception is ever encountered.</p>
 <p>In all cases, as soon as a call to one of these security sensitive APIs
@@ -330,7 +329,7 @@ exception <a class="footnote-reference brackets" href="#id22" id="id1">11</a>.</
 security sensitive operations in Python.</p>
 <p>To help improve API discoverability and make it clearer that secrecy and
 simulation are not the same problem (even though they both involve
-random numbers), PEP 506 collected several of the one line recipes based
+random numbers), <a class="reference external" href="pep-0506.html">PEP 506</a> collected several of the one line recipes based
 on the lower level <code class="docutils literal notranslate"><span class="pre">os.urandom()</span></code> API into a new <code class="docutils literal notranslate"><span class="pre">secrets</span></code> module.</p>
 <p>However, this guidance has also come with a longstanding caveat: developers
 writing security sensitive software at least for Linux, and potentially for
@@ -388,7 +387,7 @@ might unexpectedly start blocking waiting for the system RNG to be available.</p
 </div>
 <div class="section" id="backwards-compatibility-impact-assessment">
 <h2><a class="toc-backref" href="#id35">Backwards Compatibility Impact Assessment</a><a class="headerlink" href="#backwards-compatibility-impact-assessment" title="Permalink to this headline">¶</a></h2>
-<p>Similar to PEP 476, this is a proposal to turn a previously silent security
+<p>Similar to <a class="reference external" href="pep-0476.html">PEP 476</a>, this is a proposal to turn a previously silent security
 failure into a noisy exception that requires the application developer to
 make an explicit decision regarding the behaviour they desire.</p>
 <p>As no changes are proposed for operating systems that don’t provide the
@@ -671,7 +670,7 @@ friends against DoS attacks (called unconditionally at startup)</li>
 imported)</li>
 <li>servicing user calls to the <code class="docutils literal notranslate"><span class="pre">os.urandom</span></code> public API</li>
 <li>the higher level <code class="docutils literal notranslate"><span class="pre">random.SystemRandom</span></code> public API</li>
-<li>the new <code class="docutils literal notranslate"><span class="pre">secrets</span></code> module public API added by PEP 506</li>
+<li>the new <code class="docutils literal notranslate"><span class="pre">secrets</span></code> module public API added by <a class="reference external" href="pep-0506.html">PEP 506</a></li>
 </ul>
 <p>Previously, these five places all used the same underlying code, and
 thus made this decision in the same way.</p>
@@ -704,7 +703,7 @@ only problem reports due to the implicit blocking on interpreter startup and
 as a side-effect of importing the random module.</p>
 <p>Independently of this PEP, the first two cases have already been updated to
 never block, regardless of the behaviour of <code class="docutils literal notranslate"><span class="pre">os.urandom()</span></code>.</p>
-<p>Where PEP 524 proposes to make all 3 of the latter cases block implicitly,
+<p>Where <a class="reference external" href="pep-0524.html">PEP 524</a> proposes to make all 3 of the latter cases block implicitly,
 this PEP proposes that approach only for the last case (the <code class="docutils literal notranslate"><span class="pre">secrets</span></code>)
 module, with <code class="docutils literal notranslate"><span class="pre">os.urandom()</span></code> and <code class="docutils literal notranslate"><span class="pre">random.SystemRandom()</span></code> instead raising
 an exception when they detect that the underlying operating system call
@@ -759,7 +758,8 @@ links at <a class="reference external" href="https://haypo-notes.readthedocs.io/
 <p>This document has been placed into the public domain.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0522.txt">https://github.com/python/peps/blob/master/pep-0522.txt</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0522.txt">https://github.com/python/peps/blob/master/pep-0522.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0522.txt">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

@@ -1,0 +1,506 @@
+
+<!DOCTYPE html>
+
+<html lang="en-GB" class="fontface">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PEP 624 – Remove Py_UNICODE encoder APIs &#8212; PEPs.Python.org</title>
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
+    <link rel="shortcut icon" href="_static/py.png"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PEP 625 – File name of a Source Distribution" href="pep-0625.html" />
+    <link rel="prev" title="PEP 623 – Remove wstr from Unicode" href="pep-0623.html" /> 
+  </head><body class="python pages pep-page"><header style="height: 219px; background-color: #2b5b84;"></header>
+    <div id="touchnav-wrapper">
+        <div id="content" class="content-wrapper">
+                <div class="container">
+                        <section class="main-content with-left-sidebar">
+                    <ul class="breadcrumbs menu" role="directory" aria-label="breadcrumbs navigation">
+    
+        <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="https://www.python.org/dev/">Python Developer's Guide</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li><a href="pep-0000.html">PEP Index</a><span class="prompt">&gt;&gt;&gt;</span></li>
+        <li>PEP 624 – Remove Py_UNICODE encoder APIs</li>
+    
+</ul>
+                    <article class="text" role="main">
+                        
+  <div class="section" id="pep-624-remove-py-unicode-encoder-apis">
+<h1 class="page-title">PEP 624 – Remove Py_UNICODE encoder APIs<a class="headerlink" href="#pep-624-remove-py-unicode-encoder-apis" title="Permalink to this headline">¶</a></h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">624</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Remove Py_UNICODE encoder APIs</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Inada Naoki &lt;songofacandy&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Draft</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">06-Jul-2020</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.11</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">08-Jul-2020</dd>
+</dl>
+<hr class="docutils" />
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract" id="id7">Abstract</a></li>
+<li><a class="reference internal" href="#motivation" id="id8">Motivation</a></li>
+<li><a class="reference internal" href="#rationale" id="id9">Rationale</a><ul>
+<li><a class="reference internal" href="#deprecated-since-python-3-3" id="id10">Deprecated since Python 3.3</a></li>
+<li><a class="reference internal" href="#inefficient" id="id11">Inefficient</a></li>
+<li><a class="reference internal" href="#not-used-widely" id="id12">Not used widely</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#alternative-apis" id="id13">Alternative APIs</a></li>
+<li><a class="reference internal" href="#plan" id="id14">Plan</a><ul>
+<li><a class="reference internal" href="#python-3-9" id="id15">Python 3.9</a></li>
+<li><a class="reference internal" href="#python-3-11" id="id16">Python 3.11</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#alternative-ideas" id="id17">Alternative ideas</a><ul>
+<li><a class="reference internal" href="#make-some-private-apis-public" id="id18">Make some private APIs public</a></li>
+<li><a class="reference internal" href="#replace-py-unicode-with-py-ucs4" id="id19">Replace <code class="docutils literal notranslate"><span class="pre">Py_UNICODE*</span></code> with <code class="docutils literal notranslate"><span class="pre">Py_UCS4*</span></code></a></li>
+<li><a class="reference internal" href="#replace-py-unicode-with-wchar-t" id="id20">Replace <code class="docutils literal notranslate"><span class="pre">Py_UNICODE*</span></code> with <code class="docutils literal notranslate"><span class="pre">wchar_t*</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rejected-ideas" id="id21">Rejected ideas</a><ul>
+<li><a class="reference internal" href="#using-runtime-warning" id="id22">Using runtime warning</a></li>
+<li><a class="reference internal" href="#deprecate-pyunicode-decode-apis-too" id="id23">Deprecate <code class="docutils literal notranslate"><span class="pre">PyUnicode_Decode*</span></code> APIs too</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#discussions" id="id24">Discussions</a></li>
+<li><a class="reference internal" href="#references" id="id25">References</a></li>
+<li><a class="reference internal" href="#copyright" id="id26">Copyright</a></li>
+</ul>
+</div>
+<div class="section" id="abstract">
+<h2><a class="toc-backref" href="#id7">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
+<p>This PEP proposes to remove deprecated <code class="docutils literal notranslate"><span class="pre">Py_UNICODE</span></code> encoder APIs in Python 3.11:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_Encode()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeASCII()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeLatin1()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeUTF7()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeUTF8()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeUTF16()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeUTF32()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeUnicodeEscape()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeRawUnicodeEscape()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeCharmap()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_TranslateCharmap()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeDecimal()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_TransformDecimalToASCII()</span></code></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference external" href="https://www.python.org/dev/peps/pep-0623/">PEP 623</a> propose to remove
+Unicode object APIs relating to <code class="docutils literal notranslate"><span class="pre">Py_UNICODE</span></code>. On the other hand, this PEP
+is not relating to Unicode object. These PEPs are split because they have
+different motivation and need different discussion.</p>
+</div>
+</div>
+<div class="section" id="motivation">
+<h2><a class="toc-backref" href="#id8">Motivation</a><a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>In general, reducing the number of APIs that have been deprecated for
+a long time and have few users is a good idea for not only it
+improves the maintainability of CPython, but it also helps API users
+and other Python implementations.</p>
+</div>
+<div class="section" id="rationale">
+<h2><a class="toc-backref" href="#id9">Rationale</a><a class="headerlink" href="#rationale" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="deprecated-since-python-3-3">
+<h3><a class="toc-backref" href="#id10">Deprecated since Python 3.3</a><a class="headerlink" href="#deprecated-since-python-3-3" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">Py_UNICODE</span></code> and APIs using it have been deprecated since Python 3.3.</p>
+</div>
+<div class="section" id="inefficient">
+<h3><a class="toc-backref" href="#id11">Inefficient</a><a class="headerlink" href="#inefficient" title="Permalink to this headline">¶</a></h3>
+<p>All of these APIs are implemented using <code class="docutils literal notranslate"><span class="pre">PyUnicode_FromWideChar</span></code>.
+So these APIs are inefficient when user want to encode Unicode
+object.</p>
+</div>
+<div class="section" id="not-used-widely">
+<h3><a class="toc-backref" href="#id12">Not used widely</a><a class="headerlink" href="#not-used-widely" title="Permalink to this headline">¶</a></h3>
+<p>When searching from top 4000 PyPI packages <a class="footnote-reference brackets" href="#id4" id="id1">1</a>, only pyodbc use
+these APIs.</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeUTF8()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeUTF16()</span></code></li>
+</ul>
+<p>pyodbc uses these APIs to encode Unicode object into bytes object.
+So it is easy to fix it. <a class="footnote-reference brackets" href="#id5" id="id2">2</a></p>
+</div>
+</div>
+<div class="section" id="alternative-apis">
+<h2><a class="toc-backref" href="#id13">Alternative APIs</a><a class="headerlink" href="#alternative-apis" title="Permalink to this headline">¶</a></h2>
+<p>There are alternative APIs to accept <code class="docutils literal notranslate"><span class="pre">PyObject</span> <span class="pre">*unicode</span></code> instead of
+<code class="docutils literal notranslate"><span class="pre">Py_UNICODE</span> <span class="pre">*</span></code>. Users can migrate to them.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 49%" />
+<col style="width: 51%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head">Deprecated API</th>
+<th class="head">Alternative APIs</th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">PyUnicode_Encode()</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">PyUnicode_AsEncodedString()</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeASCII()</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">PyUnicode_AsASCIIString()</span></code> (1)</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeLatin1()</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">PyUnicode_AsLatin1String()</span></code> (1)</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeUTF7()</span></code></td>
+<td>(2)</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeUTF8()</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">PyUnicode_AsUTF8String()</span></code> (1)</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeUTF16()</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">PyUnicode_AsUTF16String()</span></code> (3)</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeUTF32()</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">PyUnicode_AsUTF32String()</span></code> (3)</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeUnicodeEscape()</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">PyUnicode_AsUnicodeEscapeString()</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeRawUnicodeEscape()</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">PyUnicode_AsRawUnicodeEscapeString()</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeCharmap()</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">PyUnicode_AsCharmapString()</span></code> (1)</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">PyUnicode_TranslateCharmap()</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">PyUnicode_Translate()</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeDecimal()</span></code></td>
+<td>(4)</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">PyUnicode_TransformDecimalToASCII()</span></code></td>
+<td>(4)</td>
+</tr>
+</tbody>
+</table>
+<p>Notes:</p>
+<ol class="arabic simple">
+<li><code class="docutils literal notranslate"><span class="pre">const</span> <span class="pre">char</span> <span class="pre">*errors</span></code> parameter is missing.</li>
+<li>There is no public alternative API. But user can use generic
+<code class="docutils literal notranslate"><span class="pre">PyUnicode_AsEncodedString()</span></code> instead.</li>
+<li><code class="docutils literal notranslate"><span class="pre">const</span> <span class="pre">char</span> <span class="pre">*errors,</span> <span class="pre">int</span> <span class="pre">byteorder</span></code> parameters are missing.</li>
+<li>There is no direct replacement. But <code class="docutils literal notranslate"><span class="pre">Py_UNICODE_TODECIMAL</span></code>
+can be used instead. CPython uses
+<code class="docutils literal notranslate"><span class="pre">_PyUnicode_TransformDecimalAndSpaceToASCII</span></code> for converting
+from Unicode to numbers instead.</li>
+</ol>
+</div>
+<div class="section" id="plan">
+<h2><a class="toc-backref" href="#id14">Plan</a><a class="headerlink" href="#plan" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="python-3-9">
+<h3><a class="toc-backref" href="#id15">Python 3.9</a><a class="headerlink" href="#python-3-9" title="Permalink to this headline">¶</a></h3>
+<p>Add <code class="docutils literal notranslate"><span class="pre">Py_DEPRECATED(3.3)</span></code> to following APIs. This change is committed
+already <a class="footnote-reference brackets" href="#id6" id="id3">3</a>. All other APIs have been marked <code class="docutils literal notranslate"><span class="pre">Py_DEPRECATED(3.3)</span></code>
+already.</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeDecimal()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_TransformDecimalToASCII()</span></code>.</li>
+</ul>
+<p>Document all APIs as “will be removed in version 3.11”.</p>
+</div>
+<div class="section" id="python-3-11">
+<h3><a class="toc-backref" href="#id16">Python 3.11</a><a class="headerlink" href="#python-3-11" title="Permalink to this headline">¶</a></h3>
+<p>These APIs are removed.</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_Encode()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeASCII()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeLatin1()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeUTF7()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeUTF8()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeUTF16()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeUTF32()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeUnicodeEscape()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeRawUnicodeEscape()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeCharmap()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_TranslateCharmap()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeDecimal()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_TransformDecimalToASCII()</span></code></li>
+</ul>
+</div>
+</div>
+<div class="section" id="alternative-ideas">
+<h2><a class="toc-backref" href="#id17">Alternative ideas</a><a class="headerlink" href="#alternative-ideas" title="Permalink to this headline">¶</a></h2>
+<p>Instead of just removing deprecated APIs, we may be able to use thier
+names with different signature.</p>
+<div class="section" id="make-some-private-apis-public">
+<h3><a class="toc-backref" href="#id18">Make some private APIs public</a><a class="headerlink" href="#make-some-private-apis-public" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeUTF7()</span></code> doesn’t have public alternative APIs.</p>
+<p>Some APIs have alternative public APIs. But they are missing
+<code class="docutils literal notranslate"><span class="pre">const</span> <span class="pre">char</span> <span class="pre">*errors</span></code> or <code class="docutils literal notranslate"><span class="pre">int</span> <span class="pre">byteorder</span></code> parameters.</p>
+<p>We can rename some private APIs and make them public to cover missing
+APIs and parameters.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 48%" />
+<col style="width: 52%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head">Rename to</th>
+<th class="head">Rename from</th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeASCII()</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">_PyUnicode_AsASCIIString()</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeLatin1()</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">_PyUnicode_AsLatin1String()</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeUTF7()</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">_PyUnicode_EncodeUTF7()</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeUTF8()</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">_PyUnicode_AsUTF8String()</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeUTF16()</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">_PyUnicode_EncodeUTF16()</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeUTF32()</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">_PyUnicode_EncodeUTF32()</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Pros:</p>
+<ul class="simple">
+<li>We have more consistent API set.</li>
+</ul>
+<p>Cons:</p>
+<ul class="simple">
+<li>We have more public APIs to maintain.</li>
+<li>Existing public APIs are enough for most use cases, and
+<code class="docutils literal notranslate"><span class="pre">PyUnicode_AsEncodedString()</span></code> can be used in other cases.</li>
+</ul>
+</div>
+<div class="section" id="replace-py-unicode-with-py-ucs4">
+<h3><a class="toc-backref" href="#id19">Replace <code class="docutils literal notranslate"><span class="pre">Py_UNICODE*</span></code> with <code class="docutils literal notranslate"><span class="pre">Py_UCS4*</span></code></a><a class="headerlink" href="#replace-py-unicode-with-py-ucs4" title="Permalink to this headline">¶</a></h3>
+<p>We can replace <code class="docutils literal notranslate"><span class="pre">Py_UNICODE</span></code> (typedef of <code class="docutils literal notranslate"><span class="pre">wchar_t</span></code>) with
+<code class="docutils literal notranslate"><span class="pre">Py_UCS4</span></code>. Since builtin codecs support UCS-4, we don’t need to
+convert <code class="docutils literal notranslate"><span class="pre">Py_UCS4*</span></code> string to Unicode object.</p>
+<p>Pros:</p>
+<ul class="simple">
+<li>We have more consistent API set.</li>
+<li>User can encode UCS-4 string in C without creating Unicode object.</li>
+</ul>
+<p>Cons:</p>
+<ul class="simple">
+<li>We have more public APIs to maintain.</li>
+<li>Applications which uses UTF-8 or UTF-16 can not use these APIs
+anyway.</li>
+<li>Other Python implementations may not have builtin codec for UCS-4.</li>
+<li>If we change the Unicode internal representation to UTF-8, we need
+to keep UCS-4 support only for these APIs.</li>
+</ul>
+</div>
+<div class="section" id="replace-py-unicode-with-wchar-t">
+<h3><a class="toc-backref" href="#id20">Replace <code class="docutils literal notranslate"><span class="pre">Py_UNICODE*</span></code> with <code class="docutils literal notranslate"><span class="pre">wchar_t*</span></code></a><a class="headerlink" href="#replace-py-unicode-with-wchar-t" title="Permalink to this headline">¶</a></h3>
+<p>We can replace <code class="docutils literal notranslate"><span class="pre">Py_UNICODE</span></code> to <code class="docutils literal notranslate"><span class="pre">wchar_t</span></code>.</p>
+<p>Pros:</p>
+<ul class="simple">
+<li>We have more consistent API set.</li>
+<li>Backward compatible.</li>
+</ul>
+<p>Cons:</p>
+<ul class="simple">
+<li>We have more public APIs to maintain.</li>
+<li>They are inefficient on platforms <code class="docutils literal notranslate"><span class="pre">wchar_t*</span></code> is UTF-16. It is
+because built-in codecs supports only UCS-1, UCS-2, and UCS-4
+input.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="rejected-ideas">
+<h2><a class="toc-backref" href="#id21">Rejected ideas</a><a class="headerlink" href="#rejected-ideas" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="using-runtime-warning">
+<h3><a class="toc-backref" href="#id22">Using runtime warning</a><a class="headerlink" href="#using-runtime-warning" title="Permalink to this headline">¶</a></h3>
+<p>These APIs doesn’t release GIL for now. Emitting a warning from
+such APIs is not safe. See this example.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyObject</span> <span class="o">*</span><span class="n">u</span> <span class="o">=</span> <span class="n">PyList_GET_ITEM</span><span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">i</span><span class="p">);</span>  <span class="o">//</span> <span class="n">u</span> <span class="ow">is</span> <span class="n">borrowed</span> <span class="n">reference</span><span class="o">.</span>
+<span class="n">PyObject</span> <span class="o">*</span><span class="n">b</span> <span class="o">=</span> <span class="n">PyUnicode_EncodeUTF8</span><span class="p">(</span><span class="n">PyUnicode_AS_UNICODE</span><span class="p">(</span><span class="n">u</span><span class="p">),</span>
+        <span class="n">PyUnicode_GET_SIZE</span><span class="p">(</span><span class="n">u</span><span class="p">),</span> <span class="n">NULL</span><span class="p">);</span>
+<span class="o">//</span> <span class="n">Assumes</span> <span class="n">u</span> <span class="ow">is</span> <span class="n">still</span> <span class="n">living</span> <span class="n">reference</span><span class="o">.</span>
+<span class="n">PyObject</span> <span class="o">*</span><span class="n">t</span> <span class="o">=</span> <span class="n">PyTuple_Pack</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">b</span><span class="p">);</span>
+<span class="n">Py_DECREF</span><span class="p">(</span><span class="n">b</span><span class="p">);</span>
+<span class="k">return</span> <span class="n">t</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>If we emit Python warning from <code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeUTF8()</span></code>, warning
+filters and other threads may change the <code class="docutils literal notranslate"><span class="pre">list</span></code> and <code class="docutils literal notranslate"><span class="pre">u</span></code> can be
+a dangling reference after <code class="docutils literal notranslate"><span class="pre">PyUnicode_EncodeUTF8()</span></code> returned.</p>
+<p>Additionally, since we are not changing behavior but removing C APIs,
+runtime <code class="docutils literal notranslate"><span class="pre">DeprecationWarning</span></code> might not helpful for Python
+developers. We should warn to extension developers instead.</p>
+</div>
+<div class="section" id="deprecate-pyunicode-decode-apis-too">
+<h3><a class="toc-backref" href="#id23">Deprecate <code class="docutils literal notranslate"><span class="pre">PyUnicode_Decode*</span></code> APIs too</a><a class="headerlink" href="#deprecate-pyunicode-decode-apis-too" title="Permalink to this headline">¶</a></h3>
+<p>Not only remove <code class="docutils literal notranslate"><span class="pre">PyUnicode_Encode*()</span></code> APIs, but also deprecate
+following APIs too for symmetry and reducing number of APIs.</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_DecodeASCII()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_DecodeLatin1()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_DecodeUTF7()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_DecodeUTF8()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_DecodeUTF16()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_DecodeUTF32()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_DecodeUnicodeEscape()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_DecodeRawUnicodeEscape()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_DecodeCharmap()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_DecodeMBCS()</span></code></li>
+</ul>
+<p>This idea is excluded from this PEP because of several reasons:</p>
+<ul class="simple">
+<li>We can not remove them anytime soon because they are part of stable
+ABI.</li>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_DecodeASCII()</span></code> and <code class="docutils literal notranslate"><span class="pre">PyUnicode_DecodeUTF8()</span></code> are used
+very widely. Deprecating them is not worth enough.</li>
+<li>Decoding from <code class="docutils literal notranslate"><span class="pre">const</span> <span class="pre">char*</span></code> is independent from Unicode
+representation.<ul>
+<li><code class="docutils literal notranslate"><span class="pre">PyUnicode_Decode*()</span></code> APIs are useful for applications and
+extensions using UTF-8 or Python Unicode objects to store Unicode
+string. But <code class="docutils literal notranslate"><span class="pre">PyUnicode_Encode*()</span></code> APIs are not useful for them.</li>
+<li>Python implementations using UTF-8 for Unicode internal
+representation (e.g. PyPy and micropython) may not have encoder
+with <code class="docutils literal notranslate"><span class="pre">wchar_t*</span></code> or UCS-4 input. But decoding from <code class="docutils literal notranslate"><span class="pre">char*</span></code>
+is very natural for them too.</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="discussions">
+<h2><a class="toc-backref" href="#id24">Discussions</a><a class="headerlink" href="#discussions" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference external" href="https://mail.python.org/archives/list/python-dev&#64;python.org/thread/S7KW2U6IGXZFBMGS6WSJB26NZIBW4OLE/#S7KW2U6IGXZFBMGS6WSJB26NZIBW4OLE">Plan to remove Py_UNICODE APis except PEP 623</a></li>
+<li><a class="reference external" href="https://bugs.python.org/issue41123">bpo-41123: Remove Py_UNICODE APIs except PEP 623:</a></li>
+</ul>
+</div>
+<div class="section" id="references">
+<h2><a class="toc-backref" href="#id25">References</a><a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id4"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>Source package list chosen from top 4000 PyPI packages.
+(<a class="reference external" href="https://github.com/methane/notes/blob/master/2020/wchar-cache/package_list.txt">https://github.com/methane/notes/blob/master/2020/wchar-cache/package_list.txt</a>)</dd>
+<dt class="label" id="id5"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>pyodbc – Don’t use PyUnicode_Encode API #792
+(<a class="reference external" href="https://github.com/mkleehammer/pyodbc/pull/792">https://github.com/mkleehammer/pyodbc/pull/792</a>)</dd>
+<dt class="label" id="id6"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd>Uncomment Py_DEPRECATED for Py_UNICODE APIs (GH-21318)
+(<a class="reference external" href="https://github.com/python/cpython/commit/9c3840870814493fed62e140cfa43c2883e12181">https://github.com/python/cpython/commit/9c3840870814493fed62e140cfa43c2883e12181</a>)</dd>
+</dl>
+</div>
+<div class="section" id="copyright">
+<h2><a class="toc-backref" href="#id26">Copyright</a><a class="headerlink" href="#copyright" title="Permalink to this headline">¶</a></h2>
+<p>This document has been placed in the public domain.</p>
+</div>
+</div>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0624.rst">https://github.com/python/peps/blob/master/pep-0624.rst</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0624.rst">2020-08-15T06:07:35</a></span>
+
+                    </article>
+                        </section>
+                        <aside class="left-sidebar" role="navigation">
+                            <h6>Python Enhancement Proposals</h6>
+
+
+
+    <div id="searchbox" class="inline-search" style="display: none" role="search">
+        <form class="search" action="search.html" method="get">
+            <label for="q" style="position:absolute;width:1px;height:1px;overflow: hidden">
+                Quick search
+            </label>
+            <input type="text" placeholder="Quick search" name="q" id="q" />
+            <input type="submit" value="Go" enterkeyhint="go"/>
+        </form>
+    </div>
+    <script>document.getElementById("searchbox").style.display = 'block';</script>
+
+
+    <div class="source-link" role="note" aria-label="source link">
+        <a href="https://github.com/python/peps/blob/master/pep-0624.rst.txt">Page Source (GitHub)</a>
+    </div>
+
+
+<div class="related" role="navigation" aria-label="related navigation">
+    <h3>Quick Navigation</h3>
+    <nav>
+        <ul>
+            <li class=""><a href="pep-0623.html">PEP 0623</a></li>
+            <li class=""><a title="PEP 0" href="pep-0000.html">PEP Index</a></li>
+            <li class=""><a href="pep-0625.html">PEP 0625</a></li>
+        </ul>
+    </nav>
+</div>
+
+
+<h3>Contents</h3>
+<ul>
+<li><a class="reference internal" href="#">PEP 624 – Remove Py_UNICODE encoder APIs</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a><ul>
+<li><a class="reference internal" href="#deprecated-since-python-3-3">Deprecated since Python 3.3</a></li>
+<li><a class="reference internal" href="#inefficient">Inefficient</a></li>
+<li><a class="reference internal" href="#not-used-widely">Not used widely</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#alternative-apis">Alternative APIs</a></li>
+<li><a class="reference internal" href="#plan">Plan</a><ul>
+<li><a class="reference internal" href="#python-3-9">Python 3.9</a></li>
+<li><a class="reference internal" href="#python-3-11">Python 3.11</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#alternative-ideas">Alternative ideas</a><ul>
+<li><a class="reference internal" href="#make-some-private-apis-public">Make some private APIs public</a></li>
+<li><a class="reference internal" href="#replace-py-unicode-with-py-ucs4">Replace <code class="docutils literal notranslate"><span class="pre">Py_UNICODE*</span></code> with <code class="docutils literal notranslate"><span class="pre">Py_UCS4*</span></code></a></li>
+<li><a class="reference internal" href="#replace-py-unicode-with-wchar-t">Replace <code class="docutils literal notranslate"><span class="pre">Py_UNICODE*</span></code> with <code class="docutils literal notranslate"><span class="pre">wchar_t*</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rejected-ideas">Rejected ideas</a><ul>
+<li><a class="reference internal" href="#using-runtime-warning">Using runtime warning</a></li>
+<li><a class="reference internal" href="#deprecate-pyunicode-decode-apis-too">Deprecate <code class="docutils literal notranslate"><span class="pre">PyUnicode_Decode*</span></code> APIs too</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#discussions">Discussions</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+                        </aside>
+                </div>
+            <div class="clearer"></div>
+        </div>
+    </div>
+<footer>
+    <div style="height: 553.5px; background-color: #e6e8ea; border-top: 1px solid #d8dbde;"></div>
+    <div style="height: 103.05px; background-color: #2b5b84;"></div>
+</footer>
+  </body>
+</html>

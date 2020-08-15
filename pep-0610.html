@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 610 – Recording the Direct URL Origin of installed distributions &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -104,7 +103,7 @@
 </div>
 <div class="section" id="abstract">
 <h2><a class="toc-backref" href="#id24">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
-<p>Following PEP 440, a distribution can be identified by a name and either a
+<p>Following <a class="reference external" href="pep-0440.html">PEP 440</a>, a distribution can be identified by a name and either a
 version, or a direct URL reference (see <a class="reference external" href="https://www.python.org/dev/peps/pep-0440/#direct-references">PEP440 Direct References</a> <a class="footnote-reference brackets" href="#id7" id="id8">4</a>).
 After installation, the name and version are captured in the project metadata,
 but currently there is no way to obtain details of the URL used when the
@@ -112,7 +111,7 @@ distribution was identified by a direct URL reference.</p>
 <p>This proposal defines
 additional metadata, to be added to the installed distribution by the
 installation front end, which records the Direct URL Origin for use by
-consumers which introspect the database of installed packages (see PEP 376).</p>
+consumers which introspect the database of installed packages (see <a class="reference external" href="pep-0376.html">PEP 376</a>).</p>
 </div>
 <div class="section" id="provisional-acceptance">
 <h2><a class="toc-backref" href="#id25">Provisional acceptance</a><a class="headerlink" href="#provisional-acceptance" title="Permalink to this headline">¶</a></h2>
@@ -153,7 +152,7 @@ using <code class="docutils literal notranslate"><span class="pre">--find-links<
 <div><p>In this case, the installer downloads whatever is specified by the URL
 (typically a wheel, a source archive or a VCS repository) and installs it.</p>
 <p>In this mode, installers typically download the source code in a
-temporary directory, invoke the PEP 517 build backend to produce a wheel
+temporary directory, invoke the <a class="reference external" href="pep-0517.html">PEP 517</a> build backend to produce a wheel
 if needed, install the wheel, and delete the temporary directory.</p>
 <p>After installation, no trace of the URL the user requested to download the
 package is left on the user system.</p>
@@ -207,7 +206,7 @@ revision corresponds to a branch, tag or (in the case of Git) a ref. This
 information can be used when introspecting the Database of Installed Distributions
 to communicate to users more information about what version was installed
 (e.g. whether a branch or tag was installed and, if so, the name of the
-branch or tag). This also permits one to know whether a PEP 440 direct
+branch or tag). This also permits one to know whether a <a class="reference external" href="pep-0440.html">PEP 440</a> direct
 reference URL can be constructed using the tag form, as only tags have the
 semantics of immutability.</p>
 <p>In cases where the revision is mutable (e.g. branches and Git refs), knowing
@@ -229,7 +228,7 @@ Indeed editable installs implicitly record the VCS origin in the checkout
 directory, so the information can be recovered when running “freeze”.</p>
 <p>The use of this workaround, although useful, is fragile, creates confusion
 about the purpose of the editable mode, and works only when the distribution
-can be installed with setuptools (i.e. it is not usable with other PEP 517
+can be installed with setuptools (i.e. it is not usable with other <a class="reference external" href="pep-0517.html">PEP 517</a>
 build backends).</p>
 <p>When this PEP is implemented, it will not be necessary anymore to use
 editable installs for the purpose of making pip freeze work correctly with
@@ -324,8 +323,8 @@ source archive hashes. At time of writing, that list consists of ‘md5’,
 <p>When <code class="docutils literal notranslate"><span class="pre">url</span></code> refers to a local directory, the <code class="docutils literal notranslate"><span class="pre">dir_info</span></code> key MUST be
 present as a dictionary with the following key:</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">editable</span></code> (type: <code class="docutils literal notranslate"><span class="pre">boolean</span></code>): <cite>true</cite> if the distribution was installed
-in editable mode, <cite>false</cite> otherwise. If absent, default to <cite>false</cite>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">editable</span></code> (type: <code class="docutils literal notranslate"><span class="pre">boolean</span></code>): <code class="docutils literal notranslate"><span class="pre">true</span></code> if the distribution was installed
+in editable mode, <code class="docutils literal notranslate"><span class="pre">false</span></code> otherwise. If absent, default to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</li>
 </ul>
 <p>When <code class="docutils literal notranslate"><span class="pre">url</span></code> refers to a local directory, it MUST have the <code class="docutils literal notranslate"><span class="pre">file</span></code> sheme
 and be compliant with <a class="reference external" href="https://tools.ietf.org/html/rfc8089">RFC 8089</a> <a class="footnote-reference brackets" href="#id20" id="id21">9</a>. In particular, the path component must
@@ -540,7 +539,7 @@ there are no backwards compatibility implications.</p>
 <h2><a class="toc-backref" href="#id44">Alternatives</a><a class="headerlink" href="#alternatives" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="pep426-source-url">
 <h3><a class="toc-backref" href="#id45">PEP426 source_url</a><a class="headerlink" href="#pep426-source-url" title="Permalink to this headline">¶</a></h3>
-<p>The now withdrawn PEP 426 specifies a <code class="docutils literal notranslate"><span class="pre">source_url</span></code> metadata entry.
+<p>The now withdrawn <a class="reference external" href="pep-0426.html">PEP 426</a> specifies a <code class="docutils literal notranslate"><span class="pre">source_url</span></code> metadata entry.
 It is also implemented in <a class="reference external" href="https://distlib.readthedocs.io">distlib</a> <a class="footnote-reference brackets" href="#id14" id="id15">6</a>.</p>
 <p>It was intended for a slightly different purpose, for use in sdists.</p>
 <p>This format lacks support for the <code class="docutils literal notranslate"><span class="pre">subdirectory</span></code> option of pip requirement
@@ -548,7 +547,7 @@ URLs. The same limitation is present in <a class="reference external" href="http
 <p>It also lacks explicit support for <a class="reference external" href="https://pip.pypa.io/en/stable/reference/pip_install/#id10">environment variables in the user:password
 part of URLs</a> <a class="footnote-reference brackets" href="#id16" id="id17">7</a>.</p>
 <p>The introduction of a key/value extensibility mechanism and support
-for environment variables for user:password in PEP 440, would be necessary
+for environment variables for user:password in <a class="reference external" href="pep-0440.html">PEP 440</a>, would be necessary
 for use in this PEP.</p>
 </div>
 <div class="section" id="revision-vs-ref">
@@ -595,7 +594,8 @@ CC0-1.0-Universal license, whichever is more permissive.</p>
 <div></div></blockquote>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0610.rst">https://github.com/python/peps/blob/master/pep-0610.rst</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0610.rst">https://github.com/python/peps/blob/master/pep-0610.rst</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0610.rst">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

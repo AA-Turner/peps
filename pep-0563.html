@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 563 – Postponed Evaluation of Annotations &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -104,9 +103,9 @@
 </div>
 <div class="section" id="abstract">
 <h2><a class="toc-backref" href="#id1">Abstract</a><a class="headerlink" href="#abstract" title="Permalink to this headline">¶</a></h2>
-<p>PEP 3107 introduced syntax for function annotations, but the semantics
-were deliberately left undefined.  PEP 484 introduced a standard meaning
-to annotations: type hints.  PEP 526 defined variable annotations,
+<p><a class="reference external" href="pep-3107.html">PEP 3107</a> introduced syntax for function annotations, but the semantics
+were deliberately left undefined.  <a class="reference external" href="pep-0484.html">PEP 484</a> introduced a standard meaning
+to annotations: type hints.  <a class="reference external" href="pep-0526.html">PEP 526</a> defined variable annotations,
 explicitly tying them with the type hinting use case.</p>
 <p>This PEP proposes changing function annotations and variable annotations
 so that they are no longer evaluated at function definition time.
@@ -116,7 +115,7 @@ Instead, they are preserved in <code class="docutils literal notranslate"><span 
 </div>
 <div class="section" id="rationale-and-goals">
 <h2><a class="toc-backref" href="#id2">Rationale and Goals</a><a class="headerlink" href="#rationale-and-goals" title="Permalink to this headline">¶</a></h2>
-<p>PEP 3107 added support for arbitrary annotations on parts of a function
+<p><a class="reference external" href="pep-3107.html">PEP 3107</a> added support for arbitrary annotations on parts of a function
 definition.  Just like default values, annotations are evaluated at
 function definition time.  This creates a number of issues for the type
 hinting use case:</p>
@@ -130,7 +129,7 @@ computationally free.</li>
 <p>Postponing the evaluation of annotations solves both problems.</p>
 <div class="section" id="non-goals">
 <h3><a class="toc-backref" href="#id3">Non-goals</a><a class="headerlink" href="#non-goals" title="Permalink to this headline">¶</a></h3>
-<p>Just like in PEP 484 and PEP 526, it should be emphasized that <strong>Python
+<p>Just like in <a class="reference external" href="pep-0484.html">PEP 484</a> and <a class="reference external" href="pep-0526.html">PEP 526</a>, it should be emphasized that <strong>Python
 will remain a dynamically typed language, and the authors have no desire
 to ever make type hints mandatory, even by convention.</strong></p>
 <p>This PEP is meant to solve the problem of forward references in type
@@ -145,13 +144,13 @@ and is not discussed further in this document.</p>
 <h3><a class="toc-backref" href="#id4">Non-typing usage of annotations</a><a class="headerlink" href="#non-typing-usage-of-annotations" title="Permalink to this headline">¶</a></h3>
 <p>While annotations are still available for arbitrary use besides type
 checking, it is worth mentioning that the design of this PEP, as well
-as its precursors (PEP 484 and PEP 526), is predominantly motivated by
+as its precursors (<a class="reference external" href="pep-0484.html">PEP 484</a> and <a class="reference external" href="pep-0526.html">PEP 526</a>), is predominantly motivated by
 the type hinting use case.</p>
-<p>In Python 3.8 PEP 484 will graduate from provisional status.  Other
-enhancements to the Python programming language like PEP 544, PEP 557,
-or PEP 560, are already being built on this basis as they depend on
-type annotations and the <code class="docutils literal notranslate"><span class="pre">typing</span></code> module as defined by PEP 484.
-In fact, the reason PEP 484 is staying provisional in Python 3.7 is to
+<p>In Python 3.8 <a class="reference external" href="pep-0484.html">PEP 484</a> will graduate from provisional status.  Other
+enhancements to the Python programming language like <a class="reference external" href="pep-0544.html">PEP 544</a>, <a class="reference external" href="pep-0557.html">PEP 557</a>,
+or <a class="reference external" href="pep-0560.html">PEP 560</a>, are already being built on this basis as they depend on
+type annotations and the <code class="docutils literal notranslate"><span class="pre">typing</span></code> module as defined by <a class="reference external" href="pep-0484.html">PEP 484</a>.
+In fact, the reason <a class="reference external" href="pep-0484.html">PEP 484</a> is staying provisional in Python 3.7 is to
 enable rapid evolution for another release cycle that some of the
 aforementioned enhancements require.</p>
 <p>With this in mind, uses for annotations incompatible with the
@@ -160,7 +159,7 @@ aforementioned PEPs should be considered deprecated.</p>
 </div>
 <div class="section" id="implementation">
 <h2><a class="toc-backref" href="#id5">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
-<p>In Python 4.0, function and variable annotations will no longer be
+<p>In Python 3.10, function and variable annotations will no longer be
 evaluated at definition time.  Instead, a string form will be preserved
 in the respective <code class="docutils literal notranslate"><span class="pre">__annotations__</span></code> dictionary.  Static type checkers
 will see no difference in behavior, whereas tools using annotations at
@@ -174,7 +173,7 @@ passed as literal strings (i.e. <code class="docutils literal notranslate"><span
 Annotations can only use names present in the module scope as postponed
 evaluation using local names is not reliable (with the sole exception of
 class-level names resolved by <code class="docutils literal notranslate"><span class="pre">typing.get_type_hints()</span></code>).</p>
-<p>Note that as per PEP 526, local variable annotations are not evaluated
+<p>Note that as per <a class="reference external" href="pep-0526.html">PEP 526</a>, local variable annotations are not evaluated
 at all since they are not accessible outside of the function’s closure.</p>
 <div class="section" id="enabling-the-future-behavior-in-python-3-7">
 <h3><a class="toc-backref" href="#id6">Enabling the future behavior in Python 3.7</a><a class="headerlink" href="#enabling-the-future-behavior-in-python-3-7" title="Permalink to this headline">¶</a></h3>
@@ -334,11 +333,7 @@ used names are correct or not.</p>
 <h3><a class="toc-backref" href="#id11">Deprecation policy</a><a class="headerlink" href="#deprecation-policy" title="Permalink to this headline">¶</a></h3>
 <p>Starting with Python 3.7, a <code class="docutils literal notranslate"><span class="pre">__future__</span></code> import is required to use the
 described functionality.  No warnings are raised.</p>
-<p>In Python 3.8 a <code class="docutils literal notranslate"><span class="pre">PendingDeprecationWarning</span></code> is raised by the
-compiler in the presence of type annotations in modules without the
-<code class="docutils literal notranslate"><span class="pre">__future__</span></code> import.</p>
-<p>Starting with Python 3.9 the warning becomes a <code class="docutils literal notranslate"><span class="pre">DeprecationWarning</span></code>.</p>
-<p>In Python 4.0 this will become the default behavior.  Use of annotations
+<p>In Python 3.10 this will become the default behavior.  Use of annotations
 incompatible with this PEP is no longer supported.</p>
 </div>
 </div>
@@ -461,7 +456,7 @@ still cannot be safely used in source code.  A library maintainer would
 never be able to use forward references since that would force the
 library users to use this new hypothetical -O switch.</p>
 <p>Second, this throws the baby out with the bath water. Now <em>no</em> runtime
-annotation use can be performed.  PEP 557 is one example of a recent
+annotation use can be performed.  <a class="reference external" href="pep-0557.html">PEP 557</a> is one example of a recent
 development where evaluating type annotations at runtime is useful.</p>
 <p>All that being said, a granular -O option to drop annotations is
 a possibility in the future, as it’s conceptually compatible with
@@ -503,8 +498,8 @@ but in practice was obvious to users as to what it does:</p>
 <div class="section" id="prior-discussion">
 <h2><a class="toc-backref" href="#id20">Prior discussion</a><a class="headerlink" href="#prior-discussion" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="in-pep-484">
-<h3><a class="toc-backref" href="#id21">In PEP 484</a><a class="headerlink" href="#in-pep-484" title="Permalink to this headline">¶</a></h3>
-<p>The forward reference problem was discussed when PEP 484 was originally
+<h3>In <a class="reference external" href="pep-0484.html">PEP 484</a><a class="headerlink" href="#in-pep-484" title="Permalink to this headline">¶</a></h3>
+<p>The forward reference problem was discussed when <a class="reference external" href="pep-0484.html">PEP 484</a> was originally
 drafted, leading to the following statement in the document:</p>
 <blockquote>
 <div><p>A compromise is possible where a <code class="docutils literal notranslate"><span class="pre">__future__</span></code> import could enable
@@ -557,7 +552,7 @@ beginners:</p>
 </div></blockquote>
 <p>While typing usability is an interesting problem, it is out of scope
 of this PEP.  Specifically, any extensions of the typing syntax
-standardized in PEP 484 will require their own respective PEPs and
+standardized in <a class="reference external" href="pep-0484.html">PEP 484</a> will require their own respective PEPs and
 approval.</p>
 <p>Issue 400 ultimately suggests postponing evaluation of annotations and
 keeping them as strings in <code class="docutils literal notranslate"><span class="pre">__annotations__</span></code>, just like this PEP
@@ -652,7 +647,7 @@ objects, strings, and now thunks).  Moreover, thunks aren’t as
 introspectable as strings.  Most importantly, Guido van Rossum
 explicitly stated interest in gradually restricting the use of
 annotations to static typing (with an optional runtime component).</p>
-<p>Nick Coghlan got convinced to PEP 563, too, promptly beginning
+<p>Nick Coghlan got convinced to <a class="reference external" href="pep-0563.html">PEP 563</a>, too, promptly beginning
 the mandatory bike shedding session on the name of the <code class="docutils literal notranslate"><span class="pre">__future__</span></code>
 import.  Many debaters agreed that <code class="docutils literal notranslate"><span class="pre">annotations</span></code> seems like
 an overly broad name for the feature name.  Guido van Rossum briefly
@@ -682,7 +677,8 @@ performance problems.</p>
 <p>This document has been placed in the public domain.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0563.rst">https://github.com/python/peps/blob/master/pep-0563.rst</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0563.rst">https://github.com/python/peps/blob/master/pep-0563.rst</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0563.rst">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 546 – Backport ssl.MemoryBIO and ssl.SSLObject to Python 2.7 &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -97,7 +96,7 @@ discussion for the rationale.</p>
 <p>While Python 2.7 is getting closer to its end-of-support date (scheduled for
 2020), it is still used on production systems and the Python community is still
 responsible for its security. This PEP will help facilitate the future adoption
-of <span class="target" id="index-0"></span><a class="pep reference external" href="./pep-0543.html"><strong>PEP 543</strong></a> across all supported Python versions, which will improve security
+of <span class="target" id="index-0"></span><a class="pep reference external" href="pep-0543.html"><strong>PEP 543</strong></a> across all supported Python versions, which will improve security
 for both Python 2 and Python 3 users.</p>
 <p>This PEP does NOT propose a general exception for backporting new
 features to Python 2.7 - every new feature proposed for backporting will
@@ -105,8 +104,8 @@ still need to be justified independently. In particular, it will need to
 be explained why relying on an independently updated backport on the
 Python Package Index instead is not an acceptable solution.</p>
 <div class="section" id="pep-543">
-<h3><a class="toc-backref" href="#id5">PEP 543</a><a class="headerlink" href="#pep-543" title="Permalink to this headline">¶</a></h3>
-<p><span class="target" id="index-1"></span><a class="pep reference external" href="./pep-0543.html"><strong>PEP 543</strong></a> defines a new TLS API for Python which would enhance Python
+<h3><a class="reference external" href="pep-0543.html">PEP 543</a><a class="headerlink" href="#pep-543" title="Permalink to this headline">¶</a></h3>
+<p><span class="target" id="index-1"></span><a class="pep reference external" href="pep-0543.html"><strong>PEP 543</strong></a> defines a new TLS API for Python which would enhance Python
 security by giving Python applications access to the native TLS implementations
 on Windows and macOS, instead of using OpenSSL. A side effect is that it gives
 access to the system trust store and certificates installed
@@ -116,12 +115,12 @@ validate TLS certificates (instead of having to ignore or bypass TLS
 certificate validation).</p>
 <p>For practical reasons, Cory Benfield would like to first implement an
 I/O-less class similar to ssl.MemoryBIO and ssl.SSLObject for
-<span class="target" id="index-2"></span><a class="pep reference external" href="./pep-0543.html"><strong>PEP 543</strong></a>, and to provide a second class based on the first one to use
+<span class="target" id="index-2"></span><a class="pep reference external" href="pep-0543.html"><strong>PEP 543</strong></a>, and to provide a second class based on the first one to use
 sockets or file descriptors.  This design would help to structure the code
 to support more backends and simplify testing and auditing, as well as
 implementation. Later, optimized classes using directly sockets or file
 descriptors may be added for performance.</p>
-<p>While <span class="target" id="index-3"></span><a class="pep reference external" href="./pep-0543.html"><strong>PEP 543</strong></a> defines an API, the PEP would only make sense if it
+<p>While <span class="target" id="index-3"></span><a class="pep reference external" href="pep-0543.html"><strong>PEP 543</strong></a> defines an API, the PEP would only make sense if it
 comes with at least one complete and good implementation. The first
 implementation would ideally be based on the <code class="docutils literal notranslate"><span class="pre">ssl</span></code> module of the Python
 standard library, as this is shipped to all users by default and can be used as
@@ -156,7 +155,7 @@ module. If pip ends up bundling PyOpenSSL, then CPython will end up
 bundling PyOpenSSL. Only backporting <code class="docutils literal notranslate"><span class="pre">ssl.MemoryBIO</span></code> and
 <code class="docutils literal notranslate"><span class="pre">ssl.SSLObject</span></code> would avoid the need to embed pyOpenSSL, and would fix the
 bootstrap issue (python -&gt; ensurepip -&gt; pip -&gt; requests -&gt; MemoryBIO).</p>
-<p>This situation is less problematic than the barrier to adoption of PEP 543, as
+<p>This situation is less problematic than the barrier to adoption of <a class="reference external" href="pep-0543.html">PEP 543</a>, as
 naturally Requests does not have to move to an event loop model before it drops
 support for Python 2.7. However, it does make it painful for Requests (and pip)
 to embrace both asyncio and the <code class="docutils literal notranslate"><span class="pre">async</span></code> and <code class="docutils literal notranslate"><span class="pre">await</span></code> keywords for as long as
@@ -209,10 +208,10 @@ Python 2.7.</p>
 <div class="section" id="links">
 <h2><a class="toc-backref" href="#id11">Links</a><a class="headerlink" href="#links" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li><span class="target" id="index-4"></span><a class="pep reference external" href="./pep-0543.html"><strong>PEP 543</strong></a></li>
+<li><span class="target" id="index-4"></span><a class="pep reference external" href="pep-0543.html"><strong>PEP 543</strong></a></li>
 <li><a class="reference external" href="https://bugs.python.org/issue22559">[backport] ssl.MemoryBIO</a>: Implementation of this PEP
 written by Alex Gaynor (first version written at October 2014)</li>
-<li><span class="target" id="index-5"></span><a class="pep reference external" href="./pep-0466.html"><strong>PEP 466</strong></a></li>
+<li><span class="target" id="index-5"></span><a class="pep reference external" href="pep-0466.html"><strong>PEP 466</strong></a></li>
 </ul>
 </div>
 <div class="section" id="discussions">
@@ -227,7 +226,8 @@ written by Alex Gaynor (first version written at October 2014)</li>
 <p>This document has been placed in the public domain.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0546.txt">https://github.com/python/peps/blob/master/pep-0546.txt</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0546.txt">https://github.com/python/peps/blob/master/pep-0546.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0546.txt">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

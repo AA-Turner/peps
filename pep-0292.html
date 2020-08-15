@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 292 – Simpler String Substitutions &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -54,7 +53,7 @@
 <dt class="field-even">Post-History</dt>
 <dd class="field-even">18-Jun-2002, 23-Mar-2004, 22-Aug-2004</dd>
 <dt class="field-odd">Replaces</dt>
-<dd class="field-odd"><a class="reference external" href="./pep-0215.html">215</a></dd>
+<dd class="field-odd"><a class="reference external" href="pep-0215.html">215</a></dd>
 </dl>
 <hr class="docutils" />
 <div class="contents topic" id="contents">
@@ -80,8 +79,8 @@ respects:</p>
 <li>Python’s current string substitution feature
 (i.e. <code class="docutils literal notranslate"><span class="pre">%</span></code>-substitution) is complicated and error prone.  This PEP
 is simpler at the cost of some expressiveness.</li>
-<li>PEP 215 proposed an alternative string interpolation feature,
-introducing a new <code class="docutils literal notranslate"><span class="pre">$</span></code> string prefix.  PEP 292 is simpler than
+<li><a class="reference external" href="pep-0215.html">PEP 215</a> proposed an alternative string interpolation feature,
+introducing a new <code class="docutils literal notranslate"><span class="pre">$</span></code> string prefix.  <a class="reference external" href="pep-0292.html">PEP 292</a> is simpler than
 this because it involves no syntax changes and has much simpler
 rules for what substitutions can occur in the string.</li>
 </ol>
@@ -171,16 +170,16 @@ with so many other languages.  This makes the substitution rules
 easier to teach, learn, and remember.</p>
 </div>
 <div class="section" id="comparison-to-pep-215">
-<h2><a class="toc-backref" href="#id13">Comparison to PEP 215</a><a class="headerlink" href="#comparison-to-pep-215" title="Permalink to this headline">¶</a></h2>
-<p>PEP 215 describes an alternate proposal for string interpolation.
+<h2>Comparison to <a class="reference external" href="pep-0215.html">PEP 215</a><a class="headerlink" href="#comparison-to-pep-215" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="pep-0215.html">PEP 215</a> describes an alternate proposal for string interpolation.
 Unlike that PEP, this one does not propose any new syntax for
 Python.  All the proposed new features are embodied in a new
-library module.  PEP 215 proposes a new string prefix
+library module.  <a class="reference external" href="pep-0215.html">PEP 215</a> proposes a new string prefix
 representation such as <code class="docutils literal notranslate"><span class="pre">$&quot;&quot;</span></code> which signal to Python that a new type
 of string is present.  <code class="docutils literal notranslate"><span class="pre">$</span></code>-strings would have to interact with the
 existing r-prefixes and u-prefixes, essentially doubling the
 number of string prefix combinations.</p>
-<p>PEP 215 also allows for arbitrary Python expressions inside the
+<p><a class="reference external" href="pep-0215.html">PEP 215</a> also allows for arbitrary Python expressions inside the
 <code class="docutils literal notranslate"><span class="pre">$</span></code>-strings, so that you could do things like:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>import sys
 print $&quot;sys = $sys, sys = $sys.modules[&#39;sys&#39;]&quot;
@@ -190,14 +189,14 @@ print $&quot;sys = $sys, sys = $sys.modules[&#39;sys&#39;]&quot;
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sys</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">module</span> <span class="s1">&#39;sys&#39;</span> <span class="p">(</span><span class="n">built</span><span class="o">-</span><span class="ow">in</span><span class="p">)</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">sys</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">module</span> <span class="s1">&#39;sys&#39;</span> <span class="p">(</span><span class="n">built</span><span class="o">-</span><span class="ow">in</span><span class="p">)</span><span class="o">&gt;</span>
 </pre></div>
 </div>
-<p>It’s generally accepted that the rules in PEP 215 are safe in the
-sense that they introduce no new security issues (see PEP 215,
+<p>It’s generally accepted that the rules in <a class="reference external" href="pep-0215.html">PEP 215</a> are safe in the
+sense that they introduce no new security issues (see <a class="reference external" href="pep-0215.html">PEP 215</a>,
 “Security Issues” for details).  However, the rules are still
 quite complex, and make it more difficult to see the substitution
 placeholder in the original <code class="docutils literal notranslate"><span class="pre">$</span></code>-string.</p>
 <p>The interesting thing is that the <code class="docutils literal notranslate"><span class="pre">Template</span></code> class defined in this
 PEP is designed for inheritance and, with a little extra work,
-it’s possible to support PEP 215’s functionality using existing
+it’s possible to support <a class="reference external" href="pep-0215.html">PEP 215</a>’s functionality using existing
 Python syntax.</p>
 <p>For example, one could define subclasses of <code class="docutils literal notranslate"><span class="pre">Template</span></code> and dict that
 allowed for a more complex placeholder syntax and a mapping that
@@ -248,7 +247,8 @@ string/unicode like <code class="docutils literal notranslate"><span class="pre"
 <p>This document has been placed in the public domain.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0292.txt">https://github.com/python/peps/blob/master/pep-0292.txt</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0292.txt">https://github.com/python/peps/blob/master/pep-0292.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0292.txt">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>

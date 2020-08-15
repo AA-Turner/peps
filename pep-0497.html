@@ -4,16 +4,15 @@
 <html lang="en-GB" class="fontface">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PEP 497 – A standard mechanism for backward compatibility &#8212; PEPs.Python.org</title>
-    <link href="_static/style.css" rel="stylesheet">
-    <link href="_static/mq.css" rel="stylesheet">
-    <link href="_static/pep.css" rel="stylesheet">
+    <link href="_static/css/style.css" rel="stylesheet">
+    <link href="_static/css/mq.css" rel="stylesheet">
+    <link href="_static/css/pep.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script ></script>
+    <script src="_static/js/doctools.js"></script>
+    <script src="_static/js/language_data.js"></script>
     <link rel="shortcut icon" href="_static/py.png"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -79,34 +78,34 @@
 <h2><a class="toc-backref" href="#id2">Rejection Notice</a><a class="headerlink" href="#rejection-notice" title="Permalink to this headline">¶</a></h2>
 <p>The steering council decided that the <cite>__past__</cite> aspect of this proposal
 was too complicated for the potential benefit. The other aspect of stronger
-requirements for backwards-compatibility should be addressed by PEP 387.</p>
+requirements for backwards-compatibility should be addressed by <a class="reference external" href="pep-0387.html">PEP 387</a>.</p>
 </div>
 <div class="section" id="scope">
 <h2><a class="toc-backref" href="#id3">Scope</a><a class="headerlink" href="#scope" title="Permalink to this headline">¶</a></h2>
 <p>This PEP is complementary to PEPs 5, 236, and 387, and shares similar
 goals.</p>
 <p>This PEP explains the need for an additional compatibility mechanism
-in support of PEP 5, “Guidelines for Language Evolution”. PEP 236,
+in support of <a class="reference external" href="pep-0005.html">PEP 5</a>, “Guidelines for Language Evolution”. <a class="reference external" href="pep-0236.html">PEP 236</a>,
 “Back to the __future__”, introduced a mechanism for forward
-compatibility in support of PEP 5 but noted that a new mechanism for
+compatibility in support of <a class="reference external" href="pep-0005.html">PEP 5</a> but noted that a new mechanism for
 backward compatibility was outside the scope of that PEP. A related
 PEP (in progress) introduces such a mechanism for backward
 compatibility.</p>
-<p>PEP 5, “Guidelines for Language Evolution”, notes that “This PEP [PEP 5]
+<p><a class="reference external" href="pep-0005.html">PEP 5</a>, “Guidelines for Language Evolution”, notes that “This PEP [<a class="reference external" href="pep-0005.html">PEP 5</a>]
 does not replace or preclude other compatibility strategies such as
 dynamic loading of backwards-compatible parsers.”</p>
 </div>
 <div class="section" id="context">
 <h2><a class="toc-backref" href="#id4">Context</a><a class="headerlink" href="#context" title="Permalink to this headline">¶</a></h2>
-<p>From PEP 236: “From time to time, Python makes an incompatible change
+<p>From <a class="reference external" href="pep-0236.html">PEP 236</a>: “From time to time, Python makes an incompatible change
 to the advertised semantics of core language constructs, or changes
 their accidental (implementation-dependent) behavior in some way.
 While this is never done capriciously, and is always done with the aim
 of improving the language over the long term, over the short term it’s
-contentious and disrupting. PEP 5, Guidelines for Language Evolution,
+contentious and disrupting. <a class="reference external" href="pep-0005.html">PEP 5</a>, Guidelines for Language Evolution,
 suggests ways to ease the pain, and this PEP [236] introduces some
 machinery in support of that.”</p>
-<p>Also from PEP 236: “The purpose of future_statement is to make life
+<p>Also from <a class="reference external" href="pep-0236.html">PEP 236</a>: “The purpose of future_statement is to make life
 easier for people who keep current with the latest release in a timely
 fashion. We don’t hate you if you don’t, but your problems are much
 harder to solve, and somebody with those problems will need to write a
@@ -130,8 +129,8 @@ can use both code designed prior to the change and newer code, whereas
 the newer interpreter is only capable of using code that has been
 upgraded to support the changed feature.</p>
 <p>As an example, consider the changes to the division operator
-introduced in PEP 238 in 2001, soon after PEP 236 introduced the
-future_statement mechanism. PEP 238 outlines a suite of useful
+introduced in <a class="reference external" href="pep-0238.html">PEP 238</a> in 2001, soon after <a class="reference external" href="pep-0236.html">PEP 236</a> introduced the
+future_statement mechanism. <a class="reference external" href="pep-0238.html">PEP 238</a> outlines a suite of useful
 forward-compatibility mechanisms for “true division” in the Python 2.x
 series but omits to include any backward-compatibility mechanisms for
 after “true division” was first enforced in Python 3.0. Python versions
@@ -174,21 +173,21 @@ exchanges data files with, the more acute this pressure becomes.</p>
 <h2><a class="toc-backref" href="#id8">Proposal - part 1</a><a class="headerlink" href="#proposal-part-1" title="Permalink to this headline">¶</a></h2>
 <p>This PEP makes two specific, related proposals. The first is that:</p>
 <blockquote>
-<div>PEP 5 be augmented with a 6th step in the section “Steps for
+<div><a class="reference external" href="pep-0005.html">PEP 5</a> be augmented with a 6th step in the section “Steps for
 Introducing Backwards-Incompatible Features” to indicate that, when an
 incompatible change to core language syntax or semantics is being
 made, Python-dev’s policy is to prefer and expect that, wherever
 possible, a mechanism for backward compatibility be considered and
 provided for future Python versions after the breaking change is
 adopted by default, in addition to any mechanisms proposed for forward
-compatibility such as new future_statements. Furthermore, PEP 387,
+compatibility such as new future_statements. Furthermore, <a class="reference external" href="pep-0387.html">PEP 387</a>,
 “Backwards Compatibility Policy” (if accepted) would be
 augmented with the same 6th step.</div></blockquote>
 <div class="section" id="example">
 <h3><a class="toc-backref" href="#id9">Example</a><a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h3>
 <p>As an example of how this PEP is to be applied, if the latest revision
 of the “true division” PEP (238) were proposed today, it would be
-considered incomplete. PEP 238 notes the “severe backwards
+considered incomplete. <a class="reference external" href="pep-0238.html">PEP 238</a> notes the “severe backwards
 compatibility issues” raised by the proposal and describes several
 measures for forward compatibility in the Abstract and API Changes
 sections. It also mentions some backward compatibility ideas raised on
@@ -196,7 +195,7 @@ c.l.py, including “Use <code class="docutils literal notranslate"><span class=
 classic division semantics in a module”, but it does not put forward
 any backward compatibility plan as part of the proposal.</p>
 <p>If this PEP is accepted, it would be expected that a proposal such as
-PEP 238, because of its large-scale compatibility implications, would
+<a class="reference external" href="pep-0238.html">PEP 238</a>, because of its large-scale compatibility implications, would
 also be accompanied by a backward compatibility plan that enables
 users of future Python versions after the breaking change has come
 into effect to re-enable the classic division behaviour easily in
@@ -216,7 +215,7 @@ of the <code class="docutils literal notranslate"><span class="pre">__future__</
 <p>The specific form and implementation of the <code class="docutils literal notranslate"><span class="pre">__past__</span></code> mechanism is
 the subject of a separate PEP (in progress).  However, this PEP
 recommends that this <code class="docutils literal notranslate"><span class="pre">__past__</span></code> mechanism be designed to meet
-similar criteria to those outlined in PEP 296 for <code class="docutils literal notranslate"><span class="pre">__future__</span></code>.
+similar criteria to those outlined in <a class="reference external" href="pep-0296.html">PEP 296</a> for <code class="docutils literal notranslate"><span class="pre">__future__</span></code>.
 Specifically:</p>
 <p>a. It should enable individual modules to specify obsolete behaviours
 to re-enable from older Python versions on a module-by-module basis.</p>
@@ -322,7 +321,8 @@ secondary importance.</p>
 <p>This document has been placed in the public domain.</p>
 </div>
 </div>
-<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0497.txt">https://github.com/python/peps/blob/master/pep-0497.txt</a></span>
+<span>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0497.txt">https://github.com/python/peps/blob/master/pep-0497.txt</a></span><div class="zero-height line"><br /></div>
+<span>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0497.txt">2020-08-15T06:07:35</a></span>
 
                     </article>
                         </section>
