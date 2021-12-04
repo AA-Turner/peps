@@ -44,6 +44,12 @@ if __name__ == "__main__":
     build_directory = root_directory / "build"  # synchronise with deploy-gh-pages.yaml -> deploy step
     doctree_directory = build_directory / ".doctrees"
 
+    try:
+        import shutil
+        shutil.rmtree(build_directory)
+    except FileNotFoundError:
+        pass
+
     # builder configuration
     if args.build_files:
         sphinx_builder = "html"
