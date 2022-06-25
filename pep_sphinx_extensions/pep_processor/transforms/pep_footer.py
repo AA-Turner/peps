@@ -83,14 +83,14 @@ def _get_last_modified_timestamps():
             return {}
 
     # set up the dictionary with the *current* files
-    last_modified = {path.name: 0 for path in Path().glob("pep-*") if path.suffix in {".txt", ".rst"}}
+    last_modified = {path.name: 0 for path in Path().glob("pep-*") if path.suffix == ".rst"}
 
     # iterate through newest to oldest, updating per file timestamps
     change_sets = all_modified.removeprefix("#").split("#")
     for change_set in change_sets:
         timestamp, files = change_set.split("\n", 1)
         for file in files.strip().split("\n"):
-            if file.startswith("pep-") and file[-3:] in {"txt", "rst"}:
+            if file.startswith("pep-") and file.endswith(".rst"):
                 if last_modified.get(file) == 0:
                     try:
                         last_modified[file] = float(timestamp)

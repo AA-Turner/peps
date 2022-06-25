@@ -3,10 +3,12 @@
 
 """Configuration for building PEPs using Sphinx."""
 
+import os
 from pathlib import Path
 import sys
 
-sys.path.append(str(Path(".").absolute()))
+_ROOT = Path(__file__).resolve().parent.parent
+sys.path.append(os.fspath(_ROOT))
 
 # -- Project information -----------------------------------------------------
 
@@ -25,7 +27,6 @@ extensions = [
 # The file extensions of source files. Sphinx uses these suffixes as sources.
 source_suffix = {
     ".rst": "pep",
-    ".txt": "pep",
 }
 
 # List of patterns (relative to source dir) to ignore when looking for source files.
@@ -34,7 +35,6 @@ include_patterns = [
     "contents.rst",
     # PEP files
     "pep-????.rst",
-    "pep-????.txt",
     # PEP ancillary files
     "pep-????/*.rst",
     # Documentation
@@ -60,11 +60,13 @@ intersphinx_disabled_reftypes = []
 
 # -- Options for HTML output -------------------------------------------------
 
+_PSE_PATH = _ROOT / "pep_sphinx_extensions"
+
 # HTML output settings
 html_math_renderer = "maths_to_html"  # Maths rendering
 
 # Theme settings
-html_theme_path = ["pep_sphinx_extensions"]
+html_theme_path = [os.fspath(_PSE_PATH)]
 html_theme = "pep_theme"  # The actual theme directory (child of html_theme_path)
 html_use_index = False  # Disable index (we use PEP 0)
 html_style = ""  # must be defined here or in theme.conf, but is unused
@@ -72,4 +74,4 @@ html_permalinks = False  # handled in the PEPContents transform
 html_baseurl = "https://peps.python.org"  # to create the CNAME file
 gettext_auto_build = False  # speed-ups
 
-templates_path = ["pep_sphinx_extensions/pep_theme/templates"]  # Theme template relative paths from `confdir`
+templates_path = [os.fspath(_PSE_PATH / "pep_theme" / "templates")]  # Theme template relative paths from `confdir`
