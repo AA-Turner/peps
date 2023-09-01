@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from docutils.writers.html5_polyglot import HTMLTranslator
@@ -18,6 +19,8 @@ from pep_sphinx_extensions.pep_zero_generator.pep_index_generator import create_
 
 if TYPE_CHECKING:
     from sphinx.application import Sphinx
+
+PEP_ROOT = Path(__file__).parent.parent / "peps"
 
 
 def _depart_maths():

@@ -9,7 +9,7 @@ An Overview of the PEP Rendering System
 =======================================
 
 This document provides an overview of the PEP rendering system, as a companion
-to :doc:`PEP 676 <../pep-0676>`.
+to :doc:`PEP 676 </peps/pep-0676>`.
 
 
 1. Configuration
@@ -110,7 +110,7 @@ This overrides the built-in ``:pep:`` role to return the correct URL.
 3.4.2 ``PEPHeaders`` transform
 ******************************
 
-PEPs start with a set of :rfc:`2822` headers, per :doc:`PEP 1 <../pep-0001>`.
+PEPs start with a set of :rfc:`2822` headers, per :doc:`PEP 1 </peps/pep-0001>`.
 This transform validates that the required headers are present and of the
 correct data type, and removes headers not for display.
 It must run before the ``PEPTitle`` transform.
@@ -122,7 +122,7 @@ It must run before the ``PEPTitle`` transform.
 We generate the title node from the parsed title in the PEP headers, and make
 all nodes in the document children of the new title node.
 This transform must also handle parsing reStructuredText markup within PEP
-titles, such as :doc:`PEP 604 <../pep-0604>`.
+titles, such as :doc:`PEP 604 </peps/pep-0604>`.
 
 
 3.4.4 ``PEPContents`` transform

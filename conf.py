@@ -40,7 +40,7 @@ include_patterns = [
 ]
 exclude_patterns = [
     # PEP Template
-    "pep-0012/pep-NNNN.rst",
+    "peps/pep-0012/pep-NNNN.rst",
 ]
 
 # Warn on missing references

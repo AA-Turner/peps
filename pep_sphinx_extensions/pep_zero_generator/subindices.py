@@ -14,14 +14,14 @@ if TYPE_CHECKING:
 
 
 def update_sphinx(filename: str, text: str, docnames: list[str], env: BuildEnvironment) -> Path:
-    file_path = Path(f"{filename}.rst").resolve()
+    file_path = Path(f"peps/{filename}.rst").resolve()
     file_path.parent.mkdir(parents=True, exist_ok=True)
     file_path.write_text(text, encoding="utf-8")
 
     # Add to files for builder
-    docnames.append(filename)
+    docnames.append(f"peps/{filename}")
     # Add to files for writer
-    env.found_docs.add(filename)
+    env.found_docs.add(f"peps/{filename}")
 
     return file_path
 

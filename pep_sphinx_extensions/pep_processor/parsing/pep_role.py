@@ -14,7 +14,8 @@ class PEPRole(roles.ReferenceRole):
             msg = self.inliner.reporter.error(f'invalid PEP number {self.target}', line=self.lineno)
             prb = self.inliner.problematic(self.rawtext, self.rawtext, msg)
             return [prb], [msg]
-        pep_base = self.inliner.document.settings.pep_url.format(pep_num)
+        pep_base = "../" + self.inliner.document.settings.pep_url.format(pep_num)
+
         if self.inliner.document.settings.builder == "dirhtml":
             pep_base = "../" + pep_base
         if "topic" in self.get_location():

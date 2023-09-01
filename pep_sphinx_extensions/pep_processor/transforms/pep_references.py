@@ -18,18 +18,18 @@ class PEPReferenceRoleTitleText(transforms.Transform):
 
             # get pep number and section target (fragment)
             pep_num, fragment = node.attributes.pop("_title_tuple")
-            filename = f"pep-{pep_num:0>4}"
+            docname = f"peps/pep-{pep_num:0>4}"
 
             # Cache target_ids
             env = self.document.settings.env
             try:
-                target_ids = env.document_ids[filename]
+                target_ids = env.document_ids[docname]
             except KeyError:
-                env.document_ids[filename] = target_ids = env.get_doctree(filename).ids
+                env.document_ids[docname] = target_ids = env.get_doctree(docname).ids
 
             # Create title text string. We hijack the 'reftitle' attribute so
             # that we don't have to change things in the HTML translator
-            node["reftitle"] = env.titles[filename].astext()
+            node["reftitle"] = env.titles[docname].astext()
             try:
                 node["reftitle"] += f" § {target_ids[fragment][0].astext()}"
             except KeyError:

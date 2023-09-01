@@ -32,17 +32,18 @@ if TYPE_CHECKING:
 
 
 def _parse_peps() -> list[parser.PEP]:
+    from pep_sphinx_extensions import PEP_ROOT
+
     # Read from root directory
-    path = Path(".")
     peps: list[parser.PEP] = []
 
-    for file_path in path.iterdir():
+    for file_path in PEP_ROOT.iterdir():
         if not file_path.is_file():
             continue  # Skip directories etc.
         if file_path.match("pep-0000*"):
             continue  # Skip pre-existing PEP 0 files
         if file_path.match("pep-????.???") and file_path.suffix == ".rst":
-            pep = parser.PEP(path.joinpath(file_path).absolute())
+            pep = parser.PEP(PEP_ROOT.joinpath(file_path).absolute())
             peps.append(pep)
 
     return sorted(peps)

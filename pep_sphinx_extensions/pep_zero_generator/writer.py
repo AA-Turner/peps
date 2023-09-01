@@ -149,7 +149,7 @@ class PEPZeroWriter:
                     if builder == "html"
                     else f"../topic/{subindex}/"
                 )
-                self.emit_text(f"* `{subindex.title()} PEPs <{target}>`_")
+                self.emit_text(f"* `{subindex.title()} PEPs <../{target}>`_")
                 self.emit_newline()
             self.emit_newline()
 

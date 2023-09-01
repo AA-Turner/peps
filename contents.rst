@@ -4,7 +4,7 @@
 Python Enhancement Proposals (PEPs)
 ***********************************
 
-This is an internal Sphinx page; please go to the :doc:`PEP Index <pep-0000>`.
+This is an internal Sphinx page; please go to the :doc:`PEP Index <peps/pep-0000>`.
 
 
 .. toctree::
@@ -15,5 +15,5 @@ This is an internal Sphinx page; please go to the :doc:`PEP Index <pep-0000>`.
    :caption: PEP Table of Contents (needed for Sphinx):
 
    docs/*
-   pep-*
-   topic/*
+   peps/pep-*
+   peps/topic/*
