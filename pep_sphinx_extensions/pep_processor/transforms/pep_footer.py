@@ -83,7 +83,8 @@ def _get_last_modified_timestamps():
             return {}
 
     # set up the dictionary with the *current* files
-    last_modified = {path.name: 0 for path in Path().glob("pep-*") if path.suffix == ".rst"}
+    peps_dir = Path(__file__, "..", "..", "..", "..", "peps").resolve()
+    last_modified = {path.name: 0 for path in peps_dir.glob("pep-*") if path.suffix == ".rst"}
 
     # iterate through newest to oldest, updating per file timestamps
     change_sets = all_modified.removeprefix("#").split("#")
