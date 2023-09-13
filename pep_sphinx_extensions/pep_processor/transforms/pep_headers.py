@@ -170,7 +170,7 @@ class PEPHeaders(transforms.Transform):
                         explanation=_abbreviate_type(body.astext()),
                     )
                 ]
-            elif name in {"last-modified", "content-type", "version"}:
+            elif name in {"last-modified", "content-type"}:
                 # Mark unneeded fields
                 fields_to_remove.append(field)
 
