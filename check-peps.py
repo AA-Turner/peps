@@ -46,7 +46,6 @@ ALL_HEADERS = (
     "Status",
     "Type",
     "Topic",
-    "Content-Type",
     "Requires",
     "Created",
     "Python-Version",
@@ -180,8 +179,6 @@ def _validate_header(header: str, line_num: int, content: str) -> MessageIterato
         yield from _validate_type(line_num, content)
     elif header == "Topic":
         yield from _validate_topic(line_num, content)
-    elif header == "Content-Type":
-        yield from _validate_content_type(line_num, content)
     elif header in {"Requires", "Replaces", "Superseded-By"}:
         yield from _validate_pep_references(line_num, content)
     elif header == "Created":
@@ -344,13 +341,6 @@ def _validate_topic(line_num: int, line: str) -> MessageIterator:
             yield line_num, "Topic must be for a valid sub-index"
     if sorted(topics) != topics:
         yield line_num, "Topic must be sorted lexicographically"
-
-
-def _validate_content_type(line_num: int, line: str) -> MessageIterator:
-    """'Content-Type' must be 'text/x-rst'"""
-
-    if line != "text/x-rst":
-        yield line_num, "Content-Type must be 'text/x-rst'"
 
 
 def _validate_pep_references(line_num: int, line: str) -> MessageIterator:

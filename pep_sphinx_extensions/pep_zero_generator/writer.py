@@ -32,7 +32,6 @@ Title: Index of Python Enhancement Proposals (PEPs)
 Author: The PEP Editors
 Status: Active
 Type: Informational
-Content-Type: text/x-rst
 Created: 13-Jul-2000
 """
 

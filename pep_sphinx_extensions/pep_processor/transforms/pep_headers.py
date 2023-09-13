@@ -88,7 +88,6 @@ class PEPHeaders(transforms.Transform):
         if len(header) < 2 or header[1][0].astext().lower() != "title":
             raise PEPParsingError("No title!")
 
-        fields_to_remove = []
         self.document["headers"] = headers = {}
         for field in header:
             row_attributes = {sub.tagname: sub.rawsource for sub in field}
@@ -170,9 +169,6 @@ class PEPHeaders(transforms.Transform):
                         explanation=_abbreviate_type(body.astext()),
                     )
                 ]
-            elif name in {"content-type"}:
-                # Mark unneeded fields
-                fields_to_remove.append(field)
 
             # Remove any trailing commas and whitespace in the headers
             if para and isinstance(para[-1], nodes.Text):
@@ -181,10 +177,6 @@ class PEPHeaders(transforms.Transform):
                     last_node.parent.remove(last_node)
                 else:
                     para[-1] = last_node.rstrip().rstrip(",")
-
-        # Remove unneeded fields
-        for field in fields_to_remove:
-            field.parent.remove(field)
 
 
 def _generate_list_url(mailto: str) -> str:

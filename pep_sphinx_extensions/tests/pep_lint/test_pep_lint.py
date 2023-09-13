@@ -18,7 +18,7 @@ def test_with_fake_pep():
             1,
             "Headers must be in PEP 12 order. Correct order: Title, "
             "Author, Sponsor, BDFL-Delegate, Discussions-To, Status, Topic, "
-            "Content-Type, Requires, Created, Python-Version, Post-History, "
+            "Requires, Created, Python-Version, Post-History, "
             "Resolution",
         ),
         (4, "Author continuation lines must end with a comma"),
@@ -36,13 +36,12 @@ def test_with_fake_pep():
         (13, "Topic must be properly capitalised (Title Case)"),
         (13, "Topic must be for a valid sub-index"),
         (13, "Topic must be sorted lexicographically"),
-        (14, "Content-Type must be 'text/x-rst'"),
-        (15, "PEP references must be separated by comma-spaces (', ')"),
-        (16, "Discussions-To must be a valid thread URL or mailing list"),
-        (17, "Post-History must be a 'DD-mmm-YYYY' date: '2-Feb-2000'"),
+        (14, "PEP references must be separated by comma-spaces (', ')"),
+        (15, "Discussions-To must be a valid thread URL or mailing list"),
+        (16, "Post-History must be a 'DD-mmm-YYYY' date: '2-Feb-2000'"),
+        (16, "Post-History must be a valid thread URL"),
+        (17, "Post-History must be a 'DD-mmm-YYYY' date: '3-Mar-2001'"),
         (17, "Post-History must be a valid thread URL"),
-        (18, "Post-History must be a 'DD-mmm-YYYY' date: '3-Mar-2001'"),
-        (18, "Post-History must be a valid thread URL"),
-        (19, "Resolution must be a valid thread URL"),
-        (22, "Use the :pep:`NNN` role to refer to PEPs"),
+        (18, "Resolution must be a valid thread URL"),
+        (21, "Use the :pep:`NNN` role to refer to PEPs"),
     ]
