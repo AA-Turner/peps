@@ -39,7 +39,6 @@ PEP_ROOT = ROOT_DIR / "peps"
 ALL_HEADERS = (
     "PEP",
     "Title",
-    "Last-Modified",
     "Author",
     "Sponsor",
     "BDFL-Delegate", "PEP-Delegate",
