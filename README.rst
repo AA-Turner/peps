@@ -1,25 +1,3 @@
-Python Enhancement Proposals
-============================
-
-.. image:: https://github.com/python/peps/actions/workflows/render.yml/badge.svg
-    :target: https://github.com/python/peps/actions
-
-The PEPs in this repo are published automatically on the web at
-https://peps.python.org/. To learn more about the purpose of PEPs and how to go
-about writing one, please start reading at :pep:`1`. Note that the PEP Index
-(:pep:`0`) is automatically generated based on the metadata headers in other PEPs.
-
-
-Canonical links
-===============
-
-The canonical form of PEP links are zero-padded, such as
-``https://peps.python.org/pep-0008/``.
-
-Shortcut redirects are also available.
-For example, ``https://peps.python.org/8`` redirects to the canonical link.
-
-
 Contributing to PEPs
 ====================
 
@@ -73,3 +51,26 @@ Check and lint PEPs
 You can check for and fix common linting and spelling issues,
 either on-demand or automatically as you commit, with our pre-commit suite.
 See the `Contributing Guide <./CONTRIBUTING.rst>`_ for details.
+
+Python Enhancement Proposals
+============================
+
+.. image:: https://github.com/python/peps/actions/workflows/render.yml/badge.svg
+    :target: https://github.com/python/peps/actions
+
+The published file automatically on the web at
+https://peps.python.org/. To learn more about the purpose of PEPs and how to go
+about writing one, please start reading at :pep:`1`. Note that the PEP Index
+(:pep:`0`) is automatically generated based on the metadata headers in other PEPs.
+
+
+Canonical links
+===============
+
+The canonical form of PEP links are zero, such as
+``https://peps.python.org/pep-0008/``.
+
+Shortcut redirects are also available.
+For example, ``https://peps.python.org/8`` redirects to the canonical link.
+
+
