@@ -1,0 +1,393 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <title>PEP 802 – Display Syntax for the Empty Set | peps.python.org</title>
+    <link rel="shortcut icon" href="../_static/py.png">
+    <link rel="canonical" href="https://peps.python.org/pep-0802/">
+    <link rel="stylesheet" href="../_static/style.css" type="text/css">
+    <link rel="stylesheet" href="../_static/mq.css" type="text/css">
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" media="(prefers-color-scheme: light)" id="pyg-light">
+    <link rel="stylesheet" href="../_static/pygments_dark.css" type="text/css" media="(prefers-color-scheme: dark)" id="pyg-dark">
+    <link rel="alternate" type="application/rss+xml" title="Latest PEPs" href="https://peps.python.org/peps.rss">
+    <meta property="og:title" content='PEP 802 – Display Syntax for the Empty Set | peps.python.org'>
+    <meta property="og:description" content="We propose a new notation, {/}, to construct and represent the empty set. This is modelled after the corresponding mathematical symbol ‘\emptyset’.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://peps.python.org/pep-0802/">
+    <meta property="og:site_name" content="Python Enhancement Proposals (PEPs)">
+    <meta property="og:image" content="https://peps.python.org/_static/og-image.png">
+    <meta property="og:image:alt" content="Python PEPs">
+    <meta property="og:image:width" content="200">
+    <meta property="og:image:height" content="200">
+    <meta name="description" content="We propose a new notation, {/}, to construct and represent the empty set. This is modelled after the corresponding mathematical symbol ‘\emptyset’.">
+    <meta name="theme-color" content="#3776ab">
+</head>
+<body>
+    
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-sun-half" viewBox="0 0 24 24" pointer-events="all">
+    <title>Following system colour scheme</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="9"></circle>
+      <path d="M12 3v18m0-12l4.65-4.65M12 14.3l7.37-7.37M12 19.6l8.85-8.85"></path>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24" pointer-events="all">
+    <title>Selected dark colour scheme</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z"></path>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24" pointer-events="all">
+    <title>Selected light colour scheme</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+</svg>
+    <script>
+
+        document.documentElement.dataset.colour_scheme = localStorage.getItem("colour_scheme") || "auto"
+    </script>
+    <section id="pep-page-section">
+        <header>
+            <h1>Python Enhancement Proposals</h1>
+            <ul class="breadcrumbs">
+                <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a> &raquo; </li>
+                <li><a href="../pep-0000/">PEP Index</a> &raquo; </li>
+                <li>PEP 802</li>
+            </ul>
+            <button id="colour-scheme-cycler" onClick="setColourScheme(nextColourScheme())">
+                <svg aria-hidden="true" class="colour-scheme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+                <svg aria-hidden="true" class="colour-scheme-icon-when-dark"><use href="#svg-moon"></use></svg>
+                <svg aria-hidden="true" class="colour-scheme-icon-when-light"><use href="#svg-sun"></use></svg>
+                <span class="visually-hidden">Toggle light / dark / auto colour theme</span>
+            </button>
+        </header>
+        <article>
+            <section id="pep-content">
+<h1 class="page-title">PEP 802 – Display Syntax for the Empty Set</h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">Author<span class="colon">:</span></dt>
+<dd class="field-odd">Adam Turner &lt;python&#32;&#97;t&#32;quite.org.uk&gt;</dd>
+<dt class="field-even">Discussions-To<span class="colon">:</span></dt>
+<dd class="field-even">Pending</dd>
+<dt class="field-odd">Status<span class="colon">:</span></dt>
+<dd class="field-odd"><abbr title="Proposal under active discussion and revision">Draft</abbr></dd>
+<dt class="field-even">Type<span class="colon">:</span></dt>
+<dd class="field-even"><abbr title="Normative PEP with a new feature for Python, implementation change for CPython or interoperability standard for the ecosystem">Standards Track</abbr></dd>
+<dt class="field-odd">Created<span class="colon">:</span></dt>
+<dd class="field-odd">08-Aug-2025</dd>
+<dt class="field-even">Python-Version<span class="colon">:</span></dt>
+<dd class="field-even">3.15</dd>
+</dl>
+<hr class="docutils" />
+<section id="contents">
+<details><summary>Table of Contents</summary><ul class="simple">
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#security-implications">Security Implications</a></li>
+<li><a class="reference internal" href="#how-to-teach-this">How to Teach This</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#rejected-ideas">Rejected Ideas</a><ul>
+<li><a class="reference internal" href="#change-to-mean-an-empty-set-and-use-for-an-empty-dictionary">Change <code class="docutils literal notranslate"><span class="pre">{}</span></code> to mean an empty set and use <code class="docutils literal notranslate"><span class="pre">{:}</span></code> for an empty dictionary</a></li>
+<li><a class="reference internal" href="#use-a-unicode-character-e-g-or">Use a Unicode character (e.g. <code class="docutils literal notranslate"><span class="pre">∅</span></code> or <code class="docutils literal notranslate"><span class="pre">ϕ</span></code>)</a></li>
+<li><a class="reference internal" href="#use-the-syntax">Use the <code class="docutils literal notranslate"><span class="pre">&lt;&gt;</span></code> syntax</a></li>
+<li><a class="reference internal" href="#use-the-s-syntax">Use the <code class="docutils literal notranslate"><span class="pre">s{}</span></code> syntax</a></li>
+<li><a class="reference internal" href="#id13">Use the <code class="docutils literal notranslate"><span class="pre">{*()}</span></code> syntax</a></li>
+<li><a class="reference internal" href="#id14">Use the <code class="docutils literal notranslate"><span class="pre">{-}</span></code> syntax</a></li>
+<li><a class="reference internal" href="#id15">Use the <code class="docutils literal notranslate"><span class="pre">{,}</span></code> syntax</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#open-issues">Open Issues</a></li>
+<li><a class="reference internal" href="#footnotes">Footnotes</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</details></section>
+<section id="abstract">
+<h2><a class="toc-backref" href="#abstract" role="doc-backlink">Abstract</a></h2>
+<p>We propose a new notation, <code class="docutils literal notranslate"><span class="pre">{/}</span></code>, to construct and represent the empty set.
+This is modelled after the corresponding mathematical symbol ‘<span class="formula">∅</span>’.</p>
+<p>This complements the existing notation for empty tuples, lists, and
+dictionaries, which use <code class="docutils literal notranslate"><span class="pre">()</span></code>, <code class="docutils literal notranslate"><span class="pre">[]</span></code>, and <code class="docutils literal notranslate"><span class="pre">{}</span></code> respectively.</p>
+</section>
+<section id="motivation">
+<h2><a class="toc-backref" href="#motivation" role="doc-backlink">Motivation</a></h2>
+<p>Sets are currently the only built-in collection type that have a
+<a class="reference external" href="https://docs.python.org/3/reference/expressions.html#comprehensions" title="(in Python v3.13)"><span class="xref std std-ref">display syntax</span></a>,
+but no notation to express an empty collection.
+The <a class="reference external" href="https://docs.python.org/3/reference/expressions.html#set" title="(in Python v3.13)"><span class="xref std std-ref">Python Language Reference</span></a> notes this, stating:</p>
+<blockquote>
+<div>An empty set cannot be constructed with <code class="docutils literal notranslate"><span class="pre">{}</span></code>;
+this literal constructs an empty dictionary.</div></blockquote>
+<p>This can be confusing for beginners, especially those coming to the language
+from a scientific or mathematical background, where sets may be in more common
+use than dictionaries or maps.</p>
+<p>A syntax notation for the empty set has the important benefit of not requiring
+a name lookup (unlike <code class="docutils literal notranslate"><span class="pre">set()</span></code>).
+<code class="docutils literal notranslate"><span class="pre">{/}</span></code> will always have a consistent meaning, improving teachability
+of core concepts to beginners.
+For example, users must be careful not to use <em>set</em> as a local variable name,
+as doing so prevents constructing new sets.
+This can be frustrating as beginners may not know how to recover the
+<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#set" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">set</span></code></a> type if they have overriden the name:
+techniques to do so (e.g. <code class="docutils literal notranslate"><span class="pre">type({1}-{1})</span></code>) are not immediately obvious.</p>
+<p>Finally, this may be helpful for users who do not speak English,
+as it provides a culture-free notation for a common data structure
+that is built into Python.</p>
+</section>
+<section id="rationale">
+<h2><a class="toc-backref" href="#rationale" role="doc-backlink">Rationale</a></h2>
+<p>Sets were introduced to Python 2.2 via <a class="pep reference internal" href="../pep-0218/" title="PEP 218 – Adding a Built-In Set Object Type">PEP 218</a>, which did not include
+set notation, but discussed the idea of <code class="docutils literal notranslate"><span class="pre">{-}</span></code> for the empty set:</p>
+<blockquote>
+<div>The PEP originally proposed <code class="docutils literal notranslate"><span class="pre">{1,2,3}</span></code> as the set notation and <code class="docutils literal notranslate"><span class="pre">{-}</span></code> for
+the empty set.  Experience with Python 2.3’s <code class="docutils literal notranslate"><span class="pre">sets.py</span></code> showed that
+the notation was not necessary.  Also, there was some risk of making
+dictionaries less instantly recognizable.</div></blockquote>
+<p>Python 3.0 introduced set literals (<a class="pep reference internal" href="../pep-3100/" title="PEP 3100 – Miscellaneous Python 3.0 Plans">PEP 3100</a>), but again chose not to
+introduce notation for the empty set, which was omitted out of pragmatism
+(<a class="footnote-reference brackets" href="#python-3000-apr-06" id="id1">[5]</a>, <a class="footnote-reference brackets" href="#python-3000-may-06" id="id2">[6]</a>).</p>
+<p>Since then, the topic has been discussed several times,
+with various proposals, including:</p>
+<ol class="arabic simple">
+<li>Changing <code class="docutils literal notranslate"><span class="pre">{}</span></code> to mean an empty set and using <code class="docutils literal notranslate"><span class="pre">{:}</span></code> for an empty dictionary
+(<a class="footnote-reference brackets" href="#python-ideas-jan-08" id="id3">[9]</a>, <a class="footnote-reference brackets" href="#discourse-mar-23" id="id4">[4]</a>)</li>
+<li>A Unicode character (e.g. <code class="docutils literal notranslate"><span class="pre">∅</span></code> or <code class="docutils literal notranslate"><span class="pre">ϕ</span></code>)
+(<a class="footnote-reference brackets" href="#python-ideas-apr-21" id="id5">[7]</a>)</li>
+<li><code class="docutils literal notranslate"><span class="pre">&lt;&gt;</span></code>
+(<a class="footnote-reference brackets" href="#python-ideas-nov-10" id="id6">[11]</a>, <a class="footnote-reference brackets" href="#discourse-dec-24" id="id7">[3]</a>)</li>
+<li><code class="docutils literal notranslate"><span class="pre">s{}</span></code>
+(<a class="footnote-reference brackets" href="#python-ideas-jun-09" id="id8">[10]</a>)</li>
+<li><code class="docutils literal notranslate"><span class="pre">{*()}</span></code>, perhaps optimising to compile this to the <code class="docutils literal notranslate"><span class="pre">BUILD_SET</span></code> opcode
+(<a class="footnote-reference brackets" href="#discourse-aug-25-chrisa" id="id9">[2]</a>)</li>
+<li><code class="docutils literal notranslate"><span class="pre">{-}</span></code>
+(<a class="footnote-reference brackets" href="#python-ideas-aug-20" id="id10">[8]</a>)</li>
+<li><code class="docutils literal notranslate"><span class="pre">{,}</span></code>
+(<a class="footnote-reference brackets" href="#discourse-aug-25" id="id11">[1]</a>)</li>
+<li><code class="docutils literal notranslate"><span class="pre">{/}</span></code>
+(<a class="footnote-reference brackets" href="#python-ideas-jan-08" id="id12">[9]</a>)</li>
+<li><code class="docutils literal notranslate"><span class="pre">set()</span></code> (i.e. doing nothing)</li>
+</ol>
+<p>The authors propose <code class="docutils literal notranslate"><span class="pre">{/}</span></code> as the notation,
+being in their opinion the best of these options.
+It is simple and concise, with the benefit of resembling the mathematical
+notation for the empty set, <span class="formula">∅</span>.
+This makes it an easier mnemonic to explain than several in the language,
+such as <code class="docutils literal notranslate"><span class="pre">**</span></code> for exponentiation or <code class="docutils literal notranslate"><span class="pre">&#64;</span></code> for matrix multiplication.</p>
+<p>Brief summaries for the other proposals may be found in <a class="reference internal" href="#rejected-ideas">Rejected Ideas</a>.</p>
+</section>
+<section id="specification">
+<h2><a class="toc-backref" href="#specification" role="doc-backlink">Specification</a></h2>
+<p>The grammar for set displays will become:</p>
+<pre>
+<strong id="grammar-token-python-grammar-set_display">set_display</strong> ::=  &quot;{&quot; (&quot;/&quot; | flexible_expression_list | comprehension) &quot;}&quot;
+</pre>
+<p><code class="docutils literal notranslate"><span class="pre">{/}</span></code> will become the default syntax for the empty set.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">type</span><span class="p">({</span><span class="o">/</span><span class="p">})</span>
+<span class="go">&lt;class &#39;set&#39;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">{</span><span class="o">/</span><span class="p">}</span> <span class="o">==</span> <span class="nb">set</span><span class="p">()</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>The representation and string forms of the empty set will change to <code class="docutils literal notranslate"><span class="pre">'{/}'</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">repr</span><span class="p">({</span><span class="o">/</span><span class="p">})</span>
+<span class="go">&#39;{/}&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">str</span><span class="p">({</span><span class="o">/</span><span class="p">})</span>
+<span class="go">&#39;{/}&#39;</span>
+</pre></div>
+</div>
+<p>There will be no behavioural changes to <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#set" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">set</span></code></a> objects.</p>
+</section>
+<section id="backwards-compatibility">
+<h2><a class="toc-backref" href="#backwards-compatibility" role="doc-backlink">Backwards Compatibility</a></h2>
+<p>Code that relies on the <code class="docutils literal notranslate"><span class="pre">repr()</span></code> or <code class="docutils literal notranslate"><span class="pre">str()</span></code> of the empty set
+will no longer work, because the representation will change.</p>
+<p>There will be no other backwards incompatibile changes,
+all current constructors for the empty set will continue to work,
+and the behaviour of the <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#set" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">set</span></code></a> type will remain unchanged.</p>
+</section>
+<section id="security-implications">
+<h2><a class="toc-backref" href="#security-implications" role="doc-backlink">Security Implications</a></h2>
+<p>None.</p>
+</section>
+<section id="how-to-teach-this">
+<h2><a class="toc-backref" href="#how-to-teach-this" role="doc-backlink">How to Teach This</a></h2>
+<p>Experienced users can be taught that <code class="docutils literal notranslate"><span class="pre">{/}</span></code> is the new spelling for <code class="docutils literal notranslate"><span class="pre">set()</span></code>,
+and that it is equivalent in all other ways.</p>
+<p>For new users, sets can be introduced through syntax, noting that the four
+built-in collection types with syntax all have empty forms:
+<code class="docutils literal notranslate"><span class="pre">()</span></code>, <code class="docutils literal notranslate"><span class="pre">[]</span></code>, <code class="docutils literal notranslate"><span class="pre">{/}</span></code>, and <code class="docutils literal notranslate"><span class="pre">{}</span></code>.</p>
+<p>The empty set uses a forwards slash to differentiate it from
+an empty dictionary.
+It uses this syntax because it looks like the mathematical symbol
+for the empty set (’<span class="formula">∅</span>’).
+It is also similar to the syntax for other sets,
+which use a comma to separate elements, e.g. <code class="docutils literal notranslate"><span class="pre">{2,</span> <span class="pre">3,</span> <span class="pre">5}</span></code>.
+These facts can be used as a helpful mnemonic.</p>
+</section>
+<section id="reference-implementation">
+<h2><a class="toc-backref" href="#reference-implementation" role="doc-backlink">Reference Implementation</a></h2>
+<p>Forthcoming.</p>
+</section>
+<section id="rejected-ideas">
+<h2><a class="toc-backref" href="#rejected-ideas" role="doc-backlink">Rejected Ideas</a></h2>
+<section id="change-to-mean-an-empty-set-and-use-for-an-empty-dictionary">
+<h3><a class="toc-backref" href="#change-to-mean-an-empty-set-and-use-for-an-empty-dictionary" role="doc-backlink">Change <code class="docutils literal notranslate"><span class="pre">{}</span></code> to mean an empty set and use <code class="docutils literal notranslate"><span class="pre">{:}</span></code> for an empty dictionary</a></h3>
+<p>This would be an entirely backwards incompatible change,
+all current <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a> objects would become sets.</p>
+</section>
+<section id="use-a-unicode-character-e-g-or">
+<h3><a class="toc-backref" href="#use-a-unicode-character-e-g-or" role="doc-backlink">Use a Unicode character (e.g. <code class="docutils literal notranslate"><span class="pre">∅</span></code> or <code class="docutils literal notranslate"><span class="pre">ϕ</span></code>)</a></h3>
+<p>The Unicode character ‘U+2205 ∅ EMPTY SET’ is not currently a valid identifier.
+Introducing a Unicode character as syntax would be hard to use,
+as it does not appear on standard keyboards.</p>
+<p>Using other characters that look like ∅, such as ‘U+03C6 ϕ GREEK SMALL LETTER
+PHI’ or ‘U+00D8 Ø LATIN CAPITAL LETTER O WITH STROKE’, would be more confusing
+with the same drawbacks of using a Unicode character.</p>
+</section>
+<section id="use-the-syntax">
+<h3><a class="toc-backref" href="#use-the-syntax" role="doc-backlink">Use the <code class="docutils literal notranslate"><span class="pre">&lt;&gt;</span></code> syntax</a></h3>
+<p>This syntax has historic use as the inequality operator.
+It does not have a resemblance to the syntax for non-empty sets.
+This would be harder to explain than this PEP’s proposal.</p>
+</section>
+<section id="use-the-s-syntax">
+<h3><a class="toc-backref" href="#use-the-s-syntax" role="doc-backlink">Use the <code class="docutils literal notranslate"><span class="pre">s{}</span></code> syntax</a></h3>
+<p>This syntax may cause confusion with <code class="docutils literal notranslate"><span class="pre">s</span></code> as a local variable.
+The only current use of prefixes of this kind is for string literals.
+This would be harder to explain than this PEP’s proposal.</p>
+</section>
+<section id="id13">
+<h3><a class="toc-backref" href="#id13" role="doc-backlink">Use the <code class="docutils literal notranslate"><span class="pre">{*()}</span></code> syntax</a></h3>
+<p>This relies on unpacking the empty tuple into a set, creating an empty set.
+This has the benefit of support since Python 3.5 (<a class="pep reference internal" href="../pep-0448/" title="PEP 448 – Additional Unpacking Generalizations">PEP 448</a>), but is unwieldy
+and complicated to explain; it was not designed for this purpose.</p>
+</section>
+<section id="id14">
+<h3><a class="toc-backref" href="#id14" role="doc-backlink">Use the <code class="docutils literal notranslate"><span class="pre">{-}</span></code> syntax</a></h3>
+<p>This syntax was originally proposed in <a class="pep reference internal" href="../pep-0218/" title="PEP 218 – Adding a Built-In Set Object Type">PEP 218</a>,
+but removed from the PEP before it was accepted.
+The authors prefer <code class="docutils literal notranslate"><span class="pre">{/}</span></code> due to the resemblance to <span class="formula">∅</span>.</p>
+</section>
+<section id="id15">
+<h3><a class="toc-backref" href="#id15" role="doc-backlink">Use the <code class="docutils literal notranslate"><span class="pre">{,}</span></code> syntax</a></h3>
+<p>This is the authors’ next preferred option.
+However, if a single comma were to be used to represent an empty collection,
+it may be confusing why this could not be used for empty tuples or lists.
+In time, there might be proposals to add support for <code class="docutils literal notranslate"><span class="pre">[,]</span></code> and <code class="docutils literal notranslate"><span class="pre">(,)</span></code>.
+This conflicts with the general principle that
+‘<em>there should be one– and preferably only one –obvious way to do it</em>’.
+Having a visibly different form, in <code class="docutils literal notranslate"><span class="pre">{/}</span></code>, helps to reinforce the idea
+that the syntax for the empty set is a special case, rather than a general rule
+for all empty collections.</p>
+</section>
+</section>
+<section id="open-issues">
+<h2><a class="toc-backref" href="#open-issues" role="doc-backlink">Open Issues</a></h2>
+<p>None.</p>
+</section>
+<section id="footnotes">
+<h2><a class="toc-backref" href="#footnotes" role="doc-backlink">Footnotes</a></h2>
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="discourse-aug-25" role="doc-footnote">
+<dt class="label" id="discourse-aug-25">[<a href="#id11">1</a>]</dt>
+<dd><a class="reference external" href="https://discuss.python.org/t/101197">https://discuss.python.org/t/101197</a></aside>
+<aside class="footnote brackets" id="discourse-aug-25-chrisa" role="doc-footnote">
+<dt class="label" id="discourse-aug-25-chrisa">[<a href="#id9">2</a>]</dt>
+<dd><a class="reference external" href="https://discuss.python.org/t/101197/37">https://discuss.python.org/t/101197/37</a></aside>
+<aside class="footnote brackets" id="discourse-dec-24" role="doc-footnote">
+<dt class="label" id="discourse-dec-24">[<a href="#id7">3</a>]</dt>
+<dd><a class="reference external" href="https://discuss.python.org/t/73235">https://discuss.python.org/t/73235</a></aside>
+<aside class="footnote brackets" id="discourse-mar-23" role="doc-footnote">
+<dt class="label" id="discourse-mar-23">[<a href="#id4">4</a>]</dt>
+<dd><a class="reference external" href="https://discuss.python.org/t/25213">https://discuss.python.org/t/25213</a></aside>
+<aside class="footnote brackets" id="python-3000-apr-06" role="doc-footnote">
+<dt class="label" id="python-3000-apr-06">[<a href="#id1">5</a>]</dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-3000/2006-April/001286.html">https://mail.python.org/pipermail/python-3000/2006-April/001286.html</a></aside>
+<aside class="footnote brackets" id="python-3000-may-06" role="doc-footnote">
+<dt class="label" id="python-3000-may-06">[<a href="#id2">6</a>]</dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-3000/2006-May/001666.html">https://mail.python.org/pipermail/python-3000/2006-May/001666.html</a></aside>
+<aside class="footnote brackets" id="python-ideas-apr-21" role="doc-footnote">
+<dt class="label" id="python-ideas-apr-21">[<a href="#id5">7</a>]</dt>
+<dd><a class="reference external" href="https://mail.python.org/archives/list/python-ideas&#64;python.org/message/X4TX2HDNKDJ7PVZL3DVI5QD2MIMRHKO4/">https://mail.python.org/archives/list/python-ideas&#64;python.org/message/X4TX2HDNKDJ7PVZL3DVI5QD2MIMRHKO4/</a></aside>
+<aside class="footnote brackets" id="python-ideas-aug-20" role="doc-footnote">
+<dt class="label" id="python-ideas-aug-20">[<a href="#id10">8</a>]</dt>
+<dd><a class="reference external" href="https://mail.python.org/archives/list/python-ideas&#64;python.org/message/QOBONXUPUMC3ULCGJU6FVHOCIZQDT45W/">https://mail.python.org/archives/list/python-ideas&#64;python.org/message/QOBONXUPUMC3ULCGJU6FVHOCIZQDT45W/</a></aside>
+<aside class="footnote brackets" id="python-ideas-jan-08" role="doc-footnote">
+<dt class="label" id="python-ideas-jan-08">[9]<em> (<a href='#id3'>1</a>, <a href='#id12'>2</a>) </em></dt>
+<dd><a class="reference external" href="https://mail.python.org/archives/list/python-ideas&#64;python.org/thread/IBMTTESRSF5755LNMVTUMHHABKOBSPUZ/#IBMTTESRSF5755LNMVTUMHHABKOBSPUZ">https://mail.python.org/archives/list/python-ideas&#64;python.org/thread/IBMTTESRSF5755LNMVTUMHHABKOBSPUZ/#IBMTTESRSF5755LNMVTUMHHABKOBSPUZ</a></aside>
+<aside class="footnote brackets" id="python-ideas-jun-09" role="doc-footnote">
+<dt class="label" id="python-ideas-jun-09">[<a href="#id8">10</a>]</dt>
+<dd><a class="reference external" href="https://mail.python.org/archives/list/python-ideas&#64;python.org/thread/AMWKPS54ZK6X2FI7NICDM6DG7LERIJFV/#AMWKPS54ZK6X2FI7NICDM6DG7LERIJFV">https://mail.python.org/archives/list/python-ideas&#64;python.org/thread/AMWKPS54ZK6X2FI7NICDM6DG7LERIJFV/#AMWKPS54ZK6X2FI7NICDM6DG7LERIJFV</a></aside>
+<aside class="footnote brackets" id="python-ideas-nov-10" role="doc-footnote">
+<dt class="label" id="python-ideas-nov-10">[<a href="#id6">11</a>]</dt>
+<dd><a class="reference external" href="https://mail.python.org/archives/list/python-ideas&#64;python.org/thread/N7CHDYXW2FYHDJ5BTP7CCC5HLAIINOVH/#N7CHDYXW2FYHDJ5BTP7CCC5HLAIINOVH">https://mail.python.org/archives/list/python-ideas&#64;python.org/thread/N7CHDYXW2FYHDJ5BTP7CCC5HLAIINOVH/#N7CHDYXW2FYHDJ5BTP7CCC5HLAIINOVH</a></aside>
+</aside>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#copyright" role="doc-backlink">Copyright</a></h2>
+<p>This document is placed in the public domain or under the
+CC0-1.0-Universal license, whichever is more permissive.</p>
+</section>
+</section>
+<hr class="docutils" />
+<p>Source: <a class="reference external" href="https://github.com/python/peps/blob/main/peps/pep-0802.rst">https://github.com/python/peps/blob/main/peps/pep-0802.rst</a></p>
+<p>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/main/peps/pep-0802.rst">2025-08-08 04:47:40 GMT</a></p>
+
+        </article>
+        <nav id="pep-sidebar">
+            <h2>Contents</h2>
+            <ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#security-implications">Security Implications</a></li>
+<li><a class="reference internal" href="#how-to-teach-this">How to Teach This</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#rejected-ideas">Rejected Ideas</a><ul>
+<li><a class="reference internal" href="#change-to-mean-an-empty-set-and-use-for-an-empty-dictionary">Change <code class="docutils literal notranslate"><span class="pre">{}</span></code> to mean an empty set and use <code class="docutils literal notranslate"><span class="pre">{:}</span></code> for an empty dictionary</a></li>
+<li><a class="reference internal" href="#use-a-unicode-character-e-g-or">Use a Unicode character (e.g. <code class="docutils literal notranslate"><span class="pre">∅</span></code> or <code class="docutils literal notranslate"><span class="pre">ϕ</span></code>)</a></li>
+<li><a class="reference internal" href="#use-the-syntax">Use the <code class="docutils literal notranslate"><span class="pre">&lt;&gt;</span></code> syntax</a></li>
+<li><a class="reference internal" href="#use-the-s-syntax">Use the <code class="docutils literal notranslate"><span class="pre">s{}</span></code> syntax</a></li>
+<li><a class="reference internal" href="#id13">Use the <code class="docutils literal notranslate"><span class="pre">{*()}</span></code> syntax</a></li>
+<li><a class="reference internal" href="#id14">Use the <code class="docutils literal notranslate"><span class="pre">{-}</span></code> syntax</a></li>
+<li><a class="reference internal" href="#id15">Use the <code class="docutils literal notranslate"><span class="pre">{,}</span></code> syntax</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#open-issues">Open Issues</a></li>
+<li><a class="reference internal" href="#footnotes">Footnotes</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+
+            <br>
+            <a id="source" href="https://github.com/python/peps/blob/main/peps/pep-0802.rst">Page Source (GitHub)</a>
+        </nav>
+    </section>
+    <script src="../_static/colour_scheme.js"></script>
+    <script src="../_static/wrap_tables.js"></script>
+    <script src="../_static/sticky_banner.js"></script>
+    <script src="https://analytics.python.org/js/script.outbound-links.js"
+            data-domain="peps.python.org" defer></script>
+</body>
+</html>
